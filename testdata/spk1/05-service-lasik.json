@@ -1,0 +1,495 @@
+{
+  "id": "resp_0d9b8d9eb786409c006a5b76743f34819a8e26749ac0dae5f7",
+  "object": "response",
+  "created_at": 1784378996,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1784379143,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b7674e768819abe08f55596b7c571",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHGfCvpvisYzAlk0PBwfwy89MATlPdQFS4ceS0T-GWWG6QKRiwsM7hZGO7wM_wrnc-8OPeGF9ofvS0FEd9IaolLZGqSaiO1ON11Bhgayeor75g193l6zFQ2pqYqB-VZ7xKzRUbZGpvzOxN2rRgGpLRN8TuxgX5lJjqtQS-7kLpd6ue2FdLJblAMke9SqcXVf6OVCx3ZWp9-17brPgK_M5BkyOjPLHyPtqaDa_7JexrNdvR2XHEgjXQYl-y0kdh4wYMaPklsBCbQ7fSk1RZkdgovRqnJdVuYsfhquQeo0xhgOHiycHknxJ_xftuCVE8AJHWTCHRyvMNKH0O8PFpJ8pzEeW7Xq8-n98-1wh_VCjWfDprNA3oygpmFs6mecw6VysG6ROZB5lsfkiS3vwpvx25iqG0N0HRmJB1t2scIeQSoi7J21oH9eRKb8Pkz0A6k7w6YyyYS2GXmwugeoTuoUBPkuIgXqJDOYj6HjFMxoaCnTZCTtkZPe4ThobmtHhykTFTKQSIl2L3h7OdZS9_FaF1zbOStlKGcY9Y0AnO1pavnA6pdb-g-RH0J7YXSTM0aWByPP4Ixi-GLvHlKorG2ZGgwYNys9k-2zlzxAzaPfuk0adtmgWoQGRC_WQzWZn_V1ZgsTzRcl-VJAhtlS8154TLBrtjeXU4lSmSn8aRFdPi8JHe4trE9Sti3OiwJg2fEfXqmv8ZYhKf-uF68ceUXRs3mRAEpkKvVGa_FCNRIX9Ak2OfVmoXn40s6TuqnTcwVrJqAIsje3uvoPXeroHdeqB8OOQ4mVmwtKH2VedgbXmbzIIqNxASn8xmonBnNXU9ZU8y9asR7Bxyxz66EM7dkCdPJq0j3xSptYyS-Xs80PqK90_YSdPXtnCZEyWV-roY5-jYLtWfX9r08JUJb6LOcyfwaNn3rti_umZJBktU1QT4bWz6XrZFO6vBycP9bAcn40IskDg7h8kM7FbyxzZQO4kTZmg-IwtjfiA-MnJVIK9yC8vZ_UjJVYNnLab0Xa1BNpfiftVfvYA-q-L-1y1yoIY_-xjQW8CSXqWQvMojVoPOUdwiZVZ6aXQ7ld-yqZxjCRQw7zTqii2OSO88_AE7KZVoe86AW8wkvPzDaBS3ecOtSWVvQEBdj-o4r3hXBMUJt1BKyyvU5cTO-xc3Xcvjj0gR3Cr9zFwUnBy8VVBpLSYotJUbOjbA7O5zg2vL324VZkvJJJKO_RWyEt_fXHsOxLdTILDcl5YzP0eu4TEh6ABaM_aWbnqTtRHzRKEb3VBujwxbiOQv_4NNvZk-qciEvd_XCO1wAyccddefO7aNjSSCn4Gj7IYJrtORslQCuh0ftqRAzImQkg_7VpyQ5t4IVf7RDu0ilBKk_Ic7s3RLp-EoelG1Bhdq982xWI5rGWlnf2uKVvZc8dm8D8nAJUtGyg8ATVLkQ0h22tHf1kvbaEX8FrSKDs7AfiIgwklogw-fkHGjzDYekIz8guNHY-y83HOChbk15BEWLJFH0RKsUmmwu4ZW29XMOlea3Ydd5Tu2dHeaSIOCKfBkI-J9qP0gYus9I1jJkCu6gLl4Sw2mFz1j5xcs6mD5ZTu8DcLzIbjHzhTBP5bA_DCM93E8lkYz7gk4uEQDiyA1IHeK5QkfMzsoEhIY1SYe27nVmyr_czyINOkR6P63ubl2g8Rjc4pjEAOwXa67pz0HdYmzxNhlCE9u7o7vfyatN0L_d_XDoAlBKejzKXFIPB0s15uY8pwxnMJDo4Cn0FJMPD7DLy_itJUhL7Lus0BMDcAWpfiFRJd1-ruxvaKPESygN1naFoxJbmYqIFBB5XPtPKF_NWbEjXnAcMMYUSA-j_lrFtaJ-JRqKhX0hVRWJjxLEMWZ7SS8uWKkR4vZuz2pIXBuopiQZsjt728DgfJgJPRc1yKPiG-jnOkBBedceCoGq5MwPUEYy88O4_yVkO9AX_ExH6OxCc1qCxHnyojyokZ_hu2lGCEA4OSsXLS4z_RNJDkVHI-9GfWDLHJVzEF5xpAfT_qNUrWlgPwPnotuVJ-hxBqXNvYjK-TyEQ85khZiZXlq41lw61INi-gilLO7KCbi_zmOyCNpafb7dyQCQ6tReEG7QnFpNCh_oe0oET-Mtd01tThoLk9Qp7gLqX-9GbylF81FfjEZs0V3bv0jIMCFPQA0ofdc77ZJa6gOy2gMc5H7oh4R66uapbTjbSG8d7V0daTkTAefwdTnzpR4R8VQ9QyIdohcCYtMBDModP1zTcIq0QKcbh4GMe8UNeTlFpvgbecz3cM3s-H-MZ1zAmMOZBVMnmVPbT-_ICYNd-gRLNxfGScfhxbp2FSVuJmY_XOXyy7IH9tzNthDL9p-lRiUtE_9gnwfNdGYVqFUmom33RJYMH4Hsyb45DIZZqzNFZ72jqsZFF7vJN4-xfJjwibvpXhXVPkLHGixkD3AuOat3fLYK-5zrwqqGMYtYXzvr_U63mfeHanzn-FWIYNhxtILxJi-o8t2ICs_F1r4YycO6ZrvqiizyvTEpNdgolWlVke6W6HBottpyKpWDEHKmnbMBkqRvJLaQSN3V5U3XOA9Bu8wqWTeFuqbxI7KUPOaLiGFiEIM2JLEO8zHW2JzQ277CrK2A5PEIRexq-nK_EIRwmgYzSknHmomZJNWT_oy8iLmLXdkWgSeXNhPH1rqYHzzmHFRLxqRulw0EpiZEtV2-JVtvpCcP_5_qnV6800hwzVF0iw2yTLpz-_6syEdNa9un8XenOXR-xlJi_8MvKbylN2NBGvoO2zLBEts3atobW3vMq34SNdv4gksOlTS4Ef7rBR8W_lgsr0o4k9IwTjKUKKx1ACG53uBlHOU7T6qw5kV2dG1DYRNfW9TKPsI-Fy8vPF7WjQtlEx_MQDura4pT6aqf24SA8W6roy8TDqxCJQA_veyjy5EVYVFQISuNFDckzNIp3MR8eAQt18yqIdlMvjLwiis0X-gtAJ8I-g2pKVfxbOUC5AHrxeYPTMcwzIHsjqROWWu6i0_XsmoJT1bBp02ePZppUfgyPu0icpyrfOkl2kjLY_Rn1I0bc28-pWit7NSqDD5DPv9vulVMzYzJAMgyzpo1AbpL630N9Ph4Wh1xNZu6bvgPfInmOabmBa4tq-t47VolzFDciI9X0mRmCMJ92aXhwO7Y82eqT7XzQnMqw2ERvQ3415-oUzhDgpEGXoRwqb0YcFxeNjvjePNyKRSehYa5_oBlWL_-cyzht2rhE5jciCJEp3AvMqgD7BaTCwPh47L16HvcvKDSlq-JMpSZh7ykSpQeKGb8uTpdbKS7dF0snCoJ_DDpQ9hA4XEUai_NeyDIlffV0D_HMphK_symh93meUExbg_nVmfmKj_7hAMORGtu6yXHPT7V2PmjzDNFHlGkHj-xZd8nWL9CclvqLnAfCOy1UR_YOB1d4sQ28ogmCsgSm9gffheQBe6AT1q0pfozCKkLEPi1ANYjDJV56PUOdab75lQP5esVuahAenWwIUux2s=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b7678fe58819a92b576ebfe221c59",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "best LASIK clinics Singapore 2026",
+          "Singapore National Eye Centre LASIK information",
+          "Clearvision Eye Clinic TransPRK Singapore details",
+          "Shinagawa Eye Centre Singapore LASIK"
+        ],
+        "query": "best LASIK clinics Singapore 2026"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b767bd908819a9496afbbfdd62f92",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHcCdTWi0bj4Yd3yAubpxT8ia0Q5bNqEFjG9GQqRU-B1aVvlV8xO3oEqk6ItI2BZfYcI2B7q-UE23zhSGlVGLWP15xlI62uf9dwVIzDbRIHx3LknbEJ2bGBRyuA7kPdgnWsc__D1dKuxoN0xH2SfmxQWi_Qi4Dr6ya9VDe1YdlVYRDFm3joS2FzeXoj59Qm5m7pajsaHjV41KFZcde03b-Av2q0KvnOLABIt_ECzVOwqfuCCZhEJoRWzdZl9WlNrxe9vI0dMeRlr0ijFEfqfNTvEpCYYGPzzGvTRGb4-X6Uuc5xPnfZ2NPU27CHWgwT-AuHLL7vngXxBmf8Dim1xMsWTvzuvV3PjvacAs1cSqhQQa6NXKivnFhlaeEvKf3FURuLgHmC-7DlnCgT1Rdg8HdE0AwSSSN7qX2PvNtfITyQHQSjqt9DkIEyNtarSQDPvzo9llBVaTEL_6SGyl9jIUhZ7jgI3eOV981ciR1P3XaO9GW_y9BjTXB2oeEfgxNFsBZxDJlDxykCqFbR2J8rGZtIC8v3XYpqcUgen1XbnhdSjo_LoMRSFquFZ5W2Yavw3Ib-Sq0KZI2seCuMtgWMJTnr-3d4HDdtK7kIOgR1V5XKDhTOBUSE2OKBTyTttheuPup5zuAZM0mBYsbUaOPl4sS2-MQ0qO263ALfAzo5kWxtNVQot9hTNTeJzeIMmbFOwnLL4JPMGKykiWrqExOamYzOpaghz6zKqE7qLVTZLKdqTkvDHs8_hIdx4MWFM4bS7EyHIOaK4M90odj5ljQXeDrvYckpoJrfp8XAdLii_fqLLCaaBAF2ZY6dNMHEBoMLNosVmmDys-XfW9UjG99XefCwdZqZq9dCHnG7S38d_Fwl6a_PRCNaGJgkBuS_8T_5d9lIk-qsHhIXTtlksTzLa8EqAQFmNMdezxZpvEtIzXfj3rfCsKYul3rJbYmOzDCc6L_XynhLXpbnY4U1pzT43SeNAD6GzmfIw3PB5fgfnhgH5tTPrxOo8FSuE3VBT80aUxXh19GlteiXS44Pow5KQpSajutImdsBE-UF1E8lINpZs2vcJPFCXpKiYwEOe8Ipvr7eKmqHJwzno2uV8vUP4TqnAX2zhfBdG_jRUja2lYpgjYZ7Oz4FQ9jV9ktAr0Ia6ABz0771rdl3EnSPFIwn9cvHswYdlVskEa3m4gvpF6Qk8WuFoSgMjyVBYKo7fmlO9lIYlUNXZ-mwIsaoI9K9YcccQHStguc_b1LDg_Uel3BWM0gbqk7ZtxHFTjOoFr6GgBSUUxmYkZIrruxiFblbwT6X_djpTkP35_lkCYWOZxijPDWQYLaAj-_UqKpRUVfO5HZf34v0rpK_obO0cdojmwoQmoLz2KyKeliNOcbQVcNX0epceRPjml5jM9qLnsdvlE70aCn2hP7TEn5ThclnEhNG4IeeRQTrN6q-Y6RWHex1DRV9AxqjKHLJDdESbpXViixae5CJDR0qR5inVD7a9hHXLGcFy4gkBnXUnjXAgc_8_7qTVHvjmrczbPAt_yntkmm",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b767c3290819ab9805f8d0d232f9f",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "LSC Eye Clinic LASIK Singapore Paragon",
+          "Clearvision Eye Clinic LASIK TransPRK Singapore official site",
+          "W Eye Clinic LASIK ION Orchard Singapore",
+          "Atlas Eye Specialist Centre LASIK Singapore"
+        ],
+        "query": "LSC Eye Clinic LASIK Singapore Paragon"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b7681c808819aab35e25b47e4912e",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cH2qA-05S3bT98fjGp1R330G_AEsH8-sTwOTcxYWWoi55yX0a6f-EsVsZZ2eS_vOVzqEJNtUHOn9jSdu6XkMwoGxiT04_erMDWlnhHUaq8WeZh0WN4YJpCh6TUazmnCLkBYNaljACiQTE4CDDwR-SHv1mlIiGsgKuDlvqQq-mn7tiPcj9QMqlTMbapSBqT4mWI7Q0vIQiWKC-FW-6WVuhaxQvjkS-NjV4xnN0eTikSOitclAKf7TsgozhP40cXF8v6F9W4pcw6gykjZygYhaiPEx0akudpv-aQ1BODzhe-KyisQoowNjvCv8nvOjdvPpHR_OHcMYtszhfhcIA_KJX8X6P4XeEd1AuH33wX_w_08DC4atlLcWQAqMNRdkgp9OgSuTRA9uc4pLn3rsG8ZtWPRKd37LYLWMv0AVPnY6Q6735DsUBMLseQIjkQpCt3QsInKylsY0lT18KQZbkCKALP_B1N-J7oAsBVlTg1A_Vx2xu0YNH9ZChlJA1tm3Cit_il6n9kwWKDAw-Uf2Kd2zKf0goZ2i4FX2mKRHZPilD1FIQ_QuW71X1pDWXryr0bnDCKMCM7bQtEcRFlAu_MaOu0hMEd__q_zbih_iGFu3sfo0ccpll_lpnD9OLhEz3XlcwZdkQh0G3mRb3Phz4lG-TgTyGPxEOkgom-GxJPjHM9kQ0YHHoyGyUN6p6k5SUsgnjys-Tq6VNIrRtMSV5eOFZFu61PSLhPfcozMONVGjHCp3-HtDyCOQFJ1fqNQdxLo2wiChbXYv0mXSBjGNMU_FkZou3qLuu7VmegPhOripd8BlhRBa_EsVXG6NoGr0V0Jr-uDKgEa-5WKS5yS1KSMdZMIjJZGXvKV39vyW___ttN4HAX6f1RiJ-8x9GMI7CkpE1WN3flXITzcxSrrnddV923SLgZf7ppwDxWlj7kzHD74z0KSzRIKyAJZgabbs8DIOl27GuQVqzR6NiKN7vgFuYoRDWd8Wc5c8pfaqhB9713ktd7VUnQYfI6eAKLXoq9oIgEQzhEL047PmGaV0M1JzLJOJOA7hAzHR0dUfNRKt2CbWo5DDHHIOeObH-MsN5ViXpkpe7tTculbi6stnVcJnXMQsVHYne9GlhRycsCHGacMtP_i6ZWloUAtEJbLQXXaej2tAUHeLJPTDiHg0ej9k6B_RQyqD_wpPsvUb966YP5sn9cb2XPMo0_ZY5OwU_LzLCtqS9TjRhMAwtrUbqMRKJIU_U4ufCGRlRLUV2JJbcXjem_EKP66HTbNkeYsBV4krmrzfcjDlPoQG_ukQlRmB8n6rjeX8Qt-r9Vl-WlC8Fz10YfL1Qu7Ij955tWPCYB3fM6Cs1iJ4mN3D8fIybMOq_8CXMzw4cm40paCLbFyQjZhoQ=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76821954819abf7411454962fe4a",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "W Eye Clinic LASIK ION Orchard official site",
+          "Eagle Eye Centre LASIK Singapore official site",
+          "Natasha Lim Eye Centre LASIK Waterfront LASIK Singapore"
+        ],
+        "query": "W Eye Clinic LASIK ION Orchard official site"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76871ef4819aa9fa883a8d45657d",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHOwsXdL2O43IlQNvs-h4zI5ypBK5N7yddiOaIl2Px3zNlLHaNZbiNmS3c_-sm7azoBSf42ummRYq6m8feR--Mh6yUgno7_8CwmAa2T_A_yf2O7mMh9vZGZlPSwq3bHpimWdmxL3NQypVtWAaH12ZFx3A4HLDoE1E8SHGyR2Xdaq1uOvCrrdzTRfojb4if75KnyV6pVGoiPCv_ekUzwZpiA89cJ7D1d6a9_kXDFk4YPcpALAlacGa1PcGENGifSjyjPgOxSrXib4NHPP0FbIR5LZOLabBObzDLjBHwEikSfNHt7sNjW1_4WeP78ahLZHW0rQW3s-kp8GpzwdRQNdrTk98bhiKh4DCD34S1HWSd0EMNjlV2NinapcLfd7nJsveiOV99CpJjVRmUyJhk2iHbODE9tEgC60N-lLOH7CkG4hREdZLDAMpa_z-tOBh2h1FPGVAaGomeSIbZ3sfmt4WuB-f13NnHY_h2ZMBcia6AmCW6OfigbtJj3-GfrNMK2YJQWeyDNcN3Ej4TbbXoW-WPAL8fHg41E1_A-YGsHrx1h4IhuEq8ztXdxLnhxmPxB7BcOl20BEhujt_guQxVoNl8-DH06b09bWHUCTtQGrhIk_G2VAVl1Of47mSOvhcGIFFtVAvUFtiYZuId6wJszJyUQ0epIIEy__MUkGRT8wpJlnH1vOiDxa4BEuyjXGxZEJO_LqMFrN29tKiadxufSUFzVQR-1G8w---6rQxGNM8AwiuEe4cT_mNe5xvwhS2OqmtbVO0FGd-a-vTbc-oX0SBOIbBXpDYgk94FiRFMO6svv75JVthNnZArJGkBCkP2VXqbAwBEozfnRvSOqSMlxOfpD6gKyNeX6VQ6Od6GJ9EiDLKkVT3LX_FDSIS9Nt-qO11lEZlAJZKvPI1axEprt2ORHcIaGziGMk_G3E7AJODNanpLs3iUezJ3xZIEn6CYKHRsRQP66eDMmZ9xcwCXIwXoo1uI7MR0D4uyEie8lQ9iatvhMDYUmh-3hgTqDo7kpmSy3g0ElT250g9_-jYC5vNv57BXPTZzNPfmc1wAjG7v-jqqR_KnCECp5G1Tdi0h1rSM4x-s3X6Pm7sU2JW8zkTB5afRiGGnOBldtcbtQvE5PV3PnhehoHnTIZ-udaaNeSpe9MJV3CwfMWnE9TJ_UUHmKcZNi6yko3l9ZU497GwaL4I8KOEDX7TZsPYP6j3kl3YfE8IIqHwNQF3PctG9rCfGUMXXR8rvbaBjpgrfLvLxmGD_C3z0ssyTRGuwJywVve9Z8JN-T5_Sy6yKPMFmCJbUJp50vsl9P9W1z5K6nhSl7yHRnREUCUKgXevMpWwbmzApEoxsELTXREC6g-tqJIOkIsK2H5USJW9MYF5bn_A5a4JWrbk991p-VC_Sylm5DWXH0gdQqvhNUSAT7Dih28mwwYLkVE8llcv42P--4zq6TsIURGnOKcN3_Sp92GRgIJ_YY42xb9Za_UQy-Ik7pyn-PNqVME5Msef011CCJ61-E9xRlgDco6_ZateQasQe7m-u0TACRKkmlLMLXs9HPwthY3M7OIgI77jXlIFPURcj-XXxwL2YqLsTvjWcq3Mq2IGnSmFSa-9VHYAqcYl64l0kx4aGlCcrsmkmsK1bWBx_NA5kooZYL5vIcmwzmMNj_v0bpK8CAN_S76it5_d8ayUrV63kwWiPTQmqftIssr0-7ELGRg5K1B96fLqQR47x6hLK",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b768837cc819ab00a24a724d53ac8",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76895708819a948ed0d56c2559ca",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHHHfM8qt064BnA10Dcs6lHGBV7e0C6dlEhcL9ocAQBQASDiY33xJGN8N20Wg0BF9Kg_jB6BpxOHyoBfFDrrj_ek3vJQIHE6GEWcvNFbvsNTys6a6Bwel2ELvyfyaq0keEpqCTTElUvr0eV4egxPkyQVz-zEjlmaIaNB2CLxgRr2oXXY1_d0sZBr-c0w3Q9PMx6BsISzUfnvI--WjHDSB7Zk5OYXQ2pQVM36lIyNKEKOZHqZ8kaTcgCfeaGn4NydMXiWuKBu7XtSXU-GyTBT57lbAJT5DR7pPqPsKbUJ7Ad312ecwY9lTfnQpYBV_cNVbS7IJDueX7eZo5Deehn5vrrf7D2qP-LxlIUHTX30HtNGMAvRtv3DsqWTGa1h-DiqzQwJN2QoD48gzDcXtrTiRFB4GBB4hv9qm6Lev4trdEfjJ5bvl9yrXntLbpUvIIFPZNXk98tGi6fNCi7FMdwLHkyUzgLSQPIdiKUENKBwpGU5wnG1LgireD-FpkfjS4fCw6xL0WgBkvLqzKRpqBefpT3ed4YjEe2YmHA9bIrZnWzSYGzi0M2qwgcpZWT0kCydHmZt1m609P6RO4j29TOgo6rIPH66enZQ2LMSFv2JrStonYW_7N425r0dJy9yD6gaUmAr9kl7xA11y_ExmREv-fEy7CoIMM6hBfgw17JhyOa343Af6Si0X_Q4qx2Vm0670toh1yhngtxQy3hwjdtxPseLrQkJLhoWMAlbrZpkw306S6XdnRelJdpA-jgpP6LfMTvXNeGf3xudTYLNJH6efsnB1l7RqUf1mvwEBfpM2fDJWzMmH6qvA31wRQG3GfhZSpV40t2EH1IZLiDORP6sxPdMv8YxVWRhzQV1lU0vSDWMnZF36bGN9Td4MK2k9qx8BJseYijbYDjzXzou12yzp-RPBsbjUAT1W6UNNMiTICBnFL0NRA3-GZBwryL3mgBNZokhMJdM982LaWtEr4mtXLQK-bzhL9_EvW93sazFbef_NgVY3IiT7q9zzACwEIoKLlX6V6i0m0M6cfoWdm5JUZpb_mO1VZh-74POApNlZXRtNgu99COaWawcIIYF3XD4VJn_uB1KjllwaG0FO3KPuA4AWn6zaIerx_cIPymgI9NlG3ggdHHgP2IaZZawr6Iu4NKEuZraoS684AXVoX5wAWB_oHg7t-1J4OOcKuhWVUUzpZnZf8eKGpLY0Ovva3lwAfUNhuYslBDvRNptdJgeqprLVEIptXEn3WlQ3TUN0Rzt9pmeMfINXpYa14ZMXQxss0EYGP1uU-UZ2S-nk5o1RWvA==",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b7689fff4819a942cc0976c34563f",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://clearvision.com.sg/our-services/"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b768d30ac819a9f697d1bd3f59413",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHAkkQVMbi4sur3GiQw5hc7APq24R5aYRR6NT42cWIEqqvp6nJFn7lgV1vLMeaXSvl8k8e2F98rb7e_1bypXnxXTldjpAfjKqQ3Kq_8IQpeFQ15f0ytgN2zmFBsO9ECVmTqyBi64_KSmp0gpAmhyNgA-JPe2RFJAo7OYUkPySbpGyE68vL74RNd48_WK1Nx-x5Jhh3sQVD5hpkjkgmQ1t8BGMrCEu5Gt407uugsWJZbJhYnfRr80ceQTVZptZX6j8NCI69_5DBaxZaHxnOt_1eP_gfVlC6llA62Uvy-NA6MNvwn057aCuFiRAkRFI3MJjGNCpKu4JevLaVchlcLFTbBR7r02c1W4gitwK8WdQCfWJUB71O_ES50fcLPjQgtqPu0kOwu4UG-0VA50yYe-YSvhMnyCOaYbTI4G2AUzgXc9p0k1Sw5OXuNHe3eclscAjY0fPbcwiq6DWYL4Anri539TFwAQ9O9xToSDLwbGM7_-2rHc9MfU62wuusz6ozSzswGmQ9t2D4xyZsLSYEGGPU6PU2zd8PHcOTWAKyX69rHXEHGoyi1kynFvsXVL-yqwgQfFFBXzN9FxJHiUv0tupVIXzFKoexVMVtc0ChZKAmpTs3dNd8Upad0i5c21wrTeOphZTEjCvUgLBI_Xmr5fLmOoDnzbRTVTGO2IFfn7bo6iUI1fHPabI37SrSCHkmpPIHpGc_1-Gxl5_TCgb-DoH1QpAtgUI_OZVfE3HUHmdeCATJaUgpFO4BnUDuSmuwc2xU3Ttmp7eeNdKq4oKhZ6C9vJktsyJAW7LBD5nuxZgw3HkngDUl3qedct1J61z-hd5c7k-IX2F341vXNNqMe63RqtnTcYvCFa8aktGmdsmTmJPkXyoAiVh9tHQZ8u4PBvZdQHfW-1n_ZdNEqHqOzlXjF_Ymksx35S7E09aw-jHOHDP83lntFrZ6_7ASt5pWHFToBEDLkKdixTuiiN6zqcc7mepjzIJXasJzXVSv4SFBa_GrNPJsCSWbRkqQG59WxFoabWReljcGlhUFfQPDQ69jHP-d6B4CtHDzTKbyKqU-x28=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b768d7910819aa55b41da2d63f9b0",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "find_in_page",
+        "pattern": "Prices",
+        "url": "https://clearvision.com.sg/our-services/"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b768f0898819abf9b53aef4b1179d",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHpohhZYi_iEgWOIEr2gOvjmKXgJdHa4zVxUOUkvH5gEqCN_48Bv687VmR9Gcrh4MSTSV5jhyl8iLV6cAGy_32rHYTHpJ0JWpDkv0_2xnN1hligUGdc01pSvAHtxJhD-cWhF0UgaAFrZq7o2xQBUe-oJURVsn9unWY8Ax7dxApEkAADvPafk79mk4OL6QuvaF2vECwOysP1IvFl2iHjtTrnlv-yK9V1jAjmQoMmlTUideMtSrmCFmULU5rhCcMeJKy3JSCDAGv7VbeoIYZTIBV0aEMjWzoaZFjQZ209VYFtoXXoduR-q8MWChzrS3jPHRqprCsZxKeokJTlB2GNjy4awD-SViGQaCCNNSjKBNwlaJFaIkAwqnmQ_hyZ85GOSYym8_DdDCp4NtYaTLwQ_Pvsdah5Bo2C1wdglUEy3G3rEkYlOVUyY3ntkalI5EQCAVL_tuRmk9aImEQyL5aLR15FYf7TB-gLVTivPcUxS2prQM1H9C8ONMGQORzWRQ1RlEMo2BYnFHqaLDpsBTdYzy6S6RIf9YHofUOqLOQR4MytdghrOgmyxAwLnjXQomdoAOX689I_PJvQaaeAniK2U093zSB1UsvQZ3Og3600_4SCVJuYgks02jZQO4diKuin5ZfSVMld_XdCbkTi1MUmphBUJzuvQdrS9OPEwI9m9UWUtVq_AzQOPa20lbjJey_YUbEiCZb5wJQeY94Rk_8SR5Bv8uB8K81sSXPC2cba3hzfudouNp0fHjcJLqPuAAHaAtSKkbYJD2oU3PnXKyZrD6htp7710BjpFBK1SqnngnNMGC8zygf9Nl8eZhLiTTDlMh7t6e1jBG8sb26FWGVOA_sQkqbbT5juFRoU3RJ2rIMQGoVgiNgqsb9gUi3s-6LRAB54oy1kfa4Mlwgn0k8BaXvlv8FWLCcLyHbPQFKILecjNEWNOWxh_tJzYbXONhLOWLGss2j4zzEJoygujkWBGc33qJcqxhWwgIsXopBwVRcu0e0C4pKkU1v4OGd6Gprb5d5YWu4-d9vhkQ4mUmfWEJUfv7ZLQgtPSN4skDT9JBIWBkFmzUz-fuZ7VasOVcleNGfo20kJTjNzsrzNycyaIFlcv0Hc0RtKy7ZLYjShHu19t6MFMenO9rzKzeg2JzJn-7Eaiy06I--6SUd27TjAI7Cy7Nr4f-FwI_v7_EbtRbjLXA=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b768f6124819a9caf7023691805b1",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://clearvision.com.sg/our-services/"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b7690b234819a88f5aa37b56a7213",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHk1dD1prS3D5p7vS1mlAnMvAI45MrVBqPw_lmkp_DYJB02bd_y74R7puzdRJhMapemmKhxROUTGNy1O66s16PaCFzGP2uyPdPiL5z-1Zu5Tl5EnAa_qE8xDpctriv9YjtseW4LeT-qTL9YZ7_4wDlKNbXMkfDLYXdw7JgitOTX8IGjx6J-3IWMWihcKca-ljHxReqAKRtogM0rYXwk1fd-t4ZAAIzfNw2a9j3OR1_8hgL9P_W2PkfRs2KJM22FfjUnVKIky6YOWY8hfWEGWdMB8pT246dkfQIL7BkKUTJUTL8YYpl_oT5R5V2W5IE1A_nOtF9ysFwSXvxXbSvbkKjKbNbEzSW1BTLpTfL9E5-SPim_DFukVD3ZNkGVSqOIuoJsRGoqqd7kNc8e824nc9Lwkt0ul28GyGRcbNuQQX1-q7ym9Y9fbRvP7iDBja2U4W-myGXQ0lch3J-UZLpx4UGGLjhmHmzMTLOcf2W2E_n0EueMpH4rUb4BoksQRWnp-wUu0u5cPICvzo0K8l9ykoF4YK7CDAJ5J0WMvs1r-bYPhuwojR_OCj6czlplT_rGmrTqM8ZqP1PnQG-7xDZRciK8p03BVvMAtETwYnEARw4iUow_kPBTpbIH4rsRyrT6oa49lvNND2EonfJg0Fm4kK8jDViS9EzKE33ootFFRIS2tEUVm4V5tAQCB-j5TWVnk0eJBI9DqmJuI3-lDQyDIZDnkS_AH3Jt2hBKkWqM-dpW_rzBhCOyMOCU2liuIYY74WAmEYW1PVfobANS0MoUKFWV9YRPsOE8dLwMO2bKI0ujun0S52Pgk3J6mc7W2tjH8pjcX6PwzqJcJz8tAx28uYsRJ-lfgrXEAbwnwXeXlxfnAfHvLZaHaNbhxzffGGq9aPWK01WmrPr_9KenGRZZ2t5SQWeQvnEWX_MRshCxQsn8awsTNfrvN-iv1FD1vnbdsF3rxtSpPit-sYPNsF_GW1tT5WrwwVf_pSZegG16bN5ACqhsRovuwOPnHeDkxakLHtcLd1YS-anX6kziQOYdIiuMYKjzch7EScQ3SWDMaAYRIMkoDR7CmxOuEJotih1tS2RFODih6L9DFwjDuBMe1WXe84eyv-nh1enqqmm3_Ej1U0TskyYvTrCk-dNrVX8fuzvvKp7TNRf5S64NmN1lwd7Jz4BRoY4yPjZjZtBBdwxzVBJeVD_SSCcor2Ji9F7hP4lAfHQl9RLv-Eeg6CXBp5oFzHmFlul8Qn5S_OdAYPtV8Nch2Dy7cSDyJZNcc_pPsiTOjDNd_epRSP_WAkH_BHS7uSr2EDGr3JUIFp9O6KXNRmFfwv1lIkkWt1lmcq4cxpN",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76915f14819a922012f7bcbcec76",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://lsceye.sg/?gad_source=1"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76929d88819ab7237f0e3a56712f",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHVm7pRDK9vQ41IWJsEtHNRuaNdkzL4wYGmb4O_opx9PslvPH5dQZ5gPf62o-o0GVHzTiSKowuXZA9HV5OKwGvsqYZqVG5pD8NjUBSnJLWne0b_YkxlrNst9nv-Y1PHrkRcvaNAtSMOGDisuGRlM9RMIKtg1feL7XZ4pyGt7OM1W3AxkqzoITP47BOvVnFgCfsZGIKiSui97SJxPrwtc70qM__pCbYcuNM9xyKPTk12P36LRbo0RYoChFWqlkeG2e9FAI6j55WjuRzOUEw3OL8tgT2proTtIduJfrrAdEpFgg2nv5P2kNEpQW87g16hdOry2eTZltHfzBm1Rpfb119QDYTKRZhGTpqhAgR-8DtQ7f0sClLONeInXUR_65UjeTOPEsAzuH7RkfUrqW7kPKRP7PSU0Dhd56Y7gmM8xVN6pWngJHyIQ158513bqS_NNIPK-D9M90NThmTdG9Nj58GrX7__kVMMGQ7Mpx_qecWnsc1QeERFlymbM17PKoDEBA4Gg8yfyPyBAMhmERzRNaypdlynaZsWjU6J35wi7k6GUhZhgsyfOFNUgZgyeJ81nsQvhk0kDSHmhCC6VuEy3ts80mgVAqE8M-loZoZhTNFH935FKcICzj45kssZgYavCM4tu2yg9DV45isRG03AmEQfdwGv7IVQgYbCoetNO0_RcJZxYcM1_F0RCbudIxL3cSm4ypTtarRHsDc3US2PJx6OmdNzJXxwhC_EJP6GE2Rr0mp5hk-75wRWWw8t7qssE9502yOH_QuV0RwZGEeSw_oTHa9Kbcrc7lvCZjrA6yhMFcpZPdtMgM90RxZodmn2kcDN_clgH0h5zFJDuFeibJkkyH4dOcuV6DKAROKd8KRj60g0PDBdPWSmL6mBp4HpTk1yOyy9_sICPQkVAGrfACGQdC1P6LORrVxIb_K5_vapSMk7NQDWEkIDgUfFYxtt0RiLUXwhrV3MrFU4G_TB8KOQu1C9JiZ1Xj6oodhKhiWWA1KgVsUdzyqIbIziyCpxbbfZ5VsHP7HBaFNwtbpA4sFJnrT_cE_nVH6tNgj_CPntHKijeMXCkC_rNyF8RrVyMlIThQB7lNKAtGFIUUoIwAr_vGFjDqK9sxZ8fFibaytFDO4UXtE72VZRGUIszgl3luZafmpgCY6FrB9kGH_dYc2uJXiJBFjEAa4JBZd_5N9anqDQ71rXaxhBENBYcDdkdQVZUjcf3zfvRrs4xen-RgwueZm4XULzsaBg9HesgYhWS84bAPpEYRiVYBc-51dvfmF8n_XMQWF50DyHaDjNCNvXA==",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76935744819aa229ba0fc1dca95a",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://atlaseye.sg/"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b769b898c819a955fa121cde79827",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHtvUNUrK9wqrxbauyGhAECINbvs2nqgQGx3UlOIX3mfRDQbRITH0xfd6hDxP2ZsDNZFmrRYakQ8dujD6y8ja2kMB53Dr8beX2VM4pdVX5PMxQg97cxrldiWjALfioGCUfHJAcqJgx_CeX7Ndz1rAt8aCZWmQ0CzxLl4fy7da_VHwfJWn0vsuGuuR6pX792_KtxY53KGaXkOn8o15LvtBMUYlqPu5lLyy6YB8A3hNB1fLOUqIqScriiYFdp1ApVsULCzXWLN_lETjl2aMyH4k-cfAkkBOUlqYMHM2zhHfgZvB2fazKDgUPecfmEqvR59hGTN_H7Eg9EHZJemY6H2L01oD-XFNZxpJ2N92A4H6hZL2ImzLddR6sAZpgFe_xudDmMeb58VjUcx8Ugvix0n4op_35Rsak4YiAfsGdloPD7I6Q2JtwZX6lMgtilLdLf_B3TPqpttlS-QUNumGBjzXIc27_Ep74ZEHD2PdobcpeRZNl_w8phwMMSihnZnEpgjk5yYg7l9CGh_QuSOvr6-5V3PSR5O6QS2km2RHmOL_P_iV3Q8G8nAqhezOcYo_xQB97D_PAm8TRuTcqaTxabOGz6jREbtBCbA6VuezP1h2Pa1xBgjJ8pjiDuNmst__OHH4bLOvP7Wp-ZhaWRnByrF3PBCtTXw0YArk63QAbLqYOmh5L76YeacqiU-BNIs3s93w3q_d3yf33ORmOj2lZE1ZEC85YUgud8p018EfhvK9jUUlKPtOV11BVBdPlJN8rJMlqKokwzBHfzexX8JmHx9tovjNC72L-PgRl8_LQ2UyaWlRsco7Czk7BSwyPmU0mAfj3XvzTHHa9Z5A2WC1UWwy7dcgI_BDuS1SKQNGM-Q-fPRs0ETlVmR9_YylYa6IreJnxqeZiMVJrU1vKqlzL3SrkYMZ2J4h6DO4AaS1X5lOeAQhBM7gWaOffenX1ll0O9Rmqetr41uMnS5qSpc5_szueHwJ3LSztVLto02xIR5Di5WadbRd3_Csfbcx1AtmCTAYYy_q79hv3quk-5P9EKleokK5F6tHUBZEeBmTTHUeGvugydENMod51dHPC-IT06VNmboYHICCAckAfxxSw8hu2B5p-eif947ZBZilHeeo4CUmXWAjynMr8s-daqtaVDiaTcQV45-UrHntg5_1Xy1VDCrqAoVldtY1FUbq6nunePvE-iceQ7uilUcwRPoUgy1STrfmP1fKhclHr1WEKqW6Ddkzu92R_z30I9nw4JtNaByJqeOQdwHw7s8NosoIHQOmzSZQm4VGgHK01xHHc9aRBfw==",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b769e1e44819a8c3c987ee3d1ddb5",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "W Eye Clinic LASIK Singapore ION Orchard address",
+          "W Eye Clinic closure news Singapore 2025",
+          "W Eye Clinic moved rebrand Singapore"
+        ],
+        "query": "W Eye Clinic LASIK Singapore ION Orchard address"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76a36c8c819ab7067f6e31313716",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHWKx0HXCL8sDZP2MBcgHKytH00Ih-MOKLubNfTT2Hnp-PM_VdgPeEuXKHdWiUQ8fuAbVh7sExJKTtPS4Wr766OOb3xGe8xh9D3SZk34R8k2P4WvbJF97vgNu5_HN9B5IDNGH11389xaGhWaKes9F-ZQqGQGW751EJ-lWFiqx4WDaJItI2u-EWOLGlBLSQ-in_D-jhZEY89oDGHZRu95JbCvkbI8r_sRacHTh5xQ7BMhH8n088mH03KEGnBJDHLgKyqMaDavDBDFUz8bGxPzfMqGe3L5Ujhzu-t7eHoEjLUcBK2Hm6xDDF_EgecqazUtFb4wFKC1GTdSQqcbTtz6H9Sg7NeR1BIDcWX_-47UAOyB1FAcr-ns5c6q8RFrUhAWyGPGdL2oSLJqhl8ptUcOMao6Qxj3PL1URvXQYaUJ2m2M1fEQjeZjZTfTuHBkksXkgezjVp0zJpsyXUFBPZQr9vzuNCnccEVnszVh18tz4Pqg_opdQHEWht7rS4jWk-SLgq2-6mmAn_wdZWKRi1CApWPSNY1BKgWVY_WOia1oeeVL_Nrcm110iiEYW8oXq8oUDS3bCi9xMOqCx96Cn8E8IOLEy_jlWapvJ66ev__b-08rWGlUyFJIn-glu2n4X3wRGsH8HUcBbdN5-IRRBMl2UV9mq-q7q_VB1RYXxZndJZvB1xntmVley5zMgWYpgS6fGFJOeWLRGzpZJPvVGwqokq86wAUgn3_g5scN5HhlRXnzgUIyEb5meoxaTKeAGe3gIjL8yfH8HLwKDz-SutES-CQ9cLz9ePrpVgIsA3I5RCJ95PLSGuNS8K_pQCl2WxM2Zn5EiOrpmqb9FEPTY-nANzmJPENtTrS6DsHdqvi3yqu3vAnNC99FYUX7oarwGbjCQgUxWD5WSFqUhiFFyKfTlzaaGrRKgy8b194pkshRr9R_MIfXB38HxJZl2PLjmNBQdU2YYFKnnbCEs3fw4P-O6FztbFa1lhOhN0S9ndDxOxr0H-4_9ApbRAYnnD5iTa6oVUm1P46WMZHR3S1nuAoRLVctnVAuf2xNbdN_FyV5pUZPJEBPtQIMN-jAgKA8cGTiMNerkl5a-hlyLfNvUUGJgJteINKQGrg9IbtCj72K9_4E1L9V0fWJUXD0QrSjyfvPf_s4CODEcMtav0hSG1Nf-nXlE2dt-UqGh6cOaokIVxFSi6D7v4pVasIM6i8Vw-fskif3tyLSKcStpG0MjS7kUuW_rum2rFy8VvOipfENhXWljKd_aFcW1S9dZJZDs5Cl_iDiaqVrcrKl6LegKnRjM48Tm7Qkmid-4IR21psnsQMmkZwN7W-r0Zor4H2EVd5Th9Bmpem-V_eOE8bhCmSf5hbBW5-i40OnJ5mOg1Yq8CnUN_4QXsaF0mB0cgqgN5pTZCfHec0jhlcfzNPF40b07Ig8rfVlW38mj0YCGGkQXAg8rIRhouHNmgDCKZBkwxS16TtBuyphd5oSM4Vy3upYPcf7kUgZZbygqkLT2vqQ5s9tw8z_cVdO5Dd-GxodIZ3-ZqUyN8T0MsVS-Rk_0Rb59D_tlYrjNXyYJZ6N7MVaga75nIn5JnVxfkzS2FAvQNzFLlrUk8d_9yNJP-ex_Jn9-szUglPkKZFDcmFyUv0SFgeepTVddAZD0tSdTbnc2cL7QQThgLlkulKaI-kWGNEnQoQZZyBUbmGAlW3eADDWbyI0tpuok7678fFpgo3B1QQGrUQUE_1BkXixSuAv5-14cMu_L8ATll-KswGh_xtP8AW_nyxxJHMxOALISXRdGFNu8mVcQFT6Xro5HEMh3o1eM7CUiyl4wRG-sI96kwnmQcQL2Mmo78J8ajn7_VgpJCW9xN6ilgYsn0RwPMIc0dPsArqc0cJ1JDmO8S_3A23Zk5WC06zapbYVPr9Jhw_rl_6HbIiR15U5Sq82XJeUwop3gVoVtydJyVcZ5i3aqPiPzW-5QEZB-ndCjjhOtbKdzGrf_qJqRkU_F39Eoy6rHJS8YyAmoewXU9Sd0D9Y9xaPARd_Gfrb1kOzgBGVaMKIhyGR1DKUEHE5edc2vYEHlmXQqkbxbVTnO1F394Y6qtWgL_iQKz9lblZS1n7V4sJmUkJEFbA_6B5OAqY7Xinr9k65Yr68GM2AhZXyTt8WmVzvQm9QZGo1bF4pbpfGZEwwTQM-rnOfhYR2-QeS_I4Wm13nmR9jUO0_BE43_Ro-mJhVLQHDSBi54Y8vojJubBdF4JmmBYb-S76q3d5dTxNpP789lT949dqQLlVfs1IJzt29INd54=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76a65538819a83f5feeb2837fcf2",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Shinagawa Eye Centre LASIK services Singapore site services/lasik English",
+          "Shinagawa Eye Centre Wheelock Place address Singapore"
+        ],
+        "query": "Shinagawa Eye Centre LASIK services Singapore site services/lasik English"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76aab89c819aaca5fe12b56bcf8d",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHux7FXmNKQCH7dls8Xq3S17ifeBytZrSH9CGclNOh-_eMqiADEqX5EwsOlpcWBxoDWhNubiZEGcvogw18vCcrO4XxlSQ6bgfybdIxP81FUDAsBDkoXHlYoKa8qKa9fLV0X84bh0XutozUQ-lJF_s3Q-zL7Y0nunYQhRNzf2jZuzuuM-0G9gt905IzeT5bhPLenAosYJ6Hk0cNlHhUO05tQXdRuTZO36WS5ISx2tt8pXs4VNc0EQR0ddTRoUXLNxTY6wWAz4_YPrB7ZuHkwwOPJFsE4ydkW7YldwtwoBZ8Pa5ToiV2EKuHqiPHSzHCszdvoHfRbK9_3DuMbFLxiaHOR707XMr76GOSvgsZw_2M8EA0NXSHIY8_CWUxepnkTgIRski_I-7B4vYG1Q3yaTmrn_zoa5QFkv08-FgNjMyaPvvh2x5jPefsAli35xK5pHJYICGlHKpd5pWHZMBMxQV8HuEBJTysRer2OefyljcCkFXiFWrZjX5rMVU0pQr6C6KCL58ZFnMBGohahryUSuv5XqwBUm0B0bIv3lWBPrvXtgvErYXqT4IZdMIWMJne2a_2loJvBZTlnNLIDN2wOAJiDyRpGIdd4x15THEwFtP36rdpvd642g39KTrO4rTTmAa3Fpxj7xnGbVq6JuKh2flmd8QTpJAsGaLscxkOITxzQD_5dVD1htsFqLdMfX9nRkciZhwrvsPqkKq1XM-Qif_Whf-NOQ61-Atej1JELwFg3zSjJgA5h65V8gaxFYTXEqJ5J1aEM0EyYR6pe005Y6zQnDd0Hvk1WBqTFX5fDVIL5U_g-jEBBuZNHFsm2pB63Ld_coiHsxim3b2HvpIdT38NMWwtcUn0L-onnJ6VKVxAftgH_h5344G4x1DlT6jpCRR8hfUzFWC1XlnOSbyUGE5a-Mjztwa5lRw0CEvn8xB6ATRGZsO-Qt1nl9tcnRhEwJzZg2nt0KrQGxcCoNw3nzbDU0XsfFI37h-Y8MdixamjbEaI3exoMtXEyCHKdWCb8oglu7hJn224zC9pjt5OYLNG8nSyOst-yK7UJqKjF7SQg2wMvN-AwtTwO7h4vVkP0UcSz6PDjmEFsCJPDK92mxBoNggT-kN975VHp3kL8IpDGVlrNSPu2LSKy4sBuaPYjm8kN9HruTxnK8pNLnVjhoEQpkKx7Aj1WC8Hr6Q-DqpNJEmHExLJB1yuD9RpUU6OrUuCX0GfDGi6gUo999L815-Np0lcY4HSNVsPCyWpcR51goGqWRuU76QziL8w_X83B5NU7pmjONU1metAAf0NLRNMgFbJ_nC6O_gR4XaY907z58P8bzVFmDTbMg7yGVZ5Je1bRlxeuQHXrZngw4OkNiCqmN050i3556d-hK2dBsv8SxQ=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76abbfac819ab683ed435a8f28ee",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Lang Eye Centre LASIK Singapore Leonard Ang official site",
+          "Natasha Lim Eye Centre LASIK iLASIK Waterfront LASIK Singapore"
+        ],
+        "query": "Lang Eye Centre LASIK Singapore Leonard Ang official site"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76b27ae0819ab2481dc19285d8b8",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHiR8UTQdRdcI2O5vOp93wGo9TCUT8HETW6-lN4AG1CDosPvAvMILX_wGFW5AA8jxQNXwm1vxToo-gnV-SmLEknlmH1mYpRvg-rVu-ZixI5jhJzTPeHgkxecOFYH_YjLI9jSJF2jvAExkcJCwKBrjrrQtyNVeSjOoIL0qhE85QZXSvI256evp0-oI1aFcO24-crdghGXytsfLwWK62-L2loo-j_-mfOptlcpUQLxg9NeC7vaV3JY9L9qCOb5bnq6XDXfhIAzkPV10TcGOPsqg93_baoVFZ7u-gN0kgVr_c9Vjfv4qHFelYZG-fxC1Qa7NZtUe-Ab0x3gSVB6pYYq8ea8UZ48b4mgn7mbGp48hEwh14rgjw4QiIMHf8gyn-0ppquQ7YpMuNxBWfVU40UVZbl38emfVwBrDhmxN2y3FIXZVlXo4VPRFRTi6RUxxw0VtyRsYrxvJxK8IX9RFa-9FvIn6ShfRWruyhc7Wl2gtMGTqzh9kImF3BwOazi71uox2dmb3XimXbeFm3xdyOVECY1pRW4_0FrvP5NhaHE2Y5iKGGqLmR_Jw8YVdaBB7TqetGIEJrDkPZ7oF9R5yN4hMPf4_tKdoho5lpudOdlHV9v4RUMNCEcs71sL9K_Qc0Xqqarm1YrbXXvTeUnd7YFUf77E197Cdx4F7VZGh0s-Xg63cvxus5b10fOowZKVuKbL0G-gxdmUNFDQIKcX9NXxhOnvq8gOWvBC0qW4Flshrpx_vjtS7Ti-DaSOOC23jhCbHuN56vTNrs_W_SDuJgbt6NAVvT7iX5juVH-68Pw78WRFLi8b29GiR97I9WBT_xjEp3Um5svlQfFEEhcaNnk_dq1oxCKzW0emPIF3i6yJY-l_UQ95ns7mbk0v0ndK2xC7e5mDtJVMMg-CkHBC3KRsoyjidTGBlxorxdsDcTjyKVKI1nnmb9SS2c1Ph4vIN8-L2lWRc8wGjlAQmiONwDn0UPDjeTDiia_dV_gT3D36kRzQxvqZ6sw6JGy3UEYf6EP3Pz2ZvO9VFpWhfVXydTHzPo20K8BI2TZELatP2XV0w-tVciWerXE1rLaZBUuDFEWvHwNW7p7g2Ag3biHhBlJXzvMzCLsQqeLSN3MOGWKfN2w49lFOEl1KBirZyST4UoDTURi1o3uG7u3TapNk-R6LoT7I0ZmHBXoGHtT3etsY8nOS-dIYT4Cpapu1iTc0ofgPltLlYiOou6WhrfsZ_h5vWmIyhaF_ZT1kdLBjcFUGmgqc3csn_9cHA7vPgYUUXzwdADxqoi7fDEEGcJnVfkMGzqnfhPmPx28uO6CFy2HyYcXIp2p-A-OBnAeTyYIjPHQtMDx3SRJ6mXumVsIriSSZuB5GHD8rc6gYOjS0Jgfq0p9cn4zEnRImza0HPts0eboKpA6-i6I9J-8MTRHytoUK_0uEt46gR8LfUEiRK6uKevq6vcfRZ3AtZO-TIVGk-QQrLQSIx5vW42PeTG5DXdL5MYiR3aQZUD1tYrmIQXZfBpZxGk1cTnb9zNXHEOT2pgDo434AibMD-Tng0izxUq4PQ9TQ74ONWQAoAX_WpXmpK82KqTDAHAyyuxcM0G855dOMjHbk1uD3bG3RwWG5JNh257TvTKJgYrYDHhnKYiHYgmzYXwfzhKYHZL9FwGEJCLyLpde-q1MnT3fStHU5qA7KJ6TBAJVaAWhUmEyPvjIQEufX69QyAfW3ub8MFqnN6F7iY8JrSCp8W0GvKv_eDqyuNinNxpAta8aFw7OYPa4LE2ma58ZmGK9A0sh_auwgQC2QdWrGpdDobvT2HmRfIes9kkecywGDc-QhcuK-Z__heRbKHYQwaUPSoLa5GgLHPY7OV2ZRDq29TZwHQ7TsZUdKCfWn9ecTS3avf44Kp_hme8aOcOXDxE1Mf8tRobfcQR-TXObcCyxnDM32QoYtxWwhSHHz48nSipci-rFn-5YhI-XCNp2CEdse75JLh1ZutBTSpCxuZIRK8k4s2MmjtzNdBoGNwLBOh8bwV5R6t30gl-PECAabScnWKUfjPF2rYBkZ-zLdJkcKHoCE7cegQNm_ThPYFg5sJ1ajMejoBOXynHihLzp7ssQfJXxSGCrPfVdAjeZk3jw7Lh1j1xRtoOTEcRkxNQtg2zOvAzjLhHPW6WsvD7cPaKOQAAjLLBoqqKl5Ow-hGw7rv_zJRfpncL3fIN6RjGt-DhFg5KC62Zmz9IBtERPlRUH6_HvhDdOjL_9HHqkn6fIkLrUrF0w5nxyMgwqOJzywMAlcg__KJ6LFtcd-gHkWp5SMbXIDKyg-Er25hPz27kVaRMAi9nxdxY4p7XpXZqXbaltGf_7dh9DUE5a2y60Q_H0c6LAxgoPf8elv-YsbzlRQbKejbB4gnvUCM-hT9Rld0BnW59eSMi3pFC9uUhrkUIbQZbSQ5zXdYxFC8o02XeBgKOP551seYesmEPmX28GcbXSYDWdNOXCttxdRXoN2SOWQN7Nqy3UzOOfKVsLacYPROfB0K8flnvl0iFHTVMK5WFloenNMv6y1YKEz8eJAvQXOmcLbqLPK-9ICChaoAPJIIBBelDyKHz7bqB3jyxou7dX7TsOm2byvxspiImsXObd686GQgpw5e-N3d483CyBO8ChVUgbIchvHrVrcj_RGpRUtS1kuIoWVvMvlZ5YAQpb57iG4GiOD3kRp3aX7zkHFfyIxMfvU5NxHsOCBEQrfCMtpnqqIkN71jrEB9oluN6kUY3XCVpVvwqB80A4XvisMt_tZ3uH_aU2KLjb7J-_mqRO5aDQTOqTo1IKeiccpKlF3j9w6b9kd27g43dWL2eKGPIGhTq9JQjCCx3jP4v4PrKcnPfiDIckr7br6LnTgpJ5t5BexchnkdCWzXSTqFQCWJlzf5apV6qs6Qk6gH0LgXA0Yf4YngnkIYv9wNci8Y-iRfSFg2wUYPPPx3i51IeaoDSNWv0Ufx0PprQQA9fOMclJmyBfPoCWB_l4CIrlbWOv93bfhPkxbWbp4uIaUxdONmSxi7H3_ZnkpCZzWRQx1td7Fh8qA5SrNI0knuSKO8j4KuURPgHDT4C32y4W62SEU4sexcSTZI8-3l3oH6N3SRXBgIc1mPiKAnKoMaJUVGuCAZ0pIq0YXPwnmZF2Lk9Tb-JwLHk6LKJyXK1x3BaT8JNizDpo-oosNLJ_X84FjMIGibOi4cosAocDVsaqfRNqYul2VH-meTqz_SM-7k1OZWmJBTzHTInfQmnKKSef88UeeDcHww4dkPPlmyPlstg1DbC6OsoOdFrqOMSdge6WR8IkSVzvX5HhHgFdGNBwjHhY0qQPxn81lbyr5yIbboQHwLolFpoVK9NZgYwRV4PBTdgD_qa4bqNVrmb4iaSbZ_FegTQo3XY-bSwLbQnvsbas-o1-E74anndvzO34JWRb_c8vxyC0vGIjguAvikOCXiqc5Zu61UWyXqTrYxhtLcEju83mXU5ds74o1E2J_xCgw2jeiNjvaTHopaVqC8v0ehrB4lUBjx1AeYyEtZIQTBclckCOX8zWUe174bTK3Wno3mtIQRHysNEYzdIbsYhWCKWhzw3RsuWsqQ61fdl3mX87uD5c3g0ftU7-G7Wc7QJXc0Njp7pjWEUc2chYlm27cSHgZcuzRRBLHM2a6CJJiKGQKF0yehwydQp6_oCp1rVphXdSaO2XkDBt-MgJQuKhHjkXjZ7c-GacPPP67aM5tFCuI-c1cc2NLLm9JLdtBjnuINV8QWsaHCYmzbOPo8iefHiM1k_TINXK79Hijr24WXVpMFe2N7kyi-UsM92-xcoE1lUjvmvUBdx27CIpz4PRrQwSR_RfLydQK1_-4bz1uiuqzm6V6ECOF-MqQYDaBfAE9qy6XM4JE4ikSx3kOXLigbvLktiwYrIDhC1u6xnQMZlz9yIWyHcQJY3GD6gGn8t4hHnKEUU7FxO2641OUMemnSnn3rnNcYPHaH2TBTux363dA5QBQJtZ0qi_WiZBOLJ4VOz45mwBGaHoB3YPVBZwUhzqkthgBdITfm_SJUGUiyA8nE0M4GzTXfAZkA-koehidLd7Y9AlcL0trrWvX1rzevr9LGv0JGq3SN0tBoMiLKrLz_yCMJq-UIH-CEBRJImPkG_MkVuGaCfct0Jf9EbnyA4OZn_k1vefy7unN1YAaYfCyMKK2QM3XuG0ljSBki00s5Yqyc0roXylVLC-8zW25D9SfDx8ljq6YOH-Kp582lirC2gFHZ99QJgeeTju841lOPiZptbuEpAlgQl8bTji8y6qE8CoAyEwkZI4yzHrGvL8p_paY-OYol6PtOvg6TGj7_kNomomcnnJXcfHaH28BI85WrReAQhAeXrE8r_7BmJlifnmQS13kHcN67ZANGLHAh8Sm45XHaBGxu62hdgi3kjYgCfKfmwr-p4DPI9qFiSUBA_P75A0jkSH1x44wu8OIbCMY5to1YuOj4Y11HmuoFXmChhT22kJMcgQbhsSGFI-0ge23ZyYle8fju27xSZGI5p_mupgG8N1709CZ8JCjgH8UpoMJLOeVz2U2S1zTcfn347u7SfoEoO0l9X6NQVoZgv0vN2ASTra_FiH5G2PCUuhU6GV6TtqT-trwa9qw5zVXYombfox402Fu3f5aaejZxk0kIquC3fyi6JIM6Ncy0OaQPWqKSwh3resLFSUWzWqipgHBltAZlFrd9v1MFQlBVek8o46gqzBX2ZPizDY-pfILFgFNzMXXVJ2e_cNLbzgjy1barPogt-CVbS6eABr_aRXPfXvjV2Mt3PS1Di4P3X45IpvoNC8x_We4u7xMe9LZFu7875rLbavA2wKtWGfJ5RVdtFFP0j9WrQlFE_WsnKlzpqf9Axabf71f9LzvzG7K-76lcdXMMQlK41BMevZzxkzfUSSGwXCgrTi-T4qrOZcdahz6I8HKvePVMtDzL62lkWywxTQqWgr7_Q64t4Yxef2g-JzFqjpUefvPHh7WluSvZm6g6SNoluEGECPLLe9FRYbWfyCGedqX3GTaxBjlvlsAfyRY-qyYtZwDtdYZ5BwcLjM_fizXiUnxuoZw7RApqSeDZnkstV-tmNTcN6tSZwcADffhSotKyxRTr2_l3nR0PZdAdjbN_RURRDeq38zp_TdiSfyr8_hi684qjVGU-GRxOOkTyGLgudIycLe_APHBo2HnrVcaV95wvZY-nKFthU9qOxDssY4A4CXFNcq2A21Mcya5dOPQSv5bLuGVyxx1WfobAhmfDukXeuedWMXmUiPBDAql6j8dJ1zg52rm7JIIPFQiptMixVi9AEnRNKH-0WYW1BzzX3XRdX55klqfC2Ew48-tHPoGatk0HxCfUZe6But6RcMwA2BRoeOPBGu4n7GMzFz5rfq__1XPvj66KqnHig-XtejrivGAgBF8oQLDeF-YcrjOr-aXimj1cHcivV__ENYAUM8nJMkJfrx7AcXk0W5S4jj5ECDgtooWn3_eHmNtk9TsTFAGz9j8ePER-AA2CRvACmvpR04XVTaW6eQRuHScTz26ARc0g2Y__R8n7IGLYtWgNA7to0VSyedThA43u_ipvavdSrpqYU56E9FHEf1TzHqgYW9V_9vGt-eNd3YRtfZVkLkxhwMCPE1JxOH0Lj_AzBdUwFDybEe24J-TCXT7WUskDZ6kblZ8pnZnjhKcPF9xbjkoV_S2zf7EBZNvCdNrirjvohThBQG2Kq-XCvA5UZrdsXCA==",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76be610c819ab193db136f50345e",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "find_in_page",
+        "pattern": "Pre-operative",
+        "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76c04a08819a974a3e37fed4863d",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHWLtR81frQ-eP4jA6imZl5P2cW3cS4Pq3SSiJ9NdtvetBrcYaN4TsOxzWPrH5T8U5Y7c2Ati3rcqfmfrlOat_rEtSiebDSCwT1mtsQ8J2TfWhfMzZF8oqHnRJblrnGN9wBgoIrVpn1b2bJ4gc5NZ-Ry1JRKl5K4n3jBqrZRmzsNvqKI10wLk9ntBMmNKl_6JaPYPKySifSFgXcUaXlvRMcLtFOvt6rlYW0UGNLU0dewYON2ZY_H8JNxLau_Zc8GgF0h6vj3xSCHNYoDb8u0qEMQ0HswpEq6csY82BnDGyUE88Zlx3Zcy43bXawTa2BNtbJ2g8_FiLiFilFBYZJ_3LQ6yHkHGbdQhGIMWpcox1-70--s_HtpPbyUo0BjM2xpqWrLUsbegZq0zBJYFdPvO3ZWVahRG1SDfJyOQ_N-PymY-qa8vCZPtD8ajmlw_vj8UObYiCSqQEGgqV6DE_M1AFHLADT4Ka4km0WDuA_HlLj1PhUFw0FTktOP2FbNzfsv-TLhpPztPFAPyk5UpZbfoL4Yfnoi8u6PM6WvEsTnyr9cJMN61mE5ISCxcbrlM0r8MkvLqXJadPcNyff6ePaf8JEGIW5FDHMtlT1wk9NDvscvpMtfe2xLOH1MzpVYIhv0_Evqt-hqoM5UfuOwV1zRZtkCsGi8Xh7HvpYCPime8gXVBFPtmpg4vKmNMYrc85lvlxDxFxTlbEzt4GfWB2XwW6swjshl4NjZrlY9V9fZB7AcGHrwD_bBSOejvKuftKPki1y3pPW3nXSfIGIu-HhoA4QgNlwkIp2LXKrONCae1ZWLEKKpjgNRfBktnbFY0_eeVYG5sqaL1YYUvmvb_PAa4PVq_wQNfB0NmGbJZ_tN2BLdFoIjksDRc6sori971OjseuHPs6yEIuGffWzAuWjbef6hJ4b8MkUq0wuTnA6JkgDhbojLVjFxE5aSAX3XA3yYorm61J6kHSPEZAlo9oXDMnxV1zXDQydVcCPeSd3d-hCPv7NIF7C1pK7hcentZixtRuAA2HR232W_l2bS5bQrmJcV8ykCm1938iP4gOB4AbEu3YwQkn5fPkKem2Hvy_8N0r4qSrFwS9oqnT8mNN_y5-PeSPRxtUJNHmNXlo7xKEvS4PVdUnv6HVJS32jIfyweeQxtJxuT-gZj53BUgUnD4ypPX0Ir26Hn2W5JQwHneSJ_LXN71EqJaad5s6MqbMh_D6nvECQO4xVQs1zf98kYv7SDJkm6JCvdqN957MyIOzJAwN3Wo5fIdqQTS_o1-fiXIbCkpIWf8qfrOzDteu7iJH74cbcFPDWA04SmPAiCW6p_PnEazPYIz8LMESchoTl4sc8n1A13EELWtKouJsGM5icYAWym_f1iyicN7dgXpZ5CUUq2yYrgIZ_ECsQhrBw2FSMyFoOMY8AgrlnRxksR_5YQt0Is7XZj7857BF3M3Evuza0kL_POfMYFkQSVmXo2fcp61HWbpbC7UGKjnzpRfwpfGJQjPXjByBGGbupAf7uXf00KYPBSnXpIjXgXLHaAS7Pzl0AXz4JJmJa9sgVUYcUg==",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76c23b30819ab30bb7e72f07fa0b",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Is LASIK Medisave claimable Singapore CPF Board refractive surgery thresholds",
+          "MOH Medisave refractive surgery LASIK criteria Singapore"
+        ],
+        "query": "Is LASIK Medisave claimable Singapore CPF Board refractive surgery thresholds"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76cbb510819aa16c637472764eaa",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cHknoSMeiCEg8Epissc_SvrCOa_V5Y_4HtJlSbSZbj3emImuYb6NAINev9jybxaejDnkleAvyiNk0LQe88h6GnMH93z-YXPL_tBrSmjjBVszyvFOkzFSFss-K7DhwInVmiKCDW-VJTX76eRohnz-NsFzsqOgV6O7LOfc30YOXSYCu6kDT2B_K2o-7kJ7lio0okx20FlJaWW-vgHvR2-yy2ZX-_-f_GhHczMdqkIShqTerA4zaE6nD24zTzgUSa9GHr7bEmQUdBURDxnoH3p1LAw8NztKGgfaBG0lLEiHtxJjChY74BcC3W5VOtqNtYdb2rzKUnJ7uAtIBpXFVpTaV5RVCf-u-lK29LvkfcwBFpa4la2Nba9gokQxSM-ZrnlAKsBVTmqXsnn8GJMfEfrANqbRGfAgSlqd81LesbLoLbwBddlUMDzcWm2jOhK1xAUCpznFSxXKJU7znCKT420WSlNdz9fsRsYKPNfgk-KpK1BvoQw1X5u5KYPJKhP3YFQTi8bIuqOK1XhTuz3Xk_GyMjniRwWo7ZlyUWiNTVM-s4xnilVgWoYwh2PkoQXEbHj39gdUtykq0DSjqQE2x9Evxmx3vKPsyZy8VbGzfqriRDMdLBjuLH0o9QuulgVk3c64A7Gp5Z1DH3I38yqxIdy_xUgpaaB3vUoY4ZWoCrpr_MF3chQiH9sZJBhDdYXC3iL_Fa4Yq94V7yTWYP0bF42bjjngIL8e-RTD6jYVUt_E6I_DLC3FA50JfRN00TO69Mj8JhSfFfAhqIZ45qio98UiF4judwVylezkNJhgAwjQ2fCcxEoDJDJEyVaPiV1H37yxvYd35N32QjtAHasXB73FuhBS1rFyHKNNxlfWvz54vdM_yLYZwN4G4MxHgvt79NYx_LisvYX4-EYg4n6jhbaRAe8yT6PjdQdLgK4tujq3J1ZFgjCP-Etf99tWbWnNxjja5RpRpd_kwifE_aCZEpD8B1NeMloJIgdwUgfQaI8-VQ04xujMrbX4a-Pu4oBLjyvwsTPCSefTAUCR8lU7QUgcU926V3lcN4hmQd6y-U4sWPVIUnuEaRE5PdKcmPLOAAV3kcttTkP9VyPJLoUFYxwkAnXfCx4V5-qPXx0kDbFoETrcoh4a-GMsWHXRRjeI9A5luA-2Au5_PetwM5D4rMs5AUAS6V3uv8tsqEN22jZbtDUt5GnRf5xo_VbUKeC6Q67-jKoJLYA_VjTN69rdHZovcDhSl958nf11LYiFAIgfBU3EceDHZ6dyc1h7V59GY_lpgHip5HcamwTH-XX9SS0-5aB0jDw5CpIjvB2KIl7rn37xh_7B-oViH_lAA5vkunCQRr7_57-YGvcShyme9h7RDf3bKv4Dfd0Jsxp0TNVBthgCP4CajjAAll1x808hAEeKYDTrFi5CWVXB8lkzni9i4N8MpM9ZMDZMP2TXwe5rkh7d0QpftrD0jBj9RX9VeuCqqtXgYKB5DsSoq3XN11muJyW2VcnWPUcKZIpv4nDHrUPtBpX5NcjFoutBovM-wsO7gIvlKbhrx8wrw3hjlmSM9Qah82BWJB01bFEsRIJD8yWyaSci0mXit8Ll5HrqIdFRIRoZ9hBL0tLZVLUKa9oe-2lno_D4A8kGbR1I12hgyb9ZYzDq9rPavGDGrQTZnvJwTPIgIbL26S1WdgdxPOWlIfoUcPZJAkG7gzmjGYQ_0qFDlsDpHk-ONqWxpJ6jxIMMYh0uLLq2o9_tx0gkS399Iv4WTaeH5XKaGIzDI2-WlgYaHKtNm9YdimrWMZT_n2CWe98GYDhPi4VD_AEO3IvRtPI3f-aGqsJ0bR4TzuGkbUd0IUoLo-UPq1CJ21cYdwSdeb-JU0Rc5aZ6PVKGpc4xCMJpv0lryyUOA1Uq9Wjli-uNEM0AxRA2FAEpVo_ivO38DEr1ufgOb18Y21T5M-aJqWyYsik_ji2pyM--_0GRqjKeU7c4Vq_enZXdlNdA9hcdVZsdOPId0qVdNL2kl_nM2pmVLGb6IUmvywtelxP7Y6-iq1Ypsf4u36ccYXQjhdwA8TjfuFTEoNqhaEXSbse25UeJt18al7PM8nwilzSuzIMtcBnpksFDfWqj_dq7_pnEQXMl30DkXDQjpV6Y9VDBA18eoWxHk9ummngDUElYGXcmTPaJHNGl2_l0P2975PqwHeFciMXumRyuGt5d5wZiCDX5ntXmtqVO-N0Byby7_QT20iK4JdsxdxP8Ntob13AuFKB-75NV6ddkGCjkW25f7JnRdkKyf1RadDJlXM1nfieh61vrO0vevusn7S6-XwXeXtvFX0h8rD5WduKEQoyIbuSOk6cVJUC-9A-p4A8_S-vaUmKt-ya588X5mmwWTBmbtZ13HUwnpmeDjdXBx29OvDKm0FypcJmiXgC59sX1RQwiL6VZjMsJTOW8NJM4XdjvKEEmFvuhhaLBTast__lJsTwCyxWvKDJYEZv4x40vUV4PCw-F_rvdUuzozGx5NE8vwmJR3PVa1jsQccGOZaRjAbGdqaL38IsTj-afpp6d8rqgsP7dKYTB89cUeO7qL0ziUo-8EspuNr5wCiF-W4VFiOlS8QkyZSf8hiMDDGJvkoiN75sImIW6YVR2wlaNJ5IQusMfdreVGZApqOU73O_jMRoGSw0yp2XNPJIjgFOr1IDC-_j6PlPXS3fZ8EZIY-m_EECC2S0WMUPFXljovqFllC3jurLzvKsBF1h0YJ4eHFN7Q9r4O9ZPojF6EkccXaJj0AWWbWb4h0oVgyPKNWN_hbfhlrYxYJoGjhXrbNxnNSEucIzLFuQXdzW76lMsXUDUfXTfQDlC6ztSpOOOZBppG8J2O9pdc490X1sTBJG8SRSV2toE_6eLve90zH2Jf3tzmsTD9Dbk2VcsajEEuGxBf0ANfeNHCUO8qQLT5PvEYYaY3GXGhKttvSOtAOnPqSiJuJXY5P43H6BekPhxNQCLhTHgH_5hGgufej6E6HrEtgAFtyLOXKa0eiCzbdWf1C9_Lp9Bk8-LqqWSmGWSl51hSXpERCgDlSKZF1A75kW52jtVvOB5h7mi5055feScGjd_cH2u2zsCmHJh4xN1lZ4YbyB1zinw0zPM9OnxgLxWBhtqXiM4q9uIA2helbXCCxl67EFCvkXMga6WoLxpxM_mMf9Dd_c1oTg5BE7jQaWNvtxrMihdeJOr_peMfqEyc8r4BtQ-aTL2TqMyDCAqO198SM-07e9tnwf6QRnqDcGdW6EEqcyfnVVD9KI1jCfrqbILN8SxxyLmT9wXC7-tRWobQGXNAIRjWlb5cr70sCJZ9MzkVFFUjhSElT-i5EGw3DEaAPaF35tZrhmEdSK5uHf8oggV0-JVBWvwewVLHk52zzT5BzdE94C9hZGIEODJn2d3mAfCslI9ZV41vqDsoTde5BcfpYX0UPxqk3gzN0OO9t_7anG5k2HH1WoflZhFrObTVnf5g89mVg0VsdWftl6FJISmSCaltjOi8sgkSUKL_yale52wIZM_yWNojXToxOz4iycPz0E38Qk8KMG0IzLuMzM4dJg2u85FKkCqjgMQPGFFbJhNDJuHhOLddUM_Zdf7mkvu53PBd0uGniM4cNJ3Ol-qx7CGtfwXUke1xaY0xhULM31ED5V6mic4sABEaP8YosfDsXgqytJ9fQI_xeytWudl_GzVy6pHvIOevTQVOVtCjBFUpzn0srhmfj6w3kMHc3-ak4L8nnXDJAA4PJCjL5XIW1uQ2wUUxX8T-AFoOnjO4AZkvIz4DKENf6CMyHzkY-iyPdfLX1mfTJUw8wVY2uyNf8mIydCbXf-hr8a3-VVPk5dWQ7g_94rkmfMf41qnsB8kVzq7gS10tP4P9nSAdvvGsaX_XvA55vNc6wqwWKgfbE7SRLEhiDsUk1n_83ZVSdQUGKBqOcj-Nh89NFSAf9VFMzAl__4YKOoymx9yAcdYdt4hV9LQ-dhtmhwcsoa1_TjuJkvb2x1Kj4zamlOSO_AEu4_oogJgaM602qYoyGydXN0hd6h62Wddn3I-uv434AvtheIU_zAx497_m7_rCJS19KEjg0lYB4GecOE5MF-dq_uAW_lprgbd_Ob6z8W6xbP0fezOzVgF7l29wEnsui0oku2EvePqrt-sBNIrYL3_QPGuu8w2jV4jfdZSRII-qJPeJyssvf2KjC6mxhd_S6f6RnGUXcGMPIX8Mhk89TU0wlD8wQeS1Ee33k0ySpMFKLt9eV1ZK84lRLMpbRJDvw6MgGihWeSWMFff0grBz83RinsHP-druN9GQIP0-KwgGWoMSI9FfelOjE0U_klwOMlHEmxxdscBEjAmjRMnaUOXhI01wLgBt0T_DmAqdvG6d7MkY6LaHRwS6L6MfJE1uEGGPGW99pxQ-9qSRZ9KImYJFzewhdizNzP4AmBloLWzSxTXjB1boQwx02T3bQJl66qw2BilRxR-NiTlr_Od7PU1hWW4w8y4i_S1Ie50-c6mQOVmXULOX4zWfXR8lw6k6o6eEyv7nHqmuYilNsh-pVl0ZIKIWcilBPd1_Xq8eHeNNaiD82P6ZUKXegIpap8VQ9d0mkihVdF8WSBjuy2An6T9eqPrVGDuQjSj3yLFrTKz_R-tgiLM_kWUyD-13mGeDwJTd1mABbOW-gMLyG00Df5JiMXBDoGjLSCp5wHu9czpc9nJp9Tpa1kHXS8jxb_XlhbLsj9VoY2tXwN-EGkKrB6aumGK1CR4OZH8bJVHwRVX5TJCDoLtyeAsc23IWjccTIUt3ktan3BZVicKNbzWI5GCaC83KWA_0Fc4Dfdf_c0fJyrRZHUgCos4wZICkt9xNZZGAhMyGtBXPrTdHfDR0ho_rG5uYikuQv4t7MxXgYS2ALvIP5r2WTJV1aRVVwrq2MxzZB0EQK9KlYIzfIMHauI9QwlCtLE00Gxp-UrzU8HwPSlLFUv0ea3EifH8QTg6-AiCFWgHHu79YP-n_fCRUvnYys1RD7e4syey2J91fG0nFAz9C0ar7zBqo24j13JJs9sACb3Wf6bWhE8ESkP01mLoftRz69mVcaqi6Mz4cxN0C96YqvIVXcPaUsYTz63ID77Z4KzREzLZifkijcVITrJGxX8qBNFG3lC2-UsYPQt5dp_gLOgCEp25RevgkzIyMiZhdOOFV94MMGGcPCwAQc0AWZ1rzIsegg6N0InIW8PS_U_GHGFxBLcVdgmkTyMWPUlcq6jqEGjhd4lQIfaDLr64YUGX9gqMKFDl4e6HaY9dF-GXVdrNqiT7gWjIk5S1wQOmFfAKSFhMSBliJ9ETJoF7_aHpzUkCz6t5QkF7GOz74yoddrpZrzqAERVWipN6sYevdo-zT3n_oN-JzoUWnPNiV67lU0PL3yGNhDUlMp8kKNhye6GuH8-KWMwPvdKI4AIYhtIKrK_-HRhHe5m6u45llCOJQ65ckWyNNJvxPM3dm69DHB9efaKypb-mt_1Om4fvrESDeoggqFeGgBxkN81hZ6UkepA548VdMk-dehsoms88HXbNnLEz5rrkVGYmnbkNaWblOmUUw3kx1qtfX3bDvzRIXnQ9_hPX8RTQoijWOHQVFZIBDFbCHBrq2i-BbKTgyjaTdBYblVV63_4xjvmpruKY4f-ykgK9wZRxmXdZAB7Xkw2B27sst9NWsjeeJ2IY_ceAPKlcaIFWUTVMNjfXUB0bI6ixcOOBCCVyWl-yEtwHkmwKFHOBIZPrWKEAaNjD3mauEAeCxwkDB_W4UHW7sPh2QVOuhcaKuoP4ohiupY5ceAPI_EOGDV9Pollvczrmy2-1E82fqvnDTFEJzErkypdkx4DqBo53PTUGVqG7FQiKlGWf23edYsZtQH-wF9Zt9edddePSLT0skh52mfqFxNA4AxwJl6eGctxg380uCZHZXzf_6gaJIFiK6AgLOtMQoAZ9UAP_oq9M4uDkXsopbMQHzugdFTw0iWma3WOadxBvwcwc1h4iMPU_zPCkNH3fTwuAHHtgZworp6PSqxMgBp04R-fZOdwyV1zZByz9VEASwUjKsGMm69_DuTkCNO_4WWMnnBSFOvCnUUNAWRihfUnQq68mwaX-Fk2kN2xIK61PhYhAqt_yHpaluo2p788JWfRgJVNAOC_7UV2zzyJeTN6Gv7fCyg_HnMHwNXS1kyNDgE0TOZ3HHNsrOTeWpjyWXIhGkCKuI-68nrYG-XIWtUwlixNqCbTY9PTGTEAYFgf7dWQ3CpkA57Bqoyhp3hEPPXRv8RPyMzx8hMI1UGR8sU2C3-akuGhJduFsESW1TMyJnzxZLZ14vAVGUk8A0lxoczz7byi6Xls4UxrsO238AyYhtWJmZvfkoiuvTPten2rz2OOrgx7rh6jIFeVPe4p87CDX3EBKwWCEZcqmR7xm8NdAQVX8oiqLCMiJGPqQzR-BN5etz8MhovPf6TyLw6zy8JTx-JUoIrsMZeVLm1HFKA6FcPcI_N0gs7bvHUYFA2uKZUs6OZOd6CmuMIGWTdY2ozH9L5jLL-E1skZUpY-kdCEmIV99gUK7-_hDy3IKik2WQLOmvoz78YDCKRrzOCbf-8tZyKXp3G16jsh7Z1OHV6x6IGgzQEFh-7teqD7i2sGscCb1_tWYS5z5xDiU7_Io7l2zlCfy6Rip6fryL4zrLsF5lDq6F-WkD7pU6RWDjFdpVKgXRsfwEZOg7yJofn_Z95l6XmSA1bshTlEETQa8u465vwak8DzKvkXljcaw10B2pb1g-qdtKQvq0dfCp9vcLpDsGNjsBJ_7GI8RNAauZp9muiQVEP7twZ5gJDwgk8lPiiKmwi47okYil04_EPiN_lTpnlVNYNOvmdoECY9CoS2x9i6wC2EcHs_JOg-iEwJK5LJRf0ivSkbDMSK21mYIWJkat7Z5z2_B7ABlN3qPkdrii9_E4aYWabkjjCOUnHEmSh-mgIVaRV9AXFGaXFdflwdLSNmnIB-qfw9CTit-RJ3OlbsJFOI6cGtxkbSHIyJuL9ouFbAo15sV_n5d4a4EQUM_qIA6Fvl0s2iyhYpKgIOIftfYIJaVlnvfwXC0m6kjcCn7D9TIFAGFNeqAVZ9lkftsCqtzxwTSiF9MUpbPV8CnMf_XCtzi_pkOWgm9NcM4lxx2LQwOwuHMbTbdCrgzpjF5mWqNOccb09qAcLH41mPc3JiI5jJRHI--4BZqfzySs5ikXtLdUR6j26Om1gR0pGsTAd0EvuQ3C3cQsl5jogDqzI0VZFDOtSWM2EDhCTAV6y0xWiLEyWT3m9JILC29qx-_SlXlMqxCwbxo2frOxHc2ZCuh_oQpLZcvbEikhNIkUHTaY_rYCe1HPs78UHGiGhOWaRKHnSPLH-p4Dld_eYlp0Ko7aGL3YZIAI8m7CY",
+      "summary": []
+    },
+    {
+      "id": "ws_0d9b8d9eb786409c006a5b76d8dd14819aa601f4b788a2a5ac",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "SNEC contact lens stop before LASIK evaluation how many days",
+          "Atlas Eye pre-LASIK stop contact lens how many days Singapore"
+        ],
+        "query": "SNEC contact lens stop before LASIK evaluation how many days"
+      }
+    },
+    {
+      "id": "rs_0d9b8d9eb786409c006a5b76e34420819ab13904f5f3aa8b52",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3cH2Degm3i-gXg05nTQk5uChRgHTnuOF8E4Hh523qJnakXlxR0AxUf_MUTDU_beiGKko8Ha4F9JBEFBbJ45_Akl042I8NBpNIeFHw0Od_ttRkAaqrk7VODVDEGuGWb5G2wIkIa-w_mi-lMrl2BbWGn9_MNzgO8rdcpJ7aB3fay3eZJxnPbCFWfujeoepD9hVNP5TAo0R0RxQngB_I_Yc0mxr39YDJnrNgzxVFPAd-AY0HTv_q1NpnVl5IDGz7M-ni9hWSZ3tB8oFp4IfhjP8s1-H4GGh4Rseu0Lr_2F2TAjINxVmQHAgWG6xJTsCBmUtf3viMW8G4OuepP_IBngSFzEb3asE9cRA__G6kyS8PXMd27gKifvjBlrirJcTUPweM1_GmYxQubKDfeSrwJSVV2e7JSQpH7vEPg9PiR5V-MiR6YA7VcqX2O2eWJVKhLg1BwJ4bcrQS5BP_LuFNXsgZtxYLy82vQ7G9nxuEWHz9I-QAqXR01KHTHK4qNEwhqh7dDdliG_9zsTpWXYUja5hwQF4iwbacM7k79oDWl61Va0_rxkoItOPeDVnjQ4_zkkp1TMVDJEmsj_-AXtGcDGj9QwPgwR27CwLRyAldM6Z7t3RfS7Vi7KgjKj7qhWMkHyp4r3lnBC7tRrgl_A7qR4Rg4GYetCOisv8as3bkNYG4NtjCSYMoPoYsnHSS9xsrWGRHYipromCHDPgztCQnz0deYz2i7UiTrBYku3DsLf8-VONp5A7M_o8fKNVSN6MUCIEHiACWylTSR92a_NZkIcWbNcPaLhzLRZdx9K1BJT8ZENdFqhKn7imiuoivpsGT_jSZZIlsd_r1xavpyAq7SZZ5nR_v5n1VhweQrC27rQBvG6tK9NGZQtiUMu8wikdklULa16zoxWNxitAWFSUrtVma49DQqoeL1CAWEY5e-M_Ttd2Fc1bOQCMc7INIFqMnWrjWkkF1oMzI6RXUn_arIBzx2OMpOYkp3muyKmvLlPpZIUomcz_ZpVdHoDz01FyW7Aws15XQaBbyi9YuW26dDZ6RFDX9w65UmZi1hu8Ojmfq3JMOI_gLeBEJPzzDJ36kUsZrp97Grz5Lm0Com95CKLQvIPEbkrS7bUvPgyRc94_IeyWmo5H_rU2GEZkDwZFqwbHWijN1FvOGrDc_Szk3krAtarjSMgo0bM6KpRteoHYcfLQzNKISLV-03TjhshY0giJprenQq1ATyT24C82kXvBYvk-pU3ID1em3o8WkR04Gp2eVlNYYLOf8L1zo0yhvMbR-Rrgv4aeh5zgMNFMU5Z9wqF6wNV1ZtGY_5rHk8exxtFikpZeEY2_vLAVbxlJRDk1V49xqO8oyJ-vW73ENTxUcX_EJMmNfp9cdG5zfv5YvEYou_yKV1dE6M7u47JTs6NTaPeEtVGp0cJCLoNylMdIjAYCFEcFy1h3PIoDnyLffjh_dhsPxp7rwUL9N58efN7HgWbXjngKJTk2xKFFQw4wI2nGDaAQvUc0VRjJhB75BUB7jGBC2ANPHkIJVVKkLdB9P7xAeMZridffpYKblnIFth11d-ZZSEBxrE5hFxdvXFaBheULas2Rqjfwhvh5gV-ciGe3sCOq8KE1Chtdd-MtGWg2cus8m567Jcgf2t5JJ__NbCny_oAODtrjR0wf1C7n-uTzv9vxDYb2xtqE5MWrNH5Vr3MTwiaZlUJJjxOzmpLFQfrG5phJvmobvV6k2Ckipi4X4aFcd8vAc3Pg3sz4NhmC6dCpPU0qTiZ_DXnSlrmR6nNKFDR-ZNES5RjDde2SbhYzj0uf-5c7Kpp566I9KmxrWY3p6SXczPPvz8JDDZm8v3CsPOxfN0LUWXcA44qwqXWKacmZxl2jjUPBoeQ3bp924PSgh2_9RdDJQIRJ7hfhibItnLiqR3PGSSh060PADMQdxhCjuFCiuCKlXtdYDOoIUrPZvbTZPjS1wIApcC61B6ZRe2gNcgT2j9fFG1VhstB23MDoTYh5WBtHff82KLEeiCzutm3SFqtY-SzARamtVRdVA69td9hZSUkT8NGV_BBjO-aMo8j8s50BA7CB-8Xgwa5oLGTNgHxZCPzUPEZui4DXeHx3VTP6E06Uc9N0ysAuvaih8Kz4s-6j0PmTf-QNtzUNZnsy_ZIq2QbyTOsyyPi4NJtBPBTG4CbGhlN-6XpZLGXlUrY3Y6Yxaee4Q_6-Fe--DYv4WPwldUWRdD_dA5yg-rj3eky2dWM-QpBOKR_HHABwU3fn3uydmGZQY1I_Jca2U7cSsNyrdYBgiNkvybyCZMxABKJOyEM41qhCQYydZFYsnn49NDYY04G1B1qf9_rlDuvF2UNz5fplGHfAomfor21ndPXl-mPKT2iY73MzO6-DRet2-RmIpGDTLTFfUpGuTjSs77LkUGJksvJ2OyvZpYDCc9qWTjQDegxq_tXUy_MBaFJeOLWUqX-EK9z39qf65ojt6YDgLBF0UqeQX1gGx4xm4xEnQR5lXtr1JotPwhafDff9V2u1WoBf9WGoI4dZFGLjrcCOR_aO4h8t0HEcIddLPWboBrKjCmIa1ZspjZqs_K3Yj4JPA2CPG9QA5wMkXRfmZSQ7AQH7nr9vj3r5yf1sDLXyeL9sj-1IWrNE9YdkSGZw2fL1ftt0NW66yttS1C5jfRWUJaUvf9R8XJVoGoNasT_Xjewd6pKxstmIu-zR5MHttjIh4-EodL0r6yVB904724Mq0kKIusgnembJEhVDeHM2iFNixyhoax8XDKEyHRU7qrKjvrQ8rEiZZ29mH4CzvfXlIDuWb7loQO5wyxw2I1v-RTyHl4QjnKQ8LIC5QXliSjVKjNh5ycIlD0ARO3CqgX6UY3FE-7Xoa7zh99-PoRrWw-7FXmQyrVE2URpGk6dO_1PQ4pnqD_Wc4BfEWUVIMPSu6FZ5ZGBLP-3CSycaFlmklMyCQ16PnqFlk4E82O8fmof99gzeMRVGIAnJGonpGrapbXg14edxUhZu_1y06EGYAFHwyWyVq2khpN38Kt9RLBQJi4nWn8a3VhR9gZP5Z6hfKYwCx56pY8cQV-kiZvTvizmj4O6U2ly4vfUCmwYNu0fE_xnYU0Uh38fflcEz6zVVhgIePXtoWAcCgbnDZ7F4K-DBzAWOavBv-GnIqp05DZCeU7f7vIQpLqMa1qg-UskN8k5rb_wsMngM1-fLCrtdW9BX7qT5FO1cspPpWJllRJLD1ELdL_7dTwq572w4ttEABg0MsjAIEActwRGRUs-AHVksJUTQAfLPch_G2JHHSo0lB665dZU_4DpmKg_6tPCV-qYQzBf2m_h_htVJrwgBqkC6k8LfN5zM-CudvesP9KPkMklFjgzMdVCT4pkNCqdtFnrLdvmztAv3A17tJW9SI0_ovW449Zf4bVu4taAgOL-1NdYzDaeR6eLBgZmncQ-6LOrGDycEeLBYbRsl6MGYJ5YHwdItKFqIjdPAFflKLYg3-yqfqsqSQsNi0VeaFiLNt9D6z4mGNcLTkl2QSQNWG1fx6mKEREiuKYMD-ULHEY8jMA8BrMefPBjXrdiuu8iNF2u7GnCp75KjQuWh-FzLLOx0bhq7Pa54jFqv_Bhnz-MQLYia3Jl0mE2IIakh3cU-o067zFjJWPeIKBhNiE-29Epsi1A8a9MXz4Ws3IGQ7XbnDqPnoTjxVtvO66y0HDXObB3grdYyFcT-QLRKRtp-LIRX1O7zpbV1kA0erbAEdGC917Iquk5CwpDldc5XfA5t3eBAgI0dEv56ha3bltjSXSXYDzZDCfE7p3q8yf17AiXOUXtjxkAoraLtWFcHeyeCodF1Ui10Vjsk0WLXlqZKba6GhX9bbfR0ByC-1Dd7430FJI-USb90v58rSZp-aUyX0_Mm3N3_PllZdwoZzek_nd0lUUMWC3LbHLxIsxUCaBcca15ZnJV4-XqSKSyxpJPc11fS6MTgfJq5EIk0Q8Mn9fMIUsVQ5pcngLvwNvFhDCDDhU0Y9ImH8pliNfxF5xdgfxOFm0C3updeQQOYxjW63AW3bs6rnLRx7mJbA6fs1-41xoH8U-LUqqZGNlHeX5ucIteiWYLF1-TZe0YYKjhZOQUceOqrmySnZz6YNN-RZ0LGEbmeorgHrAntS-jDQNAq8QyVGtAAnItbEzqEoQDAUFo7Vvq-PYA7ofmyBIbOCYAdktsH6dmZm_pYUg0KQBdgn0e2ET0g9ShJz_r_qgeWlOdK3NJokKJ-afuBZnhc1PH-ViiaeSTqQKc_i3JD7iyVsi7egex7mDzn6ouqwgNWnfazs0SkQPYU-aXiOuQbGyZdA00BX3CU9xEjDxH_r462Ke21HCULeQEp8TW3ohpI935m6b4xsuADU8VZIbuPmzd64tn_ZOrhjs89YFrfmUf9l1BA0rxcHw9zliMaQRkZJs6tz7EtZeYmqbVroOCrCOUoWD7D21oGVsnA1sjrrONPEGE8VCd5-h7fEWIR-Ghv_bNrK8O6YnP8SkNYh5zAFE43LAiz92WtcNWOJX92Nxv-ulW7OPvdUajpMCpkNkRYII6CuKO4TAFuzs1XA_9kRhfeVOGneXfUTa61qulbU9TmWUeiwYG2PK-fgr4IDuaXR_awPbAKAVGL-9VAJSDCVI2d45OifxYXqc1_A31P27LDSWN8c9h0VfrFBus269hQTppS9Ve9qwiURX5aAC0hQ3gjEQKTz1C94rm3sXaKTjs4vtHh1-vGJSVLHJJ-3APPb3YVpbvkT4l9_EjJ8_pk2UG72f7xIRFsa-jnWTCyV67IAJnXEI6b-v1rWwuSSJmeqId-t-VQIHY7XYBJlUNePWvm66HsmFITsPYQ91i5Gp-UjMr5fdWDzD_4o1XI56DNeftFOd6PEzG68sLqhQzBAnxDKRQb1noyCG_YsmNeH8LFNH8xkrLzIrVRdCc4VB3sOGOT6lh_iOr-pwSky0dKm2QBUmmwZcZOUZPaTm7yHmyhnS1MZg_M2rpLiy1TGEMrNB1siA8D5fYWGlFkNsUHadRZRsXK5pr9kYjXYdEgIMbrkrSOJPdG5ejyRPYp4cXl6-ei2bLcXhrHW2UQPbd_8WRSEnCitjUiJqoWUYsWz3RXzwLqqs33Mg=",
+      "summary": []
+    },
+    {
+      "id": "msg_0d9b8d9eb786409c006a5b76ea7ef8819a96613af7884b26eb",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 663,
+              "start_index": 563,
+              "title": "Lasik | Singapore National Eye Centre",
+              "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1015,
+              "start_index": 957,
+              "title": "Prices: SMILE Pro, TransPRK, ICL, LASIK in Singapore",
+              "url": "https://clearvision.com.sg/prices/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1237,
+              "start_index": 1191,
+              "title": "LASIK & Eye Care Specialist Clinic Paragon, Singapore - LSC Eye",
+              "url": "https://lsceye.sg/?gad_source=1"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1491,
+              "start_index": 1454,
+              "title": "LASIK Clinic in Paragon Singapore | Atlas Eye Specialist Centre",
+              "url": "https://atlaseye.sg/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1770,
+              "start_index": 1695,
+              "title": "Eagle Eye Centre Singapore | LASIK, SMILE, Cataract Care",
+              "url": "https://eagleeyecentre.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2013,
+              "start_index": 1930,
+              "title": "Lasik | Lasik Surgery Singapore | Shinagawa Eye Centre",
+              "url": "https://www.shinagawa.com.sg/services/lasik?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2247,
+              "start_index": 2147,
+              "title": "Lasik | Singapore National Eye Centre",
+              "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2454,
+              "start_index": 2396,
+              "title": "Prices: SMILE Pro, TransPRK, ICL, LASIK in Singapore",
+              "url": "https://clearvision.com.sg/prices/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2661,
+              "start_index": 2544,
+              "title": "FAQs | Singapore National Eye Centre",
+              "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/faqs?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3078,
+              "start_index": 2955,
+              "title": "What We Do | Singapore National Eye Centre",
+              "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/what-we-do?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3393,
+              "start_index": 3293,
+              "title": "Lasik | Singapore National Eye Centre",
+              "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3626,
+              "start_index": 3526,
+              "title": "Lasik | Singapore National Eye Centre",
+              "url": "https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 4437,
+              "start_index": 4317,
+              "title": "Your pre-LASIK evaluation process at Atlas Eye Specialist Centre - Atlas Eye",
+              "url": "https://atlaseye.sg/your-pre-lasik-evaluation-process-at-atlas-eye-specialist-centre/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 4670,
+              "start_index": 4546,
+              "title": "Before Surgery - Atlas Eye",
+              "url": "https://atlaseye.sg/treatments/refractive-surgery/laser-vision-correction/before-surgery/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Short answer: there isn\u2019t one \u201cbest\u201d clinic for everyone, but these are the most reliable places in Singapore. Pick based on surgeon, procedure options (LASIK vs SMILE vs TransPRK/PRK), price transparency and your eye profile.\n\n- Singapore National Eye Centre (SNEC) \u2013 Laser Vision Centre\n  - National specialty eye hospital; offers the full suite (Femto-LASIK, SMILE pro, TransPRK/ASA, LASEK, ICL). Transparent fees and strong audit culture. As of Aug 1, 2025, bladeless LASIK is S$1,940\u2013S$2,049 per eye (incl. 9% GST) and includes 1-year enhancement if needed. ([snec.com.sg](https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik))\n\n- Clearvision Eye Clinic & LASIK Centre\n  - Private clinic known for flapless options (TransPRK/\u201cno-touch\u201d) plus SMILE and femto-LASIK. Publishes all\u2011inclusive prices: TransPRK S$4,588 both eyes; SMILE pro 2.0 S$5,388; Femto\u2011LASIK S$4,588 (incl. GST, surgery/facility/meds/first follow\u2011ups). ([clearvision.com.sg](https://clearvision.com.sg/prices/))\n\n- LSC Eye Clinic (Paragon)\n  - Formerly \u201cThe LASIK Surgery Clinic\u201d (est. 2005). Offers ZEISS SMILE pro, LASIK, TransPRK/PRK, LASIK Xtra and ICL; convenient Orchard location. ([lsceye.sg](https://lsceye.sg/?gad_source=1))\n\n- Atlas Eye Specialist Centre (Paragon and Royal Square @ Novena)\n  - Private subspecialist centre offering PRK, wavefront bladeless LASIK and ReLEx SMILE with detailed pre\u2011/post\u2011op guidance. Two central locations. ([atlaseye.sg](https://atlaseye.sg/))\n\n- Eagle Eye Centre\n  - Large multi\u2011subspecialty private group; provides LASIK and TransPRK with modern laser platforms (e.g., Wavelight Allegretto and Ziemer femto for bladeless LASIK). Multiple sites. ([eagleeyecentre.com.sg](https://eagleeyecentre.com.sg/?utm_source=openai))\n\n- Shinagawa Eye Centre (Orchard)\n  - Long\u2011established Orchard clinic providing LASIK and comprehensive eye screening; widely used by insurers and corporates. ([shinagawa.com.sg](https://www.shinagawa.com.sg/services/lasik?utm_source=openai))\n\nCosts at a glance (mid\u20112025/2026)\n- Public route (SNEC): about S$3.9k\u2013S$4.1k for both eyes for bladeless LASIK, plus consults/meds. ([snec.com.sg](https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik))\n- Private route: packages commonly S$4.6k\u2013S$5.4k for both eyes depending on procedure/clinic. Example: Clearvision TransPRK S$4,588; SMILE S$5,388. ([clearvision.com.sg](https://clearvision.com.sg/prices/))\n- Note on payment: LASIK is considered cosmetic; no subsidy and MediSave cannot be used. ([snec.com.sg](https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/faqs?utm_source=openai))\n\nHow to choose quickly\n- Surgeon and scope: favour clinics where refractive surgeons perform all major options (LASIK, SMILE, TransPRK/PRK, ICL) so the recommendation fits your cornea and lifestyle, not just one machine. SNEC, LSC, Atlas, Eagle Eye and Clearvision all offer multiple options. ([snec.com.sg](https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/what-we-do?utm_source=openai))\n- Technology and diagnostics: ask which femtosecond/excimer platforms and topography/aberrometry they use, and about enhancement policies and dry\u2011eye management. (SNEC and Eagle Eye list their platforms publicly.) ([snec.com.sg](https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik))\n- Price transparency: confirm what fees include (meds, first\u2011month follow\u2011ups, enhancements). SNEC and Clearvision publish details. ([snec.com.sg](https://www.snec.com.sg/our-specialties/clinical-interests/refractive-surgery/lasik))\n- Setting: public hospital (SNEC) can be cost\u2011efficient with academic oversight; private clinics often offer shorter wait times and surgeon continuity.\n\nIf you want me to narrow it to 2\u20133 specific clinics, tell me:\n- Your age and prescription (approx. power/astigmatism) and whether it\u2019s stable\n- Dry eye history or contact lens intolerance\n- Sports or military/LEO needs (may favour flapless options)\n- Budget and preference for public vs private\n\nPractical next steps\n- Book 1\u20132 suitability assessments to compare opinions. Expect 2\u20133 hours of tests. Stop soft contacts for at least 3 days before the evaluation (14 days if wearing hard/RGP lenses); individual clinics may advise longer. ([atlaseye.sg](https://atlaseye.sg/your-pre-lasik-evaluation-process-at-atlas-eye-specialist-centre/?utm_source=openai))\n- If you proceed, similar contact\u2011lens stop rules apply before surgery; your clinic will confirm specifics. ([atlaseye.sg](https://atlaseye.sg/treatments/refractive-surgery/laser-vision-correction/before-surgery/?utm_source=openai))\n\nWant me to recommend the top two for your situation and draft a quick comparison (procedure, price, earliest slots)?"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 8
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 68857,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 5669,
+    "output_tokens_details": {
+      "reasoning_tokens": 4032
+    },
+    "total_tokens": 74526
+  },
+  "user": null,
+  "metadata": {}
+}

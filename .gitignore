@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Go
+/opensight
+/bin/
+*.test
+
+# Node / frontend
+node_modules/
+web/dist/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,315 @@
+{
+  "id": "resp_07fccca568c4c2bc006a5b75dfea848198ba8f97163a12e9b8",
+  "object": "response",
+  "created_at": 1784378848,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1784378921,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_07fccca568c4c2bc006a5b75e101548198b3755aa572760a20",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Ypz2wZew9FD25PDKVxRA0qtszRimZsbXZ4tjQY2mZmcr4nxyw-09o8spdid2_oFq5I0u8vxUX2pBumAyxRlLKgpfLbmq-4IWaKJYVfdwxEkqsoqGk9so3KrEfl1abwZPIs9V3plUJNnXIlgkCQNvFzL9hqkcfXwTo7XuiYBpYbH7mN_my8cYnE4CxZsLTkMOxVIPYsE-bb5j0Vgisc2JYxilSlT7l7i6UkdIMuDtgFC913eT_aZDQTTKc6wN36OyqAycfC_zzS8DC9vRdLyIAHNEsXxEQC5Zze770odXCF7NAGI75woKpFzr1Oofm7AJegLq8bRq4kYPjUDzDLAEy5rO4pd8bD6DtgdXZKyaoArNW6YgUAC8corwnljkYmB0afOXtDo6FJhADnGBXVE_fT9Z3mG04DbBM0g46p7LwtiT0ENj6QhGQj4Cg0i8qhzEMgUqyj3_Ur2QVhjhb91YUw6yqTsXee6JCxqG2IqyPtYFU_twdnCHpdbs9eXgCL62kCpoVgjoRfFw0sDqKGQSrmzZmdhSyrz5FehJrEXCdKt9tULLt7ut3rd9a3Zel1R8S1_niZgytHg1boQWudK-KCr7m3Q97705hKyXRnf0PL04wF78IDcnSLGYK6KsoNDCSLrgdHIQXaioZxRJ9qZIrjtzxDkHkGNuGjBbEy-MHHBsCBcpo_aJg1p2KN2ivI_a_u2JVIMXN41Jl1mA-cq7CzEg__GvJo_PM9OJTMX6qIC1tbOs_7Px0DWNuETPcnZW05R-2fH46axmlLvK5qjd55kImBIpezN3Ii3YgXw37_TKjLRhKWU45LhMzojZVasWMNS0yYMFr5kUOD59dC6yGcgtjAsANUfm2cJ-jAH6_ajCNuJI7lPbb1_7asVRFvVhF04Z8alZKlET1OL2sAkLfI1NXgizsgHucaCjcqx4_OpWONUMMHhxZjsIxoUjxHhn1YibJSu8nBnEN2yRWT9Pbw_SANfBfSYRg3sMBf33tZXmZvoDLqXqhM5bhO28naLlbmM8iB82sEnS7hdErxb2NtdR1vt6v9dX_KWtelvxiebDr4kqJhKwotbhUxOGF7zQpzz2KXWoWweRofgRnZE5VJpBnWBMY150tD6YEnf0MHQCd_JOM0vYMrdJ0DijpU_DsoHLJlwkGTeVGCekhRw2v4FJTEvORDJsiU0KTDwKbYcSkOsqJApmBp4dzisDA9k8mrePVTvW-DDg2KFC8dr5OEDz3IphWoVo1rHrzMvGIvNuMnhP2ODZA3i_-5dAbrQbgi9gLG-zVfkmbb0WQIO1LE3DjNrhxEPC5haPX1I8-IqHzYT2ou9iqmqxOX3ejm_1otNX7zOjCqoWnsZUeDqsrjnupfT6t_eECHc3FlRLL0vdUR_1su1Qxo3ultvv97nodPvBKWhLJWjDralUL2kFpTjza55UWLk42Gy7FlenZEAI9robF0qU1BNyIfbl5bDMTxZt22oIpQdYWyStdAPR7B5qiHEVPCYbNr7Ajbjfp_7irNuYYHElkHkT3pHdyDPOXix74STfOigAV4lhXs1WQLHgk9Rli6DJjPgua9O8Di85UeGE3xA-jeNefYCGQhpSlguTQlRaHKrWsvMJjjgnAuVebT8AI5TDvWhH6HrqztGr8wEvwHY1oSGB_HUUtaMmPGOxTrnMQC9eJ7sdq1_xuKAdTBuVeP-JRzEbkno_EY7x-EYXK7rEiI5zMYkyYJdyoDoJYuwK1RlIbeuFXv82im4_coUigg_G9swcvA9GrgxOHWsa7caIt81ZTRNzWYDlGW8iIrMd_ik5HT7gFw2zl7sLIdQbN_aJDPn7ruVKN5OVIRCzQi7wX2wU8a_7xaGGtpIl1axAGdGG7UsA4XzkG3JndHaUQdUQianHEFGrzlrnigqgshzpdGUpSQijq8GeB3-caCoTz5qjr26Of1wCrnyPIIJGxckv9iLgfp7Yi4E7M=",
+      "summary": []
+    },
+    {
+      "id": "ws_07fccca568c4c2bc006a5b75e3e0a4819881886eaf6f673a0a",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "best TCM clinics Singapore 2026 reviews",
+          "well regarded TCM clinic Singapore Eu Yan Sang Ma Kuang Raffles Chinese Medicine reviews",
+          "Singapore Thong Chai Medical Institution TCM charity reviews",
+          "Raffles Chinese Medicine Singapore MOH licensed integrative TCM western"
+        ],
+        "query": "best TCM clinics Singapore 2026 reviews"
+      }
+    },
+    {
+      "id": "rs_07fccca568c4c2bc006a5b75e7755c819896002dc9978ff0c6",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3YptApqDvfcjQ53UuAzpEcwsdPqRP6y8XOPrdc_iHCQ2Miv74goS-ZJYU2XIE3aWBAHByHzVBMk1ehDEHvJhA3l3rGi4NQ_yGj1uCW6wYFFCtw3_uASfklPgpj2d1_VHFyZZ_HghIoV1kIH67V0QmONw0ilNfYNtf54WJxmKefeFgBtLrLX_FhlYdEnFJAI-tKNj0tv3mjaEWHce5HdVohDHLjkJivetSaJgq838_k8BAyOLEU4xY3RiPlubxnpEmuleTsur1OJCRJFu3UTXzbCTn7rBxAf6AQcEY42JCL8wrpPSaxy69VJvR8PUz_gwHR5kdAEkZJv2EdfSWm12cpZ9pmZvaQcjkWgQlfqIJVblbLJatjhcD2xUoXUFX53JBOZqW9sUxTG4mkUY80QRqJkwzQBQUueuczq2pKyBRixXLHdZIQblaThGptebEkuOZpQXIaIYtCzBICx9jSkr3ScQeWhxBgEvbp1HIhuIsoYI6UI3yGg4z_TFqaCPs1RqGpBrdGqi4SeisFG-ULhNgjPGibwIETbzxy28g1NMgRn3bNMKuKaBhYF1U2qJct-7FoI9nzb35_-viNgMliXAc9BzSPcHMH4h8-uU1_1DqSaqDOowFCyfrpQIN7gtRZ6zBI_rw8GKss0AMjffYvYPQr8DAbNLD6h6n5yRN6eC71eYp0xDRGsrA-rt_KDQ6QPkaFt1XlZPMIGfYZxmN1mC0y8wBw0FcNNfu7uK2qcpTStFc4uvMUCg-Yo8RJMhMel5tMOdexrMJB68nRqQMFRY-IAc2RNTgoeA8pnxG8sLctJMYRhyAqx0Cc1dJhawz4nXWqIS_-8AtAfn47B0NkZ9fgP9F5gUH226UE6kJGMLyLXLuDDBTq-HUYZsay8lZ1QfesJ4hp_1FsHJ77pW-v-DTMARSuOWytdYksmh2Z6OEopFV2d2vCE9kyqBk6p3YE1viasw-G02d65wcci8Lbis0xWGYE_5v7Yjfl9PnqGI3dcsSBle543EytcQ9ItXM4-Xe1Csq7f-EFtDbb-gB_ajIJ6BK6mcKUAjCSGisjf_C0rD55dZ9uF6ZhMA9TG1kRMdkMPhZUAMS_x2o3g9wm6iHG6a2SY8OmWlt5IlgMv_8TAONknQ90QJg5DdrRyGQox1PahECPpN4Jwqj66UQvwg5obl07ThWz06ywFFOTtVK9Ym0vzFqO0vtEGxR5UghP2DiVfuitvWVSGfyW7u8Lym1ZEUQUZc7uwvbCjJwrc7YGvknTyvAnWLEWz6gj_u0hsvMwPvQAub5dsyQoolllo7Ob3NMrTQIkSR9FjPxn_0EamglUI-03f-dKe06sKruh5EpAC5vuzqN00pwtgu08uw3lkiAGEdEEOoBKYXKeXAAT44Ez-KURYrZNp60KnEBcLoFG9nHDshqD-SRXUnhXgXXY8ziNOkL8zjmoc3yB_HMMWs2S2d0RWGGMPn_KCV-DE-NFfeJu0SrfwPBwaAumi0OBA_IQIeDdDII-8-mw_-a9sRNV6j53bwQtclIjtZxq53CiZ9XstDvKTo-LvuJaC8SfN4277wCz0XfHhDRhY8uaxAOMwwIiTU6q8nE9jMnjmjP6QwsxSicIrPDBt41yKqtnZOtE9rz8LhiVl9PCxY-1cCDMnu5x1h8V5kTUdGyJ3ZfHYOWchHhPQrZPtfXa-copHHVv4NMM4qD7UFEawdXRkKAHROEUgCixhmKodORh4UMdgh5X8usJF01eRNA5ovN_RPOlvYVigFxV5VGvUxhJwVroPxAu0hZ3DJSMFmNb7miKoUZeuhRU9EebBHhEBgAbiq6WdYRHPT9_dJkuswalEdfKKBehbLq2VR3m5TTUSMClDUibWLrJa66Nmc-uzAvY6K3drmRLExZNmrebo7SlE2yt8Y7jwUYMbltHhlRNHZGJt9myrM8a9Jc4Hpf6Zo0OeVR5M3N_8L4DMI0HbQKu0geqq3yvxWOyd_aO4_Tg-jj94Vso6IPgtNHe9vnlF-n18XTC2MhTU7Y_o0s1wsUX1PYB3h4DypKU4FHCxEQGaHeosM9UNf7HcDQ27qq7tiWSewJKf-iege2406daqpFHEth4=",
+      "summary": []
+    },
+    {
+      "id": "ws_07fccca568c4c2bc006a5b75e8e89c819892bb33fcfde53951",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Eu Yan Sang TCM Clinic Singapore official site clinic locations",
+          "Ma Kuang TCM Singapore official site clinic locations acupuncture Singapore",
+          "PULSE TCM Singapore official site clinics",
+          "Singapore Chung Hwa Medical Institution official site"
+        ],
+        "query": "Eu Yan Sang TCM Clinic Singapore official site clinic locations"
+      }
+    },
+    {
+      "id": "rs_07fccca568c4c2bc006a5b75ecd5f481988d752bf7421f9653",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Ypr2rNUPKSXlwQZM6VDW1Spi97l-1uOthxC0fOXBCmuXQPsqyOIRU15Gs2MzwCSKdjj_yTNmx5_KrSH1Gm0vhf8WMnpnT1S4hWfIo-J9WMCkt4tA9rzv6q3u1ZFi2dHAvu2sGLIbtCD5O0s_9rayw84Cb3nWAjtgpvQkfT29dQV5hkMoE_SILrin3V4k7snH1kYL9UH-zx-TjXeYk83V1Rltg1DED2MfXPi_3mPeIlzyVbd3eQQ_nh0JrsKlqqV9W2Li5Teo_vS9ovL9fRABQWBHFTjyvHZIXFzZQl8XpbOajke2G1xPLSw26yr4NcJFM3BvOtWwuW1d0oEfA_JeQiA4KRdRaVNg5CBfEVW4_Y7-3Jgw1O7kchQJ2SJXHpRLt9aWV27TK5xKE15eqR9KsTP2l-N63PuVxwD5vPPpFQEY3GRsaJv63daYcE6b3JZtiZgcwIYv8N0tDJMjbab-8oqHomzSgTgGoDvARmkvtcMpRw6DahY3BUNvSCMqavdYiIXoKJx4_FBYa20iOUS3JoccEm42b18gkn4pANcEjju7oNATvomcsC7H03Bvk55oqYlo6NmISdrAtZX5it32Q6RsENXRZQYe2uXj2ssO8lFQNUJjwBCwBqwLmqzWTGT-MHBnZxSUYYsmeSyjAN8mmY4Uw72_Y66-T5rkFZMWKxSf648z2dEUBx_iWTIDWLBsmcRWigPWdAEgSMzg2FbE7g4DvP7p52eEvIqUllKgKoEjdAAfy8StgE06QI0u0P4siP60eMcZnIhAIPsRvtrDOp-XWnSNYxJuFgKm9K7s1kmTGO_R_u_ny4dEpS10CPmv_Q8a7ltaVJ7QGBAFNoovm8SX9oba2s4GCzhD0hP3f3A8fdVgFzitd9WhnbTm70q6c6_uO6JTHtXrHXxr7FmWvita1Otn6C46RPyinl6cDg5kwOTQRy8LrYI6z2Cgng3Zx-lcsad5EPFfT3oCgl2L6dZdCA14fJzPW_PLTEOwNB4ckWkIfi0pY2Oa0UBzvM2OplaQ4yYx5V8LRE3F47jIuXxtQeijD1vcGSVSNI5c5qXnpLtT_wtqAz4ny-iYT4usj8XFepWbk8iI-YZuN10rq_lgw8Ob6i-doDfLISOsYLljNHZpOEZyhzJizD0HR_spU9bR7GwPSFO4jbkLD3dPQeHmopHuR0UQ_m0QDHmSUuKyohn_w0huKz1UTAUNupnYEEPRiSk7TVzTGr25y3Ms7Qm_Z_111zQxQi3fB7aVvK4ZF-FGqILV-acO-54pDc-IsmK8puD4LvgZgdcnspdYQWuqopV28oPRZwPauhAvzvV2QF7IzE2-B2dUNiyTybPZHT5Oe27_YnmjoSBMTOJQ06WhwKPxPFNyOBlzLqVf7ZMjc4r7Ayu3cyYRGJhkmqWnSC8zQC1daNnffAy52G1XaSvvT4dJhYOoZM8didDSup2DjFQl6sZTNDy2w1NuV36iOa",
+      "summary": []
+    },
+    {
+      "id": "ws_07fccca568c4c2bc006a5b75ed58d88198bd6dbb9c6ed98541",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "TCM Practitioners Board Singapore clinic register search practitioner verification",
+          "Singapore Thong Chai Medical Institution official site Chin Swee Road",
+          "Bao Zhong Tang TCM Centre Singapore official site"
+        ],
+        "query": "TCM Practitioners Board Singapore clinic register search practitioner verification"
+      }
+    },
+    {
+      "id": "rs_07fccca568c4c2bc006a5b75f3dd348198a05277a62bec6a97",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Yp4mc9F2p5OV4-Vb1pozXjtDSMlDZzvHmM47m6clfK1U1az7PE4o7wYg8gkjxtn_YqjEB2GvHELlgB16WIaCHuhIUsNK8xm0YjXIiDYqV9xn_d19rbYCvf9stWxT4rrb1wvmlyyiqad5YLVsfvGlRL700Wr4ThmZnbOWAHuNoJIvfBrRGF8YYT9t_1Kh7nKlswqYzkp8NQ0uYZCnU1Bvebfd5_hWrB261nyN5HAFgmeFjflb8m4QHqTiZw_7aMJH9w420N3zzExY2eIYeF5Pwk9D-EBy8rxXhILlxyJGwGL7fKQp_Thp_H7sckYEnZUNaV1SUVR2-G6rii6gGxpgaxNjmqjv6Gy5EgoLnXCf-h4vT-1-Dabp8FC9O2h5PWwck_PBbDFyVJFzNg_kvCFqhXPWWUOvEBj9bO_e9VXqp8qCyyZ4UN7W1c0fEUXZbyirDmVPRwxI9QC62-PSdc7GNtMiRkz4eIenMQ8zdQUTGLmx2xLLJIETg0B0Zsb8TvMZHt0egDwdwq6rjMER3VONjv5X7icYG3GFpV8htq95AGWizNPIKTohrgJW3OVjbDInweB7H3m1SWeF--yzuSjzBMDecbgwN7-WHYF_EY7JjvXYGoI7LiRb7ATp7N7w5x8fljzfj_tcqOmD1l6mA5DYcFZaU8RvyEZDKz_1rpv5XxGIT2l1pqu7qbrODo7LLFD_Iv83CBrvWLuULynb-z64UKt0p2nun7xhs7kQoFJ9rDVSx886tSLKUe4nlwnlq2l4HfJMezn4B1EgrmY_lEbGXGJjp3L0IYPkuUiDKHflA9I3SdSlSKsCShU9xkW780fjHUAttHmIMZVa8uNdFh7guxydj6Ux6DM1SiT21ZVFIIWXudVQTnBh7CIC0XTeAK-dnyjU_ZNPVpmcKbBWnw_Yt4KgZlecJ9kmCod2J6pHImtQGPcmKYFoQGDVxY-A7nXQ5iotoXR50EKi_TUzkkOvOMjA8-9Z-Xq7LURARz4dGWsDPvXDHfBGyRXtpaWFTQ0XDKUxxmb8OUToGDVgCHEXxx7kiLr81PI36HeCPKK1kFaZBD2HAttBdCS6KHrlXh-yRrWIPB9YD6_vLFj_jQ5Sfe_vrOEHOIXrCg1SpfdthmmU28K1r6V7qbnZpJp-HYW8TSlNVw0MJTKOWVC4WU9099H5LPuMjadOuSSOLqqTz0n4ZqolEhF6hxXPd9I7-wxZ4ej9fSeb_qZp9G0skRnQuXPXId-O7C44NpYPUE5czBsDSjIF9YJvF__ufe7nX0VkTWnRGFQcy9nIRZE9y-ONj6f38TClFFRqY2ZRUR2Enx-wa5DnXCAwnzc_EggBh3aqyWVm-UeFlZtlHwL4Am2GL2g2KkVR2whH60lufh1nBXOpH7OCtPOUlsxZR3l3apvKb965jqkYyDatpfgBXmcT6-nij2_svF5UFReCSyrIc3-43TS39XXrbEruJ8IcLoyYZ9FxLJop3infytmjM3qxNOzddXdkyfLyq5WAKiYrPWBxd4T__oQaZbaaGs48w1bOgeyN0v3fvAnxn2dPSBTvYqtb5ves1OGUN0i1VD0hkRvHUbbXRpsUSMLMcDRMYHLHicX7WrTctIatrdNIVK4eV2lD35vWhoUoHNHKYehCFpOu8X2DPQN4Ic-_gvjNOcOpv5NHYjMwqvy5tmn_Iwu0naynkwywu9AGDUGehM3tGyg3s-k_DTHi8TbteAWSZZiwiagxbnktgelGk77VGKGH7Okvu870Rm3ETrtTtyKP8ZQVwwuvtLoiPG3WJsPUFfxES8_ddiIj-uI3zfglQ8yrHM_HtgHHa9bwYsL69ysHBceozEmaaNkYXAU69uhJqpVCa-9zcRiJKvD3En--k1uMfXIBKN-RsBQ0ZaQstQhlhbyoeL3Dtp-YTcw41IzpQDeCVbZ6Ud7GLfYfrPhntwbiYIV1ZaOHbZJ2p-aR4jJjze25FcxCvnOqTBO48HrdVGoCenJfWVL8TI5KXnRsT-3gu-IuVsTVqNZdeimTzjZRAkzsT5LMVfrFoFhIpfKCxhWmBfprcFYCV8tE8v1kuKkgsqEfRiu5kfWmVtmqVb8YrjvRqhyQ8erGP6lGxtiau_9Enqhrmh-nBsDEzjMLneOB1Ca5o91nz_wTaTAg9kqaSHDKfiXrUjwVxlcw6uneAALK7YGH5HDvgax8aYFlHJuq8u_g==",
+      "summary": []
+    },
+    {
+      "id": "ws_07fccca568c4c2bc006a5b75f588308198bf53e9c756b8059d",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Thomson Chinese Medicine Singapore official site clinic",
+          "Nanyang Chinese Medicine Clinic NTU official site",
+          "Kin Teck Tong TCM Singapore official site",
+          "Oriental Remedies Group TCM Singapore official site"
+        ],
+        "query": "Thomson Chinese Medicine Singapore official site clinic"
+      }
+    },
+    {
+      "id": "rs_07fccca568c4c2bc006a5b75fd1b5c8198b68be428a451612c",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3YpUBEBDj4jbas991VwJnmtZml0iy0aeSwgnIL3u20TLbSzXoPja801C-m5aapWG6H7l-ADogGNg_t417WBezW5H0Rh56tFr-NDVCSH1z4bQ6JqOILunPd4Er31n8zEjmCM66adgiDAIXE8JB8Yi8FAo_GmJJ7vgpypDPXOdSfLY6N23ZvRF9FQB_zAedxj4abWdEHgRVEMW5Scd6r3K_m9IjzES9du-QVcxOh0WZ134a_4mYVmAxI38iGBKUQ5R2WWitjkSAdmFCNfUOa1J7f23Vs5jLTjYvvo0WO1Y9YFSZ_tdIExqiZ-xOyu0c2-4sPtb7OApOENPr-N7-RmkHiIe8GJ-hYzNrls1KBb0VRs5GA86visbkWkvlPagB0iHBlymq14fyqIl85IsrW0AYmjWI-JdWgF9PUiHaSVd_1nZI7Gf8r8LMZPkF1NLZaZvu56DP5ctnENc7rPDn1eStFFLh-vQ91gEiuRvYkiNA8lvK7bV1vZ7uFqb8aNMmKyGw-MqiPPYSpb5flTVUyTsNzHFH4zfGyYJtfrpQs8DEuKgsnLiwpYG7pYi57K10myHKoH5m0lxoL1IbPGG_6Duuj-pZYHnCMDqPasGaio5q8CwNDT1j-0uU3Pn9IpReO4UDGgeeibGRHgBCFseNWfH9-CpAomTvUkuD78qafMnvbQg3s5NvwtPTaOMC-DEXMHbkBc1N2PgMl3DwPC9egiHN7Mjr6vUjelQQxs_-VY6dtl53ks07J7AJrGXVEtDf9ADlb6E2sEVcm4ESYU6RinqEi8b8s1tQ5LlsrVS_6eDeq7RCRxSmmnfG6zdJTQoPdKGBw17NMH7Q9bCChEHxJggXtM4sLhKyyDs0G0jhYkRjs5U049ARzeeQCx7IVFZ_NN-mWUZCU2cq1NeUSHnK44kHWyjs-R-8n6tVmRZjvdfCd4H6sVYfGw7jzxu0172nXgn5gc4qWBxnJi_6xnfWJfZgxRZ6mhYI8ZDlqHbDkkKVUwyACOaPP6xB5XUrAbk0Oc27SJxRV8NZAmRX3ZsSWz64SQXsULjT6XrNcmV13B9-yPTD6T54VhAuTDGXAL5PpjGRIh-aK6aEtfz8_dDc5s_bYZBm8wRl8021Y7vG7zlQ9Hr6NJRPGXxcvdpbpmfdVsHUgBJA4iiJFhmUOf1HNPFxabHcXJovjrLy5_krwln4_92cdJk3WD6Vc9JWyhycmeNKskXJ_iBNgAwGqO5JEqxUWuPn7CBq8vqp_y-vknbuzQh183vLwmZ13fEaCObPrpTCQNdrcX7FOxDAi3xpdqL1L50JS4nhl_G_yWjx__U51RZc2Fff2nGpTijtegHle520fNJpDqZYNe9IqC9S7j5DcTMMjMF9kCjsG-NjKFClJq2DGRMKUKCKeMXovjeciHF1TJcHHcCLn0_LW8r6qC0CVZ4ic1sbb8xc3nq78jvk-5NCUfLWVKHrhXv9nJSRggoAwkTfuGkv4Zp02uh2JVa1Kit8k89dmOsc9o_BpL6WyRSDE63GnVg4Y1vqZRhaAsjjT7ClgB-g81zDEqdyBgvDQIaDqLga3x36okGgbZyP45R3lhrYXdiuAkgYmtg3Tav9hTjn74bZiZFkTfQavFhMjXQmOaDCu9tl1W-lYCrKj4ygW0dIANuz_0Klukv2WpUR0yc9wsjOW3sPq7AdpcDqtW7Ff3u2gvGt3YFjyeS4praTHbU6FX0yrC4LaWogAnd_SCevNVzbJ9i-bJHhxTzH2pZ58hCJNhd-82-NhdTaHeo2iZxIG9VWhz8mL1p1GLtaIPJNTtXAcAU9gfF-mGCDuCpito938NTqjPxyrEJJmdc6fB8A7MQqrnsMgQZmT2fJ6OUM3Z2__5A2ceRBfH66O7QeTAmHgjJ4EBLA7SPuWqiqjb117eA36Wmap--K2cIBvCGL_vW8CWtr5Ns6zljr0V9ArI-Wbn3jGAwB6QOlWP1u5EkmWw9XfHEsNL-oAVSx9XVELy10EJD3hwL-lKBxtLR1vLmVGDIA7jcWKImCaF9GnjAaSBBtVLCcNTQcPRj5kEr_1VXTDi6kBsv5xswSGXN8ylpgHFjVE1d5UIIV8fdm3vhXhXCvChVBAP7uUMQAENaN9q5OGFFATsgMgOPYL_O-h9oapAu-lmnTT0aH9rY1Tbei2qFfC5lV7SYCIHTdCty5pO3d6Z-DIFdziEIZ-pgu3zXNJqD8AdDJiVzyEBptOFeZICRtb9739aHB7_zR5dQNP-t-KzEyXmIu6hfjlgByBfbqTSoeRA9r15umoKI9XVOCQp08NTFgeuYGTVG0YLAsOnaQRD9uicwobagYQ3hfhGjHG8S0LSbDnsDN-d4CNIXP1qXzh5VNWUdMMyLqG19j_2-JkCMOIZB6ruTs6SdNqGNet_PdhqCyF5iq8hK-qFvLY1Mz2v02s-cSUrRzUbSJ_fmaJHGPRgR7jNU4EZ9pewqNYBPgEUSBo3ZgE3rOXMK4T0ReF95PBOg9V3hxcEdMn_7zsoEZzgoJxibq59kupd_CONGQg5H7G9DZGzT9oz9CUtLuSsQTTKbhHed4oGm_bcCGurVqUaad4P5MaIBYx4kzgbfu38z1_IuSVyMQOVRv1y3pIgcjHWGYyTDAeuuUcfUsLkm6RuNHtyyidntH15DdOsfKrqeCYHFos4Pbu3siE575ORywTxxTYsptmb2QG65jo5DLU0uITJH5PrrPuFWjUEbLGxS-3YuCNh-KrTLCKl-HIswcUX3q5sU0vk-hUGqG9_XYFrBWSs_mmU_qgbyfzMXGB2PoUo7_I0IZrRrV5PtlnUTqgza58boIIQEFYq03oGIlRiKKs_5xp-hPvaKOliFyQBHsXn8zdb3mdvolY-6Rduy3QFCpempTMjlC5qmuigAIGYIJeGHjn8mDDwWl92StqDRfS0PRaBDy3ZmR_LueZr3qkogF8AhhSHTBQOg4SbRd7VmHKyyxfoJUXBpSbFXyvnNeO_tH-Zk40-xi8g2IUca8IpsozCblaowASi7d-eBVzcQAJVnUo2ujh0kRQ6azF7pGbRHg07Rioll9bxvrW3mCcmGnZcWYF5MYvQDGhw7jkKrgApEeeBCEgbPyg8f_g1sMBv3MLrudZWGvLEkFwCekYY5DjjWPF0YST00qk3FgT0N5H1isVq0XEoytwe7-_nsJJ_8kJ92G0Ld60uk13W0ENUDPMFByaabHZH_e8YwdKi4hzqyVQKy7aXlPWuBOpX_IXj86Mse-JG1Kl-RxD_c4JmaQltBxfcqc8Cj9OmbBTS5HoxxfU4Gr1RADsfDUrJ_LDNLjrY5RKSAFh0GkocrUfuoxujKv4tQTG7YwjJ3lYES6kb5Qq_LksRvQt4l_A9Flgjx7TZFjjoshqhq_5flvvwVGN8WvTOxoZrPpRshu9bCDDTqf70E2C5y-xsv9hmmatUhYXYwPPnqxt9B8EMzs0F3QB6YPWGjq2OBWTxj_Tn7PCUhKHIUxd4dX67CdoOZrUGbyysP-M4xeLnFQnAprwjlVv_Ib8Y-oBHbieZY7JNOknKTt2CP38LtBAi2OmsQAzQXohTSlNREMH5NMrh4MBoqAEhdpN8WIy56R04IiB3VFAlNLEe41sJs0Ag980YwsqBjsfw1doTz03_4MrcRfJIrh2KUu5i",
+      "summary": []
+    },
+    {
+      "id": "ws_07fccca568c4c2bc006a5b75feb94c819897ebbc0986267aeb",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore Chung Hwa Medical Institution official website clinic Singapore Chinese Physicians Association",
+          "Singapore Chinese Physicians' Association official site Chung Hwa Medical Institution clinic Toa Payoh"
+        ],
+        "query": "Singapore Chung Hwa Medical Institution official website clinic Singapore Chinese Physicians Association"
+      }
+    },
+    {
+      "id": "rs_07fccca568c4c2bc006a5b760712408198a14de60a16f31283",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3YpLoDgDjEwQRPuI8bqCGBt7g0E-Nr2dAGvUISBAci0-8SnoODeCiogE5lw-aL2poobqPEe7gOHSq-DRsRYioxWlEW3LHzGuc4ukzgdj_mhT-M_ssa72dmWZ4gtvbIRDnb2yqsL-C2BR1ccdWNkg3kcXHJwdr4RumP2QgZtU9AoFvSd71Y-S-oKTOLiqQwDtfhLO9mC7gn6otAsqRWJeWc2cqqL_CvE2Ihf61tR5jFRY7peSO7lsZdkhy89Dmc-9HXPksMDqlhOTeNpWDHz84U1fIoiBH49iDWHw3_UsAVy9miFVm4hYMPZaLCEFAkBtl7psxa_Ack3G-7-BqN9rclaA-L06XnmzsiQDA3LcC3uMnbqUobID6yp3WOvibuYlmRfz51nx4fMPsEF_Y1tbOaXv4elS62fZE-HKtWgHi_KwALaaJn4Vda8HMK6Y9i4VbgdS4nBwkitdYLt1NTZqIsQWBcgVgkDsO11FF7fqi06C4_Fe2TBItQqTb_JvcSOSLF1u_u7lMZNQQTTs0gwnGqaUUPVilXi18NigGhHA6LZ5GZSB96IwcI1POMMrBmugKFxm8tRQElZLPrd0Pp9W3-oMrgIEustv11y_lXNER7YQK6p5IJ4QTnf6wOnzH1Rp9GqES6u0NYVTo50SPqJG5Ywufi11bI1VFXLsRNTwD2qALH-_rqntttxLymdPc29ZhV_W0N5AtKyYKJJq_ETGbOCyHD4gxup7_r5RvTWLyEQij5YNuPIhzxaaX57_VE9DFD26562VFiW-pXdC1ikdxqZWsQHXPc5l4vWvS8cVPFXKjoZiidkO7cTXSHXjSmL1JcVxFAtv6RlieguYNl_bK6q6tFyPvmfKewleTEOD7RmMG71syLQlEWR0o712bQpqC0g3Vb6jCs0NuUvJx650UNHsqxSI0ka2baYPs-Jm7on5-cZ5cfvN7PxSp7QULXXI3K6XjJ7jm57fgX53Pq1XN0NvVZG_x1CrV2iLO6wClVQpiXv4I3ca8Ni4JY048lY71xIu26aAobltSnxvca9eSEgwJ-p5tdLNDJjaeDGbIrRBBRlualkNJXxvzSMB8nE8RF2Grq3slnydRQxnQbOTRPAGkkzWLiT7_ydhk01do3A-EwIQWfFJDPi-nWoTZlVovhAlRKBK-aV7Vh8-dtIuWUz0BDs_e59YY6owDh_IGmX4pfi2PDP9Y0tfPYNJ_CITo3Gctmsh9WtYH_Oi18D5_oRy9c1uShSnGvhSh3MsD9NwyQFwmeYHCk5ZP_AiCC9GFNq9xjhZG_bEQGjCnOWwRqLaNOSyKVOi124vivGnio9FIE4q0Tk37zTS4BdlpnBuY-PAIxt8dSyn2SLolUd8MyHgGM2eJ0KJ-UNRtzM12pGEZBVojutt410jFVRq_-89lWksNVB9Qer-x8zi6tmnECZyrI0-xYvjnNfYbNInzMaQ7IPYYp3HvMu0jcjLEUh41KEOfO78GwHHzsHaQ7gBNJiRLMlOCRoDCPJNOMj967hKbuqJnwR5k6rTEPvcazXt-JLgO5flZCekMZ8-Se3l3X-iDVS4w5dfEAevWwSQT7b_74jL5zCzm5zaMEt15wos58GScQnMUTwDrgY_ogQGX0fJKHMqN041clOxmi-a4Oj3VN05LweCCnjZ5Ky63jN60SnPw8r-MPMbduJlLnViJkAV0ACLwO-Od__j0FJH_z7WgBzTR6Xd_hYe9iU7g0FaPNkFGmbRAVCJja-0MURHsphhiQP7egMZZLw-pp0FhSold2Zp7wFgqPYSXQWGturCTcsIVHrVr8ZlawfYLEk7x2zMH77R5yaRm-QLC5QgmYXM2ADSiQiR1egsVAU9hJxq87WB4AeEp14voKWZbOKTgvcQGe7iKLEJFket7yn3fPYLKkKOvciEJ2HT-RElCLbfUsWCLD4X-AI9js-7lIcd5oXHOztUtD8Q88qRBVjMFl-Udx_zXQw0cn8Tre82DNWomj9Y_J_m6rB3CbvY6zxYI54oOoXVx6jPSQfHBZ2lRTv3I8mOVT1QXsatxAHdCd6zASlmgZdjpsY1mzcPPiRaZnjOC9F4aoX8o-X6XEtf9ncbuA8JRqlYzzMqwYbA_aTaweEPdwj9_cv86DG4TXRCbeZDBdoS07JJM6TxsYdAzQ-EwTz72tcXMxwiu_yA6STPTgSIvcrOiypTMI71M5-x8EGo8BpPxadoAJ9CAcAfHq19QwRu7XJdLBgLDdLhIAl24z5sRgwWJRQAIh-YbgLDN2sVVL7mB9J1v7nsck05Z2RgEk8e6uTtCh1DLhW82OvdSQVFkq6WK9BYg8D4QuTXCVf8jrFEMVQuswX4L64zmUDAgaHsmhK3u6V_K7Dp-Plsnyq6AsuDW3GuohlQHNoGN0j6fJNdUj40AmZ-18vhXv3H-7rCAaIFdh4l4PQ5hnvtLhcqHfAVyyHSfLIkMyHKCqXCzorOHgs8AeR81fRmun1nCDu0zjUbeA9xY5GpS4nO-tHf2cGypiGmMssKtmtUJBQolR3upvxVxAGstrLcOZoiUhQWBaXmNtAvOyWddGN5klOsrey4IABfgkv8CBgn5613e5JkD70pjngLgmfmI3nJ6kEMSuXMBWmacoib14Ia6zHIlH0hzGAtCHtnvv8fKMxuoV-eCuK-z6Q72nxBew8gV31mEzcwUT32bbdnMBw2RmlJUQyY8HJIbDb_PXujui-PmcAjhq7f_DwUOwGNqZ977q6mTG36D9rCw6kgjoKFOwyNeXJnbW2tjQXPvJMIkFLPKiGFJA_TCHbI4R_scqwb1TCDt76JYUBhhTdrJSiUoUR2aA9NBUMhpPdDHnUvSnRPC22TxgI0YmfyfGM1UH2X97CzTj20kGH96QCIONE_-1K50DgUz8pd168OENb43jynxDjyI4Luwn9WXfDpt0ektssjJAZeXB5H52KioMbE3bgXFIVuUgVSgg5xfYCCaSDgW0g3Lc7kRtw_QHGFT2oePHne2lW_6oeDvn5joNsG07Wv7LKvUS0HVQ8zoVajJIsSZbqZf2wdbzKToD15_0w0vQaymmmY8anpQ2vlfOQz-LnS6uem3ZI6D8Yh31irQ59QzYehKQvrXhd7Nbo0abAQRQWLipCExZpYqRmEoLYeuVYj68oPwL73J2BljV9-YdKHDumQO6-A0GefrmOnDUaTvpgIMv5ExAQz1Eu7sXYrOG4ORo2bRd4aXhfJutCpW9GmPhGpzu8jTyn-2KU2x-5XCUSl9UWyae5UiPSi6SZcCYssNPd8j_xgTv1RXKcIwOWjeXWdElM6C0ZFM_oZZHP3Swfn7ZDUn1FRUjWXqi_WFauWT2YQ9yieNNWGLOj07cShHbmu2Va4zByiLwvTnGwidcLy7hKxR5Z7ycvzM00N6JDfFF87NsZBHpplqFaBYJbILGNqjumFnfN1NmctGIhiklMEMHKium3ddpCi-pXm--j1Imlb1qAr0U_fojGp1fm9rgF8W0wM9DwP7e3aMN9R-dEromA0Y7DdCCZqtlUX27Ozp6JkgDwxwiD7_It4FfkKHX8QWDzh2zMG5EYGgzhS5F2bhH2BwfQzfudHU-gGWzMwCyFMi2e2VUwAAkcz-xCFGkOXOirosPL54ZopgQjcxoAtOcImzYynkALc63foiSJx6tEip5cPXezZlsMRovkMiy5jQ4gm3eNGCNXaMiUZY3Znv5VOTWQgOjYO5dDnouyD4Qa3KyS3gZJ6U7yfhDiL8oNiSaMxVJGNollLRRGPtr0Bo5j2yHRlPM18GAPvGWRhloqG2hntYu5zFxU26xmGBh9Osf5SK0fYkKgnE8R8kuKjJxBfebBnEQuWbbcuuY1z34_Y7hYPr6bg2ZSytAMFeqCt9pFgrLRwjTJmBHfgkdc8G5KdMmJeW9QSuzbct2E9azEW8QO8YTJ6SvOyoGoECZCxxtCV00SdSECqvygJbxa7fgdD4JHPZV-Q9cJr-p4tHNvLza0zhMKi9pf9s9cz5l6tera-EPF5fWpJNuOjOqo1CB6fAK06Y7riVdb8jp3-mjY2xPKwmsi_h8HbmjdjUHHHTJ6P6z0ziiT0gKi-RxlBsc-Jkc85xzCirbmfQWUUcvq2_TYOcQQ9FzBJCKrx2j_3ZjAxtHrG56zExwVfM19W7Yuny3WfZ3D1avTShac-bC7ZgQuB1-ne8tjfkMheS1ZOdLGNfvd16V-wbPUfLEAk77Ik1PsMU3oGxe0tjiUc2TYRy8VHLygvHHIctBhIQdZC60Mol5e-CNphq6wR4hT2jGt3ctT3zKVn_uzmcUUhO-kQ8IRLrxOn0Nxvl-l13XOQV-C73wFHc-l5BijKza70uzjJRHhH2hduB11Pvzt7CwwUK9KyLH-qYwj_gCR-SyZS7F28r1sM-ArtH0HF7qi03hIbm89DxfG-MZWXJOl8twOa7QW4S8QitOD4rWgD2OAM73kRyxeNPtJffezic8wrMH0yF2BSYnwioc84jZo8Urx6nRsNyFSPkHZf3hzx6oPi8cvDqIcZ2zDoCrHvbflCXjSeJavHvn5jRRklFc1mEcEP4TnDuZCn6ahzETw3jF6iQFnhRP1RTXm1hQWmP0ZMG6ITPk3-JskFVl2aeORxwjq5Pjvo1k_yJpJlMMTmHIhJVNGmZ20kRGigRDrr5Ll9LqJWerrdU8IAPYI2euAw9gAl9gK9R3R89e3OvtGEjQbx_lrvQXgiyAOcodCQ4YfpLnKhN9QMylu-zHChFbbooyRt-Rnij2J5031dEAB3qD6wOTh5qBRwjv8UmZ5OU0f1QbXslV9I8gVww4nZiQV6dIRKfVveJTpro7Sigac_ln_gr5jl70tugV5peY3oX4WeR6vTRzybcuTfNtQGyHw-gP2M1RjYWzywfxb4ADzNUCp8f6FTG2-_0hPb8gx9etoFnBl5onVPjjSo-qXS1NRwE5KaI0b75xWs_tr2dFDwm_kZFKdusruK_JquOUdvoja92Y5jCJvm8IYECBxbNCZy2x3ld9y6RCn0teMiA8rYoujyJ_XrIjp2ykxpegc9phEojXArObFZnGiGwQYfjmlmIeyL-Gb0yDEel6wM7Z8DJ8hR0WWkkT6B0Fzzb3PGTbtgFDQDZnGoueW4KDjXxnozNXSFK1zRYlncNG7upLyRqzx-YXKtVZXjxvBO6sZnohXYXTkSwMmTDZZ7BUkpntZXcYKOgdhBO_-BWQ_wtlb_UR7xq_KXHIl9BceR3pDzax9GUA3lmBKWX7CpWzhjlJ2LOIPoixMs4NJbTvD-i9sGd0qxOU7Rnv8R0Z77b03xKuZhsPvcaPCNizvMJiO59Cy55YRN07RMmb6b901-o97Fq9zYzt3woMFuVtsUpPLyUs6OcIpxFpO9YNjgqQ9NkD5Aev15oH0zY8ipowFvYR1hUUGMJQyf7VS5Rzios5IHvu7uRbCz2-bW0ErgBz9M57lh5DldrXLE3oE3-Us0Ol2RAZTyvsyd6NI9PeMhNh5bT2_eYjq6B5r3gekn1WDOfRQ35KUU-XUwgpQSilQXsvgrseLMmzo4SeVCXHS7XE_fA2q_ARXQFUssLsx4s70misfPz3iY-ntGaslbuf9tzdnG9HMZjQc1GcRCRQym2UUFMNXMZ7p3hoiONFQAlkHYxajUuc-0NQE-khWPgwbozxmPtoKXr8SbePDIdPpZbk0ro-9H8KiXFClUz1aynOipRsTa2crRHMb43bgqIVimts_gzYFwVga3UdxvmBe89xeaPfAYVrpu3bWHK6zZ-LKExuJaR5zqNfibF0JxGBS8aVgeOHE4uudZ27hoBP_6VCBJCQ75kKQ0Xm7AEtzKcap6VrWcdvC2KbGU6_y_PBhsCWsyZUzESkctTlV5jnacZ3lFeoH-JM1IYV7ztrA2N7HZShJkzJLOk5bLcm8e9AjUQi1axIlUFiVPC9gpecFzXpT7DP5sRVt7K706acvxlPVkl9TXWkRS2FIJM1ecpUoQWiOJvVfIV6tYDgbRUkh0Fm9tpNYSXApoXOw5ojQCqA2s6GvTzt6BO0tXsEzAlcYtEwUSyEocHYyVhgqzidhGv85nEofyeaybQI8rsvNbZD8eeMCWGSHLlysSXdGBtXlDPRor8_NkqhBEb5Zrlq8GtVC7Kvff9Wm_fiYl8adlGnY1sXYjXvJIUodUmNkzIGiU0wNQcsriKq4Pv--hj4d3bRfMRrKgQqIljcq_SYa6vEdM5DWVVekHxiLa0lpdggeNBlFxj-nmGPOmoBMCd5BtyWh0c5NSEUHS-6zBkM9U2TQ95OL6u_kOLRzQIS9stqxjfQQE2ZPnwnVp3l2h_m1gWrkH8PU6_AlpjhZha9ex3GGfQn12UbppMniSi09n5XNko4EpGSeYF1GX04lLQ2IyuToHTV2J8gqcKvMcHZOkKuBSinmuNgshnSw4ehoUSgVPk7kScmeNwGhGugdyemhKzFeAf4zWsvl4T75vnp1Os2geow9qRaAisHqNuOwVN_kIxUmU0sAcWY3cn0YIUxwRteOAgfcTaRCK8h0Ir82z-gBYfN_QQyRasHZBnkOSrY6JnctGwERRHE63um_qMHsjziL1_p2objvEYBS2XwRYRv_4wOjOXdVC5250vO4pXDDfyRzvH4Woi_y193w9z94YvkX_QeyfyfuHJdp5XStK62kfMcflZHxOuMu2Z-oMWIzti-RnTllBoRd9G65N8a9uQ7s24bTuzOWbBeYaYCrL5XOJ_jpKA1LO1b5xe8I4ydyRlRbpE2aUglHBGoZBY03gbkdM_3CMQTOGhJ4CQ2j5lDuZsZaKOCl5FWQN8R3iRQwF0ruvRsk-1sQs93Hj9w9zPYcM_6x0q3sTSnI1vGyejf3yN6BaLBi-ib0osmT3BP8gOFgut1vMCVFG-3f0kLM5sTPx2O7n0t3ZtpNZ3TclaZrI5nSDSq85qWMIqb8mZ0CULwY-kge9K--uuDYn6qw8pMg5sXjF2UamnB7S1OjYPLKh18WjjbxGHeDMdazyjKlVQlfrWfl5dYviWHx_LDypkBScSoOLeDNPuERQL0_ILBp45XTRBq6r3B3JDOniwlOEl-jpZgWe-Pfkt6n3YVrTxz3uQA3MGTCGJXZRHLkFY0Ehu_EGN3NZ0_H31cc1v6mNN2lBA8hxVVQxVt-PMAHebH0yqWiyq2LSeBnVgTO1CIKsEAsA-TN9nnBSm6USumrF7C-6z5jc1gmx3lLdb_HeN5508Z0O3goVX95R6eRmWFNTiqR0b46Y2GBF0Q-kpF7UhcqurtKrKe5NFwUtf1o56ZPw-s6Dby4iRINbmC_YaJMvp6JfqlMdq_S8s8iKp4IE5OT8DfwXYLWFye68ccfjXKUQ1_1XHrtkF4jcl9BAvmbYynFMJ9JRELxH2VyqWqG-a5r-q_DbgcpKMXuwoQezVZnOn8Laq4lLtrBWaxPn29N2jtaAugkB6NqfZkbsxG2hk4rqOKGBoJxlVq6D-7r7HGkoP3V-945o8vgmCOwX4Poi4H_FemCPwbeQqJgr1n5NC3-01GByl3U-7eTGUk7-0Myb7dmFwGcajo6sqT6UjZSUQp30j_2f_skd7YqLRmMXjk66Q2_ghoD_o-XVPWN5i6s0_P4uYUYyMKyQzsKKYHjAeiRHnajT3vuJxmVOo7oFT25udoquzDaG9w4YiFC40AochGMbe90qRddPbefRxVOIyFQ07ZEAYXQXAfVdzBygIhmBspUKgporunBZqgiU6zIG6hApURKEsWZlRxMz-9jPGcQrfaSduUWWmxKsO_XbOtwhXG1WBXgscx-ZFmHjS2xsTOPE6FOborpksVZKSjhtyEVwLNsQBHyf99Sxzz0rI6-yq_OhPmlydZ9a6VMI9Z_4g1_fboEwLRTKRXAuZNmpDP_wc-BIcrm35tXVfxsdQwjkPndnzcXh22JpO834NxwtFK4Kv86Y44IjprPyyW1-hkEFmqEjc7kfJTsfVMBA0h-nWlwiDG2ufbLdxcX0heliVA=",
+      "summary": []
+    },
+    {
+      "id": "msg_07fccca568c4c2bc006a5b761e49608198bfa79cb4b31ce452",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 491,
+              "start_index": 382,
+              "title": "Raffles Chinese Medicine \u00bb TCM Clinic in Singapore",
+              "url": "https://www.rafflesmedicalgroup.com/services/chinese-medicine/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 733,
+              "start_index": 636,
+              "title": "Traditional Chinese Medicine | TCM Clinic in Singapore",
+              "url": "https://www.thomsonmedical.com/centres/chinese-medicine?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 984,
+              "start_index": 902,
+              "title": "TCM Clinic Singapore - Our Clinic | Bao Zhong Tang",
+              "url": "https://baozhongtang.com.sg/our-clinic/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1257,
+              "start_index": 1173,
+              "title": "Clinics - Eu Yan Sang TCM Clinic",
+              "url": "https://sg.euyansangclinic.com/clinics?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1447,
+              "start_index": 1363,
+              "title": "Contact Us - Ma Kuang TCM",
+              "url": "https://makuang.com.sg/en/about-us/contact-us/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1609,
+              "start_index": 1546,
+              "title": "Modern TCM Clinics in Singapore | PULSE TCM Clinic Singapore",
+              "url": "https://pulsetcm.sg/clinics/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1801,
+              "start_index": 1715,
+              "title": "TCM Clinics Singapore | Kin Teck Tong",
+              "url": "https://www.kintecktong.com.sg/kin-teck-tong?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2014,
+              "start_index": 1907,
+              "title": "About Us | | Oriental Remedies Clinic",
+              "url": "https://www.orientalremediesgroup.com/tcm-clinic/about-us/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2356,
+              "start_index": 2265,
+              "title": "Singapore Thong Chai Medical InstitutionOrganization Profile | Singapore Thong Chai Medical Institution",
+              "url": "https://www.stcmi.org.sg/about-us/organization-profile/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2628,
+              "start_index": 2518,
+              "title": "REGISTRATION HOURS / CHARGES \u2013 \u4e2d\u534e\u533b\u9662",
+              "url": "https://www.zhonghuayiyuan.com/services-2/registration-hour-charges/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2818,
+              "start_index": 2752,
+              "title": "About Us | NTU Chinese Medicine | NTU Singapore",
+              "url": "https://www.ntu.edu.sg/tcm/about?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3041,
+              "start_index": 2933,
+              "title": "Registered TCM practitioners | Traditional Chinese Medicine Practitioners Board",
+              "url": "https://www.tcmpb.gov.sg/for-professionals/registered-tcm-practitioners/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3595,
+              "start_index": 3510,
+              "title": "About | Health Professionals Portal",
+              "url": "https://hpp.moh.gov.sg/tcm-practitioners/about/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Here are reputable, established TCM options in Singapore (as of July 2026). I\u2019ve grouped them by type so you can pick based on what you need.\n\nHospital\u2011linked/integrated clinics\n- Raffles Chinese Medicine (Raffles Medical Group) \u2014 MOH\u2011registered TCM physicians working alongside Western specialists; good for integrated care such as women\u2019s health, pain and cancer supportive care. ([rafflesmedicalgroup.com](https://www.rafflesmedicalgroup.com/services/chinese-medicine/?utm_source=openai))\n- Thomson Chinese Medicine (Thomson Medical) \u2014 private\u2011hospital setting with TCMPB\u2011licensed physicians; broad women\u2019s and family care services. ([thomsonmedical.com](https://www.thomsonmedical.com/centres/chinese-medicine?utm_source=openai))\n- Bao Zhong Tang TCM Centre (Novena Specialist Center, HealthCity Novena) \u2014 premium clinic in the Novena medical hub, with bilingual physicians registered under TCMPB. ([baozhongtang.com.sg](https://baozhongtang.com.sg/our-clinic/?utm_source=openai))\n\nLarge, long\u2011running clinic groups (island\u2011wide access)\n- Eu Yan Sang TCM Clinic \u2014 well\u2011known brand with multiple clinics and a medical centre; convenient central and heartland locations. ([sg.euyansangclinic.com](https://sg.euyansangclinic.com/clinics?utm_source=openai))\n- Ma Kuang TCM \u2014 one of the biggest networks here (founded 1999) with 30\u2011plus clinics and TuiNa centres. ([makuang.com.sg](https://makuang.com.sg/en/about-us/contact-us/?utm_source=openai))\n- PULSE TCM \u2014 modern clinics focused on fertility, pain and rehab; ~15 locations near major MRTs. ([pulsetcm.sg](https://pulsetcm.sg/clinics/?utm_source=openai))\n- Kin Teck Tong \u2014 home\u2011grown brand since 1967; blends traditional therapies with some modern modalities. ([kintecktong.com.sg](https://www.kintecktong.com.sg/kin-teck-tong?utm_source=openai))\n- Oriental Remedies Group \u2014 patient\u2011centred TCM enhanced with technology; multi\u2011site and bilingual team. ([orientalremediesgroup.com](https://www.orientalremediesgroup.com/tcm-clinic/about-us/?utm_source=openai))\n\nCommunity, charity and teaching clinics (low cost/nominal fees; longer waits possible)\n- Singapore Thong Chai Medical Institution \u2014 historic charitable TCM clinic (est. 1867) offering free consultations, HQ at 50 Chin Swee Road with branch network. ([stcmi.org.sg](https://www.stcmi.org.sg/about-us/organization-profile/?utm_source=openai))\n- Singapore Chung Hwa Medical Institution (run by Singapore Chinese Physicians\u2019 Association) \u2014 multiple branches; physicians are TCMPB\u2011registered; nominal fees. ([zhonghuayiyuan.com](https://www.zhonghuayiyuan.com/services-2/registration-hour-charges/?utm_source=openai))\n- NTU Chinese Medicine Clinic \u2014 TCMPB\u2011approved teaching clinic established in 2009 under Nanyang Technological University. ([ntu.edu.sg](https://www.ntu.edu.sg/tcm/about?utm_source=openai))\n\nHow to choose (quick checks)\n- Verify the physician is registered: use the TCMPB public register before booking. ([tcmpb.gov.sg](https://www.tcmpb.gov.sg/for-professionals/registered-tcm-practitioners/?utm_source=openai))\n- Consider your goal: integrated care with hospital access (Raffles/Thomson/Bao Zhong Tang), broad access and convenience (Eu Yan Sang/Ma Kuang/PULSE/Kin Teck Tong/Oriental Remedies), or affordable community care (Thong Chai/Chung Hwa).\n- Bring your medication list and inform your GP/specialist if you\u2019re combining TCM with ongoing medical treatment. General guidance from MOH notes that TCMPB regulates practitioners and HSA regulates proprietary Chinese medicines. ([hpp.moh.gov.sg](https://hpp.moh.gov.sg/tcm-practitioners/about/?utm_source=openai))\n\nIf you share what you\u2019re seeking help for (e.g., pain, fertility, digestion, postpartum, sports injury), I can narrow this to a few specific clinics and physicians near your neighbourhood and help with first\u2011visit expectations and fees."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 5
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 26848,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 3426,
+    "output_tokens_details": {
+      "reasoning_tokens": 2368
+    },
+    "total_tokens": 30274
+  },
+  "user": null,
+  "metadata": {}
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "01-category-dental",
+    "prompt": "What are the best dental clinics in Singapore?",
+    "file": "01-category-dental.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "02-category-gp",
+    "prompt": "Can you recommend a good GP clinic in Singapore?",
+    "file": "02-category-gp.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "03-category-tcm",
+    "prompt": "Which TCM clinics in Singapore are well regarded?",
+    "file": "03-category-tcm.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "04-service-screening",
+    "prompt": "Where can I get a full health screening package in Singapore?",
+    "file": "04-service-screening.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "05-service-lasik",
+    "prompt": "What's the best place to get LASIK eye surgery in Singapore?",
+    "file": "05-service-lasik.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "06-service-physio",
+    "prompt": "Where should I go for sports physiotherapy in Singapore?",
+    "file": "06-service-physio.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "07-condition-backpain",
+    "prompt": "I have persistent lower back pain. Which clinic in Singapore should I see about it?",
+    "file": "07-condition-backpain.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "08-condition-eczema",
+    "prompt": "My child has bad eczema. Which paediatric skin clinic in Singapore is good?",
+    "file": "08-condition-eczema.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "09-location-tampines",
+    "prompt": "Is there a good dental clinic near Tampines?",
+    "file": "09-location-tampines.json",
+    "model": "gpt-5-2025-08-07"
+  },
+  {
+    "slug": "10-location-orchard",
+    "prompt": "Recommend an aesthetic clinic around Orchard Road.",
+    "file": "10-location-orchard.json",
+    "model": "gpt-5-2025-08-07"
+  }
+]

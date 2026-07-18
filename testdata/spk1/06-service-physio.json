@@ -1,0 +1,366 @@
+{
+  "id": "resp_09e34f7ca247ccea006a5b7709f220819ab2089a4cfcce350c",
+  "object": "response",
+  "created_at": 1784379146,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1784379252,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_09e34f7ca247ccea006a5b770a86ec819ab442fd26f14aec1b",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3cWwTFKV_8qCZkx-6IxSJkQYQh1zL2deTnHjoMr0c_z2gPcrtY9JQM1oY1JLUN5zUJGobsbUPwpXNMaYMMBbj3FSDu3S3MkSgc8jR9Ujh-avgw-J9Rn9bOgSk9SFCGSJ_SL_vDvUD_LqlxOt6M0zPTFHHtyHKCrM48iVIIIhLkcifLpl-fh1JVclV6Nkc9E_f86Kwo1VKgX74oBD14kRBlmNZSoWsfQlxRwWpayia8hhLV_U2dX-kAKHbkOQDGvCnh9JAA6-3CXfkgzQgtAJeduO1hAi5osc5R6TgLJ6TGGHSdqUxjVnbHaOJ--SN_8QdFfADnZknIjSIca4CJjKy_nPjCrlZgEmtvtAZqM0AchtcesAInqHo_fFvCB7fvWtNGrR0X-vOBLVhP4i4swjz4x9_ei-vaOcaAJzpeNJ6IUPR51F41Ev5g-XOEKA3FujVao0C-o7HGg--vxRH-6xVr662LdwcuY8Am7nE2-CYvh9MFrGAyqedScooJ4SeApeJID3RhFyJ9_6eA8XBupC1V7gZXbgbOoEM0D3yXhMlOqphRV0nlw-SlWip6ka1xqboacUrQ4TBdFRVlgvjvKqNBqMfVZ_gXMGFj6XJNvfP_utSHuiVtwMavknJbOSo9Zr0-IqPWHvWl4hCe1BAxtw6BlDvxfJ9Mu-RfCfkRVbkOcxqpjERyNCq3thANTpgTlWuY3HkDozGNNnkAv9Rzozni_a9xMSirlSGDZ0IDayk7DGxWy20tpTbrYUeUFEdRXd4IyQzHVuQCN7T-GPE_ITLklIpslNhyd6Tqf3AijCUDKO9JyYLsasfRzxZe2B0tjioQ2CnNxKeFA_vADftPtBV9r6vgVllzwUMDbRKK0ucVEywnu9BqgG5nJmnAqGJSg3IHhlxDWT5irDo6htULOMfrYEnL9tIgiA2pPbbemd427bmyhRCWcqA9P0INQszx4DW5rC5oDsb9ZCJuR9To_OKLrMlJxAnT8Vov3NkgPLhIo0JId4BiA5UkUuLW1dtXeed4k0dyQM5GTIknhmw894fSPi2cYEoS6Z1Ie7yI9mPgf7b_KrT-azvsS-zkU6P70hgUiGWtWJpqHJgybD9JcC4fVGno0hDFdT1eJPTy6PpLydlNsjm91KMeUtY7Bc3NHpmHn_hTLcKJUaPIbcryO78UZrAH2wdQXZPKwQppDRDB2p7VkuZ8Q8bPDqP-CqUYWQh_qszqIl1YPoeOxs66vYftejT3hubALYAlOhjJd85n44PFprE04afGeuZN-6HOU4sJ9AzePtfWj8-JbM0qMtbcBJdD7pYqShdVtooQ_XjOWArcnXUGYStLB281c6z4fh05JirlRPZ_dmIcL2ojWyX_rNTA9_2CXWyizE4hbQVWOu9eidK_M7Ik6jGTeB6aXhcjb8y1EfoO-s0NNK9ko-FCUpBSPrZ-whcK9MRAXFyqn4EDavmp4viZy4gMUjKTpR92BaExAahRZUgMGuXq2tO73lo4F5xWJ-XucOkO7oa4Z_Z0Us3KNVamPtsvS10XyNf8a-5Zk3KdfxLKZYChEK7hWud_Z4iTfkmo8ODZ6qt2Fli9T4rquuXWubsQmZRxzVLyZy6XD7Z108_7YIleYUuFnLv-k86TN1TAHbNolklz6okm-TVaH5R8xzkP7d_j917KaCc9V1QyhFWUbVCPpL1MJ7Dznn4mMDqBT3RVAR1G59CI3oSBADl7D01bOPIoQt9N6ipsmBv4HplDslwjxVMQZgoWxbeHT5u6Z2Y9OnhB2aOCfaN64JUZEp2fQErjF1wlTPt6G5sm9mgWERJ7eoj0_vEn8-3yyj2CN-d8UZa45aHSLJQrAu9R5F_zGe3Or8j5wyOr1NCtXM-Y3y5R4qfG3RpfjsBOtRFtZ3OUBGDc7I3lf2ZD5D3KJPMcIpMwYv61JVUE1IiRP5KRUSZFYjKfPBfst2-5hJ5LVyww1tDZqAoNn3nrf9oO9mBH1q_LuPBtSB-F8bXj6I-ToO0R0iFKaFa1VwK_JFk5PH-xYV2IYq8OA0wyhtFAUMSW_trbOqh3S1rDIN49qrb-jhVgyYGYiz8NUclwOfBljU1c2xgDzjMoOyjbje2n898LuxY7voyZ7a2DKykjTAQs0neeQOiJrsWLRYWjIUoXCEg9RwAcTOFDJMXbKMTrJToqDLwu4RsJx41L6HA1LKG16C59EYnfl4aWkc9wEikPgyZZP1fD0T9Lmsxzs5W-Zc8xpB64i-Jkvb4w6ehu_hdrEbx5qS-hD3d-tQpt0gz3jVDxqYc5Fxqakzqppjtju-VEvkGpasqVAUXIRUjqg9G2ALpabuOO9_klhiCTNdJ0a1KIOy2ik59svYKtQuh4umo3nMqdnhAuAL-tYCYX6wG4--ISvdrzODcy2Y3hPPDcXEwEw6kHp3Z_VtnSJqQHzRYpQELnsmx2VQ6cqk8vr9j1eEaio1SDj4_XOlJT4uAPVcQ9Q8bBmtNbkJHxswvhj3vT9yIQgl65AveOqmZGQXIP5XEEUYGB4JuWyvEMdLwW0uZeN4rR_XDoRZpdK-2rmWrNB_NZDQYiCixkI5K8qwLXh1KuTQUJasEdNzQ_tpBXGjT-zBFseTuALowJpewSSS7vvyR5lDjYLYRyn6eA7d347Q2xK7uFXwdbpWgHgK02OJsRL8CmWcek0yd1XCcVEOVesikUqZ-OehXqZch-0kheETcxUNUr0nDh1K4vyF_amUUgzs0PVI-v6EeaNSEMugCe5gxIU2oB8EeUxK0VgiaPcvh0OEVddU5F5pEIuFkibLvmwlFfh2imu8P-ij_K2K6OuK-ue_XMw85BSghTJIxcSbcTXGqkKBGvBxXl8CKTM2-0ttSLvI4mUAWaMuJ2Olwyuh0rNCwemPGn57kB2qYMxzsDSkwnSZVpTwJmHmZ0ODh1Hy2tpob5zCUZYPO5wOeOvaGKaLr6D-fOZOeqhTUOTCrnHSENWCogGZgV1glvJVpv5zDjeJeSIdfp2y6FGtXrKF0kFXKhOC1I9CG6WADNdjLBQMau98b0onk2X13bLnoXi4q6dZd4z6z_LXBVQgJbrRywcWsXjtoBdzkLJh8QHUeyslUis2-JPHslftCs4UaUda69vD9GnXCx2x4cWa_3d0cij0T1x6qolHq8H9X5aU5Mz5PRus0Co2E4zTLTpnG1nmmXH6ZGn0J1Au1tsH8tOCNDV1VYsAMvZm6ZbXUMCnR36JQQNpcRJ0Dk52ydELQ21MEPX3S6XesmM9O7I4nGrfUlwRITFPpcRdM_lUTUgWm1ZSqX9y6nZYJ6qWmCRRrJjmLMiJGg0DCh9qYnuZgvWRhuUtIzTBlm9lMQy857KW5BacuFZPHNEegtey9OohHXTvIauJtwALws8fdB5x1uXKlKVDSQjbA5MXuVEqN_bvv_VmxmPXsgDdf6LD60RCvCNOh7KdDhitHQyNbFAFOERMwerAO4JmjmGvwJzWN_gSBq3WpIOhPx-OEMk3QwueYuVe70pqh3G-7RpjeRjxTkrfeE2Y4TGHqxeIqjZ_1fa7IraySYq5xXy0m07qEOjeSrq17P5MoeAF6a9Gsejvli4BpGWr_JdrqSRco9o9M8dzhUf4gQLh8lzge-OE1Fj5NJC1Oawg0u9gAd8SsTFntEt7ZxZH92LjLXZYlCIJ84fk0fvN3AQ6FCweSxQZRcHDAmFd7OyIShIuTTVO86tN1FxPV18lIxXDkBWWy4jeEKXnFCsOGSDaSB-S828RRu79VwpD0cqOVzsQCqMyoqNOMtw8YWe_5MdAwtfhFOXRm0rCj-anAVthace4yCSIySRmb2ym8RA4iJK0G7nQUqv0g7vkE8IhkuJeQApnu6AhY8pb8qUt24G4Lu7gmFes99BCwjuQjuohWfP8VdHdQ7lxWHzKgiH3tltAjvUwRx6fpEIyzAd5vfYMCgLfq037MgKH3ncrYDDe89KSGtsR9cI3xbtUDGFotk4I9MJqUJV8Ip3o9y7a5q-DcKrQWQgWre022JlOzYLPe5ntlTZNA18Yt2ga2-HVBx315I_RkskaL4wdo_K9oxkLL79CReh6r4ao0OzMgBMqSB-Wi_i1TodHuJA4SUxMtdHMU16AlkJb25ibTNkklC0JnP5Rimjye9B3rns9QrlXiXPitlGw1dcAuxL5UeIwm7jgWgDdtQiR8rrTk8inAoa4JcKc0LE_JFsqj_dBfT_UlM8Z_n8QVnsIjHtQwIDG_iMTSGT9xMJsOqQcxRjfu_fOEfB-7hQz4OqoWXNcwAfV5Bqyid0RmHnv7ct0MpsqhfLCMcMEj0AD9n5-Hvta3lqG3z6SACviflSBjTFneO44XR-e2zDMeOC6JtaKjrstLSIYaQRT2ZAAnA3nMEUBJh3Y7Egpn28OpEiwf-btbKWHyJuzPzas1THh0jPJYvrGGqXYeg1Aj0BNpwkWFzLNhQNlmQQeNcz4ZwOnvFQYyXoXF4gCyJPKBNAaAyIs_vGQui_HxRaNSviFc5qhMns76woz7sIeG6M3hWdV5tWNBQqck4VannDXBaRABkmr2dvmBewylf_E0-x5Q_0CCK-16s_kJxfTyxivTIpZDyI2W1Z-DqV9wH8w9Qha_GTpjvrEeq53F8rEhXcjwgJp67Kz6aWg0qoNrCXVLSuBTQq_9YoYv9oPyULB2YC3OYd065pbHzso104NN7-gZeW-HWMeBrGh0RaA3Xi-50bXS3IM1HGcEjiwO2VvmxIc8GwuoKj2S3yLCGjHzIfwqBZVmqOiAYlJYVkqtFGFZHdXAmg6c24L7xyisMykuPGtYAtf7ZnGLIZ868LKP-TWPCTLojUA2pfXGWqkpXo_EpXimL-IfhbQePY4DAyk34SrWdMLhp1qkXaerVCnoZT-AbGzyCu6HsQP1IEE7mjCEX--13_7iHM9XEidkej3W3aRF6RbR2uXZKG_hEplFCClAOsVyMx2aeekWFsRX9YKfDQOxS4KZm70jLFauXr3w9JltJjaAo9nvofYDHwT4I0QxojO_yqdMQ2WHbvjdnDq-614H9FKO5i2eB7NyrEyz7UpDpYLtSz-fGb9IaGxeZKQf5W8Bw5xuQnRe9yM8jZCvYh31yWX_FU4Rf6SbVwI3tj1POasgaHrFxtkb-Js7ajvGHAcYwTh4Aw==",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b7718d850819a8623dddda74ca362",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore Sports Medicine Centre physiotherapy Novena SSMC",
+          "Changi General Hospital Sports Medicine Centre physiotherapy Singapore",
+          "NUH Sports Centre physiotherapy Singapore",
+          "Core Concepts Physiotherapy Singapore clinics"
+        ],
+        "query": "Singapore Sports Medicine Centre physiotherapy Novena SSMC"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b771d8eb4819a85c07f6975977667",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3m9Bqh0p8qkhv9JbweBB8k_G5-XGBYNyHL8cON4TYialMMfOa_WUaOGDi4jJ5PIoBqmwFCctMkfT9gUTfTWUwJ9duA1oAuZ9ovNNn1-PNGksKGbg0Feob-szk41Am2slaj7XOoRwY9d6yfnvHDNYfy4x3g7cc-OpfMNwLsnxI_rKo2h5P69m0eutw1Mt7mwI6mqOU7B-cL6oxvZhxUTb2WKQenqcdLRXg75P0QmZRhLNkaj7_Nrn2MAmmcnwZtdcsLhNuB5o3pB_zUyBwM-CJ-uAGMsB5BJH0x2YPF5tkVqkh8n3QvQE4JQvAP1ZBE8pSrsuwGTtWFluKC0vxaS9RQqACN5FCIbhUDpcLYmFTx_VROwOSKetWEk4NWKinzvc7LEzvnZODFp9cnNuELkRpmqlqlNjKoOwPNIuc5QDN3fNgV0nC1oU47gXHtICzU6Z71ITK6MNKFj_G_ERyF5_ivMDCZGevf1lwSgEQtxx2NWWzZucB3k9wb1U35LrSfCsNHbCalXYlF2siuvZTjh_UP6CQHFtBRLXOm204QXRavq0udqgA7gvTUQF0DrnXlmwo7LaePt7etYmdKCBNK2QlxLJgquezQUrPVyKwcCTvO95zGCUVyqm3jUPQcTngh_3O0FWOJaEAXOFh5xIyzAK-XAUrviD7kjWm47RGvGkd-0_p6KsOwf_oq3xMyf0d7frPZ7B7DMVlBEJDlbYWIO2BMssUZ3YITSyoi1b3eED7tQ4DaqARuD1_XIuYcT_Bh3r3JqdjMVrCBy2GcaP8yFGG0YyAXKr4Ht4FaGli9cRL_vfiq6HpSoo2PWhzz4dY6bNksxCTIzXa_Z-bHH3z-jZJYxDNJ7VI2lDX5rPwO2XYHN5p8N313tlg09At3L69dW4K5jbkkFcVdj1FE4qSNp_2fnSBZxc35LzgvOErX7gGY-fM540E0LifKpscB7az2R6bQwi4_3Y96k9a3UQHmtlfmYXelAIYzExOlX_l4xTGO3jiUO-GLhO3JkyVN1B8sBS5GxMDYNOka48j0LHCyyPs8I6dzYqsYKztxyd1z8UHviCfUQfZuSe6l2ibrDHQoZmLOBJc1bEQHaWod87KLkI3rlhmN-uxp50hDIdb3T3P6SSPKFNPYTvJed8vkYeDc2hXRLY5-Hu8OknbWOTcT2KKyy4cVpgKcYN-OyT0f5-4BgBVamNLodKvvCSF-BIZXQfXLXWugJQicmF7Iee8ptOuxpeicCC7IZ_t0lRRRRrcN1mYquK_BaFwOZy4aL6R2y6Cy7o1fzCypOsP5FwnE4yVdcfPozyan4KZvDV2OtoWN3zRiJ-MuH5blx3j00XGshd8LBgLNDJR7aqWqnk7cShbUi8Tn3ONzI5QUvVxWSW9OoigkjIp-FgHDkgqTQeXjnNGVwpoWyYFDX8J9qC7yYXXFUk9VrZPJ855Hp-lR0Qf6cUVo5JdbAVP0UgLbwIxfTM7y7duYTq5JA-Gq5BCKc6AxrfPm4a2cjUqtjg1nDbpVf5VPpoZgQS4VN3UkXjnV1_SYGyPySW4oOpk2jMoO-7B7XLa2BvkbPncwMbOnV1xNTzf9wP0FGXowl0Q8kEbfDzij0y7qwfV6RiyEonHmyhNkSHomS0EoRsG3aQl73bUoPDUkQ9CIYIhRYvTxtkH9shT3XnURtjOKLgPxL7pxQTXjaSQPgRMVACoiaWHSkjV63UWWqPiB9QkoHYGFpp-oIcUoDy9tfq7Wi8MB4K9c6778uRPqZLXu3AeCc4DbSOZjwtwftiIfuZVJFztZqjUU6StEhvdHPYhsHxHgRyP24Kw7flK87vXWjAh8RRlyccZeKhuIGHxJtGiZHm37BtmARNtHtHbq0xLt6FiLttH4ikB6-y0hKWpAXEqRdWEmeMkMGjlx3mWqrHzkl6kfYk5N1uY1vbB-dnSympZFydDrwFN6PuxFswmTqHOVx37yNtLamFl8SIa6H6jT1nmtKQmac4NQv961ANRF-CrL3Ph_dRQdQ2pmoP4RI1u0xkxAsPZYfqdPAMBloXAS6ttgAGKuwvv9XUEhQvzjel0rzrlkwMsDAOJQb6-LeD4QmWhOVE0x-HF3xAebUNVeg-fMC2oUT20AHmD_pHQAA-tYVjEXtMuH___wEjc2poR6z6rvtjwvQrWqrD-xwNxb6NTtbHT51p504_L4vkbGuWtgEbxxwLL_PFjkZA257Ah1rrZCfeakjzpyDXJdE2t11B1Q9GJaM3HPu0kTOrM87P17O7kaKZz3ksU-8Tbn9TXLkb5ETuC_9K4Inf5NcKozo5t3NfRBp5nGY7e9_NpBbZb2HV0wtOkwXoAtn-KRaCnARvepmvF_Mw1H2p9VzDSG26ETyU7K1-fBRbvUVsJTuXny1Lq6qOAboCpv2b2T4RhzKatTom33cWcLGvTGIOCU4FKdyt-A_gv3pxzlXvz7e3L5BENqPe3bG49_ntX0e6ruQ4X9kx1GFydemL8MGFlotD73UxYZR2ZkDi6lI3vaywEKDix5LMw5Oax2r1NhnSussabO5NDIV0lacOrVz4-sgRDJ6HGU48lVnR3Fu7lhlMli4i9QL8Wz8JTuJzA8mPS9Q2Qj3OqBbPcS2eOUjrKoYIxp3k_7Y2LEuXLUd9Qnim0SRm8if92oyHe0Rh_skl07GqSwvHghI0b1-NfEtYfmI_nJyUoaczlQDmuiOhdx_hdCxc966iO_oozTxd6lovlLDCja_OMYNL9MXg2ZSGuTf2nwQsp7LYZJTgCX6GyDlWbgXa2uB631HNDF8cd_-4OyDFwHfTMmas=",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b77213c68819aafcdb048a4427ecb",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "PhysioActive Singapore sports physiotherapy clinics",
+          "Edge Healthcare physiotherapy Singapore locations sports physio",
+          "BMJ Physiotherapy Singapore sports physio clinics"
+        ],
+        "query": "PhysioActive Singapore sports physiotherapy clinics"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b77236cdc819aa793f439038ec73a",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3lbT9RIvMkIg3A6cT5q5--1Zq2YhHmQ4aZ0IZirLKsKtTUNIeQACkhdoTFp7YO_P-FlW8EC9Wu8ECtghakH2wMFUbv_LAm81rMM_n4PnWV7clexWYGE1ot6e8ce_KDtumrLdvXfb8zyMfGIIv74I3biMv1CSemcXsJvPTAh6Lazn8y1Pas_oLzzcekKVe9WOQ0Cw8DEkcdULwlow443Iy5Xuba-om77oZWyIOX1AC2yfFirA3xkX7_2DSSN783IFbQeFtR8RCl-0EFBiXlHz01zgfltsQ_Gm7F1f8Spfgel_IcHA8jqKNzCcsqN_l5jgZ7CHj5Nm4GM3QGIcvs3VKyo8HYKoPZLprrYxC19vu6SrA_L1ytOF4Ci8sM8-A2JOlrMgOZcXw4PLGo2YZdPtti9lfrOdXkviRy3MMMjoHuy-h_FAEMRvFhTT5bFe9Ld5NvfOmf7W2YqJGraHi3LGqhWGX8YM7hdx5r9Edtdz6BFwMIIKtMM2SHlnW19oB68DrPs7zEuZKvq_ambxOiaLUE5oHkpTQdPbl62J7gJITdjmtrW1cgd__9LzhNZMKC8NlHzAU2eFqP3bs0cpm7rzKgSImdMv3lStlmn4JM4sD5OWJ3KZjyoZiTXNWZpiXZjbJs5aSMhSrfo62qgbScWggjp0ZL-ghB2OGNOfkXlUfVgNYDMfHEZn6tK7lIbxhuTc5TqbECceJ0H_bds5fRLT-PzakS9ZvYhSuh_7uKl2ok0GqM29lT-zBjCMg726eEcMelfP3O-0ZbYBiVutcWs_XyJwpKfKoICme6ddeIwlXI72KiwicUTkxKw1IIxe2MuncaVK8iGnmajtXaFqZevc0NAUnQTJVwo9IJuGuDB4TEGr-amrDdHxOF6Lk06pe9Sqa_7tYwi9HTebyXE_AIIjSPKSiqsGXTjHLDy2U47qO5beyfVANCl8H-EU-JNXhETn9OjRVMzuFFoiQqEkkY9v71scoLGr0GXU5YsHLJGoA3m70nc7WiGAihc8VM_OviQ_BBrYeBLhS4An4auYLtpUaqoHPCh5cGTrZsOf9ala1bDW8vO5H1Bv3zB70yNMmxgmws9eDKfJZjU93YbWkgSTA3DsTxi-2F9YtS3eH2xDbT8MBvkETVVAB0-AWr5DYM3JMeHjxOu5NV24_QfH49m4RI2CIy6LiHkwNGGoltz6d72bOOYXHOLJUQxAXc5wgjJd2",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b772406fc819aa2435c2787f25e56",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore Physio sports physiotherapy clinic River Valley Asia Physio",
+          "The Sole Clinic physiotherapy podiatry Singapore sports"
+        ],
+        "query": "Singapore Physio sports physiotherapy clinic River Valley Asia Physio"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b7729a428819a832c4f65d1d22d9f",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3cTewOsImvvsSNjZI3gvCgRonQ-GzKeOTaVrcFClI-1IqBlHeCJq6HxPHGCJIqxF5mnEZOwHq2zUXvw2JZLFKZiU1yzDCX9-olJHsuwW8x_Uwe3hL8xZXCY2ST22f6y4FL_SEeI2gDd738DOMz3eWZJaaaG_SdO3t36wGj7nPPX7Rt4dLcZDq-jS7ChbLBD5Gjb7iM8et7NxclaDyg_K976ZES85HlwAoJpO9cemA8ZqM3XBQkxWwdv9XGn7yrBHBme3aHMxx6HvLgHOQPNW0VD7zfEz47DG3s575Xb6f2AI1R3AJiT3GLjzh6P04qdHrKGJ_PF4HiPoINGGzIIxguGqDj_MxDF4xdocD9X1Aq26KGynFWarzyAfqxnZ7cwV88MiWDIVFaJ_EqnEbdIDaOYzS2NQ_NC46fYQNxrGPTGvNu2HkG1AniOA7y5es13DQilsM9HnYnikIsna2KUWkmS7w9QpAbO-TbqqLaAFho-TTg5G4XUOZvzj-m90HwFBQH57RfdWY0MeI_TBYbv-u0R0X_HqfNC50XnwIjSdSbACQjq_fNre8wcRJA6mGopaZSmyTO-_lee9b5hMSPr2lEjK42UJSNfn-2txlVoBC2WWKlNpcBKm6yBLToSGY6RXnhBEOGTHev5WYJq5NyCINWLho8IxjWrduXVcr6rQBGLP6tHLBU1PN5Mtuo4G4UYrP67P-hqo-Nu946oI4M2MIX2ujV4cjxp8hFFgxtjafbV_ILG3jNIxIXxlbMhslpdWGTNSQlLfRp5oaBZAPNfOzhkEz77vyQWLv2eSUVAIfjXy702U3p26kTiZZrCD_xBFeqhZW2RgpOImWQ-RoFVVEEb0rfi_0I24tjYylaSiM3Iw8vXG3JUk8aE-CFIRNi23wr_y57CN_jZvPegq3ODhil5eTcF_WgPZ9ich9Bfj398m1YC6Nc9VQ6GEDvgWpXYfhEpA0xYq6R1_9Jc0vwxtvqfVV0bWxP9tF_s_00vWV0e0F72UwOU1jFJaYMi0963eTdDUpXvHLFZD8lOTgqTZbp7znpXY9QLHCfFxwiesVr7FsuoHgPfWspfV8NQgq9fE-IrnGtMXaq_tQg2YMOIkdEmIftih8wh04UM-sy2W6M7A3dzaf9lZfHRH1PSOJnnDKZJaVQ1XBdplvCWdCcjGVXXK6yx3L7EiJ85FLW2CsubJGUFPrDeStkJEbiACTIb8m3VoYRt_ODv-UkG3oRxYcSNM8KtdEjqID-La3xAY_11HJswoFEURaku93lv_ASfVshwdx4YNwfatHCjj4JQMTDbECM8ozlPF69xO8L6oKg-C89Z_kTfJtrEbEbXwz3bV6o6Um7HzhPCSKXxIjjxwE6kfJAqTVGlRtmLWoF6oYY3c=",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b772a52d0819a85bc19a11207c430",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "City Osteopathy and Physiotherapy Singapore locations sports physiotherapy",
+          "UFIT Clinic physiotherapy Singapore locations"
+        ],
+        "query": "City Osteopathy and Physiotherapy Singapore locations sports physiotherapy"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b77350f44819aa206f2757a49f65d",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3bzaQBqzE_jXKuONRq0azykkKK9QU0D1BH-XXxnE-H3y4h_aWMxOTeV0Zp0xr-v4yCPi9pvw1L7O97iCNZ8Rztv6bFYaOdFklctfLGhEhxxXnvkNZlNtTuBJIsiqvKYuUxIUwvgCIy4Fx6LJRsoxo0dgsbrnMRLJjgqBihhMXeTMXBMiEIkMYCROjoepp8r4Bo7-qGRyB4fXTZqg98lSNqGcYngSqFK6-CwTRuB9az69AT288pxm7FaNfkZYd6hS5b0h1pMQR_f_Ps6R1-Egu7bFgK5IWMXpe1l9-mRE86aiQ2TzNAayBv0uhLrvQI_Z8nz9B0oEtyRc7Pue1LofAhhJd--XZ9aAeBk9-FprP-0OUSFeGokYq_yHYqrxY4v5eJwzkI17TcXj3RxSojMJwE823BCfGSQiaVLdwkAwzO_ZQpSwfQ3juXBQxSpPEEzA4V7CtocYOfOquoo0_dmn-lUxMOMP01WHbbn_lBQvHjzVzdYSWEXApaxQnhXuaJBYq71KNfFEV_s4EE-wgBFG27qW9BwQzl4VnBgv14nyJ1Ty77gWjurAl-zed6ALSmlJd4iN7nFgbExm3tI3uoTIe-bO-XSJBL1gMFhHXHBSUPSMNCO77OA4y9OYgkSAoY3bwf1snANOXV4d0EBEOB55SQhYgUw_6pZ8H0Y8d-_4sZrXXCiLfuIYP0BZj7U1K94XthiQavnbsD7xiM3VeNWt3WaodqSGv-3GTP9KaYmpxrSDrlKuMW0s_pMcC8vuMdwCdGyhwygQK-dQZ_OzHzXhd199_co4TEIWxTLI53QDsn5K4LrNJ6CVS1V_z82-pV6RFqtMj9tRcnwnnoPe3qR5bASCrhdOgF6dqi6mkqPvkHw2Y51qyY2_-PzQRQvlkESMwIZi_zj2nvOPcpx4sCRGuH4CqY7PsR0IRj9QFzKLMC8jCA19EXtdRuao44R0ODNFXdy4rmSvblTsoCxs9tsJNEuVM1vIsXvNvoSZc4MZePsqb7WD3ajHaIDr6_XjsasDKK4bE1hiE7VUFG0iaf7VOyXqNuIqqh_vvkIOBzRBUr4SVMg6XvzRD9-vdO2tQtApYNQk_OQrKI0hslLevJB9Y4bh4HjEnZr7dnzA8RiExx1tHVKf19u_N2netgX34eE28jfTO0M7QHmTpuZxtyOo7Y3CHZ0OXnRHgZWvWnsswmyqBeEftzbQ9A8AF4fGO6BMLvn00uaDyVNuP9MF7VvyhRJowom7ak3yVYc_a4ibl5jfWR_1-1CgT5cauNaoZUsMHE8kszoX74shM26nkKtE22Ec0BkQWWMB-8Hbnezhf9NSIPo31PKKw3iqZVZ7hVwH0zvdi66jhMUYXD22N0wedTassGGRblJ7T6RzxiSBesG2iZY0YNUHTPjqeIPJOe05REW8OBVI327INvIFN4wxdhGwUFTcPINGoZ81RBmuaspM=",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b7735c4e4819abb90cc11bd17794e",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Do you need a referral to see a physiotherapist in Singapore public hospital",
+          "polyclinic referral physiotherapy subsidy Singapore 2026"
+        ],
+        "query": "Do you need a referral to see a physiotherapist in Singapore public hospital"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b773f79e8819a905f6bd3e7045ec0",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3lK4ykILq0_j-Yre0M8iJ-YHnNy20d2HyGLkXYUcEpivm9XuRDJ6HcTatVyfQiKFNvLp-YtO5TTJFt8EP4FRBkhjIAsrb4Yyg8silogQp7zzNDd-2M3FUg88DnFsLwqoTof81Cp_MikIahSkVlvuMCpj6Oad_q-2gbkFuQgd2BIx4rDh17RpmNRYTxeb0JWVGXa5Ont97AYlT8DtS6brF01Vm0aqWJpxw-h1UREdXXWj8LeWHW__ZU6zZ794heB1WK7H1EwSwYbx91WHgAHobf3QYv_Ra7Som7V3Z9JYK_jZZrKdexUyHUgk9D-25kb0z8j5Q-pAKnLR9B-NDrBWW8ZCjOD3W58qqYYJQkdpg4XcYA1sQB7eDKDIRlBUkpdcoN2O9v9VHm-NluAQzHxptiLc-n-5jPaPqEtvmq3EtIs7ffM4A2TigXTQW7aA568FcadCKONSXu9cBERgCV5WJVi_hanmnxFek-Qu69NtrgBoXTpUqthOpMPXTmnSVscq4pQd20aR75B0jJl2t8LCqLz8bREYPiZUgD8vsJwzRLE9l02fEzTUXZTgU3JhmNYMjVnu68gWXJf-MgTqiT8jRUzOeY0KmowBnlLPemQPk9Dg8Ya3M5MO5-tva0OQXY6gUFKFkChVtPzcQRX1O464yjagL_UE52NKTXYQ37y28kUwNhiMKv5xnyFc5G5Loz9UO6s6LITr3GhjvXoknTAaU4EogEXmIr2zdAs4tJ0i6Cba7Te_3QtxKIzuDtAeH9mWkcfamqxAmX7WH6M0NEJu06fudHghrQpuAQHkkzdyjuRCWaAU9fzFk0i8kyxanbQ5I0BRguRpOeHuOYnmls1mB7WNPiZdxWT8110kt2PQxIiR_kJ8avW-QMy6cxvLfzc9hhh7XLAAxK1IoQAWxQUBzn-_bMU5dkFiByHF-G3MV7ESfapqexnN3ukOVZXijUSRGK8eop-CeitIykmDxhSQfyXCceVXsxW6-ohgz2mgqU0KkIcDWC3qrnQGQpGiccyGKXgSTpvtNhZR_i-gkCWhk4_gi7gRX16mS4z8Sv2OOA73EQYT7IYDR1KVmgDGAKZXTehFBBOcAKgx44SGrKBOfCYFdD08oP3QIx3YQh1_YB5_yxcoPyeTzzEpWkbD_A7D-ruCrPB97ZhZfpvc1-1vjRs6HIToDL2-XRw9NYXArFZ78UklGhofu-65KwACLZSZDFXXqdfzJXxLgy9Bo8rs0kg5OBBFmd_8wjZJ4pb8RqQJDp0vfmjGAnjdX6ukwqlu10u94uiVkDQXu6ChPb_L_GhlEt66fj4LWC5-sqwO2UU1QSgtgUljdjlHmwfvrm1XoeWbk_iydZJlAMqw-jMeVOnFr5WeN-ZXWdcWIhwSRUt5fswpD31yEcGbeNYSJPK_ErYRzNVckAigwTgWgMcr1d50VMNCAmc_yKbBOwwZuBxmOEMvN4kF7-b1tuTDrPb0-k69CHLxsqjy3CctSolZ9ShSckyAmSNEggvi8zHEu90ncKBo8qc_0prZwaL2aCjkY94MIQqrQtcxwasb2wAbuhW9yynGpa3u6Z3VQMG03HKWZmfCjkRrhbD6_jghzwFL5JBh8ixYNbMz6HYXk6QghhJiIjgrZioDUQPLgMf95ivIqtsbUlc4mhRKMBe04EGOcST8fdOFipiM1gH9K_U2g_m7QtsBsYAsJ-k_Kvy7wX40OCdyXah1voNOfVWTWKkILOtxcbqoSP8WwBCyPu-_kPc4onbmLRHb-nMG5hywNqP73MbE3QC3mjomvVr1sqs6E84131B1w0ifwyyMm4JRYX52MdYRjzjfLa8ByHVJyhU76ZxbaBBZGLHbC5GeYQqAVtF77d57lZJ7i6YOioQ7GN_XLpD5T4UjxWHUQO87KBJM3eujMftaka9BseyYAACstL9mKyP7To5Bjxhc1ccj5-gIlfjgv0U-KeXsO9bZ5MrkLaBhe4wo6jkMoqUDPa_oSTi-5LaLeovjrItG546G0EJFwt-Tx4-6de_XgxGgTJy3exRa3ctSQQLhtdcDdjHPirhQq4rd1x6qWdthP9hPiWk8HuwJxYvucypzKeKG1L9qJNKIVfllFI867yRoHcyuaX6F88x77rrJgYc5V6bqlpMJxd-8RQKkdz2cnsBnACLN_2o4Qx3WlpYKVKxMYj7Ra3LOgfiGNSCBdlZQx_Aaj8VttimIJVwacC3mDrB7VvHLQCedi7tzEvVJGshCt56SUV80m898pNXnP5kb_zmuZnZza0q3Qff4Rm63f_2Q9YnK9XvqVE0o-ZoqqbjEUFR88y4DRg65Xd0C_sw8F4qTxvjsMtytU2DZ7fGCLlC31VmQXkOosb7yf31iCOcMXrR5yAutXPSkuvjQvZe5hhZ69gLgu1dQanjXYK2I1a62Vz2oo2zH9tCWkRkECIRqOl7jcAOA35KJ5A9U7BrB728Sh8lAaqG5CzinGWbzT4g7v5y99AjuNe-OqcMh5_VF8kpBnAwIyRujwg7TBMHJ1lu5ZII3ykgd-JnTZ3MU8MbNicS2K5rQ8yANG1TKEbicCUYncW5CEQAgNvmpt6ux8Br25hyc99J_FOt0KufayRhkl41jdoXdvT_wh_QgVuJCOoJ3vr9VRHMJkQH51sHFdhg3r7eVMM0tC5oPiyBlli1qLMNzL4vJsvq4mrwxaE68cWgCLh-DfEHSmOYpNuO5VDvhksenFMn7NTOoFrLsC0u_oTjZGtWMV8h-zCb7vyjnfEGJopxGk2w9tPBHNUSNRYDQYKj824CL2rJ02v2jmgrSCgqiH_ZqKanMG0O3aTuCb35bka3hBVkWdw_18nSc9Ok5HBT6OYL3vGXK66VLXpI8KTDD2qSa--uGl56pvfP8RRNwpvoGApv7rMJGhCYDkScV_dgt14OnAzFJwoetJlsX5R_RmFPumOO_pyVLSXxqwSunue8BHOvO6JlH3CPKtPv8jz6zybycOt-oGjJBMWrjoUkiON6o-HZloLMJwa3id1ni9EjhfMCe4ypi88La7gMk7UCDJIByz_M2tBwgtLW8JwUU5SxW2VZpnqv1U-9DQfAYxTObr4X1kjDj2JHjHbma9N5zZKiQjiwUaqeiQuBBsApe9s2rqAis1VyT93w1xb0TulqA3rNoSzx2J3uvnadRWliPlmSVM06T9pW7Haq_0Sy1r4dIR9rBNlZheTN0Dp8BM27POp5ldeD7_I0uxYtQayXHoZW35d5VyzL-esZ5JEH3FnYI6tsWCQXn1f6qcVHx1Pu4vTcFpXJmz19ZQlb3FL_HYRvXJnNNuuEnMIjqG_5A=",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b774576e0819a985638abc46848cf",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Core Concepts physiotherapy price Singapore 2026",
+          "PhysioActive physiotherapy price list Singapore",
+          "City Osteopathy physiotherapy price Singapore"
+        ],
+        "query": "Core Concepts physiotherapy price Singapore 2026"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b77531044819ab7517ed55e235892",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3g1skDNfGIC5zmYSUkrm3b0OWXLDhiAw3LspjyZQfolZQJ5HHkDRx0TADdfKoTAZTj7LmUhHsKdL5evWS3paYGoH9HkxAzKp6qey0rif3GF6IsijNxPhUy5kRsl0NLPEWbLF48uVdgWG7pBc-rCr5tJwsAtoECABUVYZ-fUyohKuQmIXVF3NS-QBOrK7oK4AQio8eXOhvGytQRXhlWgRIwAU9K6p6lbtK86uDXGPWmEUZmWH_ny1rRrSJCigbFWFCC0LGyDmwSHifvmo_EyDi_ZW_2CXCVOe9_Dxy4F0Dg0ZkQyK0qzs2ygjOvLQWWgnbjZlIA3Yvc6BiL1Gtxg0dRqfTGVlM7LK6ih6Gz-j35NkicS4eLHv3bvhYz2ArMgpAE8ApIfg-gx65rJkD6V22auI0CRZccX6pNSpsTGtyfYp-i8ZQ4VAkxiesBVQRuyCGK0vynZK2TEYAOdxB5sxb3Tfbh9yZyd0nBkwJZ0pZb9-119wUebRUH4d21GnQXRGwJeGXoQyl-zZz-6TjXNIBneW0V0IoM3BUc6O2MZmSYaOb08YCWMRnB2-X0m6IKF1Wjv4_0d0o-xwmUwXhbIpcCUDqpENJ1Tlp-0Z2QCu87QQHcyFzxv36XB0TZXlgwQOZc6Ey53xO_xABwSv3uhgZD4yZSy0ijT-UWSiu1izpowxoOKe1XOL_ZvbwgmThQ-FX-UrDv47fJtpZqswjUkKkxl50Cyr4BI49MJoBX6S3BBGrPwFVth_KHQX3j6OZQlkJ-v-NopfTS04NT52PsNtCsTsPfdQJyt1OiSwPNYbAxjseqaF-5wL8F9Gw0Utapig8CVFwdBYKnVaa6z2lsMdvz7mqEHH-B543O4wPZ6gDmBeatK9jAGTOKZl8yehOe5bixIMRHrDc5xPV7taZfcGeeF-pzIlWcuYvbTXDHe2zi6gi-L3vjjSY3H_L20M3HzTGkEpZHqr1vobfu5UY7TYt52z77KUN4VGtrYvfuStJifhNOB0o0Gmx2t2K68OfHVge4_oovk7u5wbz18OST2TZeYBHxcfkhVPX3oTNXHb0bTo-y_-XkdZOTbY6FoxssC0t6wg7_ovV_0jdhs9CzHzKhZGck19LlE0kls36JCslN3PLP4HUk0-UI3FkrWE67z_xskiRH0bcm6SQW9sASf27FfyQ-K24vH78xrlPW6x7YPbdSh3u61zIwWtRe8q3Nu8o688R8byhmU8t7v7yH0TEpMb3__aZyuR1TQ2kZOl3mz1dW1stC0P3OmNF0H92zVPRAwPjuC-fHeV0VaXknZQqvERZP4icX-hCJS3kLeNJAosf0u8KdxKJI1IpNHG9_T10aaoM2IQynBrz1e7cEoaKn4vAypTh428VBSrsUiEKbxaXFHpCwXmB47crbT16sXGJjiXkbvJvjsvTvAx1N7lx34pwJOtNdbuSlv1BcaYTSq0aPxQeG-6O9zecbQeESeBu5mCG0RBR0Wrrkwa7XyZ1EcLiNbjRIVQggxFga4pdRctgAWfUvMTVZ883hggAVxBPLH1lgR0jErZr9QrU5WZkhVNjUJszADkTgCMZ6o_zZcUkjbBalqEhLPGcnWYorIynXmdFcwYyBGmcXNzuIuGKdeePkZWFLAt2bDkJYyXAPXeCNgX_8m0ixhw2Mnobk7XujbSgBUhMXgYZl4iOeoeIyRitYSJiD6jRn2erGbt25MMKvn3eFHmbDhRyP_dRQHxdtgTnvZ9tHY4E-nx0ST6OE_cfaLxfGHzJSGrvyS_6vvba4Lb4IF_YMi80gY4dSBHUtSVR1ZPAnPD-2TLide-iAWrqz9UwQGfI0hVbp5UkL2Th8gISnJIP_Fm0r3eVTcnaJtmFtEqZKtrZL1yzrQ_F3zG0iY5okVwu1htGTvZP2C3v_2oazQTUWTX3bzBuaAlFlCUUotI6DEyxsm3hAbwRlJ39GD22KF76YhPdAY9tVp1ADlECRqiNWlfiSnyPTAvI71vFoXu9-YasnvMRDcbDyiITWP3Te9KASpfZ2oFW3Ee8-WhOzQ4siFQEFJbQEESAq68IBBQo4mrCxS7mbQ76CUR833QshkvROwov8zil79I0paZXnxZ48mOsw5FE4JmwAF0_ByO-PGkgBENpxpYHEYafReI3rNZ9F7hxLGuhALJe1rIap8Xpv7DUoz1xYV7elEmJ3dDVZ89o6O8CdRv3fljwyJS1wfGvgZiaVozFHlyT8EvhOVXd2zR1DYFBJzKFCMIwabj6eVnmDkDfYPsHVKNVLK4VWNjYLrcBsSzk2loo-KQHu55QUWUfRsExr8lp3vTObHyd81Oo4Us7tuWvwM-GO121yKkhErmOx2Obz-he74WB3RLLwzZg3Rd91ek8wFovLv85HS1X35-h8Z4znnwlzoNBRC9smscIrn9UOrd7fzC5d64IA4wHn8lFAvYaLvxHZP8ftHgCoADErLG2QSTBnpnI380gx1-DMM7gyLuDOt62BNzL2K7nTdd79A7IWo6EwPqRlvb82ZWCSB_PrKJ9NVDf6N3Pggc2jEhFVgMCfLIdB3wi59r2Ksrf0EE3",
+      "summary": []
+    },
+    {
+      "id": "ws_09e34f7ca247ccea006a5b7757629c819a922a2cb5a82845d6",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Khoo Teck Puat Hospital sports medicine centre physiotherapy Singapore",
+          "Yishun Community Hospital physiotherapy sports injuries"
+        ],
+        "query": "Khoo Teck Puat Hospital sports medicine centre physiotherapy Singapore"
+      }
+    },
+    {
+      "id": "rs_09e34f7ca247ccea006a5b77686e2c819aba7624e4bfe71085",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3d3SqBTT1CKgO6XGxXIRAhAX-ilzQxK5g2widVp1wVQKxClHFKEbYiyWB5iHoX1VJo-gm3JlKSzmoFZz6_bhBlYJzG6Ytjijod8NkC_hqyrmpc1GeHTvfWhcRhKi6OnNDx7L1GBKoTfQQv-i6v3t7_HMIEAlRsMiVxmmre_pjoeKXLYFBbIaAE1e5L6NVHxCZY0kfERg2DfqRa_l0Xh5q3-6GsT-9XYgLqQc72EmixFb_9jBBl7wUqivzkBbjbadkQlKipXkmU-Si6gbzyjOJTTR5BsTVy0Fq0l-VriBGnl3k_MbqCHRmd7z2T2mrc8uLOYMg0KfYHa4zSauArgSFf6ODML08dfXu5FmJ8yv7bQydJBSpN5Zrt0fGEMJ7CsgnVjhx_znqo5wSF5LNxgEPdIUCetIqBW6opIXpCMuOqcWDYBkkNdznZgs1qf5IhFSRQx7kAwuJxBy3S1doS24dxnKyzRLAL7VQVxBqRbCvfG5J9-dVF1lH1p3EYwwEj4Mrn2wBejLsk2fY71h3gOp4s1VW9HbBG77mDQjmp_0OmY3VL6QsPyL_-lkBCILuEgD1wYHEPhQKn3TovXRvFE3HbRIEYa7-XQi9Ux7u046-zOGUhcJdLKXsxIqrYluqMpMAy7eWpVd5rc_AU37il__CP0e7YvnPRgXfU89ra-Qk1dfy1w4tzuTLpQ62ARvcjBCusrehV19lOMcYY9MN500DyjJ_DhGZe8LNG00mdMSDrm0k5AGYy-GN3ouDkp7kzIzXwIhCq6k6CODglb08hrrCqm9Xl_DjLRBKyl8_dSfV9eNJApNEPdbE065zRYXDX4Jr_e5d_a3qv94Zme8AKfx2FMz9L9AVXFGk7lP1jnReap6Wj61DMKrtJA5u2Y6cmXHwrEqrsf92i3H9C-yhY3_bmtJ0W4IFhqpSqABZCwJhljSH-59WStGJgS0hTAkoyXoLBbojfQ1p2wX_izX8cLb3sTqvhnBtEv2skJIsGZMG4kAQIrE5H3bl4Sp6i2uTNwoUU3SYu2svJ2j4zpnXzUKIuX78pztsxETPByaQjVcqlqcsR6TzONR88m4CKOnX_Zt0LKB-PBkSe-8LA1T9B1KNsGCx3L-3P64i_bCKssmpDKf846pJ-3CZecNtdzKubwg3fuPsHYRWYK7kT8sDN4Lx5S5kL_LRbdFjHF268kjGfrGAo70AjvRTSW06s3tzMqt15wHIlnXLxZhPlFKLFkoxMy7duNL-v_C-Y1JtPDiX2igu_uc_sKJPImbh236ofwouoa3nhl0XVOoAj76CYJNvDNmvD2J91EIMF8axEjZCiKdoGgrWx2wH_TGC4yCo7lhznWnN7Q_dHsgQBsug9sAbaVh2CV2DDixnuhxIYaKFbecmqusLIL-O7zCue2e9GrC94dePV0eQSF_yVRGAUXt2GCWYK37nJvOPC1MkBNBIRo9fgwfZhihEOzk81IImSacxkd2Y2DeUyPBcBwtzZHNpfVjWTD-3ZvUImsAmtvBl2yA6-0Yg8zo3rvqmj76msp89le2Ms0XnA-tkUeLc4zNyEf0Yg3Pei9LnygCWuCZ7a_4HE0nJljfrurxrQXzJNeRVveXClqpwBF11hQPoFNBOoXnswsdeTSKpiq8BhFat4VqUAINJ8DRG7C2aUbenu3wczr6OjMboqBf_g6vcESErZ6mFNEf2A9-da-xkmlskvAEFxoIjOTAuiEO0pTxtVyyKnuRBXUMbr4jaRdnSaTyj7KjMr75uWgQsWDRkGGGmwO9jhnxUR2POhbubEYwVm22UUak6PUJc5YP7Rqc16dX6Z90qfwMaYiexJ88kV0ELxCvipakbrvKvQM0z5MvZtr2tfuKCyydJu_Wu8XkewRgT9PyFWb-sSaQKlGrAyNRu3TUKygYvdWzggOAIJyA1h1nr8fFTBLrYRbPw3HxNzYnZytzEhAIkDdBmE8rYN3xlNhxxSV-X2lz9HggqOAKGjARXTN8bgKtGqy258C16air4fW3zmGrz7PEBCSJa_oXWuO0FPInE13jSWGG5sfCwf5DCPYo59hM8S7lpAZX6zwxyg2HJ_ewsXE6Wv46MMtTttK_N2QOPovS1Mbq5vcjsXXS-iH5fNXS5j1SRpetLIeZyZO7bCcxYBO_wrLmD3eNoevI76py3YGb8lAgwR5nE-bINHr9euKK00KQT1BaIuq0PvVm7VwYVIlM3NB4IXopY8VHoLlUlWDXpuaM-41M9lkaElawFItqPu43DYQ3v4-K3PHSh1Vbuo8Or9eA5CDj21DdoGMyvjF-gTt4i2LRxedCS4t2E_ZMyPkgzKYScD7RgL6HVOGDiISi1mt2E99N05Qg8_oEkq0vvwL7NMT8mQTWpb88taNRd5QGD41_3bgvzmpT5OPlH2mn3bJis74QzRwKDZW7rp8_ywh_5qmlxV631V1-yi8h7gUabhIMDSAyGcprXYa6JqgyatYsIvyW3Fnh3WIUZhCcIdRAUn7kaR9jMN_SwM4kGkwuyf5STGV-kug8dU3iEJm4BZcKfM622ts8t4fnHMlQDjPyqzS2v350dkmb7YxwkGKytnFJajJQEjEgIJDeEOtCW2GDkt9Ng6caAYsbXv2fV8r74dZHyOdLy6lHgiyIefBdooJjM5jre0XAhx6GrCZh2XuK4HNuq7JVmJbX6cyFJafw2Zc2hicnti0fdmeh0sy1pzg3csrBCgBRo07gx39oWhoZYSHLfBkACBUMU5fqtd55fnjTK5z0pr9MLB4Uc6M_ocZojxyGzurVT5YcFxUHsrk9VcG1l3c6XDXcNvvYTt3xzXIu6MqB-BQd9M3WBkR4xNvOTrxOH2DugztscjzDOMBrSWDT9GI5x2Pcf30z8BxbuyWpVIxNbvFNw7qS_ZrBjXID3AjoZJrPih9IUeKFN2OwobGc4lw_uMIzfuWI2k4b_4sKxZkKRF8-26BYD-HlUFwEgSHfUrXHJeU3P81WVpQ9PKtItw8QUVQjvVSyAm1mX-76FucZuWkZwecxbixVYqKVvC1Qu_VRubBbCgb1CS3bvQfNWWPgLXNJ37nZUzZwh1xZonkJy1nUKLPfFuzMDZMQYDTsmzs2WA7S_srRq1Zw-l0IaBSCLwVRtvV9IrGVMqw7ExrX0srWnZ7L7uOFOe1yPf7c8UpVNd0iA5GA_UNbEYOcy1II03pBXiSFWc7FfFp_-by4yT_uqLj33pPZfUnP8OF_EOOBVwoMfDwjZd27Wfq9B7PC4pTvGFunbq4QrQvD3XvaPEcFEOvoUclLXby52l5NOyONosIXfYLB2gUDHD3cYcj3uNniiWCqozcKuzewGZWniEH1wphRyed2UesPBSzmsNVxQDnLX-U4aqLD6Qq-LOnRnT85-XfwtD1MYZF4vDlX0wF9dCnYpwLkahCFWHPTZxnGRenZRjbSln9Il2Rjt6sFX-yK4iKSBfdJ5J7ovyHGfsX67eEBKMjwli2K5jH2Uw0PG_FyIwIj_b5xw2CxRDjOdm_BWGrHYt5WOQmexyy_gTAHDwlgeIb1cYV7z8vrvo0JDUTPdme-2pvEb4_2JPRPj9WVCSmKlc5Q7q_Ocq7FvR2KPgCQgjpBYXuGRuXy_a98P7Uk2qyn7WPT8BfMF1qOS0Khg40FeaOCaymnKwsKol1nBv2rqE70nxm5RPcpeD1CaM0OWB4u0pCpHq0qZe4h0NoGKg0NzDXURxk4Pt12K6YJtf_PW8ofegZ_03Ov6M3QL_0UPEMkG340zQ-_wTVhH5CgD2O9Nmj8zNZ1dd0FsIId066QZ0Age1DB8aMp4lrR6Le2fglUxVFxnsXZDjp15wHv4vCbXRVEbYyeSoZf_SF2mV6kDQQWtlJ1F-LZdS2d1KD4tV7gKuBHCk1huWIn2hP14uMBaysdNBwj5zJLM2PV2SlSu1ccodr4vjjabkfIEwdrfBNWv95XaJio0I6Ojo46CTu5yvcUff7mhhhfCyRfnzS0q09f7dc9OiXjVYP2PT2GxrFjIcw0rWF7hCamo6bArgvUPPUR9hlBqPWJxsCmUUdxEakP8GnuIYtB1Ga3vYwCxHX94CxpEq7h5VVLkemYForXTCpNEZ44uFMNvlbSwqxxy6NUhqUA0sWMBW1wtrL1qUJ14B9e9yWW3EOzUTZUES_22JD9FdT4po7viesg39JAdAsds79d1VFvpB-LFPlqJY8ujk7gBXEz1Ed0oGoCyWccpI-YCvU7aOcDDqZYZ8rasaZr14xIckbSDSueP9kUvu878tFXlttb99a_VpVPcMDVDgnLgepOKKYDUGIAv89QxrHv-5DRTV3R2b2ehIaLMh-F_ZnGOYhIraA0X8fnhCXKZLUDqmTq-hp9DCB_SCYYKfGB18jQs0aKjJLyBGRXjsb1NRE2DdhFqQptuTNrZxK1s27nmsymy_TEYz77uWeqZhCFaDmxUcxa7RfIwsZxQhOtof9pa8drn-uhZgBbc0MNrphVJTjfxh3vby1qPeC-mOGK_fo0hbRXi-xNmhIHCGFRHHaPDwyFArPyxPqqcOAwAaVwIl5sPpnoZcghyxxUcgC8HAy4adQEC0kbfPCW2mVGB87jm8-0Wr97Tyb0nsokFNLsOE46iwtP-9C2gPZO3L0qVYf4a_3vVada64ytupOilrUVL8pLRR752VSoe98KMrC7K5gvbDUaRy8ncTXCckztrDz6W-yzj-eFFPJV0chj8k8__uj4b-lNseR0hr3h5E86Wkf5GmdEPfBv351NBuC4wpWfAlj0jeCCFY1y8XRE-7cjJUJSnY8NaX1y7G1Ce5NeDOPdU9_o3yN85j4ygMVf0gRuDGACWtxJsiHX82ia6gtP5hUFJCFkRO78mXyH7PKJft6aDLC2_0HB8BmrVyXPpYqN0MoAyQC4Wz8vpQjb2EblzJ_3jrb-eQ6UxMbqMnrg1RlQ9kGrQPZkhWQzEze_MWV8e1h-8mWEvfa_LRw9fTAlEJRjnFedFD9bRNsW8l8M0L9yBcuTEoW4ZrPYig5XLaGWC6a873-GSqmUfxAs2CbdelE15lTMwhAIhOmN262yjxn0qSkIz1QZ1zVUeJ4gQqjulOSUajL-7gA7p92e6lwwpdXULdae8u36kpFVdg4Zam3t-zpUT4Hm-SCq2nYs2yBqTzPRrnz4cNrqnEG7KPj4SHXIX995_wHs2Sk1Exds6VE9dgvIUaG_XxGsB3rjx5IO1JDMK_aeMDi3YOLMnfVfHlJxm4z42b6hLwXO4oNqVseQRciXsBNrGrkaaXsmkpr_9Sg_VPLYPoM0ud8YKRV8-aOz7dixYqO-vHCvvaL2EMBQv_g8lVOIk7PBXH2xbb7q-7kWTfat0wrPd_JGMRqJkkHDulLhJpXMnMucmDoG1CdPHaMay8lHFtBhPMbSn1h-IroVwme7Wd0_b3xA44naL8zw9BGakwTGZUONJ1ZeteLG8zgxHVcCPGoth4L3pqav4rqnhAPQUPrsoOhT2PS4aCQVDw29wE=",
+      "summary": []
+    },
+    {
+      "id": "msg_09e34f7ca247ccea006a5b77731128819a8ba71900bfc9c4f8",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 481,
+              "start_index": 401,
+              "title": "Singapore Sport & Exercise Medicine Centre @ CGH | Changi General Hospital",
+              "url": "https://www.cgh.com.sg/our-specialties/ssmccgh?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 665,
+              "start_index": 582,
+              "title": "Facilities | SSMC Novena",
+              "url": "https://www.cgh.com.sg/ssmc/about-ssmc/facilities?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 867,
+              "start_index": 759,
+              "title": "Orthopaedic Sports and Joint Centre | Singapore General Hospital",
+              "url": "https://www.sgh.com.sg/our-specialties/orthopaedic-sports-and-joint-centre?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1049,
+              "start_index": 934,
+              "title": "NUH Sports Centre | National University Hospital (NUH), Singapore's Leading University Hospital",
+              "url": "https://www.nuh.com.sg/care-at-nuh/services/orthopaedic-surgery/nuh-sports-centre?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1280,
+              "start_index": 1201,
+              "title": "Core Concepts | Specialist Physiotherapy & Musculoskeletal Clinic",
+              "url": "https://www.coreconceptsphysio.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1399,
+              "start_index": 1336,
+              "title": "PhysioActive \u2013 Expert Physiotherapy & Rehabilitation in Singapore",
+              "url": "https://physioactive.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1586,
+              "start_index": 1504,
+              "title": "Our Locations - City Osteopathy & Physiotherapy",
+              "url": "https://cityosteophysio.com/contact-us/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1791,
+              "start_index": 1712,
+              "title": "Physiotherapy Clinic Singapore | Sports & Physio Specialist",
+              "url": "https://www.ufit.com.sg/health/physiotherapy?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1948,
+              "start_index": 1868,
+              "title": "Sports Hub Kallang - BMJ Physiotherapy",
+              "url": "https://bmjtherapy.com/sports-hub-kallang/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2142,
+              "start_index": 2069,
+              "title": "Podiatrists & Physiotherapists | Podiatry & Physiotherapy Clinic",
+              "url": "https://physioandsole.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2299,
+              "start_index": 2194,
+              "title": "Sports Physiotherapy \u2013 Singapore Physio",
+              "url": "https://www.singaporephysio.com/services/sports-physiotherapy/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2709,
+              "start_index": 2601,
+              "title": "Why Choose Sports Podiatry? | Physio & Sole Clinic SG",
+              "url": "https://physioandsole.com.sg/sports-podiatry-services-singapore/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2986,
+              "start_index": 2888,
+              "title": "2026 PRICE LIST",
+              "url": "https://www.ufit.com.sg/hubfs/FOR%20ONLINE%20BOOKING%20PAGE.pdf?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3187,
+              "start_index": 3087,
+              "title": "AHPedia | Do I need a doctor's referral to see a physiotherapist?",
+              "url": "https://ask.gov.sg/sgh-ahpedia/questions/cmeqy6tpy00hzf2j1moutd9tk?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3413,
+              "start_index": 3310,
+              "title": "Physiotherapy | Changi General Hospital",
+              "url": "https://www.cgh.com.sg/our-specialties/rehabilitative-services/physio?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Great options in Singapore, depending on how fast you want to be seen and whether you prefer a hospital-based team or a private clinic:\n\nHospital-based sports medicine (best if you may need imaging/specialists; subsidised if you have a polyclinic/CHAS GP referral)\n- SSMC @ CGH (Changi General Hospital, Simei) \u2013 Singapore\u2019s largest multidisciplinary sports medicine centre with sports physiotherapy. ([cgh.com.sg](https://www.cgh.com.sg/our-specialties/ssmccgh?utm_source=openai))\n- SSMC @ Novena (Novena Medical Centre) \u2013 multidisciplinary team including sports physiotherapists. ([cgh.com.sg](https://www.cgh.com.sg/ssmc/about-ssmc/facilities?utm_source=openai))\n- Singapore General Hospital \u2013 Orthopaedic Sports & Joint Centre with physiotherapy support. ([sgh.com.sg](https://www.sgh.com.sg/our-specialties/orthopaedic-sports-and-joint-centre?utm_source=openai))\n- NUH Sports Centre (Kent Ridge) \u2013 includes Sports Physiotherapy. ([nuh.com.sg](https://www.nuh.com.sg/care-at-nuh/services/orthopaedic-surgery/nuh-sports-centre?utm_source=openai))\n\nPrivate clinics (fast access; no referral needed; widespread locations)\n- Core Concepts Physiotherapy \u2013 multi-location musculoskeletal/sports physio. ([coreconceptsphysio.sg](https://www.coreconceptsphysio.sg/?utm_source=openai))\n- PhysioActive \u2013 sports physiotherapy and performance. ([physioactive.sg](https://physioactive.sg/?utm_source=openai))\n- City Osteopathy & Physiotherapy \u2013 several centres; lists first-session physio fee (~$210 before GST). ([cityosteophysio.com](https://cityosteophysio.com/contact-us/?utm_source=openai))\n- UFIT Physiotherapy (Orchard, one-north) \u2013 integrated rehab gym; price list shows $200\u2013$280 depending on session/therapist. ([ufit.com.sg](https://www.ufit.com.sg/health/physiotherapy?utm_source=openai))\n- BMJ Physiotherapy \u2013 includes a Sports Hub (Kallang) sports injury clinic. ([bmjtherapy.com](https://bmjtherapy.com/sports-hub-kallang/?utm_source=openai))\n- Physio & Sole Clinic \u2013 integrated physiotherapy plus podiatry; many locations (useful for foot/ankle/running issues). ([physioandsole.com.sg](https://physioandsole.com.sg/?utm_source=openai))\n- Singapore Physio \u2013 sports-focused physiotherapy. ([singaporephysio.com](https://www.singaporephysio.com/services/sports-physiotherapy/?utm_source=openai))\n\nHow to choose quickly\n- Proximity and availability: pick somewhere you can visit consistently in the next 4\u20136 weeks.\n- Sport/injury match: runners/foot-ankle often benefit from clinics with in\u2011house podiatry (e.g., Physio & Sole). Complex or surgical cases do well in hospital centres (CGH/SGH/NUH). ([physioandsole.com.sg](https://physioandsole.com.sg/sports-podiatry-services-singapore/?utm_source=openai))\n- Budget/claims: private session fees commonly range about $200\u2013$280 for initial consults (examples above); some insurers require a doctor\u2019s referral to claim\u2014check your policy. ([ufit.com.sg](https://www.ufit.com.sg/hubfs/FOR%20ONLINE%20BOOKING%20PAGE.pdf?utm_source=openai))\n\nReferral basics in Singapore\n- Private clinics: you can book directly without a doctor\u2019s referral. ([ask.gov.sg](https://ask.gov.sg/sgh-ahpedia/questions/cmeqy6tpy00hzf2j1moutd9tk?utm_source=openai))\n- Public hospitals: typically need a doctor\u2019s referral (e.g., polyclinic) to access physiotherapy services and subsidies. ([cgh.com.sg](https://www.cgh.com.sg/our-specialties/rehabilitative-services/physio?utm_source=openai))\n\nIf you share your sport, injury (e.g., ACL, shoulder, back, runner\u2019s knee), preferred area (East/Central/West/North), and budget, I can narrow this to 2\u20133 specific clinics and the soonest slots near you."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 7
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 33507,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 3489,
+    "output_tokens_details": {
+      "reasoning_tokens": 2496
+    },
+    "total_tokens": 36996
+  },
+  "user": null,
+  "metadata": {}
+}

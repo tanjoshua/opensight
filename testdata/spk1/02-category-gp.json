@@ -1,0 +1,297 @@
+{
+  "id": "resp_0d4dae504662397c006a5b759820ec8199a5bd241ae45ecc29",
+  "object": "response",
+  "created_at": 1784378776,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1784378845,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0d4dae504662397c006a5b7598e4c88199932471ed8a60f087",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Xe_AI1s6LDDMtzCR1ZV6FmAB3SgZwbJSaStqRyr7nRliKvHjnvHKc7wA6JeKeTZfkSoupp9papzyO3mQhLjLyLItuxxA4Itbv4FjeErCJ_h8pz4qd-SWrvsmoWFFDRN-gnrWdr3BFLXBC6v_VyUc_KPnpi2F4YpA4KehQOU0MFcw0q-epHPaJcgzuBhU7E_nixjRxd-em7PndtqGtK7HDKVZJj51r9vtISThhYwb2oa_mNKKimd4NtEvnn6yQAye7fcbovY4RuybwLt2pwm9-5kkG0GDcYtp0SgRABT3vDb-Bc2G4NgRV__jB0jnT_Jsa3Irl5tHE9YUUzGXgvnk_qGkUUsoNftgM26WItlUZbnX6H-jyF5GCg1iwI5eRPQjEdGPhX1Wa3oydav2PaZNvajTvN_bC2ONA75uqblgyz5EVAk_c8JgD0IFQbOMZUTh27wrZGAN7s435cfpMH5ererHj67T7o3J8BGiVEBjS4UpB7B6coiPibrM6Rq2eIjacnMLyI2PJi7zKuSCIcYDE03OV0iBFt8ACW94t13PcgMl7JuIoTPbfWvnc53JMJ-CMDV5TLOEcCoIgQWr9YPl7ppSX6edW5NR3kQ_zi2mNHq0hg9yq_1_i6sKNJL6MiBrXMbJPHf8zcp4Xsn3_k-8emkyqqMXh0BT9-IzSi-kYGblq64r6LTpCz8_zKJuLeDPWa3O2n1IERgpvxjhY8cgyNx7myTl74gLjcxDDnO34Cfr96ICq2weFiv9tKYfDhduBwU7Vj4hvfE76itf7I3_XMh6hVbO_SWh9tgy4Lj2lvP8JVkHSuCdcaaxFRjoGI_QfEfMmuN1y-Yc9cA6yPbI4w9dgmCaq57-8g8lRU9CZYXfYqJSKAt423d6OOQViKoc8wdTacYmrIHJlDkVFYZzrNpjwgAVw1WXIyMfxBvtkRJmPiXsDp395SfFhDtamRqBJzhbYKgYwsDn3V9MytYPthDslWTcFowhsFRqwPX0j-u1cJw6pdx9q08oet-Yn3qF0tpFU4zb_trwePS5xITdP7UTpB35MgiWxMjdNZDjZBstzSHXplfupvBBbMTZlVDCCQDoagsuGUvOoaA3vKw63Xgt3Lvz0QRz1H7g8lrrkJanGmKnLKAK4x2raUstfLNoDLJAYS5MQC1XrwBD1IVopWsiATSNK5sggPthMaL5lZO7379D4Fo1eXTk0kOY-2-PGSFR4eCQyVCd2rsEOvWFfrw-hn5nIPQvcAJJp6Yc2KB81XGDfI0ofNX6BNZYtWpLFnY5T-pNUa_52DoP5M4KTlqIfpoXi398dwwtbKfj2SZs97vRKhcI691Jf6ZJojy0KBsdT6Oh94kUlZhjyGEJeJo74YavDZC_Q75Wym5eY8XUKhdL5fT9THxlD1UzxdwklVSIz5U-GSFYi9WIehqx017GzHcYE6SzCegTcFYHO6RzPGouS4_uCZsHjXRW8Ld-TKAfyXY45hfgSN7ABi6Gxdypp00oR9ZUPze7wI7IdXjqt2TrOYJsTPoPJ_1XmkOGL1pwgdEcrijfPGqZL5OLrLnHDY5crjQ9WCUhteMHtrXFc8GBkKHvbfKkTZePQdE2X6oZG113-OLRGJc5yluhdGQLfQLM8DUqtP0Hcyq165xezAq4nxFOPDqyk6lTy5aXf9c3eykywHqyIFQ-jmm8GICuZuXmMNvWoX9pcDKsMZwFLz_jREbAUZQdllzmQlNgytq40rjR-RWgQiiOapSUly9d9v20BiKTHWCkba81fLoQiHryhr27nGwdzDFnv8dt73XUlgKR-rRuYf-nPY9fyw6WlS3xj7klPyyJN7ela54nU4eNbuLWTD71CZUaiVAv77TZRL-190x8ydkGLc4_CHNRkF2no-9zcUTbea-6LZ_4h8z2_3dZUe1cmZGBTF-badBtrPdufUDf3iIval25Ph_diz1ZcKjtyGw8Vy7tnGbNgwM6S6yi7D_Kcw2fEel88FMsP7G04eofficLJf8vSDsd4Z_p0oe73EFmefGXIcUofhnKN4CgY-Av3wT-mcJeNtmQGW4M2P60YAYWd3tAtdJ2FwkcRG1pS_t-9YWW8Cj3XfBkf3d33HJt91g5wtvE_qNpgkt8A7E66YAM36mF4pJxDg9TxZp0oe05Esy1T5xzdxIOBnGyB5SJ6TDJ2SgaYlXJ0H7AZ7BTjICBgbVDWvfbZ2RkdwGDQj_dORxlhUPoOfsH0jsEvLEfZngTNW_q_Gt2HiCWxFstd2a0RxOfCcvqv_x65RNqiAIEaEbdXyDAAWidpVp3K9LL1Fk9LQpJg17KHBA3iqGVrzTkwI2Svvr8U9o7uKTCS4ZrCVLaVMmrhddpP9qmg4DPMqU4euh7HjOIA481disufpLV4NCAPo8r3utYy6ISPZvBtfWWuf-VYD3hv1J0PCW_JB0dqQypGE-uAcvPT-asHZg-qiEtO_2y1uyiJMwrpPeD6shrds4ED6KJk1Alf0AK9cwJStNb5ZgdK6drowqdEMyngvSIygn2s53xEnnzaKFeD33lCOOJJnIe4b35pI40c8dajoj_OTxJK6eezWfcKYowEgxi85LCtxOgkNHCBkVfAKKGs2zcpOhAu-RNvuJNMG0gxuglNwpanGNPAwMgLXHeAztIxFC-Zz8_Aj5ovGFizuqd8opLwY9Zlk9teR9Vj8sK3gcciVfC6a40VD4FnWUb5huGmV04nSpa3qZe34jpJNcoCUjy2B8so5cx2KjAetgkvwz3esl2exFW_kS5Nz892JLg-f6xFy1FQLzId2g2QgVxe1lgymKVjWe_WMXhC2X1RTVciuvCSRxI8XaMwtmyjm2Twku7VeZJLobPzpXKvA6UAOHGKx3k_w7IbmO3uuNDHE2S1yhYB9YRtVUzr_hgs90O84knlYpgUzLyrBm9RWBBm5N4XBDbMuRJc7jlSqASTujgdoxvZkZukHWTX8_eS82r9Y6EggS-cTZgkMFxPnSlGwHypvAAbLCR8FkNsn-RKm23xywb2FgcJMqbAZ0wJRiTqQQDlVF-YENnu-BgcOdwXIvFfR-fP0YzcPw462W85UNxTyeEJF8bky_KSKRAyn26-fx4UayLe0SkjBHGDT4vXc9s4e7731L4znWtx5K1GSgkPGSOSXBSRutdlOOJDyXafWmeowOcYBx1J9IgZhknEN5rwwPQAOjFncaMkOKW8lhfuq6Rp6y_8GHdj5dUykpxHfc1qTvf-KMDX3M_6woLVo8a_XqWiXz4e2tzDYe-ZiKtnyIx1PA4TTuRPAa6k1kSsxBsDs5t7ODNkSFg89czf2gxasJ4Xi81p92tC3XVVSLHPY5kUKJodBrEwWf5WqJsWmz-BaQMOz75MFVpGIc60Hgd0=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b759f34a081999eea09da34b3b73d",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "best GP clinic Singapore reviews 2026",
+          "Central 24-HR Clinic Singapore branches hours",
+          "Parkway Shenton clinic Singapore booking",
+          "Raffles Medical clinic Singapore locations hours"
+        ],
+        "query": "best GP clinic Singapore reviews 2026"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75a253ac8199a011f08b0c58a40c",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3XelSB1EnZBLUIkGeav2lrf5H_w3K2azFubvS18wHXds_UUwzqbsMf4A47rWEOZs2dDI2ziqcWTxNvMkfOSpw9-2eunDUJcmrKcwZ-0Ap2xGyE8s0XEYd6dyg0D3nliE3mgZS3LnvQ4tnkSnJ79tXGD0RhsPq2g3YDNS1MJWBZoWQNyeKBrMjNS8FXNUCiN8usK4uQxE0MuKZSO3th7oki4GBxzhs69mBzkdwhV5Rnft65PGK6c-5TEKM2Z_Vpd3HCV-5pTnKW6e4nliPnzmr8HfkuLB6qDeNqaFKGLTowb4NapzUw9b7nVIz9a5DCd4YRmViWW1x8g8Wf6RsNwGoGlRKq-vxFi3ajuSqyU69msn77ZUndW3ZfJ9z4kOf2KjGEcivTRc7kyZBRU3BtcBhuFn22SGftu2j_yxNBKlumZeDo92-9b9ut_106pA0ucYLkX0pJOY0OROrAd-xugleRm87Dt8qFkL_WikNDizj-I5LslOraiBdkc0zCKLNXrXoTBYzBrVjNWv7LkZDHdlr7A0FD9g3egb8qXzQTHujvJk4UpD6ycOvGlBXxMXywJp3InRY8yloUUaFDjjdwWmi6_nJTI05W-udhWXJOuhjVHorKgrSLn_We_QgtEMcXvHJlkZnnOFga9hgrPdx17XR4CbQzqh8wi90TFQQzYHGasSjFMLC07XfCwDtNq1dcf0l_Uf20zILu6LjLd9ByPfEUaVFTHHTq__CIvjW8LlzFn5n0B7xUfTZwYgxnmCecNnZb78JIwg_wOPBYlBfn6X71hdIo0Eu0KpRRuhjBmJfBt5MarFo-IQdAXBL-ASkeJgfhs8veCI0FeXUGcZWzBJqk3X67aBrCVWF5gy8dN_0OvRdmwcjoPZP6Kkbx8Djn16GEuzOh6CipYzQKsUtqRrHGJvy0lKJDzneaWhX87PTKVmlEooZNMKvmaSVI-L5WZiJN6kcEYkYJtpADhsqPny9jUN-f2bXpIy3Pwl5V0SVeDkWIHw7Ib69ISg2XejdVX1xwnOZSmE4SMb6Y5DpDg304vFclPK1eRfTxQpIZH8qcX9Qi-bqZZ5wToJece3nvGiI3brE-3gIx0CBjjuRLstqT5zqogrNQdY3j7FBG5wuVmagQ59gRX_2Nca37k77dRICgFxWDTwidOliswtLP8ae-TsdaVBeuiEzlZ3oV073ym5EHNF3MW5L9N6xV38NrCIMP0S4e54C-agl7tuPtJGNKTSFNkfA99Hh7DBTKsNs-T3_u1QAXrGkX0nbSFQbSYI0XiS-uyacwz-GlLZL8B8qeqPubE7i_s6k6EM0JsVEEoCUqbIlTEoL3r7ptqLsHcV_BIyz6hrTwSJQ0yQzW_5AuQXSOPNyOK2gEdFWCQyaV7bZIJNVELCTvJrSfa80sVprTgGR6UTNDF23wpQy2XmWS7p8byCTeDSxq-WXKPAYwSMgFbk-fUwKNKJLlrHMHnLWSb2UNWFV7l5-ObPLJREFyPRVJ68kOkVVN68pgWX-Jlt-jTs5Ta3VzQOTa2Au9n_JzhOsGW8jaIb-H10myRNKi9lPMnpXSlBNaWZ9_S7WK0iGucSPfHifM1GXc51wZ2x8FocvFgshWpU4rOl9GaJ0n6zDtUA-Y-Ci-Qfa5evJRhAi3mw2g_Nawrdb7n8dFZvN7PUzYNUjEfsz1EbLXSyVfFsRvfr5ws6iecUGaDpXUrFEnkM7zP_ELmAeycq-8nxmLnlqW8cUW4SstRjYbeFxsD1rY-ljMR3xqM_poNV4w0laek5H7KoQnydTyZA0GcjnSIxeTWpFM3KdCXIMzNYS_oyySMPBYRpBZAxzdJ_h3XRxo=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b75a38fbc81999be2009f7231bfa6",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Parkway Shenton GP clinics Singapore locations official site",
+          "Central 24-HR Clinic Singapore official website locations",
+          "OneCare Medical GP clinics Singapore locations official site",
+          "Osler Health Singapore clinic family GP official site"
+        ],
+        "query": "Parkway Shenton GP clinics Singapore locations official site"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75a9da1c8199aa756d3aacb2c489",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Xe56ttURXqxBLyef5If3vQK6bEPWFhn7Dyw675f4UClDdKdsZPOn6LOLR7BrQJPsNmY3UGdniw1yI_xf7QCgSGylbam9DvlolEv2at5to2mw7PzDHs-bXSPia4BwBpTgH__ca_Qq0cM91g6Jb6uNoOBJlMFQKKjOHovbJn3qkLoL8-VIL7IOdbFYdD7gXQX1KQkAZ8wVXwSsfHG1Wd7WAJJLA_7QHIXqVNxvF262LXGYFfRzLYVZ9YqfVR0SBACH6DSnuVfqcxz0j9g1CpCrW_4bw8RmxeNnqtE3at1O0vIaMvOdl7ZwXehphkgmvaXkicdnVLfaRGokdqhbCss5WSlGRDdnblkAjlQWIo28dCKQzNwKdroH3fY3MY8ab8336kBI3xAKPddt-dbUxz-zgnddNvkSIfuGtlaoLeiVEzipmR-EKeV-yOciqbJWSLJxruTbblsbKMX0Ga3l9rVgPLv9eBwr4BSS3b-FPZAAMZ0-JzEXvdw0oRu_q4vh2iWbYeMRmYSQsMljU1nTwWOTALJSAASolKjpL0YFL2fetRHt6IKYgLSFewzfj5KYcmYh9iRHb-sZH9u7LrgmfEoLiNEMPBiI7u7tU1pCrc6XkfhflUXSbfR-CIpo0k4YOrTNpOCKuNlWZjkc1JU-kfH4Bcj0Tb7QmE0YxavddNTa9_p_TpFj2WMaGTezSzMZ656EJ2DqZS8C7bD0PnEjSV_5fhke2eACQn-yjAJoNo5X67DabIm-KcVXtkJkEHvOfOxY69a89xUoi7dKO65dS8PNAn8y9IeOW4DafWZdZYLPexl9Dv6O1Renr-A4Es_ZVgFxHe-r1RBHOD_qnqsM7UrPhBTzixrW1amsp0nNSWnfNZZPl5Q0Yq3VGIpPIXqKY57A75ZmFz4BcYze4R9TKeKs6F6-9Zhi4D6YNZBHLzuChFixEnvPw7AXOk79GmPNBrGeR6ISOEAwnN123HsryZ3QWkVibJIB1gEny6g-gw90ZqEdoz-YboVf_jgxI9QXGObHJQyB8meW2NDzA6D1A41Opk3F9Y-eu8hfqCqFCRKl-7adc7I4-nAN370Ft1y7vy1bwc56CWc06TeB16kPKHw0R67BmQvExOM97rz0GnvcCmj0r3uQnhhNDLDd0Mwi641bwPc9uEsLm4U6eIBnjblG2NVwmEm7WD5JrCBKeW04rSFIQ=",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b75aa6540819980e0c5aaf4e9bbd8",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Healthway Medical GP clinics Singapore official site family medicine",
+          "My Family Clinic HMI GP clinics Singapore official site",
+          "Fullerton Health GP clinic Singapore locations official site",
+          "SATA CommHealth clinic locations GP"
+        ],
+        "query": "Healthway Medical GP clinics Singapore official site family medicine"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75b3fb608199ad3f8239f25f92c1",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3XeAsTqpamOmcAeXsuFY1k7Edyc5nB-g6GRyaApyydOgG6zBQj3yQ4I1m8kxfrd5NIIto46XR4zcuITnPfpG6ui7VOCEhm4NDZW3SmiK22mc_Dv7C0K4ewyYGBnGiN-yvT_mZ8uO7legQhQ1lQO43oqQziE5KWZQZ9yU-kscaYhSabYibSxnq6VbFmDVmjzi1v4JFmg5aPYnm8xixna2Jq_aWA7kCJUWQzykbGq26uwKildZXPu4zrFkonIcFacXdgEr41uF3Jgr60hgJZ0QuQ2FgKtaf2j7lqfvDahCOH0y5Z_izksTNVSdA4KvDmzigz8RDA5E7ihExlznwWu9aY0OV8vvfnQU4VeranswPwyo7j-cJg9sh26lGir3Gc7fo_nwZ8EGbveowGXrbk6NuqTdyWwtP2IwTR-2yxzRE2HmjWkA-s0JB2-8j96ZD_OWX407Bg1HJqdBcXtdrTZWM7usWs4wjAUmHNh1jcPaetYE_G3LEz4P_duzYDYxeG7tz6T4dQXt7-qBrqd0o4X404FjdrK9QAQ2TTVihtB2yXExPVXefr0SjdW6ZMNgyKx32v-OV46hHlcVewThqeTbL9mSauxJLLd1zVwHoWlWOCszAehT10tdvdFEwZ_S9VyCCBjNbKOIcsc6TFVJnZ6L0MQSbODurg3RdIVCvCuMcN2Zon3LoC8ffs9LqCwLJzFtcRCE8MHiuhXTxfqv48z3QmW2yDdks2sVk-tJC0FNRODeYRqeLOsemxk4vriCwQj4lQuapBJNqFVfef3nsXhPs-fD3MEEHWPY0XZF7jcDS1rKkK-b4ls8p-jY_105Q9hUOZUZXW3k8E5nQdFbNpSEE9zTuwK5rIg4g2XU7u-MNkDb0ZKqtjKubiMk-BXBrMOLX5OHobppk2HPpKev_lSnBHOs-g8B3cA66Z5nfoiMv6o8Q7A9lXbbJXle8YC8xY7OHf09rFhGezwimwQNQuLCs4xMqyoP1ExraAze-UnLjArE4xd1CNyBSN36Rerfhs02Uk62E0id5QVsDWCwWaLYHNcXKWaBAOfwssXTlmOAweYlHbDc9jnxwyRi1NRNkEN9FuB9mHTfD9FnPyQ9_t4dP47ER5NSFo-wEXcfuvoYcXgUyEov7BHcXQOIDA4XRT0z3Dp97Zmox5YfrLMtd3ZWhioskAKv7_VVJv_UDM1yyGrJtK8uubfwPtASpMEmwk4Jx0ZXTt951TTEW8dtP3K94XDzmASVEN4i2ou_OXyNkSlAa1Vo2CcMamjMFktJ3gX17_QnxbgPS0ApmUxhy3fgWuUWG2MGvEbGLYM-HdMc2b53V9YbhUCaggEVFAbwq5tMU8FTmFZyA_CLHOqithNaqafflKIGwRQHcn2NYkRzvsCSqwPKqrpgcaWAwJFjpGRsm5BVyTEEtZw9fLlH1TyC45h83GkCZXT2Pk3LPRg_ct7lsiTTSGsuZbfxGkVByRJ0F96uXnhDgYz2dYnmuHQd11ZYk2rPo85VaZ0wlTh8mi4MCOqHGeSSH73Mv0gexXKHIGosYWupv9Gr-_aM75-GEU4gd8gtLljFurVT8nJtxhss-4VXyS_JsQqHo2qrnhQDdDp9c3XupnbDtXs81lXALxg_D41pS4p7S_pKUS3gY84g0JFJ8lvOfPIcmgcRF3r1vJq_F2ci_Dah7QAxBuRleuvknwLMhKJyXRkkMF6qfs-X7B9Bt6ZxDFiuxz87uTZfrzxposyZ-aHkOwOtvJiHzHzEUfMSer9PI4HTUJdutNPf-0KBbVXYpEHmzc6rZKGq-2B",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b75b5db4881998485f88dfd3b2362",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Raffles Medical Changi Airport Terminal 3 B2 clinic opening hours 24 hours site:rafflesmedicalgroup.com",
+          "Raffles Medical clinic 24 hours Singapore site:rafflesmedicalgroup.com"
+        ],
+        "query": "Raffles Medical Changi Airport Terminal 3 B2 clinic opening hours 24 hours site:rafflesmedicalgroup.com"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75ba8fdc8199b916a4182d7ede6f",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Xe6val2Q1KeO9ovCLsFujKlZB6J9-R-S6xt_92Hi7zkG6bJoW0jpqx13buBLcv3opGWSohDApBcaVqKtIKqO5B3ISI_PfdFS6-vzIoIRJLE3IrSgnLNliaSSnRyNlWO46rArtPwvVKteQOhk-5b8_t9kLzF_G36CP9Yexk6xD2AdqNu708K-8PnJJQEPJpx8g0XO4oWJEYTJKwIXAeRfw1LFeazMOAWAGwsvliHfZpGv85d3dRPVZ6yiLzJ1Epyqw1Epi468I0gIxgPomr-Vzht7LLr6vRwGZaYbLcYvaO77iCavJx8BKkWQil_Z355lciWw_Ma4XdSb5ETCbAJsr5CV-i3X-CDUJbPJ_xRGkkenQGP068ALyJVBpr6DjDQh2kpBDaucIC6erDESQlIf6CTvmcdWXzE3lI8iFWX0XwrV0axzg2R9baLvrP3aoNeVy4z8F1p3JtUfTRAGF5PdvwVPdm8QXOD9yUSRtPA-HV085gOLgAWoAozM_NxUyAxng27SKD6crh9jusq51y22UpvvLg-BFDFNOILC6pUra-W5gowclZjPBSo_7RA_i2sR4t7fwtnLKk-LyNsRlIkzZTtQrlVk2EevVl2rszQZ1Qoc092DS32FvTL4sJ66L_08_IwIECijTWwTEUkHy2tQY9r5rXU-DsF0czmXPhRBgS_0pSsZx8aG_0MtmFbWUT2f6dJfBrTI0sryqsNYaxEzgyvZ8Pmp3-8dwuVoCCufrgJxVr9_PasKc6nRBSc_SjQk17r3KFeByYJGDUwuf2LUmrydHk-G2VxgylpBha6wicorNvNs3BfVjX3hLrOBjByvUAUk_0OQ22ufZmrVL-QrBfvCnjIIfUNaA5bHRZP2QpIw_L_gCiJy00gVYzfUUbj--REEB7U2xMngsrHvpnmpNoJX7Exos3oDcXT0tppuxaAis2ToNEa0e3FvgJ12SkIiIY6gY5zyQ1Tz80UvdUQjAlZjLzBJ5hmyJkvUwL2jJExAlo2hLd3xmvvhB_AQDnBTj-XoEOpii_j8kOkQ1wiEZcjJ4NSNQUhfbXhX81ylHC1L9s6qWOZaKBxOdtq4QQgW2QXJuPi89Q3KVCevVtPt1WG4dmbxsPvGo6IyUmrV6xIjOIYGpxDsUWDUTOhMMgcARxyVvOsIMbOUkpTjxBaYXSNl_UpXIebLtvBBaWKpUWALNhg6B34wfG42ZSbut2anSVNb_ZIH8RsdNpuQtKxmtCLev9txfPSKtgJfyiJ-xcpDbWkqXYPFF0uTlfrFFzDb87FQvxkQ5GOwLMYPKZINzUYvPN0bgAKJbyKGAoVQrtZ5UrZa9HJCJhL5AInqiz1mtB4Ls1yt-b9p8SvFN7aezCf6tx8TF_dea2xtgS6Gr-avd7Kd4e8xxIzyDQ_DvbogyKQdI1DScYrI6fCoEf-JtieMH7qsfNzy0rwGqLmEmo_gJcXuyOYkubo5pQYWtzvw8MwAgd1lwx1tpf3eqIuC62zP-Em9wEp2ZQUeMB-w-LDsEQm2xPMRSus5scDjNooOOvlPVsyc3p_bV9WVJgEKhFKq97-zOz-DlfpSzL45hPf0cID1ml2ROB5Q48YjpfONnBVYcQVQYuoZE9BLEzB3TAOAaBsqltf6UhOTyCMxtLeo-RbN5Af_v5jE97O6CXmWKJvDYaeNc9BQ2zUOzMDPY7bHs6jGACcFOzM936jEyXQfiOO1Tlvd2DQ2qvfdvAnZO9O-5tZqWUn8ss-ummvvxJgHAGD9X4ecPRhddmyMV57cxWB023DnlM_-h1BXgdaGBXbiMVlqwKO2X-lPItF5vUOrmWed43EqFltYvpdhgnt_HGyTkp5i1W3qCB-fJFmlSU8q2UDADOMvqYqNGobrnPZC4jDx72M4RaJPNtkkd_oKp_N4OUIPJI1ur8ic7L5vtXns33cxeHl3kEfueBO_Kl-xX5qXTY_Y0RxNsV8X7USu34F4ukcQBCyLldwsgC4xWBR1M8AAaUEgcnOluTI-lkYXz2scQ4JxIzTnvJ_T-LeaTZRhWWabUNWhr5-O7NRhGVhsskqGJlgQkSu9HFRoiaDrtOVJRA4Sw2ksmWhi57YibJLo0FBZ0kJh47BkeqOGAns5BOttBkPU_FEMTOMk7yE9_0eC3xjomB-hEMY-qHxYzRDAqQnz17EYQP9CgxAWwxfyE7lGl4rBv6VvBUN_Vq23tMq3ZtU_34nwdzye5EhwsqcNNKe0RMM5gCxyxBixKJxs15EXN8-VboU1qmqj9zZ3Z9P_z5GepdDxpLoV5IJ17bxQ-sEUUO92ECJxdOGUIBlVagyOxSgE4kF58b9qMX2VWbwXuRbGfqwGO307vt_K2b5JiyNN8GmHnIi6RQq4shVceh4y-lRHPHmAheQkYluWDvl_WZQVuF-QqRENnGM2qPI8HwvkUhStbKZT6q8-3_0w-RJlpf5z_NXmMRkHo1liV6fIM7cWsGZDXUPne-rpCPmdJGtEq82A1jC9Rw62vifvDgsJHS-mhN2NdP6U0mWZmyAF29PqVd82dTiSgW904W-VAaniGgJLn-gM_cmuo-leoob-BkhQCR1jGstREy4zd5OhbfG4KWODOBdczFzondTX4rYvxSqHgxIMc13JkWS2SA6aPY9UKKwcbtJfrfdDs5Yc7aJ9WdfqmIwhI5sIe1zfhmnHTc9t8us7iGQ6_-jAGcg8JnoycgKEgbyEI3VaHHKxCh2HYS11IspM5iRUljJM2RN588QZ0ztRGO-3bWg8w4rzdX9Q5xPp2m4rIlCNmnmF2sZeng9beT2T8Ab01oAtp-iAdhrNDBE_ecP7CI6k_O7xdsI9NMm4e9OJNpQ59AWqvjFMphHHwuw4JUXWNfqqn08U5gForNdNOH_IMY9nGRSziPr4Jx9ZY9Wz8BXjMnnUMFkf99yDtbuUXyW5tVu4ADZStoiZM8ymoq15CLHg8QAU3JwzGIx0UYpqJ61YTNW6zUXIHIOCP1m7KG3u0v9ijWG-wQU-1A0Wj6vd17APolXDa_kpsk6xoWhD8p31bNEIzdq0Gnx0pxcvwKh7pAr1XoBvUS2bHfYIKeA886EFKAD2MQZO6EIeyb6qxzCsNwNel6a5BszZ1rWSAEkvBCIuKxCEhuEdy0Xo9f-FEGBw1pbzPL3h3_8YdJ5zSAO_Xg-I2b-aGcFiRMM0kypvgKGwMNGgCkwxU45Vm-mGkIADRHVD0mfN_aY5QiXJgx6BLE928R1AeBBIS76eWUsAmLLWjqhmnDWFPyhEDQsUBTCTv3Ub8Qhzhp4y1pLVdHwlrjmnSpCMrCEEvHCBSZ5LEZoPQ5Wy3M3IG6Vl8ERSjvK02c1xJzzsatEnGytxNx2UN5ssie8DomlozGTSHpDOEp_EKvzqUUVeC5ogUGpxoa",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b75c23a74819996b6260c141d7941",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "OneCare Medical clinics locations Singapore site:onecaremedical.com.sg",
+          "SATA CommHealth clinic locations list site:sata.com.sg"
+        ],
+        "query": "OneCare Medical clinics locations Singapore site:onecaremedical.com.sg"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75c62bb48199bfe112e9e9adf2f2",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3XeKKH3SCd8KSj8SMN-IFQQjsw_J0sgp3qMvfp1iYyil_BhSD8SeDNDZ1UJq8y2th76YMpgk9N6St624M129QX7n5NuQp-Ex5tcyE155VEyHeTVcUW9Edbf0_P_xDB-18WyIXcUOWxqHfq74d6bLxG0xruVhnwtn_WeSUE8gPdSJc2Try8VxrLfclAa-fNzQ1U-5E80J-sZXViD0cCjvbYXO9qWym0xHfAhrarl3MC_tymC75oFmNK2V_Fa8GWKpxrYhh5XItP5GJ7hNVXtt_X9cKpFkH52mF5fxCobk4cFLfTnTCVNGTpNFDzDyzdeX_xflZRP4iAvPaOtCH_FVVrWUZIrta61PqsEV8xToRntsGmoWE0zD9ksPfid5Hqi9OwAk83eh3z6XdFnnC-CEag6Y65pOXHJFIpwFQqz8DbeMPJOT0Ox3MJotfkO3iZ1JaG6ejGwBK49h24Ozrc3zbBYghMmQeCoc72UP-ck_STl3MGg0OSO_uJkhxv4NHdj5XkoUpafPFWmjJLcRW19mzBlNRQASkXsckeDzscD2MJoH3bJhKj0TVy1j5HraVocWpE7PFd8ki8VTh1DybTVUK4VnWqVucgTTpjvlv1vA8c4g1FFEZhcfjfkNMiuGmXzLl-2VsDlg7c1gLENxcXTDNtyWCLL6iJ-1ERISb-ZXPsAOA9R2nBj4-Pt0wKPKfle_OwzO5tVovJWYXXsgD2UNzoOIO-44X6e0YI4vEW2WVu7FXx5uURmV7ZVkeBpo3_78_WQbP7zj8kjExKmbYTzi5Fk2ddQMhoF2P0GSt0bhod8Wqc_yseMMmAiIWsmmdSSsKiZOve41LzfThWVism-s3wjw9Lm5Ks_67YsCAWy88cYVCAtaeqsKbo86dVQzUPz72TLn7CVWUBGFLpaXi7ucfLU5HbxG8FG3b1YD2FtSEHSxVaE-muNr_oKWbXOcXZChWZKySA4Ns0_l_jfzp6-mYgFrj0otaM4MWr9GEARoz_6RiIzHyZgXpXeF4BmjY2Pc1PB",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b75c6813481998d634b6b80a08841",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Parkway Shenton find a clinic list site:parkwayshenton.com.sg",
+          "Parkway Shenton Family Medical Clinic locations Singapore official"
+        ],
+        "query": "Parkway Shenton find a clinic list site:parkwayshenton.com.sg"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75cdce348199be01fb4dedbb2857",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3XeDdG1A8fvJ0umkr2yrEen5qA-Ue84SR39HLGxiAPTztYIl2t2440nzKRztT_nEvVq9cQvvLqfALN7pdSnj-rdFZW1cEzy4CHLhrev-NjFuj_7AXpohssiKNQtC-tWSwyDZof0hP-zO-nTD60IyO_oEUFs3-xcgQPLUUelmWkK2-AfIWTvHwtoReEUveQ0asUN1eeQaEfMB_qgYofHb--nxlntVRj0NXxTDuWUSiPzmkhQvFIBJX5buDSEAYDZib-jPQg4d0Wpb1N2CqW1nKyOcFldJZeJS851JXIGAx_QGn1uIS8kxam9MgoQA35HjdcVnA0i2Miz6G79lnKPo9zyqmw_WmBz6EIny0Tuzi2zzoc97jATYE41eBXQAF-7iD3kJ-t-JAefCKhVtoPmmQVKFtLWgKOvCM9JfDOZ1LuhZjXZwRxmDT7bf4rUkEfNaMZJib6Svt1nwbQl5UirUits597-F1Lg_jh-_CM4nhfVlAbXa6hR4iLEonCvLC4UgIhP1MrtsH1BVU-3BR3Ydc3iXvKZeHTpzki25VYcgJ5NVwmbqfSUWQufO7GzkioXwXStH18FdWu_LGdiYdFFity7fDXg6ICAWuI74kD8Y1KObq0XB4A5WKu7aveCFHhkvoTA5_Fmoskcv-rlsUG1YlC9mCiNhwC86cC61zx9WZkXlKL9TC4Y1fqLdIAMYNs8sPSAoubD0tn5qHM9pDbPvahXyDpM8o0r5h5wpV35DHTvOWUhUD_DMaqq2QPiWo2XJQKNoEFFMBy00kaWaWzWsIKicoQT1l_wmEZ_MvgnqiVEYhc9WWRTE8tnmnRbz7lzNkuCc0dV5xhL-72o-ijgI3qgVZQy0DwqlDRLlcPAZLzSclYL2aKqBk41Zml4BM_DX_qAj3aqLPmMFQXlUQ94XkS0ZDoXSeLHm_x4OPgWvZP0t_XIQgSFl5FASBqO0FojXAqQYcKl0FIJtXFH3gKbjf_CpgdH4VOJLN7vb2QvkJIa7Q1fEya6tKjfCMuC3s7efQ6tP9SJnRVQUMEmazTsfWjgewe5w79liBE3SsFsQ1YjeqHbm-YscFqha3GvBF-6H_vzGxSOBqSh9wDePKim_YlO9coY1VVGSpDpJvGDa-NUWU-kUyrWl4UK7ycHT-sfj6dNuBv4vB71vElBhX4c7hudTFf9YPa7nlgIJEADJYL9rnqFz7y7FsR98q-04PUU8B--eH_IXgKEONcSHcx3bxaA7Slxy3lvZqtcJsunPEZpBp7R7_wO98BN2nwVg-O2Qczs",
+      "summary": []
+    },
+    {
+      "id": "ws_0d4dae504662397c006a5b75ce819c8199b7d4172e7bd608fc",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Osler Health clinic locations Raffles Hotel Arcade Star Vista site:osler-health.com"
+        ],
+        "query": "Osler Health clinic locations Raffles Hotel Arcade Star Vista site:osler-health.com"
+      }
+    },
+    {
+      "id": "rs_0d4dae504662397c006a5b75d3a92081999f560cb63aa50ab5",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3XeWG83lmWpudeSWCZ6v_G_4RbDbH7AVcCqGEHSBf6II4zVrgFUqV_2zyGylIh9Fknw6egigfc96SfUI7u2OgGql5D6Lu1tibKbxRj6i16iDEMkarnuhRXy-VZ8mnjQ4wNdK0njm7UGcKGGZcz_t9272mEUe4fC1KYv7x372aA92VTWY9It0L7Vv9DGQ8kmu2_kFy_fRqlIrDnJTmOC5mjr4uoTbmfIw8wnj_SLXEbmZielr7X_KZbsQjlNWvSKhwi1ctgJu0uUQKDSueP24nFxRS0U72MZ8cE5A0_QRAfucLghuilRzwpgdzVIhLvZGUMQUq_SIWxF2SDk3F7dZmlZxc2I86htd1xvbVJRV_93ZKzaIX4Tfy25Qut0kSTOCppvnTe5BT8V3lFLbGsI-1V5xN7-_PflhvDwKLymKi0QBCQ26d8Nkpx8weYy5Tk4k7Wqm9fH7WMgGkw4_slNlNB0X9QO-B14pluSytHASMihUZ62CLTdCbSy4kRLIXEVX1lOQkO0zc71SXEF9GyNxcOv5gn0iAdy-kyRTArxrMgCiuzCLFboHyNRe0C7v0tK4zMgBBwgSsakYDys4aI6uQacjgq13ZBU13zfD-JfQY9-l5WXXCmRxkm3pz0A3ZPauwpyGY6nCdiM-TMuiXuiqm1YJb_r4Uzh97cqz3Jz87ReQFAx7ngLTAAdX-Ba5ykoIMmHQu6e4owL6tuEf4U8CFYitFOM8vieN2opgghh6-3VaKHsJRoU6qWUZ4q7BnEdCIYndT1TWOmaApSm7Il2XQHIaAHl4NTpDqE6t53ZLWhyyrU1r28WhlRyG3_88OscqTqn6XSI_06ldMrgCVrnTCePKlkAvYb4ne837lVwvxEAkWZ3XTKqVdIjH2KYss4c2m68dhT1smJ-b2_eJR8Sr0d4T_X_0H1nZvH4BvMxgUcihTAcIYtQj9iH0HJ_MvGZmIc1DQZ38JVc8MP0ITUKtn58V3ry3leHZ2o49yyQS6fYCF9ZiRtcKRQGtLXKawwkBgpKiTPy-T2hCm17jB7Qd9nf2oTMioBHhyQOJV7p-yN3E4Bvwb5rqwJ1bRQoTtC-FhSI4I15-X40yLMQAvE7W5c0UoeZ3YbNY_DJ0-7SMzFUlD2UM7wfbmO5IEsnURm41A3Sq3ALkfkJ3-yS2k1fRj6MZrdd-cTAI42p_B85vkx9ID2S3ynmzMaO7Mh_cdOIXxsNa_aYIfEvvZeue6WVesT4gO9ZSyZydy6XJBrXZI5iLq5OSPxnxUSNa-kCDAIYituApUhHdwxIF25GDvR_8c7mZS_AbLdAzYNZF8mGuVFtp29CP0XKQlPiHnXcwOfG9B27nSKWryXhL6VxEORwkA2iQ5sbecWkj_ESpSbSDPnoaKTQ-nSOncQb65BS-we7N-RcEN0S5jt2JkXSfWjLhHmFeaeCRAdAWHKBgAfi-bZGyELDiB-MKjNFSkbE9pVq-r1p9Agq4D9xmh4Qm70kGPOhzi352b-ZuI40zsylXTC7W-jEQxeKto-mjm_96NRI9WnvwnIoGfJTo9oUuT6VaGnQC7VgW9iW_m4A8dKsOEXRe36dv8BYm53VdQkc5kgklGpS1FqJGRaK1lPF_y4YY3w0vAktiBhAo7ptXUGcBDSYamOxjeuIdSo1msQFzhWM_bpgEN1cU2FuDrhfQro1f6w7ZN3rFUe5KcyEHSmUB5Z8B3Ygsihz4RBbmW-Zq7KzSmY8tZeO8F9HF1rDMA2z5tYe6dMX7qKIMtjpyb5C2V2eQv7V0IR6xx-IPfsz424cdrHUoAQYopE10lYTx89Fr73reKT6bXlE2jiJ5EZuRvylYv2nKn4ZfXQXNzGw6J3adZaAAPi_pzv9Tv8Hui5ZSTrFHhrM-5L4kytbedZHuTeM-jFmH2uvZRAy4t5WvA1cpJjIkZH3qvsPqdI3vSs_3tQEK5AZ-QDcjeSTBoqifY7mncVd86o6m9gnenFd4yfkTKb3mZnuaxRXxBgOo-ZovW6mRxoxNcfJcc2MilznqvZRT_4o7uLWjRBNA1MyFERYAUfKOOXrqOGZifDJxzLHgmd9JkNtETwxVTUzTfg139Yer4Vrd7dUrBOhszFGyRnvNZ_AOzwm-AWEVO56ppRQtSP_7aQhEFHuS6vJMbJtAufy-64NwnHbe5kRguCUfXmbFW-JB1GhxZ8L-cDQm3-cXHyogXUdNL1rMkyCxRJwf2I5nDxLMLCBZi4-YGPTAvGtSXl4sUC7a0Eck0xuGGpGfXU7VB9GkCMeOv9uk9oMt5KzrUzmGaszyw37RY1L2KXl3dBq1gsyheSCjYzwuwD2ndfFk7GlrmPqN7iwmfyHIdXM1XgOLX2NMUapz21WxHaHL4WKMrTW12uuNKnemF3Q6xjP2iI-r65vCRZ_f7-n5g3mm1w7tf0aaIFPM_YLILvqN4j_-Q_eZkNcPOvOKEge8Sfx0pW1YfP5iya5-i7wJnZQDSaTFKf6MjcCzi8IWZDf1HAQKcXwo5VyAyGb_wjDIp_kMgKrlhTtdZPKTUkSmQ6G1bUa_AxnMBkqClsfsYlC-0y4r5hhG3HM3CO06XodfiNNkgbKMyziashwTJgAPjRFLj7N8ogGLPYOO2kjEe0eBfjAXL4Cb_zysC3OrmwIY0qg75DFpa8zmRh-yqFdSuHeJV7XKBCB_tvS6FtglPmGC2CGYweTokLyEaQ50I2_S1aD-3_t2NVQRMUqep3Q8dc8as_MwZP43GFiBLPnOHXhr5snHQjV_xeZHDW-N-lKXaND4w2RYOJF_KKKrjmgcBm7wz8gPaMNpYryGu3rwssxmp3o7Jg61bf_OjYtXeAIKt6HHe76Bx8CXwwc8Qm5lcjaoGHgcy3r5WtXGpgllyW3UUX3vz_1Z0VeBBk8snrZ5fxnRvYz42NBUujnJ4Yie74kRg2Cmije1gedZJph-iXTQ6BGLC7pR_fNVJdX0ZDFfoTlAnZ3_kl6LvTEwJhrWp-HYEzDBNp5DTpqaBUJJ_-d7vWuXZY88MuVmqDCE4FsJ4IQ1-ATOSXBhaaGpXSZl8ZhSazokWRtSyh7v_U31KbeLO0cBEjlpy07mHEaph0SGYdmMY_61TMPaRqV3E9Xa-nHhvzwzmorhppDvrCKs20gBQUONw_9diJbV8H55zpDrSxD4lA84ioalswMtbPUYoie-tBMcvroFXqphl0Fe_SCyZM0_KmlLafpVz3vhM6UTbFhquZjw1AxHDlft2-BsJXluc9MeyjQFs4kk73uUmHssMBC9XYw78RmARbLjXCAG8-27QK-SaGqSsEfS-8f5LfZU6IrIZsp-HXb2geL2we9lDVOD5STtOratuibwnCFDbn_PJgnLbShx0gJ6QkQVIo-fDIi8qxtOVGYMnj50F_ipYnxYhHN5LtFTlXJEMgwOSciqQmbvYJrBrIGZRdFU_KnNdFbRAIPzzwpgwwWYY89n5nfs8KAvoZ0TNrEnLu7Cm11SEDnWr9BgPOsdWEblLRZt2G3-4Znd5RQ3R95cwnMQqybf-seWRUNutgWS9Ch8Uaq-4QDbl_AVwb2LIHmhErXfV-7tmSus4XmI-ReKm1J2J9YYC2cYKhMX4auMDDezwVJ_e9bCHOqcL8wnJNjZ3zaWuIaRvWAQC-ejdC1NF8qBM0ccCPm7qd2_zQCPJ1oNFSc4LUlq1LZRQbTKOVLQmuw6SIveVtv3Jr9Vo_BMMSbE3OoV0eJezFqVTf_A6BauS2eTw7sBflutSSI3ixLNkOvTVTNb0LpXwbxtG1D8QWsSbqEyMDxX2cNyzint6QUzw511TJDQPlBaIVcFlQWmZaf83T9k0CmsC1w8nO-0jpdIYyl3bHl1rp0sye4Ec65E_v0tLn2o-KY1E7yq0usNdU_ZJOcAVHkkUSIcGZIcwSE6Jm8GM80w83fKh_9znngS6y5-0D4Jih6jMWbFFRvAqe9JmoaEM7e83Bmwph5sLH99FjnjY2iyVraUU-m6tjtRt4qB266JKwia_xE71POnZWzGoAGX_GvNYiFWpie0FzdxPvNyuZMtyA4199hv31XXvayi-BlB_CBtSNK7PCCwTX9gJ7SGRv0eqSDgjUxPl23WEEW",
+      "summary": []
+    },
+    {
+      "id": "msg_0d4dae504662397c006a5b75d93af0819983a8ccbbc3c17c1b",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 383,
+              "start_index": 306,
+              "title": "24 Hour Clinic in Singapore | CHAS, GP Medical Clinic | Central 24-HR Clinic Group",
+              "url": "https://www.centralclinic.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 712,
+              "start_index": 588,
+              "title": "Terminal 3 \u00bb Raffles Medical - Singapore",
+              "url": "https://www.rafflesmedicalgroup.com/clinic/raffles-medical-terminal-3-clinic/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 937,
+              "start_index": 858,
+              "title": "Caring for You Since 1973 | Parkway Shenton",
+              "url": "https://www.parkwayshenton.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1154,
+              "start_index": 1067,
+              "title": "Clinics \u2022 HMI OneCare Clinics",
+              "url": "https://www.onecaremedical.com.sg/clinics/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1396,
+              "start_index": 1314,
+              "title": "General Practitioner Service - SATA CommHealth",
+              "url": "https://www.sata.com.sg/departments/gp-service/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Happy to help\u2014what area are you in, and do you need weekend/24\u2011hour care or CHAS/Healthier SG support? If you want a quick shortlist, these are solid, easy-to-book options:\n\n- 24-hour walk\u2011in GPs: Central 24\u2011HR Clinic Group has multiple 24/7 clinics across the island, useful for late nights and weekends. ([centralclinic.com.sg](https://www.centralclinic.com.sg/?utm_source=openai))\n- Raffles Medical (airport branches): The Changi Airport Terminal 3 (B2) and Terminal 4 clinics run 24/7; Raffles Hospital also has a 24\u2011hour acute and critical care centre if you need A&E\u2011level support. ([rafflesmedicalgroup.com](https://www.rafflesmedicalgroup.com/clinic/raffles-medical-terminal-3-clinic/?utm_source=openai))\n- Parkway Shenton: Large, reputable GP chain with 38+ clinics islandwide; supports CHAS and Healthier SG. Example branch info and services here. ([parkwayshenton.com.sg](https://www.parkwayshenton.com.sg/?utm_source=openai))\n- HMI OneCare Clinics: Islandwide family GP network with many outlets open evenings and on weekends; see live hours by location. ([onecaremedical.com.sg](https://www.onecaremedical.com.sg/clinics/?utm_source=openai))\n- SATA CommHealth: Non\u2011profit medical centres offering GP consults and basic screenings at generally affordable rates; check the locator for the nearest site. ([sata.com.sg](https://www.sata.com.sg/departments/gp-service/?utm_source=openai))\n\nTell me your neighbourhood (e.g., Bishan, Tampines, Jurong) and any preferences (budget, 24/7, languages, children\u2019s care), and I\u2019ll narrow it to the best nearby clinic and share today\u2019s opening hours."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 7
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 34363,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 2467,
+    "output_tokens_details": {
+      "reasoning_tokens": 1856
+    },
+    "total_tokens": 36830
+  },
+  "user": null,
+  "metadata": {}
+}

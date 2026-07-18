@@ -1,0 +1,250 @@
+{
+  "id": "resp_04277bdee90656be006a5b7779df78819891a8303009dfe09e",
+  "object": "response",
+  "created_at": 1784379257,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1784379298,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_04277bdee90656be006a5b777a46308198948480329bb4a6da",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3eiALpJJ7YuZnmMQ463ZdNuwcO3SOaCMqu3XyfXlqqNPTD1iEWMCFgypBU6WIOo0VrGuNQvojSfBiNikYUDPMJBkt_wbtFkF6hLLUUrpgyVTPKtHXf5xxoeuvVDr_NBAsUI0ioivjv9RYpYb1BZflSXW4dz-ExXOGH_BCFuJd1qYJi-zMYGKJjMpNeNBTGbnn7hM5lQEjQvYNDGKoo9VCyMiZ9dIeKTa2JduOLHYI9XG_-tUMpQmjL7vToWcYEQ5QRe43aXBi26A5eUcASAybflQSDoOMJQP7dW9QhaSDWybmG6xdIOv3duxYIxu9uedJ_YMQXNvr74Fa2qNqN5Qo8hTvO3J0aHnt2aNFdORB-FiVpfT1-qhit2kNV1M2FmkcPfjEbijoqecX7adXSw6F6kB7B2g0tUY_P3zB0mzZsdcDaLmwb0-8iEQFcdFhafEDOJeBzdwAsyGtJNsMwvteJXMAjc40wMbcfpj77chOgR93swDC4myDnGlxUVKng21iwfjdE_IiorNNkhUjKbjQM4wZcjjXb97nlOs7wkpnzbqS-jw2lHptAeX21KkKILQJua5iRI25fXXadnGFaVnKctc-PFlTFbwaFJ5jzE78Z9FCZz-YNhRuiZKMEnKNbyoVcEZnfvxS3_rcv81ORhmkt7apyCFEGSx3CBXrBwhl2ycx7Wpe0vc1sdRnzvYMQmUa99SaiO1Yp1XDuwbPRr-TRiZHiMPy6gwItiR941nEEgxd10BovsPFfNqZZlg0MhhpxSLU4YBbkE8wmNZr6ComJGo0a4S4r9wQMTxQ9XxDRWLset44NCSXnY8WFGxC5RKJpXC1kx7mGDH6NNYQMfcYokIYgPOyxXEWv4WRdlrlANKrEAs8GsCy79XL8AWSlAUkxYYJJO0KPui3A_RoKhiYjkr6GYKNVGyeyyv0Pqg293IOwXtXwBqGJ12m847u3ILzxw6Wtl_-lB1SNm0er0g96Yz9KMFffqTNwutAvByd9wpUGJwaQImYIqjAZRmORzZ--UAwy23Aufyj8H9E463HJPM9sx4O6kbefdvsZxS6F-SZ3-gi6HqJ1RJoMNs0503jdfMosJmmjViciSAbYivUKIrGbQzRQvbadalnOPquXIH9KChyblITvs5lNQNYe4Iheq1yFi0SLavzxzWangVtdM4SNKW0RcE11chcRMbI_y64A1CsjYqVU-RBrfPRZaAEGQ-pvgOUdcO8g0RZ0seRXpovaNGuOSAYAFTlMPyX_P0Desi7d1-xaFATlRIV_3BnNyzSUVp2OO-SMtNGRnkCO7ih_VdJza_rn5R0P8qdBcNaKr0LxjJ71Sl_p_met5ufPUSpwdcoYVi1LMBqNPklpNPofjPCAIo2nCqb4YXAAiLCx_LDMia0BH_2oerX6REoSLr2evEiLzdK0o1-NrCJU-hjVOFHnSdRbijo1OGj8K5_zCs2hN1E1SS4Urt1SS4yh35daqnlxtdDu9uk7BFSG8nLOGGvDyWYbCI-y7i6S0pdK5yKqp7XfC_9LW5MSvTVxB6XHZvfYzuDSbAf7uQlFaWjR15lfDJAHOAQUM4quxq6-LjjJUbZ-zMEeeP_zmCA4yYArQqpYVWUFD9OL5bcGFqyo6Ez_CMlh2LmQ4UB_LSKpPCEwQZ3Gjzbl6gbHz644gQOdjpQ5Q5xvBc7dS5xS-v1-My6L6xPMRvHpShH4GHnsQcMBOrDVHIGk_jKf-28Yc0xkopOMd9gHREWSpxMi6jcKmLd9vPlFBSZlrFqc4yZx6sFhIblh8oAKQVOJFT0a9-SgHJoIBbb1ErfusBF7VsXY6Btg35GX67sFIrxCiO5ITup50p87YMTtBQuvndtYZfsmvYeIHkHr3QSZKNnomQ1Ri_KFUKq6u_JHqZnLgMGqkdab_dILd1fDSVFP9ZVcCjtLOUmhKhZmeAeE8bG-b6UGrF1yWmYW95bo4TP2N-tE7lcBoxdcIv5T0sFcZCn_dgk7dOEXjrLLFvNWPbEZEyQKE8vQIUcdDaMZm5TBJQtCvUh_MkJBzEZBbOxmS_LUDNvUwFjn8Ltp1TpiC3Bw4gU6sgEk3Etp2fT95W1ItIArOmZamNGfTD4P97529BIWQk-pCBbJ-nmh0QJiwLsrnSlksThLNB6UamR2WbXrdDBo-GzaVQ6hhSyujjrdrU2iohmmq5DphG-79Mtj1xMVV_NpVJecx-Jq0PpdRyCnhyUtLSwL6InhUPTVtH8qWsqhBRnzCwPei0nqi5KX-GQAXJGE23gZ285gv3MGz24CyHyIoj0BktP3fU53QgO9X-y3RN270pZgT4l0HSKU8LK_D2lOITPcKy_cnRUMwxuxLuux8y6eopI1lKTqly_M2MYTVYcMtLcCjr0DzSukyrRwITN9sOf2z-HcoASHQPpzC057QbT5oACczjZPCm1x7qIdLusJHDb3YVZdkAEAF8nsI8KFx_su4qJFNtTt04gA3E16HpKbHySSbEvpa3LebVUnH8yTWP2DXy_PpLmeTaDWdH9DbHF9DYJjHADYrg2l9wB42llRNB2SzdJRLOEHHYiq3QSalLpUtmHdCoypVtHzi_2X_5BSw71SmB7lLjiJNiIRd5Ulc7ZHPC3Nf-jLGh1JVm2y5da2-QjdU-Q1fyiUVkgiCubaXYx6QfHKTjkt_Z3hiqVm4uYybUKHnPVjURL7VGxneBY4D8TIQCl89XJP0TcFXxPvWzi4gVv9ZaMVX66T4YRyrWuOq6Le2EDcYOmYcwP4pAw5jNvlNDq8mSardP5DdtGUmbftEd12Svyz9lHEM6sR1FB4gYMUrd8xPhDnH-ACZuqIg6az5BuxF-k4HA4Tx-eAjRRe1Vhj3Gk8699GUmTPyFq3CgsmiZhjh9KmGQtjMkNBEPBTb50pvry3irtD1O-Kzpw7V5h7asrBFF-QY_he9wPYyhX5t79QII1B10EDPT5G75NEn4c5pfYPKHr4Oow7ms9kd1nYX-kYW0zppzRN8DCcIC0BX1wm6O-J_MuWEhstbI6nFTWZA3M5YKk3pfKUTWnebcsBMPb0RfernKB3y0PrZvArwH6x0y9K6Cme0Zmdmbd642DiGAzBVS3SSHUjcsTiSCvZEVlkf9aOj_-iWKqgfcvdVCpBTa75deif16acJ5hHYbo32vePVyODMT_P75PP45S_Kb5K0w2Dupb6LPT7a99g5Myqnaki0jmrd4uZ-_upbQpMUv15idDTBzk0YcDcCF-ZPdT8mp9QwEjM25uzd_etVD4Q4OZhfI77ef1Hne2q1m74ZAH7-3VQi8oq1XF1e9VoHjPA7FB_FHSIy1lLNLo26uw25F43Wdxqaux4K1eowwEcB4Xlwrs_B2nES2uuaZ7uNJP3_mUyp5VSvk5ykuVbsw8mqLH8pgHLAL7uGpERpneo70Ac0xGbagxPZXd1brgmRTynqyU8ow1HxkwQKOVm3JwdeQUArZls6QzTKSKkSHMHiRWpCph9IEACd8b4hgAzJYcrHaZnRD4NL8au5zV-qQFBrEYLbIGld4nGI71DZgtiAmuYdDtwUQPH0IZ41B7UuGcgVpiEEkVDTbkvIQaGuUkad84RqOPbSaAqCdJ4iH6mwpkBL7ioeTEYTrr145pMOQryDzrMUWV3K-BS0Jl3AanqVj40z8f2OnVrdzGGXe5FD8H5HiHeUKdYVLM1r4JExT3n1Ph9O8f0R-_BkN2cHCQP7M67vdIlxTBsf4BZP89YAns4oI0A-lxy8QePDoV0NLv97GPjc-1NuJwvBPpXWf6zfZjOT3w-AjktgkZk3Tkj2tKEZqnDT2WqmnMtyOpMeerht0TlN2fPUiGz4p_sq9Wz9WsKUAzk8YbTSHZl55vLtirhTbBhTK5ojOxeQF7PPKMw59mxf5Ofm-rWQ27husfpxtd417BeetMVsrY8GZi_ITvsgyhBakmdJgjLVlLdj0Gmj1p_G7nmxpV_PKaVtCBGjc9eeh2tOC68Le7tmPb0bbM6-o5t0-L4e5-gIGvdBh8HsIq8xBqCPgLj16u0QL-xLwosNAFd__p3WbW8FJoQDmxPg-zjui4jdaBZ4kt8if-6Orjv8qwJoCPbF1OSAT-w3vYULvgZ9uxOdlNIX6bujAPeRjoY6xdIglBrRdEX6yE00bNyBoHWgd0VUj8x8g4NRxm6X6DTzm_fxXqSWttfYKpAHo5ngsu5nJfz8qL6Ro328rfxVmkIH8Uq6TVKF8vsujXTZ10lAa51Rcd9JKkT-90a9iMGN_Z1Hji_2D4gn5Axx-wU_njrAANve6lVaxYlh8k0REeQ5GvyyFeF84dZaFRalnFCCwzxmYxWUV_YjBwFjm0D-xkPldot3AS0l-2MVCtJW3WV2Cj6gQGMDfx8eXAAaGSFjFlUmXF6Kwf-Cn_rNp-0FToNNHpAe_bjng52Ln0Hs1VsoAAAuc788ar6ecq7fFTBaf0PwOQBLQ2-bW__OZ6DuOilmR54S7nOiQSeeDtfjU4gxNmut4TSIhWeNvgHA_zIzqUiymCbP1oqxOOgUjEY30rBvgubV3uX5efd_YYkZLhyfsJZ-rDrbbgMFXJJgSRHtLY8YnzDqkJenQ9kUTyPd4A7b79KAHNrvcQzcISZHOpZXJRBs7sI9qMjMq3HTlOM49o9w5jQKJ782kaKBa-IboAGDLUUGfH0cTYJMScwdsBIN1Ur7y9JeMDysCi9EMjmpzIWgrtVP3ujkvRQS5Jk=",
+      "summary": []
+    },
+    {
+      "id": "ws_04277bdee90656be006a5b778103688198be81489273d2e5b4",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore back pain clinic polyclinic referral specialist spine service Singapore MOH",
+          "Singapore General Hospital Spine Service appointment back pain",
+          "National University Hospital Spine specialist clinic appointment Singapore",
+          "Raffles Spine & Back Centre Singapore appointment"
+        ],
+        "query": "Singapore back pain clinic polyclinic referral specialist spine service Singapore MOH"
+      }
+    },
+    {
+      "id": "rs_04277bdee90656be006a5b7783ac808198bb92f4378edb14e0",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3eiVhU0EQh6L2voha7kITHj8EUojUYNyXAd7RNEDoCih46Op18bH_bRxhBfVYeGGxKp-uyAffKoIBdWu31ONmOHK1A6lFJc5f0H39XFgzap5TxDCp--vyTuDo0MwiSWVgIPq3G3lz-0W3BOinfdHKLEFc45oZrTkoi-7_GPhW-k0_Z9ovV6NlYY4VmM0cgN_5rbmC0z05gZZNTviukSsX0lAg4MXt0OAOlMrx2DWRLYs4fIBBDBtGKki9yrrkNt4XBojLr1kfAHQKwnl93HMX0jtzEkj9T8lqFPFXUxWkQpwnZ1bcvol64gSdFqwOzycBWRz5n2IdbSq5uRFCIX5NZfCJJw3ojQpOqlVJXlQ-yROReR1N6uOlfGcRBmMBb6_2siZreViUeLgC7glk1EtICyQHdlS9LHTAifD5bMIqONLA-lwxIRAK_klbg2oH0zS0fl-kTjFXwEqo5kg_HSMrnb0mLRWEipCeRZwVKIILNnSxo_ANXypsUZb0NSj9DuMEIm7hvSxcMCn0czOquVjv029WF-vDcgExtbR-81xRoyGISmap93zPfUxcn8SpruGqUIZ7NPrZv0tL4dBvD_G548kV9EQFYGihpNxQg7MBlwF_ht5plTrOFZ_ZSB3YZGP_i_C2BzojR1yimDQRphbYQqfv7yvtxxEOKWMy4BH3WUU4_xPt-Z_TA8PN7zDyZvTEYKkUXGPsqxAy0Gw8H5h9L4HynOovjGKPz7ESecm_9UQcMkrp_O9wDWe0wHKcdIVXKm1N4pw7xMXacpTZedqTJ1j75JXFEf1pAa-EnopMv-gwO7O80QviNQTd5Jx9K0jEvjUEnk-GGIYlkaQhcouhPYSiNMg1D77t01tI1P3V3XTSg_qFf-x-tTNwq2hvamzumzbaXe031OVZJCskeRyEF4SiIPm3PpMoLfe7RuivvgCaJLMT8ZR1Al1YMIpAABxr3GXlkDc3PXO2vRO3nDzsU0LBc28bM3VYvSHFoQq8bNJopKhfp-xTnB6c_fG8B9DzzRVjKmU-zu0xBlAzGOPWYjltHVduivywxMNrvTh907SnI8jdSDuZSyAn6fN8bRQhB37PcsdkgIvH1XEWrmdfouoqaYmtzFg4Y4WP6Fh1BiTGt4kqKovgFfcUnjE2C2Ttyb90XOjx-2SG2kmjU-K2DodilGAh1wFObSgq3y-TT32kcNMS-6l07YqantsuhhbxJXxpX5YgGVxshAa5bFYvKcd-aJ5IPgli-vlV8-rO1KNVA5FpRfawGyxS3B8d6cwrVFlrxEpVU0N1RyDp-ryZ6k898t-YbNy2FhGGQ8jWC5qzeSP2_QDeiDUR_YyXs-oEv8WAxVd4oYfVw_DRnqAOUd5EIv-atd1_s_NnInVzdo_CWNfVWm8xvdaq7C6i57SWYSit6VORtx89QO_3f5Sg7S1KjS9vIoRrRkIiD3d0_rZRDHSEz6LtltR2-HoTb64IifYoSadyXuSJ33hQOEFNOsXe3Dl6xj0mtVeRCulp7Q5D3i-6MrEiGvw07fKiBO5TNsb2zRMTtk9Q9MRZHOLJztRLUzNGpcu-THUFFm2jpFmYihcc5Wuyu_rPAhSAdxb0-n76qNi6cDwMI3SX3_PUsQOSc9LiIOgeA82TZt4B0REFcmCKZ_c9Uwc3NSu-SiM82NoBqLKQSAHPZTCB1NHtP6Y70GPAJ6NqW1dKn-6LvlrEEwDbnNvRgxAFduSFBaI4t6yn-yHNv1_FavBMidV8TTpNNksI_ARVAWj0EVSsghIBcrqTG5HwSQMZWqGLXX448VCRIZqPC-FSX7JxdjSd1yFVWarXGw5ahUMe7Ds6wQ0rofJMUwACbXAv_GS3OmHwEsPqa70e-DNbhz3TNAw_TGzxSf4QTmNGzfjtEQhrTExkNPN4boPSmlU8sgLy9sU0Emf4BZzJwsjzPKzTo1alLhy0Tk7ptsMqVjTfgG_MLsyVmOHMF0nCh3hqplXITbG4j8eHglRmTr2Pu-3OlfrMTiL9TapRT2r6IszegMSk07iXdGXkfo8Iq25oW8GPDOifvU5JBPxJP3ozsYeYJ0QSUrrwFcOq_X9J8iWoqO4GP5QTNe982fZjxUjqmvPPnt9OqG",
+      "summary": []
+    },
+    {
+      "id": "ws_04277bdee90656be006a5b7784d0c0819898278be91224d6ea",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Raffles Spine & Back Centre Singapore appointment site",
+          "Mount Elizabeth Spine Surgery Singapore clinic appointment",
+          "Tan Tock Seng Hospital spine clinic NNI orthopaedic spine Singapore appointment"
+        ],
+        "query": "Raffles Spine & Back Centre Singapore appointment site"
+      }
+    },
+    {
+      "id": "rs_04277bdee90656be006a5b7788acfc8198a9961d70c16c7b0c",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3eiV94fzLXkVsZloXIPVWd9VZq70HYn0Z2Csj_L6pBUyZCIRrma3tOIB0ys5EGWt3RAsTDyxwQlMeNFCN3yZ3Q4cyDcHnhQJKLT3ekINNOEXa7_Kwj-i-D1LOT1rOvliMHeFEW7Mx2La68x5rZt4tcDkZ-TtZy45jBbVrs0mcZ0lHMFygoOfQQorrCb1YWCMDMPikMveIiv2gm2a_FiETk4cMwZO0iNc5jX7z74LzUmunIzqeYh5IQZIhbR71F0A0XxQEnUJP91W09VIU96SIy-oqJEPgbRQNX_VxgGnBPKZ4HBC0uMsqa_rbEodKF4DfZHur8PHWahsMLRqsrxXHB6AK_yheA3JrCZTifyrFhIYz23pE1wWMPxEHWip2AuILsCAR7Y73AHBQchXp53_1F9DuhwvTUnUruHXgOvrI196QLkDZoAwEmhbq7l-W6e9VwHHx8Ln-Ejn3s5bpAcEAeFZsoA5Zv57iewipfmzgm6wMdzGzSmIP8C3o5sXfHrIqDFzIZTZnmRExrQXt5PwrIlX_xHO9nOwLAo_jz7zDVQx2zp4VRCjn_m65EP1NM6A2l3CLPj-W3vB241oWIiWnQsv94hiTGtBgjL5rD5v41Wh73rNPwMSZC1mkgmn2qJdxefOaD56Ja7HrwlDBxWerKLpBsIYwx7mwk72lNQYKsAHYzOzmUzUMA2K4TcpYn3n7voMbelrLdthfsYTD7_fHGLliXo8lmNt2i2k9at4ABFz0NSUoFpkonf_FWzbBlj2thFzVhjTct2boPQLm486o1gmveJ-2a1e5V7FLYO6SLwXzDREEAY1pzHYY7mwq7BHstPxzaXSNQRQA7jnV2XWkytag643NNhdl7aDNUrQfLwjFnj8Ezjt3w22__oOpLI_ihGGzwfUbPJcUeL5nlKocnUOtqo5JafNrrVhclsRJWvHjftaJkBNytECHb741Zcks-NISmm6qJ6nxnCKOzinxX6cbbLJSluN-VuCWjZIlZE8iVCsTV9psZNum9H96L7xtn16CS5YazVe9r_oYwSiObAN4MEWKN0YP8OtesPot1GHQbHvvAGI3yp9HFwEnkmTSN__TtBOyA9i6Fo5tSMJq8AvGXDoGaom0elbmBJhnoZteFt8CQr2HcjcA8JBF3lOKs6BHvz1hCNaU1l_iwUQda-AcQQ1fq_0eSIy3xf5pY8pXP9E-Xz1YwPe1tV7z9eyitK2efn2HBgv4cp21P8TrAz0Uwe-CFzVre2GjOTiyO91oMTzXIfLhX4Nu40H3ro_rzI14bQ3PyTJWwZjBaA0kNuQ_byUFC3weJQubsej0O-KRhtLrwK3rDOAW7qHV8XrUsLLVJ81p2Obnrma-GxyaemcQ==",
+      "summary": []
+    },
+    {
+      "id": "ws_04277bdee90656be006a5b778998948198ac31a896123747a2",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Raffles Spine & Back Centre Singapore",
+          "Parkway East Neuroscience or Spine Centre Singapore"
+        ],
+        "query": "Raffles Spine & Back Centre Singapore"
+      }
+    },
+    {
+      "id": "rs_04277bdee90656be006a5b778ffc648198adb693728c4e2f00",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3eia-dDRq84WO5S70rSB9KjODJov4MJGeF7WSRzJvGk8YM0VG-FoNnPO6uiNRrSzjDgi02lFmAv9wJglRgMkk_q4l0yaI694xNkFqWYtmS1xPjp4sEIfwURS_Jp7IHet8jYJ6vGB4Xr4hVSgxi9O0-luQu6iHf4CVEyNu5VpqvHYQPh-Y5IeXa8buSjVDpEUog6DdsRGj1P9M5HuilbstpYg7GoeUdbQep9Wxb6xruWH19_OypGV2cJoURiCeiSbfNoAOm1Yy4oXg3AAJ77qg2mnhVkNfO489T1ij3paSiRiEx-pMN3_1GLNOloeth0vcP-cAwuHEB7Z6HRY8LkoJ2mMNYcoTHeEOzshLDMkAWLeBpCuDnv_GW45vJ_usGgRoJA5m8eFQS0s5ueXBHTV7FsZKRzvZzmrBaDALWlp3z98cusGvb6OQf3z8nRhA0oc9Sv5eKrv1hRpOhOd-6Nhf7knZ6p8aKpkU8AZl7EOwNwrZYEx9Kh3hXa-zS2yJDgwUkzjhvKC4ZOornZT5t9dUDf_cp7Ys6qJl_tLjhbqI9NGkuRyLp8ky71tUFiovAg0NPC5C4tf0GtLCzIaXxM-uucD0XoIP9cNAQBVoruLlr7Jvy4T1a6DW1qEepgOuEp6BTIxpcARveVa_vkQYNY4hmPrjlZCIZ_dZNqgegChEu9URwB3MFoEZvVTcAQOgQQL4y5gLTrqY0hFO2cDoWY0B7MvwH0BKfooWZ5aYi3BfupY_NJvt_PY-1YB2vykp8Qbwjy-82H_10YbURJfQMBO_ZPst-4O9Tf9kblgKmFKXXGNDyYXakZL4eUs5nSDzKCOtSc4V-KxP2c5fs8z_q3sS10Tsen1wXmioL9auSh5stM7EOywqPvaIiK1nYK6J74ISdgJLesREJNzQEgKQsqt7Z_q7NaAWFuCP4NqMS99PFc9b4b_NE7hGzrM9b_Tv--JUXV3_NP5BL7rhPO9hFxCigvJK5lDqn5NNLYpZDSoj5kc_S3gjWl2y3cpnN0Crbq3OYuXB--B-8wyGzC9Z5U3ZIWzfr-iNcL4i11gQpFihJvR2AmTjjCK0j9r9-9ecjfhMo_B_UCetVXEeCdNHiHaHvk_zNCk8R-NHepgnJpEVYKTnr-iTCwXrr_znSEs_4PKr6RQ5rerQRS3wYGOu3gblSMEl_ZeD-AzosskRVyByml8T0IkbKfYYJ4i1A8dzV9adxaRvo5ypPsN6Yya3CQJz08TUYqG7bWWaKRxf3m1c5dUbQRW9eaBJMQFBV4FTZ8vcIvUbq_cHSDOMCtX6tN91bzI9xGiSO35vVTJNk1IGKUAR1drBmc7XFxkyQSoY64r2-q4WwvzwS6mMHug33lY0RhAbtGJQhJJAdtAz5vhm24g-5zdrtbRs2nCetmbbmh8achrYkDhjj_0OHDa03xushKAYgwvi2ooJSCJPBm2sxG9e61cFFUWFnNZ9UwrKQsd7tmw2tWekxqrNc0tQ5eBurZddw9pc3MXpFjYb0zixjaD1hHl9-ElkGv8ylxLdibvy3miwFGuI_7yN9jb6sgIQPgUgOKXsRMUsZAiKR1R6VBE2OABelu-ry7xvyLYx_r8tZP4-9rDYGQmP6kvoma0XdDneOk9QiXvdDt1LV1ROdLP9CMVO47HDpmZyAqYDdmCSo-16w5v0uLnXUfBfEXZ0w8STqZMgJE3z01-ouFbXkI7H8ulLtqPK5mHA_ImWHajZxZQyuQIDAP1w-6LqGZqNbJqzWh-YJEYTd78cPINErjAqph7nXQUWLcbH43ggKwDHelDochsYjJgoSw5jzNM24CSJwqak_TNXcmshdMfnqjEcCdxa0QBpLOZ-JA59dc5XEnmiDhAp45TPTwW4wqLyDPUMkkxI8n-hN3D4pKt_nMugpvcVLLT_GUL3N6cA5AlikLf5fO02urvQmoFyKA_mSNQmk4gbnNvuKJ4FCGxAysGqC65unvvTOY_md8okbMJ4m9Mg8BppZEm1NUwsru7arseSZMkRdKLbW6xp06VdqkFIQ-Y9O8spGovrxE90HQ5TzGxWe26U6YiU65qhsmyYNE1ORdo2_M1iycBtB2rfbwu8DC7BReDAn2mP26H3YyNZTB2Z1To714-iNJyUwIL3RDd5P51a30ErxeVLE-YMoty1PwyaP4PyFQCIhij2GMkBYKv3NK1GLjuDym3JE4BKGTzC83qJjaZHzhBy34zZNQ7Z3ZF-7pC6CDMHI0Jo4lQFec5hrp1cDu8969ysIy81jsf5uU_EnPoVxUL026yIN-WrxHxw3W-X09EtF2yLBG5HMUxVeP8vQl44jkQLielROnWL5SGF7Q0b-Up9ji7JqxV3gzGpUcVQ-C7REDHYt5EwGO6BpS0IJfyO3z9wUHAe0gGIuc9uJe9yiCdSN_k7f7w_LHa92K5ZxkOIpAbJt-ROI_0v01hDjA04UcdFkuyswKO96lBTubE6lL77I5BeBGBOCuNMIeXbKVW78GLV5S2zgRUGBHCzlDawW9QrgHh92xMjSN_9opA4CUGlPzDkdhDquRXZmhnrAIrTziepU1GsL_-vVcV5ZvhE2frn6t9VAHv5UmBWnM0qLQupm9H0CZ4d0b-RRSphi7_7Ob5mNBJlR4zbGhg0tfw8dKzq7DJDt0d8VCU1CBz-syFrW3lsyMBI6I5bvR-ojacdZ7pC9hoqXJA-Punvq84hGURiJyyCXboxTRgBS0r2FOPL4DvYgnBimNMqrU0onvyV-iIpoxd5-MMYoJ5F0XoTYmgUOJdXxqzuMJ5hS_Fu_jqkUN71wbVLHr08IaK8Lzt-H7IyUi2eRIdtiCtGxuIGu3PELW-oEU8UIqbqOGrnEPKA4iPqFdp87EdS14GEFYTDy6_RkuEQNntY63wUIx7ThtNbn8-fVPKUdlVpWvQsTACf2n2J0MkaWIrzniqcwGkNqdvtAY-RSbnyW8KwdmIhIXneLEp24ogPt-l0Pl1qhHenLw5C3vOwkjm0PtN1uc6-oBouS2WB5VriVm-ChsMV8unk6katJ3xn6KSvGm12mKuq_EUnR2qQvGZ8-BdHBAqf16L0lNlBSJpPq0Ci9_1b9C14SMfJyC3IocPKdQXVfrPBQlFfC-R8ghRLJs2YkXmTbdBFsGCbWvvo4GJQBRzXIBqfJlJr2cOHWz9T1uY_2eQdlzsMrDustPXtk_Jtk9_CcgAeiVQy4wFRWPxog0VmIEJxqtnXjAudt5c-5T3rA_yC5MiKGEwdTEF5Ez7CEYGjENfxoAdNjB_vjOdg7fb2ESCLmbCG6kYsKQ1cTp6Vg2fAZ0P6DqOJD2kEx-5YZykklmosAJrb3PrCEOyVRWIbeIob6Fn7fr71Nv4LQTVG1GlxX1TtbCYEnwYK3BBoRJ1TNxPBDuyYeDE7b90llagXReNK_OPD2SbhwpkMFxyEmJ5taKX29yPwcCxxO6hnI_vlov9aoGv-RxnmQa54826HYrGX5pZMm74SvB5f-eRGyElyXAdyP5Wue1hMLIAuachsZEkBUciuUlR2WWiqAA903DHL8mDfKcGosG59a7uge4qcFSpSAY_jvFacO3KfF8FohdhJXHCSiaLO3u8QxBxaS9yQL1abVrM9Mxs4LDPTOPHT3LLscLB0iKAiZDMRygD46kWY-4vxCof0rAX7Fct4ep_dmrVk3BRuX9ziD4DT9fPzTGoVZNqSay1K65eJOhdSbV8B7gg4Z1W7Cx9nMEAf5iIyt0csaxdPe4cOYXhDt80ap5SYjFSqlCTVXM7uZU2DjQ3yPWI5SLzN3KvE_vZWNBtjz_Oo8t71reM6-8fLCBvRM50h7hRr2VVKdfYpJWOOj9vIeeODhlYibScNV4GzV_c3xC-slUquS1n-1Hn0PhB-atWSCtK0hDvESZ_wgdv-FqnYtY2DlFFDG3tlHDQ-IidJrRDKBdtwbTxMo0JfVQZ1RmGdIy_rjzxP1L_wEW8V2wnxET6Nrix07fMNZ9fdQvLwhsG8J9y7VXw3ECoWZ7sZmgqnPAIN5unb7AEd869GTSNjS5zTpNCryy60P_uqiT8O8TGmQOJCZQusX6-i1ZH6DFOoGSxgEIyMJRqiZJUkt1FvIDcmgXSCJ2BWA5ckWGpxPXD8o-AIAaF9JYzeUcfbDlj_WLkjmi7EwS1B51_W6ZOkMAD0HF6bOrPiDMiaIwIMS5RdaOq17YYUv9-3bE8kqpb1nHfNh6agdF6U8nrDEzsofx5a8kIDnx0i7K2pK4kp8selveb92RyDqeUlBIVMTkcq_xVyFJDqLFTC_rB6VvG5Eoan9oqpGC5Tf7jYxiR2ZYLSB2MmXDcWVbLIdNK-wM0re4s7on0BjOnor8_pZg0PhrGoihKLwaRN9o4ptG9IUTmSNHC0l5vNkwFSXVCd5M9xdxS0MoodeTSjJ5GaK0zgrn2U38A1urk07iF_NEof2BKffMmRGQDCwqa35Rb4Tj3_vrYanNAaIEz7dptcX1-VwKpuv73xpX1tuTccWc1rJHR8xx9x0FwpMNkUc9yQ08ZYyFPYZPGBTj9R-q8FYcV4yb6hNYdUhSolFIjVv8YnE09TH7vSf0yXmiVy-JqBaHBFZUZuvIlCtPuuuRCB7k5Jg52ymCzal7ZP3_sxaWxOfKZ0LTdY8oQ3b-aQlP4R4ROpjLrlqqdMktV4Ln0WgocEC_892UFXgZwMilxp5KPvy9kbnp2Yl26A8eTs9q_2fKhDeRZ09z_VlW4GAtx0EQbmn-gV_lq6oOBrH-59pK1s1qwGLhSw5-3aL8PN4mmTCKWJOMmiOO_ZPeA6AwdzQhVUey1ERoYo95zBi0ArANuvjwTO-04gLyXAslA19bt0mIf8GzTiNIFyyGOy0I5Y5TNKwAnyEl2x_N52cLLK0x1FovJk30zDTVfE2SuAdmz-gneyRRyU2mV81Y019mTs-XUoYY35To5KZnC7vYYJoVSHd79u6W_kYvTh4zOPcWXJektZPFhILbpp9UmIF7FJAtYO6WswBYqJVs76ylO1G2bLjErIEOeQ-nBmD4Vr_oxPEvutWLl9Mj19SW1wqJnBvRY-z1RJGlH7yaLq6ozIGvxU6PTLP3mr7OTkpJSI4B4uAnpT6RLxo2DTs9R4WpV1cKRbaTQ7bx12hvDQj0zpq8evd43hv3an0T5xemvtY61AQLKLSFNQXxJHvBfq68u9IhA_zuxbE4CwfVYDcZ38GXWXmFkoY5H_dKpxK1wrRr6458YJuNK-mLvfjWHTAVM_e53yKTS937v58WNRXqu-b1mykbE2y3rfAZmFB5CqwqtaK9g7e7jfYv-GxTzFpCAK2_wOaFMAQkbYjBBHthJNmwInc87cYQDNUTrcveUN5aCGxi-9shWh2nM1PWsnWHz4KFejrgDdK77M-6ymxkbFBa6qp666_Vy4IIV4ncF1mbqptRVVXw8abAryFf3XGP8OrNlQEmUdUzWBeQHmoN9LdHr5oFEj1B7lvxmJklGSymwmyFk7hqRGwnnaPMp7shlzX1UdmmdkzuPRAtDo4d77P3R69d4hBPi-RcvFCi0EwgBDQvql_MhbK2xS-iItGfAkwibJuMtNeg4KATlixjTEE166rVebZ_Qy3N0RZG5z8AhT16KDlBqqlbRDiPNFTiGSHvrtL4qzo7Lbr_cZHa0OMnv73ROZXyB4p9NzeDj_oOpM9DxY7Txjvl_YDb7jGuxYavmpGSb5gfgSDeX7_NS5KanLV_iZHPgsgUl9-hqi76vikHiy2DjVATR-UpsiLzGad94xkL3t55Zo3_xdhqgdPoaqi8RBA6_q8LLhyMFvpShZBiXUHgLsh8mlkwR3b0oef8oF335bG2eOZFdpPjueDehtv47YEaq_XQqXOELgd6VUgGweMkVuLbuyYF26l6C0C2_3AU11Hqum8VgPQ9Oeu8wqu1ROH4d_cwYM_T6Ep0kTW-20SNg1EgITGP57XkUos5o_oCOuO0Z3Tc71qGf3Z-abu-zlkN4HB-RMgRLF8ZM0ILx9PBoCWtEnRNK1CzpIIQH3bBbl7FgI1ZEdvd-9aDoiIPKyfaYxDPVtunCeqF4d8UUCxSo5pKGbX02PKSC2ZeJlR4fav9hdKh1rFqresmwtKZrbqvJu0Ib6f1eKuyTiVUxm_9OeEnSkQ0mgB_uvZOdCBEIgOSkx2eU_taWdDki5h6zWQHG-0ZYaTDoa28x6A-okDz6XJpS8G6oKipDTWGqggRWTlqwxIStB2W5BHZevVoe4W6s9MDWvFDPX-F9DcrOg2jA5BE7ICeIQ6bAdyqBdovS58VWjssZ_S2ZJINRHgbqTRpOl6HVexj0YrZqIdCDhhY01NCv1eL8-PrpjLqPK4oJHf9CDTciCdwX78W-Ntsi1eQnUqKc6m6k1LS5SvIrirhNVckCgjYkqtdPkaotb3PAhvxAkemfznt5t0hOb5EGn3nwXphSlzBvg9oJ1uC1CRigncRcDWLLaRCcNRKZOfO8c3ZXhu5s-tPhBQH_kpGKrKoFALFytmGK3siSBMEGUxNvr79lnEduy6ZNvS61xirrJZWolHubN2qSp4BxHRrsBBbKPBtVdMxN1KEKTHfCq9RP98JZr0XvJjlowGQjZfTgsrSYHt5EM8IzWNs9xbLYF8u51442Tk3QJ3svc6ib54HLlGWG68EfQQCuSiBjsUoDMfbowxaKujEdJDHXoabJdvsP3ZsgF13nGi9jYH0Y1hv8dmkEw7YesTbIfoKB1YQIKiObKeGwAKzbZMqk-9-t_88lNWcMq4Xp1hhbvkLxgQ8gFkt6a5bQpBVzAimA-31pUxIAoNFizloVSb1zNHY3WvuElHpfWGgKn-EVsvHlNJiiY3Seew-Vof91IHtZy9TknUo7vMCXwZ73xAwdeubb701Com5X7jWQDRYsujzOBPrPtQ8XcHMSqEeByPqjYCSiZdfigK2RBcFjxUgIGq_aWaJdo_M1rs_e5uQ4tYaHmhSMjA5f1S5JLP3yCZTx8EEqc1GF-eZLUP2P-1XOLqwVBqUhFqOqjf1abBS5rtj_nud7ajV65A1bA_GrSF8-zxSLiCcIU51tjlUiGoPL1cD5TyBhqV2kvHeeHLqTpv3OW3HPgh3O8w-IAuMCKBIeyCkOEEaMhlfbrmxisEzG8n7GpD6GG8HTBY56rHq1Z6_4p0Net8mHob4pwUvsKwDhkawkR0aIQ_JrVEVw7Wpw4kgQ5Tr8fnWCZvdCkQeITLiEV7x2TH_uEf0yCT8hLUqCi0eGcf7giVQRCV5MX0D_sjNsVu43oNnqTpxL2ShsS4pRMJjLz1DRpwXY0l8wZh4g8DzPkH-X0CeWSHNtn7euwEKuOFwDdR7bjIrf6CxrEgRNKiI3dxnfbcBSzqL13huutV8pXDunL84xns4sl6i3oeBcvh_sR05ZvsFAX8h2stq8DRRZ2VPpTo_BOeWonuvMkHm_5JUk7_1nKWEqyJ69-U2PV5Hf8N1Fp1DRIugX7fXCAKHoteHp5uHb56BVyLHfFAn9pI0GRzuKTdBqaqcDA3qZP8FOwZ6QZ0L2sLHFPq6of9vVGjyTtxnwi7qE2oOquH5G1OSAIU0ItL09TikqXXnaL3jm1C9b1G-PD039govWM-i5RYfgUAmRfUOlCpLAri81vjvtEJNDtRM7DBsbByFxYu4mEyQxbtXNKAh1x-Ia93dwvgCptOMgK5UPfG3Zvnz0FwNUzqUah58JjU6Cl64m0xiTynIdG-vlT7xDBmt3L2l4vYb_J_tRKATdRRIroeQqY_HBEk2jyxYFw5pYdai2pYBbemwI_FXdi8mfqo5JEX5WBCkAQM91_qqAzajeeFyaOLqbZy_PMalYsiJnTmXhOwRCtaycpLpF7CjS9BjeidrM-EFcNU_CIyg6DnnpMMZH1lCv6IrfpgV-j3jGPOcmerpBqfjhrw2tR3IpREaXsxVDNECNi7-dVdmPUo8BIU04l7BWW-ea0puFh1N2L3kScfRjdIVUvGsqBWgvLy1Wlhy4TAz3roHt7Vs-dag_zygsvNEVjnSWVzBUdoUhFXPCf6FF4awwdf55Cy3_uWU-SYfTVxTek5l5aA7tqNjRGYDtN76ZG37CgQ6VAWn8luNI5FFCDgcAdqJPiWl8beZOKbr2G4D_7OQ8OXsAbfuudmw684k",
+      "summary": []
+    },
+    {
+      "id": "msg_04277bdee90656be006a5b779adfe08198bb7115c0a02890ee",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 493,
+              "start_index": 395,
+              "title": "Spine Service | Singapore General Hospital",
+              "url": "https://www.sgh.com.sg/our-specialties/orthopaedic-surgery/spine?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 782,
+              "start_index": 668,
+              "title": "Spine Surgeon & Specialist in Singapore | National University Hospital (NUH), Singapore's Leading University Hospital",
+              "url": "https://www.nuh.com.sg/care-at-nuh/services/orthopaedic-surgery/spine-specialist?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 989,
+              "start_index": 904,
+              "title": "Spine Centre | Changi General Hospital",
+              "url": "https://www.cgh.com.sg/our-specialties/spine-centre?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1206,
+              "start_index": 1120,
+              "title": "SKH Spine Hub | Sengkang General Hospital",
+              "url": "https://www.skh.com.sg/our-specialties/skh-spine-hub?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1498,
+              "start_index": 1402,
+              "title": "Planning for Your Visit | National Neuroscience Institute",
+              "url": "https://www.nni.com.sg/clinic-visit/planning-your-clinic-visit?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1777,
+              "start_index": 1698,
+              "title": "Make an Appointment - Mount Elizabeth Medical Centre",
+              "url": "https://www.memc.com.sg/make-an-appointment/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2004,
+              "start_index": 1890,
+              "title": "Raffles Specialist Centre \u00bb Raffles Pain Management - Singapore",
+              "url": "https://www.rafflesmedicalgroup.com/clinic/raffles-pain-management/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2378,
+              "start_index": 2212,
+              "title": "Primary care | Ministry of Health",
+              "url": "https://www.moh.gov.sg/seeking-healthcare/find-a-facility-or-service/types-of-medical-facilities-and-services/primary-care-services/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2645,
+              "start_index": 2566,
+              "title": "Make an Appointment - Mount Elizabeth Medical Centre",
+              "url": "https://www.memc.com.sg/make-an-appointment/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3210,
+              "start_index": 3112,
+              "title": "Spine Service | Singapore General Hospital",
+              "url": "https://www.sgh.com.sg/our-specialties/orthopaedic-surgery/spine?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Sorry you\u2019re dealing with that. For persistent lower back pain in Singapore, these are reliable places to book, depending on your budget and how fast you want to be seen:\n\nPublic hospitals (subsidised option via polyclinic referral)\n- Singapore General Hospital (SGH) Spine Service, Outram. Large multidisciplinary spine unit. Book after getting a polyclinic/GP referral (for subsidised rates). ([sgh.com.sg](https://www.sgh.com.sg/our-specialties/orthopaedic-surgery/spine?utm_source=openai))\n- National University Hospital (NUH) \u2013 Spine specialists under the National University Spine Institute, Kent Ridge. Book through NUHS or with a referral for subsidised care. ([nuh.com.sg](https://www.nuh.com.sg/care-at-nuh/services/orthopaedic-surgery/spine-specialist?utm_source=openai))\n- Changi General Hospital (CGH) \u2013 CGH\u2013NNI Integrated Spine Centre, Simei/Bedok (East). Good if you\u2019re based in the East. ([cgh.com.sg](https://www.cgh.com.sg/our-specialties/spine-centre?utm_source=openai))\n- Sengkang General Hospital (SKH) \u2013 Spine Hub, Sengkang (Northeast). Triage-and-refer model to get you to the right team quickly. ([skh.com.sg](https://www.skh.com.sg/our-specialties/skh-spine-hub?utm_source=openai))\n- National Neuroscience Institute (NNI) clinics at SGH and Tan Tock Seng Hospital (Novena) \u2013 for nerve-related back issues or if told you may need neurosurgical input; usually requires referral. ([nni.com.sg](https://www.nni.com.sg/clinic-visit/planning-your-clinic-visit?utm_source=openai))\n\nPrivate hospitals/centres (fastest access, higher cost)\n- Mount Elizabeth Medical Centre (Orchard/Novena) \u2013 many orthopaedic spine and neurosurgery clinics; you can request an appointment directly. ([memc.com.sg](https://www.memc.com.sg/make-an-appointment/?utm_source=openai))\n- Raffles Hospital \u2013 Raffles Pain Management (for non-surgical pain procedures) with onward referral as needed. ([rafflesmedicalgroup.com](https://www.rafflesmedicalgroup.com/clinic/raffles-pain-management/?utm_source=openai))\n\nHow to choose\n- If you want the most cost-effective path: visit your nearest polyclinic or a CHAS GP and ask for a referral to an orthopaedic spine clinic (you\u2019ll get subsidised rates at public hospitals). ([moh.gov.sg](https://www.moh.gov.sg/seeking-healthcare/find-a-facility-or-service/types-of-medical-facilities-and-services/primary-care-services/?utm_source=openai))\n- If you need to be seen quickly and are okay with private fees or have insurance: call Mount Elizabeth Medical Centre and ask for the earliest spine specialist slot, or book at Raffles. ([memc.com.sg](https://www.memc.com.sg/make-an-appointment/?utm_source=openai))\n\nWhat to do now\n- Book an initial assessment (public via polyclinic referral; private directly) and bring any prior scans, a list of symptoms, what worsens/relieves the pain, and medications tried. For most persistent low back pain, first-line management is non\u2011surgical (activity modification, physiotherapy, and targeted meds), with imaging or injections only if indicated by the specialist. SGH/CGH/SKH/NUH all provide these services within their spine pathways. ([sgh.com.sg](https://www.sgh.com.sg/our-specialties/orthopaedic-surgery/spine?utm_source=openai))\n\nUrgent red flags (go to the nearest A&E or call 995 now)\n- New or worsening leg weakness, numbness around the groin/saddle area, loss of bladder/bowel control, fever with back pain, major trauma, or cancer/IV drug use with severe back pain.\n\nIf you share your area (e.g., East, West, Northeast) and preference (public vs private, budget/insurance), I can point you to the most convenient clinic and the fastest way to book."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 3
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 17898,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 2996,
+    "output_tokens_details": {
+      "reasoning_tokens": 2112
+    },
+    "total_tokens": 20894
+  },
+  "user": null,
+  "metadata": {}
+}

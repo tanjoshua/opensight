@@ -1,0 +1,363 @@
+{
+  "id": "resp_019115b7e75c677d006a5b78604008819b8eec448694a1f79a",
+  "object": "response",
+  "created_at": 1784379488,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1784379551,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_019115b7e75c677d006a5b7860c178819b983a9c8d9c6d5ee2",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igIVarQ6y-ty_GPjlWbHmMYZwFwkNdHxlcQwk3jw0--vTWT50klLvDKbhX1QiLYSY8sv4PLmoy2fXF94HwZHA0Suce7uBEynsPRQSaqOPenlcoog4K-un1SOtjC-XVjidkJyNRA8Uj1LX1Vz6GY7duaQWcrRC0ePCsG0btTWjeY5ALAYQ2EQODH_H_55Lp7L868zafyZ0p_HhQtPl1HcFsnS-RJQ70tl10wZFEQ-PAqzxYeaUYUkoRZ96xF8wqRvPv_TIDlpCrsN9rPH_eqQ7D7s0FfUE5jXjgOUjJFXEWUW_P19KXXZ-WkzKih0F3opx6o8AG9CuYjlSvRUUXo1g54pCwn233_f9PWlMIG69T4lljuFEsEEblua9-OO0r71bSduoQN9VmzlTZ_VutUQHT6kmQuKCrW2ENUMPaebXWRGfjmWvaJlCiR5VD7PorXwbxJipIHyhjXmhD0nmXFTWf-dqgJdYRrSlmpmIcP_Qodbb7xW4H91VAYDOxJQpGBmgq1Vp03TaklPVBRuq2JoyidTNIDdhCk01rsnKJq_jImbuNOo261K2iNurYOH7oGAYOMoz84cmyvcoBIXFV6RiIvL9-ZBL8C48-Yj5IrNOm_Y1nDBL9QzcLKsSVGVLaVgyekiAewGyN9PRESvONwUR3xp18N8PG2b6o0Lns9jFW2IW24o5T_myaXxvfirwk4fIvLYXz7t8jWtRsP1yRecXuLAAACgj3EVQIySuwdYxPngGDqonscia5ewK7zNIqdOsDoUjlY8LKX2MkBceeUAxZ_IiM33LYE8x31LkQe1luunqL6TvI3O35041PGSCmRIeq-LnuGKgklR_L_gb0OQb27MBZ81dDgclc_bE4yCmkCHSi6Cks8aAqcSoZ4CAn37Lol6DN0lP_Ag5WD4DcArzXUoAIndiMhu8i5fViHZt0_ubWbEUpG1-TeVV6SdOaLQwZlPPa1-nWZBAEhj33t6r8J5fxzeVZRP02j1g5-KTCUn1HgahtWsWHdaP_BfmMz5km5gEIFW-0EYNhKjsBVVvVZUqaRphe813pOZx8sO62zFmWtIRRx7K_QEItuULteL9OMf9txRwgObde6VVSKPp2q8TWJWjpcEPpoxB74Y_oeoeNuSDlaJF_KJDEPppUZNg0BNgnWQKbVaprCEiJ5lwryDAaQeewn5Ohrzh8tHrJIpfod4y4Ao8F1ILWS-Jbt4xKW5y88gnMV3KBo8pDUctR7cKWRs-Y1uKU-FcatSHziAmp0lzqBMeFORVR93HdMOckZN7NRZukhSYt5exXW-upKO2bC98fRrbaxmzcajgpbsX587xcWFZ6MaqAgSZXMe3BGKpHHitnWtUf17wueQrj5iuuHMia9YIEVoc24pGG2oSwuteBMVZxsb_XPpwxWU3SbwZxZRYHdfW_hreRTPs53o055nWKXc5KlYax7ukTJPI1hJiXeKVuW3MsWjFjg7yFATaSnqrYQCNHU3RlKky33vPwUuPcIz6Wpp7G_WPfYEHX1amcT7zBi9NDPO2QAjNp_sEhcv83khPiVwPe3DllF9_aJZSpWezumbgtQehYYh3FjCYPnZEQca3pKGozVoJhiNrXFFirUJQl9Ah8doNKmWIp7AZjm2cHtKtuA9nEfSF-UggrabfSma42JxVF1isE1_oRTnr9kPFxaVUo-61i4s-qpx_iju-4A8nK1QcnQuhxfiV_X-YRl73-8pG1wnEQzvzLqsXN6wrF76qr3COO5J_T89CA_u7aaCI7rUxGkzxH1vbTCiAQbnLY84Jhdgp7xXcGvUYo7pKnsf8n5496oHvFKdDkXa_w22G96FE-Fl0nSbfXa5WYzHW7rfQMlb5xiIxYNyFl6AjxpieTJmD74Lp1J2nk4gmuUxrGgrGnnUwDmbCZq9SBI5VEyMCbY_spY2VO0HpzCQZb7TMUHhZK1Mpg7lNgmoAv6VBAoNChGdP8WwRoe54XFMCbpZJ_0Ae0n0q43JczptIs5gii7v1tbEfygYIgrMv9V2csvtAhNg3xSK6yTwEHIL_ZkEtaCZzanOJGRn0kRkvT8P1yKhz1cJOYdwgSgs5wna0Uw_R9ASBUiNSmuSQytTG0MsK3xZKST4ZzhNy4NZETCKZ-DUnDcf2aps30mH_BVdPby92i_STC56ytLrXBpmtwNWHGE3vGl9ossDUobUms1aL-YoodEGW4CiEbWu20N9GrxfbvDgspn_vnbBOI4LnUEIdZTbjfmolc-VOYuHQV0YbH7K6lxpeSJwIbMucdHLKZH9A6QYvhQSG4lqfhH17hPouBZ5n7kivW9vouoL4X9oNOkYV3mI9Ceu2RYOX9fG-urB8KaISYOjUS95xzk6FQ4L9u2wNEYmPmVtLm_e3AtelqdPexl7ILgOL_H7DVQsUbiZFbRmIbyitxhJ67W50b5Bgx8n8hiL9UIVK8ZoiPfyZWcrcALSW44maF_6UVKymgQprDIcceoABNToVMYfk54g-V1QDpmImMptshCDJJsL9kVkQnMiv4HxjJyIjks3kMTg6rUdaRkAotZeuotI1MAMTXWUAxJnMXQBnM7BWqXf36DEekbN9W2wAFp-7Kpf2RB_axFUNtYWQ6Sq15buB0P4OlK6zFrDNY7tlUlu8fqBzD331xzVZplDC4ekjgXv24RusWfqTfZ6oP5JTIFVwxdWNpAjAhztwopgcB2QS_cDmzyJqvqfT7HJ1SrL9Tc9vDySb0Wur8vKbiPpzUq5VcSmwHzjtw8VIesljaK-AN5Bj5e4tAlrHoQvqpkePqYEtKVQwF3vGp6yEOGIOLjF0h54dNNWxStAz85cPv9oGfbqb2lImOPNBWkKaP6b8dZMHGoSS-LyxT6cLxUaH571GNfc4bxbOfYxbGHb_RYKeUAxBTWLS13jyrXmsbWjKLsnCvU1YTWOQG8MkAwE02Cp0lKyy2bTwSo29otcMKBhaXam9Gqp5xpQEa1ihk_J0BqOK_mvmzc2PJMefGyCx0OvjNnKQVRsnAWfoozjzfiscC2VVwZZzgDSkxSiV4d33xqsff4qxf8kn7dNV5EkLiI0R5HRtqnwXUVqBXn0lfEoiOcOXh4WGT7_X8PMyYzG6WISTDyqWfchvATr5nNqTWQ5DtaNpqaRxE69hY94owHr5mqdVNhmfZzdCOzja_2VXiiFmgKvZs_cBhkMasFw-zPwO15RoenJ8kn7oQ6WLUThRq8V00svgfEdvuSkrFb0MGIutVOJVAL2UBK9nkXcief8-SlVl-7i5uAhXphpzeI9-iw0MhiKIeh11MemZhFoUGUb6rrDLSpXqeGNeOVhHChGHbdx7iH9TCWY9ropEL7sUfAnyBVUXtm9UtJDVuMf5-GGTP0bipNr9xZdCfX8JfmeDdOCAV1KuWmHVuaRlU9kQrz7kIdIc-nWf1BgajQdzCo1U7SFjjT5kSRZN4Zx04Gd6dFenivKXGO8ASTjfz6isoT4jIwWwMEzKS6FytS3UNsEkm7MedVcRT4eIgz26csMu8JaL5s7jMu72dXmInqxZ0atN3lCgYd4rSTe_bun8d_PNvmnjbHuFmIk_xyqmuIYtbfkw9akHShnjm8k5ZKR6oyWb3mJZcu38PycNJnpTgzOXAwWwXoncLEeqIvDgGzV-65vHBBlG8Vk3VZ1-cx1s5QawT_GE6VCkeWNtdQXWNqiGilEiOlwR_K19VLibDeVJB6d7nauhUCa5Xs5-lgTG4ZzyIMIUxvGXYfj6NZyGrobbjqH33t34BNnDzQNoVDeIDegFB9_CEsIuxYzKucqQI5QbGhsqC1wlrcvR19GQnjmpyCvo0cFRfXlwWZ2zCaH7qNngSSpQ0DcXVsmU-5FoU34rkHFOnEprV9mCtxvA9r-UpRcWtPQ6Kuu93PSBJDGRWwasQz5HR_yG9q06RCUmsd_IFQ6hRAbe-hZ-PMeZuseKlnqP9LGp4XWybWSP0_G-Jw1Pa7pT_zAFiwpY_XJkDO0LxpGhzMCFD9QvWOoIcTLT08YnLM3up8UGHyc1LXiZYPBFSOoO7",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b786762ec819ba05b3ba37a213e6a",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "aesthetic clinic Orchard Road Singapore",
+          "SW1 Clinic Paragon Orchard Road address",
+          "ASTIQUE The Aesthetic Clinic Shaw House Orchard address",
+          "The Chelsea Clinic Wheelock Place Orchard address"
+        ],
+        "query": "aesthetic clinic Orchard Road Singapore"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b786a3da8819ba01764d54aa4b911",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igNwmy4v8DP980lUYyMxpmjmLxzoXSZlBrUNimaXKYIeQwaYfUwBZVxiTIdbf_kDVQGzRPjV7hJ597VZFzD0NBHodpr0cyZ0ELO3_JTb3uXK9xxKNV1N9A1Iqi2sFK6nhPntMuY0pT5B_srHdYNcLoRVGwv4QIhwfEhb9VTWa2rw1nO_hmBGI4kpWjvEnGxh9z7zTOnspRRWrFmG8t1_Qdo-j8gt99DfS3Wv0jAN4cEzLcOkQYT3Es8I_nabc9Bt0WovUcqG6ZGILpXAgiZAc8-T_5fAVTOClz9PteJJzxkAokmkOtxqj0iwwzIc_sqI73GJbMteAlxU_6EpyCijAHYoPbXUUyecYChxK9rPY6cfgWnfHiRad7D8-i0B-fXd5eHdoa-s6boYJdhYTBUoaJl4FncLwjpSxVCWQ0EKM2Pp0YgEK93AdfTV1gKNnNGOmkwKiYYq4cmJJ2wjfEz5oZQwr_5oFkHlK4I5V4__gj1UYOu7sofWCsBXb4dicaclROxMCV1CMK382bI3-828BoK-jSWOQJqqep3Mb4qPBINBDVmMafvS56U-1W3_vBFwjywVaDtgEtqXOZLLnoAwRuB0nXO7WDnlPtC6ioPDDFjQOOCVENOb2OWKWcCY-FYvoXfY31Y0ah1RM14lXaGqo3Ut1RphDt8oBC16HmCiVrQgKacnyi_1cVS9zLh7WJNT7vOcfa8xp7d14Op7A-pp8m422VNo0kt1qlf6rzDcSDGNkVKa0vShFnANMdE_fbqYnGCXw5QrD7KrDEJWF-nKt1ds2oUdgsrG0z_bB0x9b26Op37lo9UE2Q_g-X0nTqYmzKG5iG8KfX7_wUVxMKqzkunEdgqfleiiuOL-aT26CPPsdlAfwSP8OmCGtqfjDqUjEf-zjPZbdbyXiWY7KjxbRRYoYTpAAD5NlaESuPzt5ECC4ZKaMkr0plFt7oL6EojnzmsgAI8_trb3vPdVI6ej-3KXDMVkGLyTSq40KGdQxlF6cmJ8Rr9vDRd89XeMTO47hGKEgeFrOyplSPhJni3kREWK1-iagIf1d3qXEEFpnn-684viaI3tUMrxMN1Q9T6kCMUzF6N3oWXyyEYg2l1kxtpMJdXWzIRA55RzZGPrycz71h21ArTrfr4iGjmYrAYRz2bEqWA2TDGacLisGJQxMecXrRe2y26ko9_eZ9FQgDW6TIhaMO0T_7xDlZaZFBK3F9xO-NE-okAj4zz4woDlC9P44gxeSSj-oahYuCpmh_FXCGtPqK7pVY2kqepNNRoG_G4LOYVO8coVIH2j0ivwdP_hkawARzT8smemLxfdawaITdUClLk3PRlEGCBndJendzvRU__8qBPaaPBlhCuyeMAu_Yt3WJJ1KO80QfvtbQBfsb9l2P3_c6YylpuV5HRGJ1qw0QRcNNfJgsUtEGc2z8zAYxFIfyNiGlukAVwidc9pxCLfaCk1gffVkaa3wId_qOt1BUDZrKBI1rkmqXNw-Ln-FV8CFsITIGe_TfcWS07Y0=",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b786ae240819bb9a2f7714ae977e2",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "LS Aesthetic Clinic Wisma Atria address",
+          "AEON Medical & Aesthetic Centre Orchard Road address",
+          "SL Aesthetic Clinic Wheelock address Orchard Road",
+          "The Clifford Clinic Orchard? address"
+        ],
+        "query": "LS Aesthetic Clinic Wisma Atria address"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b786eadd8819ba87bd0924a7be4fe",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igoYQKUhoo-F557PO_DatKnTLDHzwsABdUn1RuUcuLGXPmChH5XHJ5Pd0Hs8FbM-XRpcS_iJMk-wraY3pTDXCcNKyiNq1JJt69YgCDohlSdPh_RsmmgpxbTiVy8ywD_klNEQ4Fy52kvQD3FdH6qMNfp8BvAdpJt9d8UgFNplckMJgdPhGbOEAezULnM1t0ML0J3oX61P36qykIdT0vYq8ifJV49Lnxv3FD8dxqyqmx7fSo76okHH3km_5Q_6FoVtzcSFtVDU0quA-6YVBwPVeqf4wkDQCkKNINY3fISRgACdKJ0gUJQU64VFLWFvKXJZy1PFubj2bWxStdbS-rZ2ObwLGQQ6Cz7uU2Gv6TwtCazzhT7_vnh3xd8Cfd1jR317qW6V3aKZapXkuDL0nvmzCiHrd_Oze-WDq4kCJ1Z9ZZ2B3PDt0RjTZeZy3m9VSmL_rXIKuT8FGlGjhToFLawLMS_82PWwdD6Gh_tCKRZoeyK2AAzH-mDuZjXCJdETyQ2BgDVRF25ZbHO25-1sc8fmVLeSLU5PA0bs1qj0XH0inE6HTABMnyrY1jx5Sumhy-0ED3K1QviRwUK-mq4D_qDArK8PxwETWYb5BIVkYsoqeeuLKWohKP5E1Ot9pOd8o-XvC69SkxiZ9LdIA9Nazs1W2Omv-IVz0_KqnSiVwnxsq4sckZvqF6hVpYb9ZgR77zjzJeT5J0NqdKI3wkV2mF7G2P4cxQqgL6uS3C6QL_TqzuH1Ow0vUJDvSKPEDNxVK8Y0rWoCevs2OrkdxLHFUkQ0odHciz2zcAigrYxb0-4DvlImkD0Yq3tmJT6E3rq2aQj3HozTKWsRQknUX197d1Q2X2ibz4uBomwnMl917-dkgOKYqfbKTBi-R3WIhJ1fCdiCSb6YzysJokyc9s_ZYvIdZz3GV8i1QfU5CxQXKLkDPhA8uGAG2lR2kw7lVstVUmW9K4Ukszx3KGfNpncf3tFn7QMAnaGruYOO9NHhsWq8iq9ao6T5Yu4RBtrt43ffwVjSaIKOk60_i-JVOXT9CGK-NxW5143jq6fiHyTvchdtbs3IOz_ci6M0KKPLYP35d5GuOaLCsVD8cvC0Cac7lpx6Skdam1vQ5szjOPvNxyYVxu4uQk-8xXorhynIK4nlitHXTsvfy4EwpmCIC22s_xQzIZv_VuTKVSyYYNacE3G61VXGrliBdya6RVK3rTTT3S1e-Mke423jZNbi-2iZvjhzyvs66M3HwUhKREilnp8oMsAaZTQQ7Mdpduk9mtZNh-LqbD1IgqCuZsphXFUBtxkuP9RuKzjQkaQyjm3edz_4tKTTwecFM_l5V03GcBfskgAK37HcXpGuVr7pqytJoOe_bt27G8b2wyrU6IFkf7We2x60IPSY54vjB2eRs5DaWiIlgCgUrHr70vrvii9vT4icZ007VRvhvo6pJvVM0_2DvFHUwz0oFG2A7g6td2HcUaHKPPaP4CQItrchODP7_lg2BlBia2AHegXGBBAD_zwMP5I9yRBqO8F4-R062hGK-Ko3PJ",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b786fca60819b93bdeec9db1b453e",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "The Chelsea Clinic Orchard Wheelock Place address official site",
+          "Shiro Aesthetic Clinic Mandarin Gallery address",
+          "Cove Aesthetic Clinic Wheelock Place address"
+        ],
+        "query": "The Chelsea Clinic Orchard Wheelock Place address official site"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b7874e160819ba8c611aa578620ff",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igejv4qpCpgRBoYu96RTbp-UaUw0FTkWd5amkonczfxS9SmsdMxOuPaQbAq0dAk4gw4N5DRFJCLNWIdkQfq2qNKLJikQQzShl8D13OfRMEWX74GU-w2BKlOEIjUUPUJVdv1cBvoOd6npg4ktqWB6zMTBveXOehV6b0aFK6zC6XTuF4qn-0pXjLCIpSiHzQks6-HYz68R3E35iGq4X_NezhDTnaJTHRWqooqtGWR9jTSiN0Tr84Y8-kRAwtZ0cHDYK4CTwBjkTP7Br4-rGEpIE9gY4ZMQr_ATMlf4YgPhrC6_LWAV1SesEiU-w5wyqC_56VoODGHWUVcC9ioSsZO638gY6Mr56yjZu5WN4h3t0kewm6geSXjR4l6ueOGJ6-HWpJdaZ8yz-BqO7Uu3eH1nxN2oVJn_q9rgUQVk-flLjPJArEc_vv7F3QJkYbNWTlISGr4h1sLpmkkLzS49jQq62N1G6eoESABiYCnADeE9p5JaSK-_IDTL9eQjHo9rSxk6b9d7_8nzkvnej6AcLg9gOHVoMaKKt6Aqgi3cfzfYupOKjlffNeKAO4-VFc45egRKIE7yZjXHm1DPHXTQ6Sp1KsmH5fJw5luxKI9goaW-PKhihL7KU9tViQ9izMTc99-38ESuEcQUvW3WoSRAihXEdgdUcF0Jt1ytmNCN4NGmcxrrqliCObgNOKjwIbXdJtSAe72-2LabZBEsq85EVOQ3nNKvlrPhh37f8XUjObDLTeZCQwAxX_18w9S0-Y3y6Ko3zIhG1CBYvUzmRIsSt9XfkRVRyA3RsVnooyf1s5uvJAsLkGc9NVcHaMimzo1KPA4CUJ8ihMAj6jdUwychc7G3BXpOaKSlKbdEe8IvaLgKDsUiGTG48Z6SWPiYH055fZUexExPMWFc6-tZ33CTa7NYfFOrs1jKGIAQkg1JzuSGv735Ss-qbMIziI7x1TBR4jiOK5Zrrjrh-XJQVfn85ROnckwAXyH_FFlY-ZImuz-B0t3h-b1oQmTV7glPdI5wo982j45wzmqS8O387Ssg9Q6ucHbbReIAKZz_vmTYReHu6k0-vXvAwNLiEYo11S3i5jE4pRFZE9PNzDDiuxHuEOO40TP8hsNlif5bbcMCkNcHgYzOldHRIDjpM85p_Nwn67tKF5sB0SM24G_17BFhJU8l9U6yLL2PUjFuWwN_dfwoLDJPHhbDDopX3BjXpRU3ETAIXUn18u66BwQoh81qEbTNlCRnGC8H1H8p0uUtYdImrfBph0ZW4xYlZgl9tBP8GQqhSmffVw0g591UjGNmhTW2yTXIxOXWIrbskbdxdlt-SzR8uATzg-gzLTz2YSkBVsQ1Jov0BFqrqdp-QylNWLNtZWg6Y4EkQNrz4l4vhzvBJ7X9kFOzeyBkVNmo1km3VTtWUMbwMdP1BrsH6krfhlMJ2uiqwu9RpZRE-h_tpBWBRUfEKEOQSbemQ4tG_qidauokYgaggxZ6B5Xuefb6wwq1-01ZBu3VmA03enek_GRKAoaHY=",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b787627fc819bbdcf6440a507a643",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.aeonmedical.com.sg/contact/"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b78779c28819b8c39d24b8f31caf6",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igv4oAAgxIBsBM0zWGRKFBsrqrRna0dK7iGO_EppQ4n_Fkjtny9q6FkWFj39c7juWE7B3KHoJI1zw6rGdRE_crZVC9Ejm6s5gsQEalqvSKCbzsPBgboCoo-RF9Rns8urmLu6Ovq9jnwiB02-C6jEfnG3yLc8mAjm_gU7J5sCNw8z_TOg7QOWdqDCNaOGSUFwjpRfg3AjsOKhnL24TifOaBBsStKeh_J12Q84XyxVwIuNDR4qiMnd6NBakYi6oEMyVsf1TCgT8BlJDMnBKQWtyfFeezfAuFTlyJRM6zMSlDC8FmHuU95Mu84Lh_befz56w_I6uw-rDrRTEF4V8Hp6cAlYvmuJPOIZy1Cus4aDsnRT4KpLAQkFUJ3XTGhVnCav3Z5Ir_mpCRX6ADPJB4RFqYBOBJ64jjbYIr4O_df3i1mmQQ_t7Qh2lxnRkj5tMQ9Q_q3t9vgFG5vjGohjmx1UC7iDgzMCys6cXgenoLL4DfMn9rmcqBjkAxpWzb1I2igvn8IwktDlE4WxWt4Xn9qI9yZoiSuGbaDRHUQrU0Jm-gbMCYjagwO6mcE09bmVxenL6ULDSS98CcCm5apP5IorFlVgVUKD_Bi84OcudzYQq47q85oW6BVA_b_yTEUXjU-DFqNlFIIApAWWjBJFTJoar2qzzySb0Geo9tFCpQkvzk8R1_5t8wuHa2eGPHLhyF0j94JVgsfvHTzfzAzok-WDTBTP-tzmn5sK0O18_iNNt0Hy2aSeWcn4cbJi1CJSEaR6PwHrp-PsRv_dfw827nfEkk1mfgidModWGz2BZyHn-Oa-S8NJmZYCPojjVISPQhkjHSTjDIe3jG_HD7tTDAxYmNPm9FWop_cWqxKDIYjvDAf5Yr40vy4Zk9UE6Mz4CemMZgFTTUUSz8xEMZcQ3RxKwNRVdQhDrtnuLDvpeowfyXw8hhMI27zzYVsER6GiM-5nyd2_OJB4JoI2b9A7bHSOxHcpbQU2d7dDh2mjvI5KhxbXYEKHmkbWK-8fcjLXkeJ9wi0Tj3zrIt7DB0v5ADi2pyaciNQeIreQvoUD1hXM6reHbQE8sKaiwEH0yqZaX3mytErneC9FiRmC65uE19nWr-IB7Gk3mADx-4CPkfQck9G-1rUQeN3oxU_XaEZMICjeBtu725EpD3jIR-dr2xDGJW2iT8QTkY1NDuY0Cy5-MnFhy_C2FqPdFvcsnH_h_REFV0_mlnT54wYcn40EY5xF59bpV7U8g07or8d0x3Fomdqu_1BYCyqBADAS5FP8awiejHoHvgRnFksjHsCr_yzZ51KsrW0dnH_eD8FZoEHKj5tscSrtSkD-4MpYoL-P2N4ZT3Uy9702nXv4x0iY0gIw8ThXFQ6KwEpyQf2VD22_OywCCuMAbGlUle93l8oD6On6NUSXZp6bmhg1ha3xJpkBG-vNZ_FAQwThgFs1FmIFq-UXt0K81vGaHH3OJRTPgJOtCYgJq99NfSNk8PGSxz5DbGEQrYWpZrlkRhr_rb7C6glDuBrUq8DOVlOHxkdskCPsPUU7NQusSj_9twVjrLZkY56FXBaqCOWEw5xonB2w8ZcPpB4ZO4_5YJ-wi74IAfpygcTlRp1gMUmUycxCnmtduXf0rkmBiZJbNK9unouV5KS_fD9Y2K9iB7h2OeqeDeHcVmQq_Xdq-EeaWfnSPWorgPvkxA-O7OglSMV4rklBhKa0vpGkYRHmX2TZ8Ng6D37JN4Ut_1Kve6oF9PCB-e_AWi4hjhXALvxH8Jh9eLC77IfOaYnsCs-Z2KVR2yIdt19P8SfNi--p9ByVVmttK10iF6gMlzM1CEOZ9K53MaILtpBNv6bCtuD2wBMps-Ry1GGPCsTDGTYEaHbhcQJ10nqWazcJPdt_7LuFzYXVWrAXLBqP3e0f7tF2l3gwjdmgoObP1KbnV8djq2gffSAgyc3ND74qp59Pz_0lgCC5K3FIYhVmBCSU9vt2SqCtDNWHKa_BjwrM5vL07YWb_1x0NXVwHvo1VfWp8-DCuZm61BMiPIDF-ynLBk29_Uz5R1zzSynnwXNJGpFtNniKNYEb78_lbsJDQ54zgygadfXOu3vLviNJq1Js5i8vjw1yjdRQsZ6wD7RWVX26AR9QbUuj6_Un4MxckycEYJhlWNWamNSxV23t0EoXsDUY-jzuk0B-Z2wYYPfBrrLKkMcN_fb1oZnrAVig37MPtinQ5UmJId_NsbScV_WsMlZojQ4tFD2TAUkFfIXkWt9AAxIMuUJEyfAMagLV-dfWBYvJzID6TQFHUbzXrprf0exSNZ5CBM-ZTfwalUtMKnrmQbAguBtMFZeG5RPu6QkoeAIn-1FwZHHUHwlTw=",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b7879eabc819b913cdb4d42f783b2",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Astique The Aesthetic Clinic official website Orchard Shaw House address",
+          "The Chelsea Clinic official website Wheelock Place address"
+        ],
+        "query": "Astique The Aesthetic Clinic official website Orchard Shaw House address"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b787d3078819b9d7174d6a1f8ba48",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ig5abRtb29lah-iVPlLiGbCzocpp0aiF2DEA47rRitzEhhJc7l3sq1hrAPPPUBi92z-_XZXhrfh4YJQoPdtgMROrWBMj0t4dtaqZMH06O4DhbTqNZfUzI8RRedltv1_VMV5l3gdUygLrWvtSTQ2mNw76NDoQf25dKZICEnV8R9BSsx4Fc7i2osQ-tn0vGLoWijxH4TX11KTnUWkH0qJhuKpDzflepGok31_3lD1-GQAWOUIgaIVYii0h_29PHwLmmf9HDSFYNfBKlIgXsKtf83nGR7vPXmRjPURf-IArSoepsfAC4NKOubutdtHtho7Rh2ciIYaE0soRZtJy2zyYpY-KF-rCS2u1KLmGWE27XhctMQlnxRxQJKgpBOgGtIsyCFuCI_4AO-BBSDPvdfnwhgAXorSHxyaNq0YxF5FOz61A8Zo-ziy5CQpyp3CfswkvyQRiqsn2540xUOwb-c9tQvq7NKUXfJK-3xb9fYg5oAWHEnt5rgVnct5u1w-Mec1RlOniP19qb_KJ50XkXvtut75_I5WR5zRHEin0i-RMXygZkoHrU2SDbBp6QQp7FDOWSXJddBWM8uevFWk8g8DJ92252E-0RJpevVKnfc5-vY1_0iR7CNZcm0RjtWwifshCwlhtdfX_39r7-K-47Fith374KCZlSYxAoxcsKD9hV6G8aVhfQXdspFGE7MSjRzKspXEHclfEZTrVy4EggiZYzcll9DRWa5lbvOqyv8_7c9bSmwC8rGrQIniP8xG5NqqGRqtNqEiIIBagI2M7M4zrYIR0alJB5VBwlJdXJ8-QeljqG8iitl4wRI5tzcBMMFG7wBdWBQen3IOCOAv9o3enpYrhvEXdS-iCzk-5Dnvl3vlwfdKPefY9_eCXAf3dqT9rapa7RC0_JJJmCPEDkXzMb9AI7zaltk2_kgKzG6Swe0iTTMWdFJCANjZC23LbkqGv5F71THpz6xXy-zpvaZ47mAJeTgQwoy70hOZ9VEUrOMXKkTBIffcHEc38EHpBqewzYnNT5JAR2FO7TsQcrzBoxl3STjYQwDS5iCZ5ST--_HaDF-CUqS6hGGiIsEltwVTOumGUIEDNNYzOXpLRyz6EkjSPxx7SEk0d_gVNw_hwPsXtbseiN9yL2abR8E7VrpyqmAHmBBVOTh3-vv-ReRaQSB4Z8pjO21Ln-15K1Jz3CRsGVMsl5CcCnO-c9vs-ymC4ZHaZIvZ4RnbSKoR-KsjVdY2y8c-XJBHTlAD9YGs9ZWMjLNsdlEDRyOToC1GKairsw7GQE9rn4aOvGWC79c09CG8rZ78557XrTyK6lXj8bo9E8iWxsz1Q2vl0Gs3o8cGCpRO7DBD9LX2GecZotEQjwF_eNOgZ-uumIaROW6Sih_apgkz1P5T5OPCf10ZQORIrYpHBt9JT0wQ26Ex0_PGL5ZvQkXyx4gTyvTn3Z97y7ehtKNSOsbwqGJVXPflwc2Xos3_HotCdZ3ozPR52IbTt96ggjtKzb1Pn0hJ_yP7MoiFXCeeqeNx4b6wXDfpHPlVWqafj0NR6QD5sU-cGAizzh-VAfbiCP3J5xc746apRiePDmuzkeziQ5VRcCSOae7c6QiPOCUIeUqb9Xcq67QeVjg8fx3ox8v-p4AfZeHeu_UWzX6gkm3WhDNHqHSk1DDZpA-CiQkX0V65CSztn-DY_RL2hrVB7yc1dKp4ixm86lK6Nw9-J0zi9QHXAh4q2Bfyw0_awNzmmt9UYM6bPJXXccHUNdZ0FXHpr9EKXlxlw2AFaKWznL77mSbgcPZjUJWZ4N3WCudsgWkvDBnsrChMBFNOnaQ7LVrhr3AqwN_cPh1CFDxG01ani2B6RSauDbmhHgQYFUHFEaAGgHtSscsp2AQvW3sBLhp4xzJDGc4RIlsXTUe3s9W-D62F9UFGq1u2coHT9mK5tJaDkEunghxawqrbZygsLioIfaNcPBxUdOlSZkGBqmDwH7alwqQQi6fa3fLWzhxgIIihG8tIFk730Mb3_6qnLUkV7mLCsCUIeaIJrye3XOy1K842dyS5JArG1nwjlkriO5tTBgQKZqvk0EObPBB1T0jpnnODZloii8PNjoAUOcV9EH6_JvnPxBsuuFTQWUom5bH7RGWlyYXKG6jcnJQjAesQWQSKRUUago8uvyXjs8RNGF6ExH1akihldR1FiPOeCKhYlAdDQWuNzAMBhSA4VYnycHWMEpGdeYnRboNCn460ke41X6KTKQaXVjvBdcsY6BuvAerA3-ey4fvxwwU63GAz7X4xzPcv94nw6fIszqWbgEiUmM1LzLj3xyhbYSb0VKjvdulbi8zdcxof8P9vn02hSsX08xTUImOY5dhPZLKSSCm_8rz479Kv-N8jUvce4Ta6r9UfiFkH6p605ikneafJYIz4A4LDkIsAMJCeUPeadLrAYqAPx2i8S382WSF3JpeM4lMA6GGROwmw-noZWZUi6mDu0s04eiuH-YPTJoxE_CLWM1KL61Kgl3eJXMnlxc0oFTafSQjDrpE7-fXEiWlvQ10lOP9OtzG-k3CiUgC7VxRlh3Lxtd0h-oz8kdmG96jFcFXMsQVi9oqWrTXhCg4AY6P3K4pHLqJCwXpRpey70gREfQW668LplxHKl9nlyvhTw2CIxb_X5mw_C5HAbEMreqgN8JNlipOj7VLHBM2uZmbi_RDoPSURtUfLTOivxgM8TM8QYTIOvZve_0tSFVbg2GRLU1_96gy0g0WK1CIPI-ZHsLAJXFT3r8HzkS9fcFmosmKPk1QDX-_dBW9EJFpjyxdQaMtaYqhS37GXHUJAgCYMuCJx1d8c2ajKUggBR9GjwFN4EYO5Jvo0w==",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b787fbc5c819bbc5cdabf6dfab3c6",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://sw1clinic.com/"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b7880ff3c819b9d02e69fd64707d5",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ig4Q9Y6sUfqbjR7AFYeQijI_RfWy6bMdNk-h2Wrm8irGjzIU0OTMavH6IaWmV6fnHB6uG6lP_MS51ljdOWkDAoVzqLXNU6x4AIi_-5BMyooEuZ6ifQM_fQ5jKkA_8CFQUh8OkmVHoziqpNPME-QvKnIJtjlKDlMoCyTQPnsSBviBONdTK-82EpJQ65_ROk9crosr9aTZCXvLKDeVnf8g1FXS305JiLtBcVSdT8RCBo2PYWZIpcBMsVJCT2OETEJhNzYF6y1A24mp5qnbcuBdbQ29CIJcgXc_6SsoY2qxNIzVGhpI8O5JajpKX_T8icYp5P0-7JPKZKTbT1VxEwxNvJAQZKg4-xEZXK-LZVSarmw4VN2_z1szPhp9tfrVmSkfH_sKv7WR7RJgXZAZIocaFlA6Xpqgn4_Pt4q-nMh2rsBX2UrbjL6imvRC_1nhHZehkrYzYb71rczHYjcZnj7zb1-8BeKbwQEZUed0Q9nC4l8Hc1poBj8-HkpDwBntRbdwDR4E2Xd3QyvhKCxvSC1ChrBXN0V74SRrkcB1yTClCIVS6AZ1hCxp_KQ9gVz5gBGiF9ThkibSPeLZBOKDgx7HYktXElxMmrEc8hpEKaRq1LaMUn_2eaVgnx9qHDATRa2uOTnH_IRZLq8TZRDArGCTMQDKNAuTW_oYKlV-mXe1n2I_pcozruouCk7BICGRv8dq-PFDjcuHM3u4clm6ql7HQ1NAxjEvVaTs5MgaICf2YhdhAy4QRRaEtJ00ZGmKUx9xX8g1ZYlnUrPXnA-JOELQFkXwVTcV7-Tk27PaqyuDlHWQirlf6nIAcGxOxcnYq3ls62PakySpAy-JJ-grQAL4a75kmxa9QIXhP2G1IRcWo284I9nuJJt5Ecp67REb6jKInr-CFkUve8i-7f7Eak93FjQSgCyYlL4G2jbnj3LgZbHGo1asK7_-AgS6fdAkM2h44vQdu2OFj6XrkdJ7yLVeGIujfpkhFzXx7PM3p6cIUlVmXXFH1YM5_4om54ru0CPgBICkZpJz00ykoy9HLmsL-zek_nKQ3gV-fV9behaH-AwdU1V3wcBvaWBzWpog5q91nnaBbPn68w0OiiW-SXpQtUUrfOFJmj9BCkT249xsdzotzfIA20klw6HO_e3mTdy_pJxnhi1u034KxHYknDVt4jlbAbUm2uok3eRGmgLZAXPWKJz-VR0BiZz5SHQU09xH6pn8_poioUMY6JuqKf6V7oztpYMtBsZsp7OA5C-VS49TORoYX_opH7kk06a-XEzW1FVEknEv7QY8LQJ7OSCqmNJQ==",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b78818918819bbcf491f8fe25a49e",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://slclinic.com.sg/zh-hans/contact/"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b7882c524819b8ef3a089e49cca60",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ig3X-oEscuRayzEeH86fpS19vPbdcqkahORBKnzkmBTaUwr_8_sjwrXDye_SeBC8ztYLOe4ZqDYXaSix_Xm1LGJd7jV-f3CySEgVesYdrvzgDp9GX-YiC1H87RAkUA6lIkCCHu5ZIKwOqzk81AdSfXXaT97s5ePvuYiEHstNWIXNsapkxnCPUzF8deSr2z1nrqveSRIlFDKOaC6iCBWmUMb46RLmbACpnle6tzuSPbbYcFaGcwlTwAr_iF2oQvm15lg-kVmUwKKmgeUazqEt_AHXGmqS3Y1rCMVefxMH79JQycv3VCmR7IKMgiFKQtGLsW7j_9VfWS4KrXrS75NzmqkYfvl7ni2S9SvWNpW6JBtWY_wGKwLnzhvThJ-0RGehTUBN22ydXEnBJcHwWvnE7bqpcpNE2K_prIigXr-TpSjQEXSvo_NpS1wRfEbKE_EX-EUDz-nBcAOrz_ZI_F5H9HlYx41SOEaDkgSbvYqnsspPS6v0egmtXy-o1OmWnvjOD-pXdnR08lHc-k4EC-3MU7FOKks1pA9ioxJk-dopnfS7bmMq36c_RGQOcQh02yZJ6V5NC5dSpYrQ6OPiYyGRG6t2kCKI_83w3kxBsnX1zoyYl96nExknh4GX_KM4qLrUxVhE287n4fBElUE0nbOKkUqXs4W7YvEfsxBlPMt6aEpXfQeMd3DvopcMaR_Z5pygvLHqj1WWb2hRLcCxXljis4PeDLiM4QvoZn1uJtW3dvd9pnAnBKonhPea-RiUSqADa4eRIoLeBZM8JMdZgY3iDwrEFPZ62N1YJLbIB3NSIJQXpwASfLJd6q8sHBORUOqyWDycSbeyihroiiRw1MZ7_Msi-Jq4qYs23g_XRupWD6rUd7iUPl8jrn-5li1W78W_40X3H6D-ck-AvhmIfugmXfS1tP4SLYD7_SWVsLVXReVViwkDaSN48PaSUDKWk27d_et2AzNBGJH257BGsrI8_KmXD_OlsDpOlDlulSR4rvBpd_WoLYa9MkNN1mWnUWt80kaywKpDyf-_3EPefJ3RWi8iLVISb7J4lHgz0hlwv2cgBU5KfaJzXWSSVHZgMUQTGc4JUIqnHuw1CayaPFVKodwgDi7AGTKp-ogu_zk7mAeSL8GVciIsggUY98b0IZyJv52Xs7eZnt2mnrN1fZqGXlnRGSurL3unp-WgoYwJSu3g5wT_rG6kUWY23xdbx0h8s3Sxk8YUhehJarRkWoTvIBOjinxG0oqHm1BnJ6xAczhPB9opDVZczM_6sl_lPTZVws97hc0bOpjx_BWdfAUe7AncZj-a3mw5W5IhBR8r7FZwbKzGjq2V4KAz-2VR5HfTz7ihjQsZnT4depSn5d5pYMzMU4F-TEV_YaCMYu8YgjAtn2ZcMFCCNtTNW_QXFwvy667ojNIUmiOGGW5vyUq1czE5fWuCbRSVmdwX65vkDdoIKhjh46uiMrl1U7BUBYpzRaF3umG52PrmQOcD4yMAlP-KMsvRWi3rvnPl6dK6kuwyV3oKfyzVOGpamkjjIykZeceE1Eb1HPbrKrB6dxJZzYfiq7WoM8-SnZgH1xVAnjJEvS4qXqBISUHDaB0NdfElf4xRLhdf6jsgF4-EsQbAqi24jEmqnh9OlzS7jlIP9sfYR8jGv7seMZ7mZibPZH6m916W79DXwFr_e9fvCZZmaWZnwUgcfT96vwB_OGLqUv76KSwAnAXmsbiYp71yGPcrXFDg1nC7T-2TUZqQn5OYIfA_g3BtqPTEdFU2zbZ6wNZGLv9cWOlY7zgmo6M-yfLav4NiKEq8JgPa5gRwx6meMeW-T53BMzerqlT7Q9YRHIl-dXqPM4DivpVZpHgt5h5KvPUnInUorNxGYrYoARbDWaYUJgxWHjb3FolIfQb2vRD0H37syik9weBo7NdhhmG0pjPo_Gom18I05kAR6q_YgblOqa95jrO9uedeaaudEsX2G51KXEtM5n9BlqFNjDzC2i7_6pGs5_r-5ooXa2RVcqVvIwLlWZ2wIULP7RAE1EjkHhe1BmCVS3zqneLBWtDEzUqwMUU5adrtgMyhgVx3xiEYwNa5Yv-KXrM5eQP_f2OMBNdwoCjnrUTki9oBs5hyfL05CojamsN_alvcLPmpcQI6N8p9UbI9WBGavo51T7YmzaITV-hdS1YaZjc_GGvSu5eZvFMmYFATMPxEuGetcuqK_VcRMwhFyP0Xhcw8ntDjSbsnib_kqm4nuYDiD_Ne3KLgm0jBAKitcBfmd5v0pMovJ91jNHcdcimOlnttgr3hMAAmmuHMaz5Ka6hDtoWGBoVPcW8Hp2lHTabSgL388Ud33PCtSVkmo52m_ObQqLxU97hW1cwumliOiInK_3TmlaU7b9g2Um0MeFrGNWo0_oC5XZQ0YwNPUD_AVTnkUJAH-FuwmB1I6cy-oRzcdZDSQDEEhl0HH5_CVpZY7sKBubcjzo-gGx2SBUFFyrWJu0EUpAvN2uqZi01nyrnyVDy0di_7mMWYv5TpUMqcRB5vhbo1cHocfiz8-wEhHSOh8pKQwd6nxgmTDo6Njwk25z4-9fM6QSD0dRMO4FoDSKDXHg7EBOjx06tbFyjgu0vfOoxdqI1uuCxTfmwiWGc-hnuiDig2S3wvM6L-a9Vwb0NJda99qimTEDeG-8ZbMXbZkqKg7LI7-gk8ehFq3wlvT4A4lXLs8PEnOulmyG2COt7jOoJkAwgzR24Mj7-xMOfzhPAByeB9vfHLfF8dgpaRBT6IwWU1YnsYzW-NkHv2zn7Js2brgnygvwPqYsuQLRKxbCP7hembeQeRSdmuDr0WkQV3lEBhTniyChrIN_skUDVFK9cM5c1-QWzxxGleUsybX-mv9rUtuJ5aU9oVAI6auHDGlATDNphjkYhE5fhrSIZVCB66xdHEE_cbxIiIjyKLGA3RdYG9tZK4sS1DQYgRkTnviv1PXnImz-c6YW9AvsJHWqIbDQBy6BE9Mqi8twkg5jnWDzjPgONiB9nQWWAohO0wdo6F5IpxsIvprs-ndcBsZlZ2K0wHr-XzsMpmMnRj-Yzh58qcbUTRAXs3Q2Z94L5qYcwxXG9iCkrQWBP19RUFDJIR3uB3xYWjCWcd_RD385K9r4rAoORvKBM5RRnR42um3eOgeqiVzT7xjOQLqJJnIg2TyJ34TJALs0dfyAgrogwlP3qGvjtyJ5MSZqDyd-KAKSL7S0pKWYRfdtBXJwYOK2rORnKKU4lLodIWdp1JXKboGBAUjqxqRbMnnQsgAJpDRT8AOAt1GrpEK0komkjKMqeyMCWRApx7WJwJ1Zn8sGcdDU-o5MMy_ZA1OF9DU3Z2V2tGy9SMm9ZeD5S-lqDLkKsImSge3ss7rJeltea_a4DidEqDZB9ElAsD0tSSlPkhcIbGy7GRJXKqWL91oaSzjSnm69twnkQrF8TDsVlzgWQvS67a3dabQ26g7RTKNKftYHW3FzgFq3_eEM959onOSEt0QT3kVvIYnXnxdChiE_KUGPT_3ZXsQwPjkOXGGs6kRKeMLuvdtfEOj-qAzYZz3EybYhiAf-cRhmW7cVd2SYcpEgvXo7kIYMeLndf8ttGbQevhrhCPpjKdbA96t_QGu-Y75YGiKuSeU22IgWd0XHlsrG8du2_McYgAvmRcPqq57otBdjyWch9JWTAOCRTDscQZzgBpcYxjgm0WaH4IlkAyhv-hkYBLQfqhIAkRMpFBFuR7Whb3JbV-SaIjJ7aLhtwUGnvVwI6as1KyZMcC70cfBUXRcZXVssQG5JepubqD5KXl8Qb3Y6wg7Z4nIQAKy1Xf_j6VOKW3k1rMQVEsKBJLIk_OHTpcwHeNOBMrf1dk6mBYznm3rTWPIYxkD-e4bQe9H9nlre34Oguma1mhDZISNCJVFGR4LgTo2aklHa4gAaxitaIT1oK_kmYxu_qXiWurEt-6FqaEPtU7NrKmPCZL2706TA32csCc2J0rIg4Vs-tvoDUnKRlSF2CMTlM-p5syt3RotML5FjgbOKMRdSJDphLxHon_wzF1fzVf8EiosyCcqtDR0Dx4F_CCXRPgUNf08mTK34bMNy63PRAG6NPvryWOgVe4mJtigANQGiMjGuKY4g4ioqN5gYyDxcTAt9tPtvCO2gCAT9lVa9UFC7CvDH0RQpxlP3ncsiSylmzvzurFD3WdZrYVNGRSzVhrE76dqTOsGYNGZSBCjAsnva3G5YsBfeoFr2T4hPhTOj9srKT64aJJZyl1Ay8--LqMfLY_OGur2_F1WvV9APUkAHDFMQf5cHr61om9Wq34LmFxrEatvIJ-1-bGbh7stMREQq7mlqh58rATVsOcCdSCT4-WGacbatDkcpxmTh8qV_-N4PmrCWS_wBwyP2UutoDhXksQGc4oMNFwT_DplIuyDKhOB90WUJRfKLaCDoO10xv7en2qWTa9SFMohgAwzRIBYACNUt8PlqZAGR2cVeOKbPO_HknGXJt3bw_iQp5KIWdU9sBna9bxGxaI75X9r7ANAdfDuFju5xvKWV08G9SOkaNKL-2osdP7MV6XffeGMLe7Oo8R1i0IZ6Q5n-g3S_eTp02VVx0a9uN6tefbjIzC8fLIgEn96mXzdHvSnX_rs-MZvl7kSEYK0fPfZELJ3X3gp51v3q_6KFkPRRlPpF3X7InRxmZs_qmbtjDCV-E9u8mT81cDo9VoWnQSJA2JjVKGpfa3V5aFr0ivzCi2Dl15xEy4SKySINOq4hDRYaKviHtXS0Za3xSxmSzbetr4jcIcDNv1NaeJdTNjwkJb2dxda9TWDA1ZxofaEdasGZb1WJG_p9tWvlq_HQ6J8dz-9RnLYYHXXh0jTJ_FqaIufcrxHqGvpfd_dyvBKRk-xodvkxBPwk30vFKpAXaxSNRRlQqyLR8qFOpfHHxPSTVL1D9jCGKn9ITmEHdMVIyKIPe4pmOh0SixspE1pZL12FGrFlPhWKUkfbeCJYbyEQFEQsXkFOnGx8PqwUXSS9zeP0GNvFGDCGpZ2vcg-8wkhXgHbnMWRyHVfKAGIKQF5C0zGXW-E1TeDuEsd9fGjAVVD0eSnzC3a5b-Qun2uPWJ3lnz941p_iBHM4-qVA3Imv8MwrPYBRtfq_yC5g7NsTHNaHO8DERv0LNBCdQ2RQQ2PIclIcxawMI_memy1yu12iu9IVHm6ztovRF5FTv-AWLKOJU73Mtlij_Kb-y6D0ImP7mwGMJAjnxsEbdG3PngfB4QFjjpqQiEbr-_JP8slyrv65BEIv1NVByIqd6vu4fTkm5dVdnko73tH1vO0HXNLvGzBqDBdYL3HOofHROq30LvBBMyia3XCx8igp5In_QKc8QFqa3xmGfecjRq04C4tU9il8qUrYkTtZIIiX9xHz3oBa-tpnXOfqv7zvSv3sy66zCojf01TQFcJmgQsLNJ85voyP2lzKihxBhez5rNhPHmmPnudFXKNBhCdsUxKGk2OlprUz7GdpMy98DR9lO4T-oVucPyxsSGQsFlE8wbtimXXD0QTOL3RGraYyCOHeRgkMlVG5HaMPETe_he5S_osGcjigyhYdAiMsHMaHBzjeXSoZ-QqxOm8IuNL64Bd3Ez2GqHumNhQf5ZnnwZa96oiQmQ_5yFp2Je7NxeD_dTBaa1XVCdcftyqJHBa_IEwi2vocIsV6QNnzniU3PUA5MNCDiRVhRQRemMwgiBiFQ6JxXf9Q0Bmfl5HPzufFlMj9lgKI6rt90eN2NszMEHN5yUqvV5llN7lfNVR2gM4wywSuByblWDbp0fNw61fpq4K1IQr82Mb_IWwGHj1uPKn1io_X4GRKhixHmhuhDbrLDWJAJoOXxqvUilLe30hqlqa77u7k-7eYPWv0o3_9OMgFddbAi2EW9g9m2-Hlc811Nq_S2nHcEVyUGCZzOl7dpls5jZIj0aSUF2DjmX03RWBQxQb8G-V6DchXYEA=",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b788b6de0819b8369cef2458b34ef",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://wheelockplacemall.com/stores/the-chelsea-clinic/"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b788cdd68819bb07a779be4e6e131",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igEzEZUXLlTR9LFvNAODnicYcOTka50-zxD1nK111T9pK0XOeZ-bt1UhXm_v7lNtX-u_2SPtRK_R6U6sIMO0yM-JY_7ds6un7myq8QTwsOMigcvnT5uqM_c7DiGCxR4y183F5g_DeAfGtqqF8tXAb8vyMRKYGuI-y9ZJO6kCGarr5u9BO9bjn-V0t5UzhMO34T6iOhr-VdnG7pY6BcIeJHRy9S6sQY11cSAOfY7HuPB-3WiwqXpElm8c_KH7kz7An8zuLbIm9X8RgDaKEQYCke6GrRVAhpcOUUmbXswUdXk63MuU9TgGcfHRzvPeABn5Q6XrhDVs0MId44Y1oC9hu0f6qqPCqOdQmpr0iuLTQe0u2dUpKE0ZCSJ6reYxovCmXiRXZFNrJUVnOCZsIMVB25PX4Pou7pBRnGJTPK2mLHEQoD5jduwdj04QcpYTjzHLjB0FZNOvnofh0-s7cu0dxUv24nH3gZlmSEa0kxXYWRrlaPDKHvsXn3nhDN8gLj3rGbYf0Zl60W6dQCjJ_j9ljhXDqBIZGx7i-au4xg6tdRdmotBpgwUsJLfv0ilzjLw6jVXTtBu8eybw24lDlKaEpdN-RIhQ6DBd7XkIBx2otW0MotbmBfQaM7yljTeO3wUCy0TF-8p9r3UpOml91_cSMLyLxoJKuC5HsLWcqLqvG_bR0UqGiEVsD-M3TsCSeLxl5HUqC9_UIX-gr9g1glBUssOqqEfV6RBFCVq5pAc_TZZOJ8aezGPvRzkGYO12Eg--yK0kOnUFDth8XOTpfgJkcUofpG4bbQcaW-ri3_-KzrPmBuniW1XkpWsIZ5yx-rM7LCqG2jFWcKMpJNNh3mbXj1wRb2trV8RiIgHatcfr931JUSFjLQ-bLgC2Vm1k5iIBc-PCdvD2X4QgGR9AP2vvzaqBdQCblOzqynROhyGckfhF11_EvuThki8kmlPBq0UmhGiI9lBVaB6K0maO5RoOW39jhnKx6zSHPi6mVgaw9b1dHC3ipD7hdkqp9smM-Mn9gboO9o6Ll8sWBhbZct17ATag==",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b788d1e6c819badd4eaf298093377",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://wheelockplacemall.com/stores/the-chelsea-clinic/"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b788e5a64819b92004f931f068931",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3iga36tNOE-OXs_38pBQbJYHit-jZG8RYBnrceNHZ7sT0-ituYT0PpZ9_YHuOBBs-1TdNIHIy7jnI68J9v4OlEdamTOj_nRygYiG7VnR2kbu77xwnqdN1DVV-AgHTzshZsnCWgyvxj8TrKQPXjDTBjRITyR3qDCbHh0v3NJJQNx5FQlYu8_BBbRHMVcD8cn3mDs60Rz2gEomandPKaKy9EA1TsUnsPMT6ff18Nl4K9SFm4N2pctKuXh2F1fwfzvNMNd2ATa6JKQoqrcHF_xZWB1b27EqK9k823AQYMg-sseaIj0dzY5gOexzaz3n1YvtYjL6gkCnF-3Yom8p1CLGpgANJ3tWUpCbqoW5ncz6YffRydKTeQ-rpEx2rCCaJBdqvVcxXZMZ47SlLAcAeszJh5KchwAROnWDxwFBSzIjJg-F8cv1jpSxkmHhiUKsK4quKzbYTlAf794drYTs96Qv1eVeEEiK8v7rEQEu2u7j-qmz8zjVz1LFCGuQ_XE4cz7gjumLZlB_0jmMqXQy1HAu9GoGX_gBQHHjO0w-sWiypC2WQbrXvnFlZusVLDTUdJ6MGki8HkRDiV2GLHt4bRrSdr6wkj4zH7DerI6ClYJs143FXA8RZOsbRW7Oah5qqI3yGIcMxjnafERIZxabtKZWRmZWhEmabVi-VsKodVBv6h5SVOQfjRHS0ffpNaAy-L-jdzs6EEIEsUUTnzlTuS3Q8rA0UEQpOxrrJH12Fy1Rw4R0bL-SdQo7tdWWtODlggny_WJC2G403j9Ae-rh4XdL4KLLp9j0lWEK3vmTAs4aJ_6AYKOw9ng4-bxfq5QBQjQu00JJfZPvjrdh5lpEodr6WGU-p119ymQoCv2ZEuBwyMbTyh1sVDkBdX7A6jitXQcT2o-DxvFtxSblFxAUyF9wmInQazo2yWHnzrcHfVrp4IRE1G8F7ce0ZZ2aGhJclYTRoca_Z8soRUhz-acKmzhm6DCbYjVVdB6CLEvnxv2MQcZRaZyvwGc4WDqOfVqGV2juogKTNW7YodScXYMtSZv67vuFMKjdZJ5EQHWOqNG96s8YdO8gI6RBvttMrgPOAACDs5XfkHWDgBex-71PC_LlLZa0aRcrJVhCY85HjoYi5ni-5Dixavo0PEswMXo2u3N6Vz2H3aaCS2gpkVjd5RFkevYNDuOMDwcgp9yS_lP8J-JnJp2H0R8q6hS84s1mF02RCDSat27UHgjnRMJ72B4ajG-tvFYVuIBBvya83qva40vmvCVAN_TNuqeqiicse4Rpa2xezkaLu3ELwOl6vvikQPk89A6k4bAY4blXjR49vBaqEoDLJ25yhE7JMDI-UQcm6npzytCdcxGmKfd61jCdYszWJSIf-lBKvGoJLrMAFd1dckl_mEbqgV7d-pk3fdDHqsB70glEn8NOymvl4FQroDz74I8tRuefCH6zQ_FMWF9HubDdjuTYQh5Iju71CklcA0JkExGfM0KdtchkNe6WiaAuAFQd5Elz3GyxcC1yzaq7J50LkNVaBWeR80Ap_uIM0Rdcyt5-tf4guAUZfMtsGWWUMMZA3IXZCC-cA7Cp6l0C18=",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b788f4f1c819ba870d4a902e8fb3c",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://mandaringallery.com.sg/directory/shiro-aesthetic-clinic"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b7891fb50819bb5eb62eec0e30b2b",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igvPcEHMJbRvgrsctjVl_KQr3mTmfGzNB2M5PYO0lBPe4SyczlmpZ2xebsXFMG2jXNYKb6xDIlftQ5ZQzKLpeDP-EhmXIoSE_a9rgop_srKzYPbzsYCkl2rTcmjDkJaBkxZ6sVA5W51poLM1HBKURm9D43gTAaKRB-krx4vXnMpQGDhe_Y6HpKWRlQI4IlSFf9v7P4hlKeOl5aSXN2CL5oc5nVLak78E0fAVk5qxST72Uw7FJGpCMaT06sVGxNXKdqbpnus4HkueNCrzSpuyJBI5fOVkiQ6nSgOdUGWPaj3Z_JMwZ0WXMr95xtDr3k1-62QyEubr6o6h3YPKODzPk6KtqhQtxnuMHNyYmvEmVrPyGfAkHeBTueI-hagS73xhHuBdu5-Zwjz2cp5mNgZWRGYFXYwzchWS5SppmeeAMHAjGiIwlolwQTGcnclgATSDpbWvtYfwliGqjSJi4iOLxee7_DFh-jY99OWWaagqLIroWT1WimxconI95N5TtKhdBG44hhzrrSVGocHGnameoQ33gg2QEmkKBPwuGt7KXMThQEIGLN6F6gD7eXthb-j0T3jw7gGDgKZZ03pOnCVZsYSZ_a_IscFe9RYVO7noi1i-wmwELQ3yHDNbi3uqb5bYBWjg_mRsG1lkgO2aW2uRNpU688BOQIFr0pAqM2FG4NqC5TB6FAaxQ895oCjK1mieubdnDk0k4zPyyV0izRShGphHsUWX4uJKehuqNf3k4_ip0lNsvgSOo9_SZ97YZZqHIzArjKAIO3dYsLary2oyWGV1iECX9cokHRdQImYuhvp1JaY6m4kKuPGhTOEtWUTWnveLGj5qrNh06IZqasAwx3Y6uxfBvbtQn-fHiFxuPqD2VMLlZYs6kZX272evXvOmFhZ2kbSY9XCbuiOIS5H-Ur1DpIDfmcDCKJpfEG-yEsouLMKcb8gGJaX461s2YK9lBRImm60d9O3JUpKifkdsXMBbXT4fXAYdl9VFBYfc-zpIjtVGSifqI-Vij1q-2lvcTlLR_TQpLoMrnKJ_7cqN0kVjKxHCrodf5OBdvvWuU55k9t8eTsBid5GCFKyKur21cVIrbav7u0SIoIeghFNxDfPlTobQ8ySE8QKJThLmvU855rLeuXjBlg8VmhMpEGq6be6UsHsJ1PS2k4MZdFI2Cces2z0LIyf2KRQKagUQ5vW_UoVLO24QWS07rzG4DYXnN-D7klRC220A8qkmju00VYjXFagY2khj_iWE8nmT64kVafwbs2Avectj8l6-wpKvPbCvN7wtMW0r-qPjpdG2cm6PBUjJpsFWmukjic_afWX6ucZ9VGjoQS31ZqOEKmVOy39MoFXQuJprnpXtpmP5CO-iOuqoQrFQWbZu_O9PARk1MzaQUE_QyCV3uFzbsdYfnQZ0_9bjSWQBwwYNuvJ32QJ-I_i59uHgGSHufqq2IHSzsMgF715tyqvLZwmNdDPHiO8vO_d22EaP4aeogrsdlRFQlLaKQnT-5IilbklEJIJwlmeica5yWTBqseZDE4btSjRC3SyximU5OeS29q2uDUZSankqB9XCoyeXHk41mhhjcucA5e0FiVaWxR-ReW4EiUMleO2jYm8BjaEjvSxeCMloDHUjcaCzVGCwVdwgpXwl1nhgldjmzKQgyO-eU_9L3sChzT1OJXeQqwuCjqRyDHfFjwIuZ91pCeRKz9Hu7Z4mlmHVJELHgdUobkSAZNT6Z54RBwSC8aOaBK5eF5jXKbJvhMFZjkqbCRW1R4GfhDZaThtcvu7-7xItuL40qNPezehTLXnxQ91YVnjeGA8zMQJenOKnNnG7HaoFcOEc4fY2aAOnql8d0SvtqkuZ1VB_KG8dlhcbMtV9Ze3o9gqGZK67WpnVn8mSHn8kxkWJBUdybLyeEwVPCNEGX3h2bvNufCQjPy216ehpJHtFhxFaYijCV0BnGyKRBWASVVIGtdIakkcBx6a_PDtmdxH7yFycx_LgIO51gwpbCFHy6l-jQOt64l4eKQPK9u6Ii9jvrVZjTOUK5WGgUTKqmwVJOmplRSjBGFbspVX3WC0sIyNTzmX6lL3lYAupitNwCdYuNP_QwVpj4qU01WImEWkfcOvWxrDlQldM-cyA_oR9MowbKjefnZUn6guS5QNS-Iu70xpJa_g-M6IoJZIEJ6auu6S0iCF3l0GdNYLy48i9OGI-tx4XhCdROKwJhFcUvnnmkcCb1KymogfFZ7P42mLicpQ3dzdlMnHq2qhbU0CALMbAtqwDVS7qlDy9U4Q6pOXduBFkejoV91RsLN-_QVXkAhfqQ4FvVjXZ_yGK1kc6gVMXBCNOmtNF_EqUclRMsPu9iGlrqhKA9Mfk2pOjzE0AdF7hh6XKLrzGqWxe3UmD5orcazmcM9IUIMyrda_HkLr1fb6cbYk3ZcrjbrjSioRZUi6CtwS0C397lD2Sq5UlpywLPbbNs8DNbuiCQpCk7gUjNlcDGVe0s4HkO-XwbJz5ZTUiYUjJjQCl2BtByxMBuvJQTsMfISHphSSpsCUpvFK957-EQ-lCKOFp9KnD3WJ09WGtDbsBAcIqcj-3cvaU0WUik9Ng==",
+      "summary": []
+    },
+    {
+      "id": "ws_019115b7e75c677d006a5b7894ec8c819bb53fe39f2446bfe8",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://aestheticclinic.com.sg/"
+      }
+    },
+    {
+      "id": "rs_019115b7e75c677d006a5b7896ae68819bb8040cea55f26e50",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3igh3L7M_xIlH3w3NMauODUch4eagWLcX5XH-3sSajqUWjXAhv1qGGsTapWxxkvTmrgDfKQQx2ja9UN_WM0FyPderxh2xrdEjV20hx_p3NdRswOj8z-vW1inQ1e2bsD1na8w53Ectj_9Xbo6Hkxorqbm665nzzj3O1xiLiMjIOTFN2nZgH-wMh3tGjGyC21WUR-Tm3qH1Ap8vu56b8TyEF8hyai5Tz11AFvChEx3AHGN4Uc9SNuaSHv7Ti-qBgk9oycvD_vVP6yJE65pxvdjk89e-iGVdhRIG2H_UCXO31SdyWMfp16FVAJpVnSd9q1DEWnDY66Mt18e4Llr73GAYHI7iNJFObs1eZ9A3eLq0RUQ8w7wjhqxCq-Th92m4Y7nsh80GERgt0Caf_GH504zn-r6rnsvW02MM3w5RYMyPTFxuiE0VonklpS943oX6kr6BI2UmCVXnGuJiOPPRqFkh9Bb-9S6_jBQoJ7KAJkymgE-V2X19E4pGAxitXJsk7rci2QIQAUChtW8dRoQAgN8g7Nj8f7dKB1z4uDGXHSHJeK5mlIb_TIeX9sRivbYlSxgbUXcDLVEDQYEtat4amHVd38b9dHZL2wwol0b9rAencpDg5xifh56hU_5y4UE1aU2in5IfslDMQsgwgCBEOQWNstOuhkhZXPtJ-w2d0K8i9JkVRMrTXrYpXgIPKIPThTcrkEGY1awDbzJ1e6yA_L2mDfp_j1ryGAUVAY5f1IPGvPUM7gsEx7Ug8MNdYILueTvw1DIoiLsnGHOzxC1Nt3SIoaG60JHeDZM_DPHzqY5hBUEtOKMiE116Ak12hgvGyHleYa5izWOlv6QUtEsmi2nemb_1-9NebKmIzlpKp-AApSS-S9LhkRclDRLuLR2bUHAWT3aqx7C1tWwDYwfvci3OW1YnzTJHPYT0ZvX3GyN_-cESMaYYhJxubv_5z3-UwLViSvUbhhgCl-o3_XRLRPAlhsXXZMDU70wDyatceke-Er6iSq7A6lT0lLs6JY6CtUAtcTUzDlOT4A9re3hZMe6YgWqFC4108Bne3qkmlBo91y6tpSgwPcQHv3zmjqYjNnN0BCnA0Gq_GbsB_yurGxYD-iDayonk7V3SD3VeNOhZjwW9j8_4WgWmRasMBeROPZv7UndHRNkSqnV3uQBHJeNFb8cmStKbTl_3NS8bcdfjZVrcllYQBe_1KnYkxrGGwdKQD5zH5eqgI08uyN_K_7k3_w5cw5Z6zR-BzKQc-_dYSp3iNZwQukvgdtxd39lJS5HDbbxJFVGEQDovMTt9d9JUdw-VJrdfhiclIRNki_GkNXHTskKPe9GzpHTUzqV4QjVOaFgybcSjeuboQg-nC0dF6dfCUq6nOhKfWf-BieAiaIkFXjH3HU76KsIYYdcn56MrZ3vm3hFlWonpe9iW2U_mn1leTglcLpt_7mhY831YNPHLX1HeEFvcM3Aodi-35Je9GKejhgh3hWc8PYnr2HilurJ-9fFe8U5lV7I6QGVMhq-DiDBAVyrO0l8wi0A519BdVF5z7RWmRXL6aLL1OoIQsyfJhoOwSZ68tSj1aB29K0KeE7BN466kRUK5rOTW_GbnTfIuvQq0IiPqrcrZM1wBW8Co80bl7GxcblHIW_pkj9TheDgL9rzJVhND6nPaVdRJW23RIjUKJGIo0cTLes30ANVMFtSxFAZ8NJGtiuio4Mbfbjyy-A1vtjxgAzqc0riu-CpZPQ5tkZemQxOnkzGqy8XPswbShmekm3TpfXbVog6UpItrZ2j9NtokQuboQ2399d28cTwWFfV83Nn3anbGixluyWImIdtpslFDv2yMjXWV4a_w_F76WT3fGfJHTHJz1Tmm4xkV6EKK10kUlxxOP21BjJbViBg04nJgKUJ4lm3b9jK5VTEAJMIcPAwQmmNzAdwA9QklOjjR7UY92zj5QX_xsg9PLuP01tmIzIZou1pVnct3Ef4LyMm5m6dWJd1BYqqUpwyXxFtlQMI6A4C1eLKcjA75H0tpduqLNrSjgSZx7VPJ7SlslYQZMQ04gNTGoFbwKhQlvactTCH_kBV3GJEaQTbkrNUzxi3wgvTUXQZrl9N4tusAXFvm3zJEQ2WxEmCxqp9Fi2tde6_KqLp4RYXGYOG7toqgrqu9b-_5VFyrAROdvEFLXEinqrVu_ws4UGXCIa-YZNktOEFOWKBbHj9zgzvQNw9nc6Iz5ZZ1k9zarmTAs8k5N-3fNlfx2GD35e-gR6XlAGXeBAQCES3jCYkXCs7iw9pJ7snoGfpWZ6-Aqs7W4XOx8uW7ha1O0LIhylkQ5b7A3kI-ync5tTESZvZ-kFT-6Dem6GbwXYzvJjOmIKFrcsJhaSmvO2GTpG1LcOdYskxV6jQsFuWSGqd9yqiLBhVuiIrHvHXqImWCzVM08P4bgAjPCI3rTsvvs5xv3YAZRioaI9hmLeuuzrThC8xtActPGwrPrijVqj5s6DsUHM2r-WfWGgC3PF3bZ2tMewPeQt3PRj11oSeHKeGNOTNG-kHpx2GYV2WAjz5k6Vztb8CdJbSZ2FOX1H0ijdEPS19s2TvuF7P-vh65HNlKmvww-diHyEop-QIoS4kxs80XtcnmrPcO1m4fXK1KNZbYhcb4y8J5VY5A-1E03bRRDS-tCF7pqsxqwRt8cAWG38PpgTySr5uIFCxGA24QkgDlK_",
+      "summary": []
+    },
+    {
+      "id": "msg_019115b7e75c677d006a5b789a3360819b901ed59816862a81",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 365,
+              "start_index": 324,
+              "title": "SW1 Clinic Singapore | Doctor-Led Medical Aesthetic Clinic, Orchard Road",
+              "url": "https://sw1clinic.com/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 622,
+              "start_index": 539,
+              "title": "The Chelsea Clinic - Wheelock Place",
+              "url": "https://wheelockplacemall.com/stores/the-chelsea-clinic/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 894,
+              "start_index": 801,
+              "title": "Contact - Cove Aesthetic Clinic | Medical Aesthetics at Orchard Singapore",
+              "url": "https://coveaestheticclinic.com.sg/contact/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1182,
+              "start_index": 1092,
+              "title": "Contact Us | Dr. Allan Kok | LS Aesthetic Clinic",
+              "url": "https://www.lsaestheticclinic.com/contact-us/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1471,
+              "start_index": 1408,
+              "title": "Contact Us - Aeon Medical and Aesthetic Centre",
+              "url": "https://www.aeonmedical.com.sg/contact/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1793,
+              "start_index": 1706,
+              "title": "Shiro Aesthetic Clinic \u2013 Aesthetics Treatment Centre Singapore",
+              "url": "https://shiroaestheticclinic.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2031,
+              "start_index": 1990,
+              "title": "SW1 Clinic Singapore | Doctor-Led Medical Aesthetic Clinic, Orchard Road",
+              "url": "https://sw1clinic.com/"
+            }
+          ],
+          "logprobs": [],
+          "text": "Here are good, doctor-led options right along Orchard:\n\n- SW1 Clinic (Paragon) \u2013 large, full\u2011suite medical aesthetics and plastic surgery; convenient if you want many treatment types in one place. Address: 290 Orchard Road, #13-01/02/03/04/05/06, Paragon, Singapore 238859. Hours shown as Mon\u2013Fri 10am\u20138pm, Sat\u2013Sun 9am\u20134pm. ([sw1clinic.com](https://sw1clinic.com/))\n- The Chelsea Clinic (Wheelock Place) \u2013 established group practice; central and easy from Orchard MRT. Address: 501 Orchard Road, #05\u201108A, Wheelock Place, Singapore 238880. ([wheelockplacemall.com](https://wheelockplacemall.com/stores/the-chelsea-clinic/))\n- Cove Aesthetic Clinic (Wheelock Place) \u2013 boutique, doctor\u2011led clinic for lasers, injectables and facials. Address: 501 Orchard Road, Wheelock Place, #04\u201107B, Singapore 238880. ([coveaestheticclinic.com.sg](https://coveaestheticclinic.com.sg/contact/?utm_source=openai))\n- LS Aesthetic Clinic (Wisma Atria) \u2013 long\u2011running clinic right on Orchard Road; convenient for quick weekday visits. Address: 435 Orchard Road, Wisma Atria Office Tower, #10\u201104, Singapore 238877. ([lsaestheticclinic.com](https://www.lsaestheticclinic.com/contact-us/?utm_source=openai))\n- AEON Medical & Aesthetic Centre (Scotts Medical Centre, Pacific Plaza) \u2013 by\u2011appointment clinic just off Orchard; Saturday hours 10am\u20133pm listed. Address: 9 Scotts Road, Scotts Medical Centre #06\u201101/02/03, Singapore 228210. ([aeonmedical.com.sg](https://www.aeonmedical.com.sg/contact/))\n- Shiro Aesthetic Clinic (Mandarin Gallery) \u2013 aesthetics clinic within Mandarin Gallery on Orchard; good if you prefer a quieter setting. Location noted as Mandarin Gallery, 333A Orchard Road (unit shown as #03\u201135 on local listings). ([shiroaestheticclinic.com.sg](https://shiroaestheticclinic.com.sg/?utm_source=openai))\n\nQuick tips\n- Book ahead\u2014Orchard clinics fill fast on Fridays/Saturdays. As of today (Saturday, July 18, 2026), SW1 lists weekend hours till 4pm; AEON till 3pm; call to confirm slot availability. ([sw1clinic.com](https://sw1clinic.com/))\n\nIf you tell me what you want done (e.g., acne scars, pigmentation, Botox/fillers), your budget, and weekday vs weekend preference, I can narrow this to the best fit and suggest who to see first."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 4
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 30488,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 3715,
+    "output_tokens_details": {
+      "reasoning_tokens": 2624
+    },
+    "total_tokens": 34203
+  },
+  "user": null,
+  "metadata": {}
+}

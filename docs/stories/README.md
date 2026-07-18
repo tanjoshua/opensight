@@ -1,0 +1,40 @@
+# OpenSight — MVP Story Backlog
+
+Backlog from empty repo to the [Starter MVP](../prd.md), built on the [technical design](../design/README.md). One file per epic, numbered in rough execution order. Stories are sized for a solo dev (~0.5–3 days each) and carry: ID, user story, acceptance criteria, dependencies, phase, design reference.
+
+There are **no users until the full MVP is complete** — phase milestones are internal checkpoints, not customer moments.
+
+## Epics
+
+| # | Epic | IDs | Stories | Phase |
+|---|------|-----|---------|-------|
+| 00 | [Validation spike](00-validation-spike.md) | SPK | 1 | 1 |
+| 01 | [Foundation & infra](01-foundation.md) | FND | 6 | 1 |
+| 02 | [Core schema & store](02-schema.md) | SCH | 4 | 1 |
+| 03 | [Auth & accounts](03-auth.md) | AUTH | 4 | 1 |
+| 04 | [Run pipeline](04-run-pipeline.md) | RUN | 6 | 1 |
+| 05 | [App shell & Responses UI](05-responses-ui.md) | WEB | 5 | 1 |
+| 06 | [Ops & checkpoint](06-ops.md) | OPS | 3 | 1 |
+| 07 | [Analysis pipeline](07-analysis.md) | ANA | 7 | 2 |
+| 08 | [Metrics API](08-metrics-api.md) | MET | 6 | 2 |
+| 09 | [Insight UI](09-insight-ui.md) | INS | 4 | 2 |
+| 10 | [Onboarding automation](10-onboarding.md) | ONB | 6 | 3 |
+| 11 | [Self-serve polish](11-selfserve-polish.md) | POL | 7 | 3 |
+
+**59 stories: Phase 1 = 29, Phase 2 = 17, Phase 3 = 13.**
+
+## Phases and milestones
+
+- **Week zero — validation spike (epic 00).** Go/no-go on the core assumption before any scaffolding: the API names specific local clinics with citations.
+- **Phase 1 — Core loop (epics 01–06).**
+  🎯 **Internal checkpoint: real weekly ChatGPT responses viewable end-to-end** — a CLI-seeded business runs weekly on production and the Responses section shows raw responses, run status, and errors behind login. Backups landing offsite; the restore drill (OPS-2) is MVP acceptance, not a checkpoint gate.
+- **Phase 2 — Analysis (epics 07–09).**
+  🎯 Milestone: mentions, sentiment, citations, and competitors are derived from stored responses; Overview, Prompts, and Competitors sections show visibility metrics where every number opens the underlying response. Extraction quality gate (ANA-2) passed before the phase is called done.
+- **Phase 3 — Self-serve polish (epics 10–11).**
+  🎯 Milestone: all PRD §8 success criteria pass without operator involvement — enter name + website, review generated setup, approve prompts, manage prompts/competitors, methodology + privacy pages live. **This is the MVP; the first real users onboard after this point.**
+
+## Execution order
+
+SPK-1 runs before everything. Within Phase 1, epics 01→02→03 are sequential foundations; 04 (backend pipeline) and 05 (frontend) can interleave after 02; 06 closes the phase. Phase 2: 07 before 08 before 09 (data → API → UI), though 09 pages can start against 08 endpoints one at a time. Phase 3 runs **10 (onboarding) before 11 (polish)**: with no mid-build users there is no live-customer pull toward polish, and ONB is the technically riskiest epic (SSRF fetcher, generation quality, ~90s end-to-end target), so its unknowns should surface first; POL's dependencies on Phase-2 UI are satisfied either way.
+
+Explicitly **not** in this backlog (post-MVP, per design 07): billing/Stripe, self-serve signup, password reset, additional platforms, alerts, competitor merge, Prometheus/metrics, multi-VPS.

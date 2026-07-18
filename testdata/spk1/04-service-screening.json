@@ -1,0 +1,364 @@
+{
+  "id": "resp_097f2e40ef0f57f9006a5b762ba1008198a28f21c9710365af",
+  "object": "response",
+  "created_at": 1784378923,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1784378993,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b762c52808198befa125ec2bb74e9",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Zyl5HzCRwpl5-fi2Xa7F_M9rOxT0Rz5ExirTOnF38UEo291mjWWbuLcPJSzNOlQU8cgoDNUPr_si9daB1fa_XJWQQT-L4sWH-zc4Qqp1n3jM8UfQG947YXvWVSpRXNMJCh-rg-9H4ybjUw_jiSdlzv6JokH7rv-S7gzPTD3zJAwNVZh3-zhZ-lnQY6hNkN34kzSfFAWQLuOZpJy6ypxpKf3_T0gj4GPRDFVBR1HG3KZdPlg1M1kSD69PkUWr32wajozMZcexDNG-TKI_l8gDPpsbaWqpJvdaCH7UTkWfDFodqNP6qBcxJ8T0ZUEKCRQIe1-5iC9vnd1CuEqOXS8sNWT-fbwllM5LseNhojec9IhS5AjCxTiMsAwALnfHnwM5RMY7UYK70GhEmB4OmWVdBrmwRy73INWZ6lMkgaW0FowkozZikeTtX5wVVoMnBrJp488UuiNwEXj0fxELakfSzIH6GpZvdbZJ-fwF4cZU970TYWSXxc4VjmZLAaCOXBbcmAVsWXFAM3OjWVMQa6sb96Dcah0ctgHPrC7phefOPpOvgjo1nGl37nJ60DO-aZnWQQNLtgDDl6jhBxh3v8uuxUwoVJfjHdDRSrkEZ_u-3C2qljQxj7SBKJCA4WsXMj5lHMrkkJpNg06t_5FHgyUhM4onIbqEoqgiKcDUYjutj8SzqL7-0QYnBbQ6Up7eDo7m6pSsyoHP8BZP3FoCWFrDdHuhyH_6PTi7VyvWSLrOhBRWTAIQ9koAx6D6fs0SfXIZqXmO9jEQjSuS-3EXsyHVWaSbby_xbJP4M7IOouBqyLWXt1HzbrGzL3pfLyrC5ewPuvygcUb3cPjyylcu9MHeXLRZTvpXiIs8cvDO2SPeEE9c0szHRnChKV5qsMlvzKK7v-1uIkN_S29-zh0U9lMGvpWn8WGD3XYY0Qr9pciuHkZIz62KGTi3WpQcnd91qh2dvG8SZhw8icbjooyxH-8UX7PXUmRJD3iy9xAHJNYsnC20rxiwHxR0o3-QEDjR88-jTD8cVMMkncPaYQFVTq7k-LsAS9SdJNapK4tAQ35JuuHU8FsVt-9ucn_K09Pjpr_BCBZRLGu7yFGdlqtYPOGW0oiQCxdGYWSQMhYTYPoBUXKid0MhohZXHghx7Cr5cgINTV69UcXkqfbFQKNBGJiAloE_6dkibG7aV2_vJGx0jjsLaI3Ijy1D-4VzUlNgo_bWGSIXUgVpTh5UF79u6cCOwF8BNtLwihSzSK0J7JbHY5RxMeuX2ruXotk2UKIx4Of3hDU4aLPY1dJNJhCUNGAH-ZvgsNR5ypLirYwM70W7Xp9dj_O_GtENJmJg3p9utmClJqFyy3pKKHhlGWdOp63SQftcCrUbkYOSmQQn9fggmwz76kRZNwMX0vtwHAubB7PFSbeqRszI4rg5zXDCjKdIuJmns67TrQiFG79me7hQ55DfdMwQM_F4gPhlWb5nMJdmWUNfEcEypSBVequ8PS9dCvv6t3QPMvUQboMmCFnVurSFaDyblQYqHm6KAUszWO0uViY_Rde6rdER0hmeFfQADJlC1mEGBH029xHucVW_TRBoGsbxpMb_8ozcoqwNmVF5UjLyRu-AdqhpUlUCcaG9y1_0g9kLfccFqiTE6Ysi1Nqp-NCw1emVwiiOuV7djTVIoaSzE06rAHEZWUuu6R9QYPIeoAOt9Sgrns9cOssB5FqD18deEcyqwumdIscmJqdSFX_OYV4j3Eytf8q7mo3IXDrRbiJjrXz1GPmxPDBwTPwWIkzunnmTYLqh97cyL2nlTZ41UBxuI9-wOJ-e82VLqAyNIxFC6xTfX9gttl4BDp9bh2HA3AuuQAWpH9LWw-5jwb0H61vgzdZWIdk1CRenOEJQNQ_h1wGsP6HJBMBQHl95WUPuZx6wV3o8SwY0rQ0Gp1b2BT6PnvUtRIFE-FExBHueLnr1Jv1ltjHlnVa3KFRAh303Ph-6BwRbRRA6yerydifPatJFufBHIYUSog_VTq5GQnUzXz9WxLG-P0XrU_QPJAzmfm86pJg_En8uzrOLOp__XkWUTI8ecLvU5Wq46wb5wHRsf0viH1LDIYUTI5JdPC4-6oNGHE-QhE3Izw8LlDSrCSQXVgb2ijh78cTFvZUjekM1niaRSA6XaHSD9Hrg9cd4lmoiLjua1iTgRVWbXy7hsdzTbYJ_4C7pcpECmz29bnqg5DE2D2xUtblYpFvnxxVzvfQvFknHqAtPuVj1HWbFx3mTP0ZM-6YxgEJG4MAW7CiXDMtQ_7rKxaGFfnfqL24QdfRyGsGCq4HHgiVD_iubLogDJtoc7vnZC_ZP05WQi-oDtF-Gp6s2W66cvKC1AC-B9kj51QM3Dvhd5Oiz2KQ3NcDhc_SWgCUYcUwJXzl4647YoMjmFxodkK7MbZjf6y6FBz2fpQL4EzehdcEQ5IwQDUXJYjCApHYpeJ3T3rKjqHfzBFha4OUMFN4vPYOQGUJVmE3E4Z3g26ECzHpW5zOn68JBChgDz9p5CxH6JQHGTMN0Hrdzzovjfi-CWcQctiJiKxfnEigM46p3zpjLl2SP0raQWlrsM8DzaWB_9GrMXTDV0Uij-XydWirqawFbTPfGgVf01iD1w3HVMkKNzAAi1s0NN5tSevnJwXQYkLT3ZpFYnyicAAMS2HYNORcYdgT9xj-lW4YDtkxhJzVv9anYnpd6WZ4m17-X0A7J41pwC5xDKkU540olfXNT4Psspdhjv1kzkc_ys9f20jbtDZBmxN93I1F54S2sByXGOOxnJkzDDEDfSTGI9H655OldgotpljkfVQi2W4McZcyCfhSqQ_-AIrk4TYoN2Z6cdLuuOcj0wn7BhSlUfiM4NRfDfLfLyYYCOcH6X3zMW_fg3kHKVxwzV5OBccryT720w8GB3HOAFMk2uSVPW7ltMl18FrLTfaVuOdFe4gvbVmq1M2twIZiKR8drBM9OQfkeOFEPDmKLmKsBxKlcv7FGgQgrtfINKg5tA727dqWHK4Mpxx7wC_SAVkaHsXWRHpDmykE6JX7CeQYfo5mkldJDpNBFEV6qWkAABWgOxu5WFSUtWbRs6_hnr5RHLFZ9Rzi5yq-yFrWjAKcr4m2I-1qZsB50d2XdViGAz-I3K4kvW_VNi1rrWRgObvqDm2WlVSF96iyuwv_rDVUIv-sxVZamNsHtH5cGhYX1I8cJyA1B2G8PQEB1tLzS0I51Pmf8TiBTg76g4UQL7ON2jiQx4Fs25u0Q7oc5k1xqG_ZLfZEsIWELiyxcTbRmQdPiEWcJPkferOv-2kN8FIZbTPv3LpMjjYbEAI-HUU4sRZagxdOZlAGeLJel6o-22pRPJYHS_nCj82mVPT1_N1EhXSrXA-8a-a9e2gd4Tmb47ygbNH7FvBY-dMQCGcGjOirLncMLz3lHKSppQWZt9kT0AGcWEyVmrT4j1qt0upDKRCNhEuLcEruoIy9b6MBGzJivKSx4k3g94nrhGrnM-XG9oY44IvvfVKTNcX9VGRK4Uu5J3WeSkZ7Bo6XwLrm7U7eMfLmgZRm20rB-Pory28CKcGlFs1mcMmSLrzwcfuGK7Ab3DtSweHQn3H-oRPA4q21wGZcV2HUKeEublJ7Vp__BA0iFWsHfqBSI76E5gJm6nM04AXyfbFCWlxyL9nwvNGzlnxT7ej8LAy9GFxVbCg67pWIRVgfaD5gr3wmBS9Ka1JlJFBnCvK_mfMvKEHOqmwMT6zCp3RG33HgLMts9PEQKEVxtQCyUSSOYkKMRVwm-qeNe-3kYtdkAq3zklM9D-47-H1DomUSOsAIqhHK_X-InPk0SO-DtJbmYMWYy32aztBZ8CNMLabnj3WhGloDd9jRXQYX1ViP3WokKxccaUx5ux5VWn6sE6Itp1Bi8XqXK5cOnFzjnGnt5p-NqrOoR83c_A6INu2jXikkFWBPUKAnHFHwmUgtjSIsNHCusHIad-QHgfuo8s_e73u7ezg13ncqq1YciMTDaC8iHrmEWna_5Jl2ItBS1ktxdOv3PQbbxvBeYo5kQX4eNmG",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b763167008198ac7a11da0025a0c3",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore full health screening package",
+          "Executive health screening Singapore hospital packages 2026",
+          "Ministry of Health Singapore guidelines health screening HealthHub",
+          "SGH health screening package Singapore General Hospital executive health screening"
+        ],
+        "query": "Singapore full health screening package"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b7633cf448198a76adc59d6ad0056",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ZyqlGmbk5aNGgk9JT-4Pa56ivLEHoRv45uTUPZduTQM02GrMxIeRRiIrqu_hd-V5y9VKx0TIz6tGF3YJ85S8NmGrcJG6psE-L-ny7cp0w2ZhQlChWW_udUXxSQTHPQ45cBWU_PQPcH4a9r-92Sds-FKQELuJbqG6anMdUyLrz1M0c32r1LGWkLG7KbnvVLHQmB5gHvBEA_40MsvsSGly9Egr9tYmeViRu_JXLYEjFyzFiilldKeBz7Fag_FVjMaP8k-niUuoirT76uqxcLC7-7UKn_PQB7CUwxtpkSVkoIy8QEKBTzf6QlNjsZsae40py1JYI0jg7raxM_ZbnHDhtVqB4DNYaxrOdBgniNWCF4k3RWXkxmhrIsqzKLKG-svCo71Ib7wL6qCBoYLVit3QzvD_13ZAQ_sxr_PZkqrfENJ1GPyQO_KxdJVQ03QpcPczi1cTUK8JToTcx5BD1cqWj6-2MYOkWPBvGaeaWI5K2lz0vxwQGqrKBvMEy7w26cisPFPidgyGt-d3L0w12_6XIDZ7ZR563EWBtFnpE_wsrMyilFHqeJVH7f_YPZuxk6o9cSMbvbZlL3ZtgnBF7Uoddows2_XGF3ITva1W-3SLy5U7UmrEomX30N5caE8TdJmflrIRKqjQpr-AmXhZi0ttXb49WNzn2dBxBcddCcnLwibTJpXa8A9qYhFQaZXRx3LB86ihvshIYZfzACFY7fDSuHoHOrL-9H9MxdR-72IjM7Uj5sDLTvMmlPJPqztiok_majvY0z9521qSijTIHd-JhyTPq-CU_pj73GLcEOp7cI1cm9vBKH6G3nnGUtYcyEilijeZrhhy-KmPO_YPXKdP2O7EJmmOHMzgdVJ1A5CjFEbDn2oxXmcMRJgnl55Uh8oHqRsRCkAZ-HBqtBmLuQpALmZG7tcC9RwexxjFyVLvEnU-Gu_vK54o4JkUIHktDQl6c3yzfI6PM7TORHs-9k6ebj9xyHsw3hM9pkrF2uO557SLLNsHwDMMJXRjw43HDiSiQXCXPfCJj33N0b3OXOzdHhD-mZfuwlOoLUnZqY2lOKJC43jOC3LiO5FIr4-iwg_mTl0MADiDVeumNfU7S6plYGNfdPFAv77WLadCtLFFhyq3eEePTBRvJS2E409zfVLbjPkyn___KW1D5UCWU-7ZTTG1Wysu01MOmnn9lFDcyEBsp9EANfaGee7RbBvF5iLEZwCJ31eIRdsoyjiberWlMQm2Qj5QGZB5EBcSvAIPziPMbVAANjEmPURA52VBkzcHjsDrkOAGLMk-S2WO9KZXInV3KKF0h6lhPYHVJPyHX8znLrG7gxlWbEle4rWVUkHIw_NjIBQCPpFA2ETUhNe3SjHL2moLsI6uoTGDYEyE4gdahA82MR_aXYYzGda0FL_yubacgtOASaAdeszad7_LvydieICtWD-NzpUEteoEVmdDSZUpXCj1C2Oj2izIitw-29wHGelJ3gwrWG7fH7IB6TenEjaut0figsucGL0g2Mgyw=",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b763477ac8198abe40e0f0b8c17a8",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Raffles Health Screeners executive health screening Singapore official site price",
+          "Parkway Shenton health screening packages Singapore executive health screening",
+          "Fullerton Health Screening Centre package Singapore prices",
+          "SATA CommHealth health screening packages Singapore"
+        ],
+        "query": "Raffles Health Screeners executive health screening Singapore official site price"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b7637a284819880a153b62b06eda7",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ZyHcartwZLzrx8cl2B0AdNu14h4pBQVopC1VFewAzfLheV_qYaqiWCwIN1vf_T_6ocMBDRYrIz7NXcLNL9WlhCUXesIdo9x2LellCVc7EwtDRBObVdIJRTj3ESasW7w-33FkjoYfGH2Gb-NEjzP8CpwGW_uqIg4pMdK6-osHDf8g3DQvb-6SYQjbC4WaiZurBoMI6ZTBLHzI8LK7aIn901Is4tlIyi7OaEjJK9Aej-jk70lsGmu7mQYoKPs9YDFw5Iilo1MilmJJAmwH7gNxJDrw3thhdfLEoczQ_6nEbt7cZxqTe8ZoHcClnOi2evYXEeD-OdAGheMDwyrEuvzB4fwMsQRNdgtKoWpFJ0eNxNX20ty_BNipqLq864yv3E00H6HdTgHTG5xxjOPu3-kW5j_0HjdCwQDRFg3HHTNNnE9QuvVwbvn4z_NT_Qd3xIBbdj_XA8uqM_XjMvFrQL-xRC978pu73RgL77WhT5rXtxdPPwCaLNSAVenvwsaGZ3s7FnsgEmjbqwVE9osV4GJClQQBYOYhqegjrfcib2JV6CyOrGXOsblOHJ36aTxfpZMq-GrvurKBcvX2se6mZ__3UdAzDpnfrLEkhvKcDREGTC7hPnP3uXrnHWKMSdT44-D2DGiFc2dAPMXKtrA7Bg_4dd0APOglPpUngT0NsOQ7eWWTqh6x0bEv1PAlQ69R3ONf61AGhv33hhA5WZNxZzq-Q-rxFOMqGo-4sNpRrgi9Qhe4Rd6Fz0oLa3MB_h5utFjIR6N5loqgCTq_AySDfwxuuSAhB7s5iZ3q2bxVAzyTa1WoMbxycU8HJaPoqu0ZGhAHgoR8AKpDHRG-of61RxcMKsjNC8Kokgs9h0teHGhsdYUdQBPyy_jSVPClToYxQA3csbmYXuZlNLasymDKYHmPqBpPFGzSkWbrfnA6qhMeyk69AJoW0zgV8iwJa6o78cQ7ZPBG9zuDLT3TGXZDvl3gDfSHs8AlJyRGys_9Mba-NQ7c2S26wGKAdZYnJOlghdAJu_riWp7CHN00c-hlnq0U_z8R1pUv72hO4BYrjral2QShUGZcrPZuzUQc6PxVNBiiBx7nZzvO-hrvY6_IyeIksx9PFsCAORxk5WzzdQTKiisMtPS1JFOd_ug87kAn5jmHqhJ1p9RlhLRgG_q0pmdJSjuIRUPMB6kRY_O7BDXIAlY6V7NuqDgbBIA0NVEE3ovFhqF7gpbM0tFj_LNXmpzEwD8w==",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b763801e48198ae3065f25df88e80",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Tan Tock Seng Hospital health screening package executive health screening",
+          "NUH Executive health screening package Singapore",
+          "Alexandra Hospital health screening package Well Programme Singapore",
+          "Changi General Hospital health screening package"
+        ],
+        "query": "Tan Tock Seng Hospital health screening package executive health screening"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b763dcf0481989c57fd216db54e83",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ZyuwG41U00qbSw-L2a16Uz3J41hkSdn_z2aFtL97XLF3zwRDiQbgKv4Jt5HUF1YahvvODy9WRcH-BX7wsQsFA5hNHZ7Q-BjF3Qm27fsGWQd0fuFzrwNzKmWFtvaeHU36LkGaJIUWpSR8iaJ9NTAXv-pBbV8IkoLyFJ5iVbL9lWZ5bjuquLzJnxY0vMG4keLINVyvFvXEHxKnsd2KmZGDt0Sj5yKc0Ks60HYqiFxVZCRT6QddNXFQTpnzg10kNofVCVcpUh3xdEq-6Cjq08lDql4Ddf2kJEWqqfvg38m1Tk9o4Aj8i9GIfSBewaNpOoYKHpgMdRS1zQcXiMvwIy1MW9myCEsrc5uoURfi5EVeiKNhUCa0_ztoWngHfvEMeQ3j_cH82ZqidiSGOjKZrWHa-hq1Cx4-Qs0bB3BSAn8TSatc_OSkgvm8-5koslwbs8ubIaGW6IjkBjTm9vEw77vNRcd_nyUBZYgZws7UVfVlFm1wUJnZSDMNp-hrFEuIz7L5k-3xX_WdJdUPxeykR3NRfOCF-fpM0QS-gn7qFiyE8O6KZ-Y9wxW9o6s-XNh2k53vZXW8MDryi9Q9sIQ9u4S6MfkfcGHtKW2SRi0opZK2CtgCwwVuvTAmbjLiWhHCs21B5JnG0FLEFdjte1XddVzaaGuA660jiftA3fiPRPsT4eMP4zJm4ET1izXqzGgBN_YNwXrhtA2DXkscZL2JrEaYlZlBnsvx1uVjc_ktGMNVLsey4cRcczwv11xsTI-Iic5g7-25DAkVcoiBN4GyilUXOwFK6JUWqRfz3vW6WnyO0iEm-CvLN8PJnpuzX2KJBuzjkotmiytCA6n_VK_h5-gO6ymCVHWOeMzssfHO7ap_so3jXiA5PqvMXBFOWzlfMJcF4yAjnqJdE4AQ_gW8lcQLDXH-yK007KKh5nnL4gAgggX9pao8t_7N4G1AXZ0CbKCJ4LILsW0FRBoEuJDjJCn6NO_ycRLcEHEbfY8_NQBrWBf5Jgo0Xj1as7_AjQkjLCJnl-pxOBS0j9W-5R6Q2PEfMC6VSisAU0yM0i_pLWQh9wiuEMJ-75NQnmR365QDVsYjbnfga5ED3FQWt2Y_SIO1M3SzUhcKzDHDHhsWm_TId6_GEwm3zXg7Y4r5tQGjFLNnR6FIEkHCayyct_xWz968IFjsCZ9NRCpNgK-pgxWYXgmdkaC0Vh497dmP1SKUFWaX_Wk45U_t7HtcEISOu_96a2SNWu4bV19Pp2YJQ66ydpG8ISS8CudYxx2pKHM6axK2q0",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b763e4de081989d5e6c85ae461a55",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Healthway Screening health screening packages Singapore Downtown OUE price",
+          "Lifescan Medical health screening packages Singapore price",
+          "Thomson Medical health screening packages male female Singapore"
+        ],
+        "query": "Healthway Screening health screening packages Singapore Downtown OUE price"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b7643a26081989c19381a5e963d49",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ZyoLFNWkmqrXUkZFAakTCg7Sla0FOQMlAVjaz0xleWdGCl4puV2LQUkJrVgc2XM3K2gD0uggBUCN_l2Dh4ODPnIfQ7hxLUEaIeTU9Lvs-T9hltG865UfajOkrq2U8tQeM6xVXaOjxjylhwTHFbYHe39gRUYnwuUFZhY4QeBJNSGfJ1KnQAsAAvLmgLdDijzPE5rgQ1azLJvpcDmUCUzQTseUt8SgTE3vKxPY_zeZzNjszkZnqE2txcPjbpYvUqVK11e9MuaIzoZPMNB4hzyjPkC42qOhUHLfyg9NXumILXScxnVIEBLf_gh5aAvNbe1INvSJSnjWgW22ajy1YYXrB9zXQfRPcoF5DS6ITCTEr2DoNWPPWFU_XpfoYZgMQxgkNtPakGJlQfR2fI3cGNEH6MwdMebNK8GRmKT0jZUFbT3dHHN1qVFqlBWHf118Scocduni0sInEk-myWL6Tlwny52bI2nZFdbQCbImvi4pVnoRtANMkyzWTIgLyBUZicOEUncaTPbavR2BgJcPiWVWiWXHVvuTzaLl4xVDUZ-rNCiIwvRqu4hhBXOwuKKU1ynji85193g0YYEx-DHndSC9Oq_5uv8Kt15Pw1Sr2-gPGQVzLLLpG3ig1GJ39k0Duz43hSjITAwU1slQ_HqsFJHIdBSYqSRcZ4Y3WqhS_P7_hGO5TMydwgdXzGVdMBD1QRfoUaXnfjWilnQVhxJ7-ah0zSax2_t77NhW_pzDU6K9hUf7CsXlbkb9Ju4NXdZjb4CarwnroCLGWRQffLPCGiiK6-MSDENpmihFJMvYG9ujPv0yCKgHOtWeslepPvE4KJQ_Rnm_cPggmYZlzmyC5dGmwL0sOxoU54J61a1vo3BxPs8j5cQ9gHeghNECIx_IC4ER4Y_PM_UYBr4iH7t58RPgaXwBZ5XibOo8PGwpJNXJutYwiaySSCq9a6V_7dvlAqgRHkOJKEaTM4oEseWi7Ev7biS6QDOCxIoBrxXRUgN3IthOQNdG0NX-bklNebpQzqXcbWFZ2juq5ue6nLTe-ru7ptXZEkZaz_YuQ3IUd009vTH1pmJ5n3scwkJcZ7xpRrodTA8jRiXK2TQpKzcsyWoCgHrUCU5P8Ueq96OSXoQl9NMtpWYxcGY_pgPw-oB0pbBN0mK4E9R13sERpW5nMui7MzcDYRo01Ql5AKb8y18UrcZ1M=",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b76440e5081989c0e55d7bdfb9721",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Minmed Health Screeners packages Singapore prices",
+          "Fullerton Health Screening Centre Paragon price packages Singapore",
+          "Mount Alvernia Hospital health screening packages"
+        ],
+        "query": "Minmed Health Screeners packages Singapore prices"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b764c17fc819887b874676352522a",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3Zy_yLAiHy13KnyM7UJZXvnZlLWXFAFLNg43A2xTrjMOz7OigSUtXeb5H6Ru3TWgLnbdUJ0NS4R-yw4BkE5MLW2RpeYQvUuE2xmiLzNJ8eRIBuHv-s5pi814Uz7yYUxw12lIap44XlAMqhZiIgr8sP_FGtkeQd6yPgA_IVvdi2GYYC5hgUrgVnL19mNtalYCdNdPfj0S-PGLC5VCo7NHVXPxiSKv6hKGuRTrmw8ZVLqaBzuj3dboXPMVei7EgC0gMlQrhV5PDy7tbU0ULx7dHYcOuUnR488ZlBDvEJVNsdeOy4pc5RsBr2WGWjti6x3CaPLYiQq6gLa4LJzjihf-BXSA59TLF4POpTV8cCWmcYxYOLP6K2Z2uC53reQ1BdGRUpxjYyfoH0JwAhvgxvAMxrBIr-yT2ipeCpIVLvZbZ3373dae3K1kMDPaqNR4E3C4uhYm_zU3LBCPVTj0Uw-XzHhAqQeK9cZoQtLAOc-3yNIovj6HnPkbVZ-QmKgoVelhP1tL2E5GfdZAlsIgd2FLVMHEnvDVRxc2Bqo7_-orZO-z5dO5O1pKdMhoFy6tbAAjeJPe0rZuOXWtCoiYkeUTuCyRghMSSLv-0tVh24phQelMM2jQn43p-tFIDywHpNlI3zfPHjTFHEzuo80EWTTsMOAvdOC4kslU-RHRCgU4eh2RBXd5Fu8F_D8WkCwZQ-V3rflnK_Y-Fn6HHFxIE-w2vDNXnHkJ241yU60WaUSzZyex9HVlBYHutVnZKIAbnAfFdvHu89fglVV2cy3hGBC29SkUQpeWqX3LDlL5duYAmm0RNK9jWazW6YtX6v2HhLikvK3jWF_lXnkyyl6uwZKrCVA_N5cZXhjQLKquDYUJgfW8PaqlpSSzAN5WeQgtFRENPqnpDquHZp3LdU6Yw6C0m5vsaFevzzx0bq6u031gA6uumUo65f0hI4T4uOPYYBAP0DgevwDUGbTorBaU_uPGgpRPo53I_HKNfxkz60eFu0sqMVCMC1kT_d-InMU1sL9zWIThfsDJPrcJH_bNkkhoN9TH7X05_6YnU-pHlcTGj0mSVYjI_JQ8X7NxbyJEdUD2neNA8Z59gV3nuRwzaG6DnPK-Y6SIykb7_UrnuWzfNR1sVOvwl-uBc0tQiLBFercKApOxWWbD8nGn6kdo1w2c0IQP-KgPvfsn2LZupHT8H4ig5EtlPREz1QcBoQiGIgabmhN2KcKEwSixOxuIjUmHb91RAx0irpsPggio1Jo6QWoQBhY6qW6C2HllCPcSL1IHTP3-q8kllSgH8D95dgV3pBGhqtBIvsak77MuyQ8pJ-hNcXkxUtpz1U2fJ3hyNqKoiZCLyTqjQIkDIbLeYGvQfHDlswpWZRcOVhtGFULcusvPHwEtSDkxU4c-R1GHHZjwgOe",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b764cb8dc81988eafc394f36f57bc",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Farrer Park Hospital health screening package HealthConnexion Singapore",
+          "Khoo Teck Puat Hospital health screening package"
+        ],
+        "query": "Farrer Park Hospital health screening package HealthConnexion Singapore"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b76589874819886d2321fcd8872f0",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ZyK2wpbHL1I6XLf3XvvEvlmiQIOTjZsnhwL6OCGBI2L3Tx_ZmOJYKSG9a6UR6kez1tHsetmrzGnVeBFNFpFfNGjOVpZwOFkUxQIZ0VKhb9B_Js-hCdoAuZm_i3jXzeMDcdZue724uDmxzvCjhti9e6aO7FAT_FC7fIreajgjX8d6eZMz8yZULg8DJPtaOfqeYsc9e7Z6b-fQb6ildZtp71rBraBoIWbIFq9YN98URRknjk_gBz39dZ3O6G-yRzOm4nutgmSWjCsXMhBoCAPxqDT1_ucTHuM4qSS5Xmqqrb9TZOjUcIGFuiiufwNqr95Oy_WCcS5H1wPtZ6cECZSnQh5MJkSD9yIhwhiJQfY2l20qxiC7-GIwf6G1-VoQEjn8lAvF1_6yBwMHDlYqICGWssp73wzkGeXPsJWXwqDqKT98W7-XQBi4yYlUlc9yc-2NSR_oHZh37WwQ119_tyYv87rCr7zljz2LFZBGCJWX1rUBbAk2-SQLUBoTB68tAElgb-zimDFAy_0geI3G4HHwNhxzoS3GksTwhBMng6K8QShQYl8qCGjHaBYI53ra8uBVITS8cMKa0nQn2eyuGlw0jZabj2zR_Iz0pg4mt_o4a1_0CXjnwtVU8LpjoWdlgeKJi8WWjuXPicYuhqQiAhfjF9T8qp_-H3Ikx_oEZnS3ySQNaRPyI80h0lxbNUi3T-FKTqL0TzgLH7ibCEWXiSW3Grs96ya6X9rBm7WXvnyPcsNnISlkGPhS6LqlgRJY2Ex2f1ouHKXmXos-Y-twfy2nESXJwuFJGDqwCdtwMnzrW3nuIqGsTxQw6V23OZGMMTI7tdehh2kOC5eHCXi55GtGsgGjAKHMIpOTBN7XV00__wqRLDcwh6ppxb8wrgxgV4-5f3ZoqpWFBap0uYZApIMu4m-RQaKH-hAxVUNoJyL0YJUMfeaMS1JHU0DKc3XTPjK11we7jYBGWIcrbNulu604xwqUWWF7jh-_4hbvsYqzAAk-cj4TNihOfBHjlba7CMC8ibnXzVsurSqNZQrDc6hcJlh3VifaEjheVDBXj2Qk2kxlRKeJtMmNKAwaD3TkQ-Fr1Fg2dppBQhXrHRoLMo7rznWBdYnHzXLQ6kmJn7-FThkb0BgUVIcKesuuWMDm8ndniG4xaoZPSN0fH5PkxeIJUVa6cTNz6oy-ZaxBxmG9-A03vgZuwhdijerBVsjJrhcOcT9keT3ONEjASNhGg_Ez24lTiqpulFuV5cmrCJPSfuJZeTijvM47N415X6fHyvzdH_6ZAjRagEh8AyVEg1_e9FOXzirF4XpIha5M-Ke1-OhGd3nqGjmbVDeyy46_MNWP5ElANv8VPyTBYHj65A5ntWolcZ5kGiX9sbcYGxYonC8KE=",
+      "summary": []
+    },
+    {
+      "id": "ws_097f2e40ef0f57f9006a5b76595d8c81989435b9c6f498b5e1",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Ng Teng Fong General Hospital health screening package executive wellness",
+          "Sengkang General Hospital health screening package wellness",
+          "Woodlands Health health screening package Singapore"
+        ],
+        "query": "Ng Teng Fong General Hospital health screening package executive wellness"
+      }
+    },
+    {
+      "id": "rs_097f2e40ef0f57f9006a5b76607da48198af3d53eaeb6edd4d",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3ZyItLMn39xr4hdqhOz4l_uprq1lqhqHADwlIKnwc22XciX1QFg8F7NPI7xrcyNfNFLTvbYzvOGGYogCvBhTaf0vDLXWBFW8NbsqoJgKfAXE3CspdeQux-oX2gC8Vqe-u8xQXsDv7CcEUtFDrbPj456ZpqQvot_Fy2GKjZsqfGPNg5bCaGNL207jX52VSIUaQEe9JSCiV1y5wvPS1LpLjS6OH6mlAExNy1pkY6DgKjbklfkVXJKP3Cmd21BxtJA8dSCohA5ZPnX2VEk455DaCxXxxmaUIo-103TQbBicZoW_RQORkvWkfIs59XMTmeO52vrrXKYVzA6UmK2rgcZQ9AaqITNBCC0680vg89V2i9hE23I_TAM21f_H2U0yqtvOGVrBq24YIC2SmjY86q5HeGT1sFXGMdcUmcp0Ocd8gom_U6yzPTBmUIbLlR7eRO49-a-yaj4P3f3eQKHUoSuWp6KACw7lp1ShM3O8HHO413VFNkubIVG4ZV1L1YUyRrPXR-cwmuJoFURBRSV1lWBSH4uR6gZkHOkYe02MfejZwrV2hr4CzsUdmGxRZbvHwC9gGgwYOmFx5MICLtDxxxsxTsp60s4NAZq6rVEGM5asPhWa3vIbJoRRlCXfn76f9eVSMD9zFTWDAX3TT1pl80fMTzODDtICWWcSFrhHxThtBCvk2eYGCbmFCKJFIKsfXBqh_VumZ2nqa-fN1XpstD0x436daXxQMeY93Fii7i9c0BnShjAcGHGJJANRqfOaiEUNYFeL3v0wkvHQvzzZ57rC38QCf8M3oHUh3iODPRz_0tUDLKUxo-w1CRfwQO6kHDXOGMvVybd8xY1HIeeoWcjf6a4DP6qDCMPOWoqpO4dpMI9FbBtL8nSmE_2AZSr_r_OiLLVgNJu1lzV_mDC_N93CcgwYZXB6FquiEQrrP3ddLznIzhJ7yPvz_TFevlxmepTEpT2TL54uOb7ZvkgfVKfIRo0PBMspbuEpgfn3se0PGKFPLgMsWPN5N3K8ov5hyI9aCLGFnl-fuPg3zlsSU2gajinffcAoS8scCm1ab6r2WLpp3KKQIJ85ca9d0HBt_2WB_6TpEjj-TX2wRXLx0y35GIs-vQomcBq5jd1XyWWqXvhsIMrmwOgNUFagkCmQusaF6EmqkmXYKZ-F2uLZfy9WNEEwH3Ah8R64KhgnYhCypWXXxnABCIIMLiALs_cHaf_3Lrjy3-Ujm71iJDEEtmCJMqXAgDt4cbLwYLGB8nzgeP02gC_PBXB5JJE6PSK2ait0qbonCVOa2y7EIX8WZIHfHkVNIHJzon8R6xiwvGlvo_GbmOEkrxY1DsaXvQUm53TMKEqnqGefoNeNBEB5NoZjp76AtLcJrC-sFgHS99p2QChfKaZCt3o5IBWkF7lJXFUnuLEE7FqSnO9d_cwIHotvvGNYFYfV4m94cJh1PRxLEy6wHB61ZihpCpiU3h3gzwOJAgPnfg37HxNRN1I94iJyjQU9ebRLies7p-x18KFc8js9FjWlBiUJKfUwhcAXJ2cd8kcfcI14cuWcVjXMg9S_Pdho9OwqNMBYzFDb6PyPbGrIqMc_UxvkM-FeJ0ebEnGcYmq0zoBHpMm2_z_bHskzh8uPj4IPphu4gnzAVxXyoyojB71V6zVZDGxxDuaVOwLi_fP9KUjGkGdYB_4-oNIZEUA6dso2sTHBTR20Cq7XMfk3uAH7dEU_GOgSmOsKZtv_UfQpFGcnT8GQPSAw_L6WVAXWRwdW7Z1Awbzw9HoblDstIVB3YbfcKyMEOD1ESFJWMNSwTFOKYQo_A12m8TQDUvhkGvmC49qCUJj_LHCEZj-bObV8U5Qvuq8z8e56GPPudVyv986Djh6zJGJoRL5eLP4N4rWEeZwIeeFtXTd3Cl9R4GhfUtN0dKbTXEeD15n1-1TljK4xrxdZ6ezmzGr6u5EDIgZGp8mCAMb9DN7P5m1pkoUvMPKUFgp2GHA5NeJbIEnK5oTW9uoigWzgcRZSkXuquzYGryz1ifeADEA92JPv6SFUi5iW2jh7KvhCrNLqflBrv0FALoMzAlodpr5JAhuqyIFAafizXiXCoEFKCq4x-sbuNoiOtlpyvnVZh5HYm_-v0NeScxqp1qlhNsbT2ZdzwXWuWgA-SrgOUIHQXIVRnTouPyZEodfj2CQX4ZBiluJOO9ZG6ZAQjUHyi593Qg2NVwdTQ50fCipV_tpdjClwLqwme7HJ4j049G56HsuzhSd7dX1kzgh3oOYbcDymNeLUEXvK4SQYObQ70QpWaGVfnwi482AlZS3ShyCE6eaU4DdhiFRHCh43A18VFVm39Svd1doxPbbv-aAqEY3OVcfVPb2p08EF6WCECWi5QHGgPTJ1RjzSq1KjomFIRA_9NSrH4eccSOIG938mEL2ECPk6hRP905xkdTNgQNAtVeCXnkBzCggUejkcDCZrttyznhTw8bdDbZAYiBmASQMTvhrqI6ziKEgyXc6IZ4RMcW2rVTfwii6NWe92jIIepM0vgMjAo0D6zklPYpv--kdXRGf_hvSKZVXsy77TtRYx3u_eVol-C2jRMF-tEEnwX42NojCiNTfxZd8pWbqC8pTQz_AAg7PA580q67FejjX5-UCnxiB2v8FKET-_joxpthi6LqgZQDkP97NM3qrhsADyLZibbNNeeoidn5rja8asrckhjuvSih86GChS8Rf03TUt7FVFFld2p81AgnOL_3NFtDeNbukuOKvrdAfbbcEEIy_ASHl4IW4KnDs1RYiTeMBAxaCxRre5bNEAmYzoepR07I6Io5O5fNJRnxvJE1QwjSvRY0KjRs5ABvbDUnIFSnfalV4U-Vu3CQKBstzJ3O0UUdTnFVqaTluQK6uTuvJUtwFOOOMcjjU6sHktXNsNV_D3vEvg7SbVccc0kpJEGY81kQp7Y2mxgh3ggCx7GehkH-Pg1RK6gEvhssVrWbuNjYZKd5B3MBlYemzusW1v-S3w70j8iRPPnGhno9eoYsveiasZzwXQ1h-kKMLkqWXIfTvx6_B6mjggLF-gYZ8_UDsJ8iJ88LwZpb5Oxz5DuDEIbOkJPzc8ckwJ6essk5U2A8CsFg74WD6YjLqOwgIrUH3HJXBcP3fSyh8QUezs4EP9IXaoxkw6f27-dl3VyOaG_RbX8VH1R0MmCNR0Hy4LiMW73o-d3BVXu_969LdVW5-hE0zykAcp358ypOdMuB02zFfEaXvqkUUWbqNqG8Gpnydm42Il_N35D4Ko-fVkkFp9TWL-lMKQkY5j6f9awAOj2j5Px2rPEnGrkTHQiWHwd7Z3OoJlak7SejXK5v2fN-IaAPyKQS6L0Eee-HFwj7GUiGVyT3Km_Kax7MTCKSXRJO5V2WLOIWUcL6k_MRQNMUj6-sSYuG5N5fb2dAsPtt7UAQkpRm1NCjzlKsFYUBpFb4p3qUucF44DdxGyxzucsWjZjlIbm_E8w-PdSkB-zgwepe93I22pk00aLz5TWUSU6oIhLpyDgwjsKEATtFVPc28rIiWULUKtvKGS1scGUgbur0RG08pMTrLOEbTfg-CgDYfQDLvaPBzBeU41Rpw7-FbcIrdZhwU7cfie4bOfj8eBUOOaTy_pk-hjO-WmfXc_x3OzYP8OBcWfo7rESZlsl0fXdK2rc0Rnaguikdg-UhpAl7axH7rnTxM47xLn354sVJb-H53bjrQEbBFavv4EZuLyXzs2zfIQotPeSnuEBHS5xlRUMeT1R8zJYNCndl4aHhwTbhRhKGgEX1UwzPx0IZogKTHhJIrVCWa2oWb0Dnl2eBAfQCqFwgMa14omwSoydTFvJnwSZl9ehQj7DmWq1aGve3vIDNXKrnEjB4bxXaKJ15YExqZdeHDNKQ-5cAg8gLOTqbOL1ytp99sYTQq-GhqvPnBvgfQIUG6XTg-2hFfZbOkvIJky5qxWjpsj6es9SpLZz9NfzisP7kiyvZjwcSk2teZIJp5yXlxH712NE6cVWj8oj66pk0ZLTQK4Giqhsfl1D-QrBRy858_-kl32LJ9tAfdRwsS3qcbrIMcgqKORCFttynO0EHxqyh6RATnJGX1PtUzUH60L4UGApeaRjbVuiWBsAAuERQ__F1LclV_5zR2hrGe0bKQZOwmwrJcpxEv2ZU0Bb5WEkumUDzB8aMSOi70c6pfV4Eavx1pN7rxn4pNwxjxXmzekiz4YSR_ST1RELaDCK6JsMwxI0hCuX7x4A7JdmN2SmGX-SUwkwJH1YZgKwMmd8GSZ28Mc6-H9HeQVTImVFuuN8qJrznq_JScj5HCIMZzEhI_vyox9agNuq3PBuT3G-VV9v-aueyDJmIADfTsCCZ89XC8lkG4XvxJ6Wa2n7RNjT0e0LB7FawkT_sjiDrwVXD1HPcltpLdvRZPWezn87D10PZdRue29vb-ydExFGt44zKMdD-3lM8IOkBi29Qa7LTsbIwmxOd3Y_5ZsB1SpbN7wfwDSulx87F2_w91ds3Fs14hb4d-TjyNjt5NirMxP7Vy2AeyYvzQsTKdF-Fo013pwBIjsBlKtuMIAJPsI__icc-DSTPtttuafERUYuNEIKrCY8Ak1NB5DZlrvfRHZfwwmdUg24CwfPBk8xW7CNNgTaexPQ0oF5-vdyPAhKcV4fgEyJhoAOf0OLknyC3lpTRHcHfCXbxDyRa62v2EZ0F5_LlzwmfpWG4vYy9EG-kmeyJNCvkSqlhPamuADUNPIsLkqXLxlO0VUmzB8bvvVXVlzeLOlHXcSJ1TYSvpWliz1D5GEdLNtBG77-8cqMoKPzs43zzMTDwGxvxrRAmJ9isgo5kPQRHoYm-Uj7kv8iu1lKT7ASf31Bj_UMz3zZtmh-FLg6FNtluRtKXdSRGsUuEFFQSexrMYFx-rhdczkhZH24BaSTu3f0vmRHTEczEfD4jTayKb3ri6dtPO42N10YHkp5galneWDXrUzNJLyDhpGxi69fiohjRgotwBs3VjZYT7bxaKcWWBNqXFjmdQ8A7DJiXVYZaaOPjgcgdEFif30H_LtQmd-g7Cy_MfNgSXNOnSyylzhuhrOqnjwq7EAX0GQyycX5qCKUNAEE5Qok4klkgoRjDALNU_bfk-WJ8pjg4PImloS3Km6JfAOc-lBZmonW2_ubqp9DdiJQlkTmERVu9mk1_xCAWBUUcqRk0LIx9J6aIQ7nZ24phom6t0iLlumAigXKbQhDjrMR3eAu6WIY89YAZBsno1KlO7a7cYstAAlOQ-ILzbRlKTyk7s7y_wqxmpSNCnazQiQSs9I96581XNYxhx2_yeDBf8vnegrIt3lC0HrEGqSr_BzrWXmHUiHhdJhhUzk-c0A23OUyXp4BWqyhw6jSRb_ZaCXVqf2cyqsAOQgUDAyknMVOuXaOmzEyOXwuu0kNitCgmnxifNiw_hz0jZR-cCI202FVaQ1ZpaQ6C7lS_-6qgze5bKL-48A3Hx_F1sTm0SP4oCfUiN4FRP0X0dSoWZ26IIclUXgO8opNIxmjbhtlbRChqQTTGFSq1KEP_y_ISGr67DNyAqrYRZfX8IasEny8gt-tpbhzJRxMTnWf8xznhgiubDKZNCXtDa8btxYpDEdl96iO451NBY-eon-40zpBSPzDpkR4xh34hbA7LLn_Un_ZzEIcaRAy-QmMPqP2waf9JDY764MBvYQTCL_DtWIGOfQ4JdtAaacKeKrfdj_xZF5dpYOmavQjR2H9oVqT6Wdk3D5RfimcbYvVMV7ect5-fHrg1OfX68HQNOqaVYEs1oaIUGNdk9THQpKzIkEBTV4pUBjducmt1AwpZvXiQhQz-CR_hHLGx9l8pASN6EFidCVT3IKDYbdRYCfRkx0f-GXl7anA8dHPEV5j4Y5D9l0E7pLQuKDUr3pMe4K2JNE73C1uYSS5ju0ekEWzrBu0mlazAXfehHT2uRZbRkVewhO5mFY-Ic0peLamme3a_126EkO3xHEQ6fkwqgWS5liNSmpkkjSay3ZRDIkT_xlGcWaRZ-AUzq6y-dzpWY6z33ubXmp9svoVap7bmqrDZAnBuJwKzNhdOo2yAT-dyIWDLOt96cejdJ2ZNujnUoCduM9nqhgNUjmg07smGOWfe634QDh-jjZmf5cx6w3PjveACBCbGBl_2uquG3pnKTlGnckIrQ9ZB-kOsBNZ4-bTZoqoF7_ZRPWozVTiubqnqCHv3qvGLguAFt4rbPmkO8fWX9GKFODlO9XFRHwFY214vFjNm4KQmekL_SQ_EemggiIivOwlvCKoMyTOJfSWUVuNvL0M3u2wa3ep9K47K-DjjcQO-ZAH-lPv6OjwaV5AnGrOunFXk182w6aktGDJNFU3Fy9Ca6AZDS1Ja7dZrzAzoqT9HWKNEtlkYuZcC0eg3MadHP95rsg0qckOQA6y6DcSbHlSVc0l-f-pDZ2_CPfdR7orPNWKsV7KjxB6y_gmZFodX3iuDm3tlwIx7ievU0ha8vIQX1UBlVHtgFzptfqGe5NppUOWChC8AhGZ22ZhlJ-8E0V9yesraRtIjUbfIlW0xp7UDRflXjfVq5rmrZIcu-ekmeB3-gRlS_WDMCjHmfbVU1VvfwM3GXBoZSgds37ut-pzV3GVc5fpNe_tjRdv047H8pk8GWKHeTeLBUPDSngm9tsW04xPZQEyRMLs-aTIsNtT-bt2zkK7SKJlauMVltL6Yimu5K2tl0-nwO2tj_PiWyxqVifyO2tPJZJQoswGWwMw3Tatzk2GqEZgA7EBzjBZU-Bsi1Gjy6VqEBfuNtoUb3BDo2M8zTBZ8fy01shsAznvTmskNSL54bYAIROx3ZhYwjoClv853quuNDwTJyEHVUTgOHN-9Q1G8n-VsdlC9_X4J6Wb23xqP7HqdRr-BMpmho22GEjWiTU7LuH7AXvoOT6G4tlFz1GxOLQnlUYWnoi3uQLbFG1J9l8iWtEN30cVTtyPd7WlboV77gfDSDNhnH54qUfDQjzpw6nToL6eLApWOdguBy86uGA2eZ7choNP1u_AlnvQ_Q8vG_8beyYkebSt9JwH97ZukAbgYz72K2oswlkzHTtqOU-M6b6Mj2i6ZcrkjeZ1bgnxezodbg4fdoliZmg8o3_2UDFciUji8C1oCec1kEyFEWVha5RY3FopurYY5zl3zu7nD5iqErIq61OfqKOnql3hQJxXv8ltwPpHRWTUNksDkfsIM0Q21WGvzfoU8XYONv6bTEUwLOHIOOvjadLErueMAbz50U_INk48CBxBARnfLvbGFn5mdZdUfEK8nWpGRjJjbAd1J_tavJ9nK3DybBOq5LjmooPPn4EhJHqz6n6C5vIRWjwG7zjvD52LXcPXn7cv513yMGabYMZXBSdcJFBoBpTNmTZ4hpk6vG2yUzyDdsFwr0BPkhkXnfPr5_o7IDuHuPlgBuf3dkh5-O3UCkt4uu-Zlhbp6bb_LnLwG_juku2HJiQTC-M-0Gj8E0yo8YPPXTDAEVft5imyonSYRd5UhuG7iTkTCB9-Vu9K3XE1THtbqs4ncsZaistf07jPTeggOpL0GYaEnIvv_0k4RUoFfk07NrnyWYFSX8dcgWCjGHZKoBNAWYi1Q3240GVwOCVL0GCSr6n8sST513tSNYM1kliwCyDtgyOYe3XurG-BWFvTsX68i6U0ZIAUYDxMEpfJe9DsT49CTkJDoh5diThyXJslUGC3SbN5YV0cr9FN8qmY6OjeBvEwe5MWeSwyWbT1DPrkXqAKiJmwoBwh8Po3ExcEsYNE6nz1SjUpC4MpN7StXql4-LjKjydBM3hY_-hhiZrEatqSO8mW3XXHzSFxo8XNiXvMTC4UyD-YIXV1tZe0xueGmFVLgBPMm3akYR30a5XYQ8P80G6qKn9Byh4vrkQiGGdsPKtk5YTP60SriBQbe4jlJ4bMHmdsaNdoM_JaZHxej3mXE3A35HWWLffP5cQgtKwH024mgwQCZjRQGAVUJTWDDS49PMPx4Mwk-FDzaYbjWnhosLIEG3V3t4K-6SjliBhWdgyY1xiF0iHnE5V9xmocT20JvlHcCm1pT4cXIB5fRmfVPRAGMUUmhtFIpIl0SoN3yaH7939Ka6DZs33feXZ_vNhTgv0I7MKMtIp7CZyKX1Ke5dEHqU43E07gkKdhsRGTxs231ANGJT3UAZBNTVm2z3FHsYQty0jWlgqWWXLOc7Umj5GMcThmnNGqZOWg6omqodDPyVMtx4XW6U6kyunhIdBbg4Ir2n5bkPKImGLDQIpFeS_8HZzp8UlH7DKbj_ulRphnmI6HevTgK95vZ49qYAQPDJYrJc_Z3VZDqo38SK0OwxYfAAu0H-Dofs1M7BPyjO-pRibuuOfug3DW09jTkIvIg1gtr2D-Vtr1cC-YZh6-uOmaYM9QdWDXTvo3I75zGzwkXgQX82VLtsS1C3mc2f7i0M357Jx6I33ckAsMykxnRmq-WQSHyonaferCo99lLhuvEQLnCNgGVUbZrEgShfVr5aw1bTNpmDCKBwc_RHpcgMvhGMJ8LQTRN4ZrRu5_N4xXtc-_un2xZauExs0123TzOGJ9NmOD9dD5ZZGhhVi-X3-NKAop1bVzcHBnZPQgjktMluNPv0Jyeid4ebUMcgUt1hBiqShq2l9PAP3ngKvy-DEzRTehf3_o3hWA_v5yazZ0D_ZCqacmW2eXq4vLC0RjFPS2I4MxYYKqmpx03LaOT-snnmIgMZE8SWUviYDpQ_zXuv_fi8hL8z5Wg25M8uqx7M5Om1RiKGHe4r6yJ87-FX8jpnx-p4lnGpKRqPX_SE9quS_5rDytMlPS7HnRrKWqKHy8hTnDOOxox2mhoD43iJESTMUNSgZF0rOh41j2tIcxXg7vJ2TN2NOBpCNKe1brW7uMEjJJgcdCD14UHxh78Ux7hJgHTMTF2YPQnO56hvWefU5SKlAM2FeizcU0tfW_hRJ0_6e_vTl0uJQIEDA_V-Gf_Cq64srgX1CnZ8slOsK0b0SfHQHyseXeGRpUf47sTKu9hUMEF3UrYqJUPElpOYlFb8mP-cwMMAT2vIP600SQA71Pq7mqk7Cv9DtUxnorCu6VmYUK3UGH5RcdnhLOFY4mVf8tRPjXx2wjzlTLKZ4HKsE-PxqzjSTef4mvu-rzrglDm9WfvEXesD-bxAFHhuM83JcjOVTXVk4T7cqDRQLiLyuHKW-sU5jWdgFdbhQp3u-Q45hlFZsK_CWQNFAlYrJcfE30XHuC9paYeYZ99eao_9TmnieyTdxeFm4zOpBKrUjOHzzZq34Y1Ly9vhHz5wgHtCBxZVUy7FLZxQblpuWbhE3aNTnQn0ulXSJM-jUIoTA62WtyfMh0CcnLmVBuNh1mRGkrH-FjZGs-ES6aeZ1J6k0POjH2CF4eLrd5sR1RFlcSDbiXDOT-xtlPd0SAg-G7PzlSpR-XSKVrv_kQ5G9JL7mgkVizB9fWtHZEVS0CsXjETFgX5FFyOVFrWlsn_Y4mKN-CutvecNNeeD7OsTQvHyaXJep-CHLqL0BYb3s7KjB-cHvvX2HepFYLYLBIvDodpd-OFyY2jUHWTljhLoaMFvGW5RHG3CP0N20TGI8k2DgrpjDcRzVDxv2_h6jvb-qNHgF7kWV3d9qi32N1a-s0Wbb3s690kgl9hD2q3C5DmIxU4R4co8S3eF3AdBGphHpFm-gUMNB1MvIC1eyjjHNb0gI11lNOheUn2ASeaZsQvpfyPi0Tuz1YY4aM0WJQ7aYA8y39yFysusNq8G-Xf1cZHoXX220-z4sq_V7eEPaka3e6m_3g7sQA0t3aY0UICBNaqmMbwa9KJnwbU8WkEFBBCiBWzOZTlxvEzUOWdbLisxDWfxFLcpmuq4nV37nTZZ9m9Czu3dQm8xAXU5URlkBEMnKo-roTu7Mh-nSGLvTMBaute-j-hEOyuDD9ZGd0mhAYcHYUpAgwz6r2GLi_cGIG1pP9mrlaS9sb4SjRDErDK_Q_sIu7FuUeqj-fNWeDP5kfMSOCc_4wUFAgCvOmmYL1FigbXTnU8wvt1Xe9dxwoA9AARwyfNELUyUt1kvoQNiYd7U7Nl_V4M5RY5CukcnMHfEJuXwqi8uFOVdpfRdUs4Uby4XVDGM_iSmVpvPX1S4WAOP9QujVdrx_7lXudIqkL7evD04DSWLknml0hD5bwynb7dVsHInOiS2mC4-aovtnhRVHdYRBfhqpr5mlydJ_IC8JhWdjXo_LP1ctjJ2uTw5j4QokqcaTqqoqUs4zLulhAxAVLF7jikkh-JnjjkgOTFsbTRpUiDkdkgMdaRLm8nEFBK6OdazVp7PSeyczcaIWSqGq1ZMu8yLB0M5IOYN1AEZ61xvjRlazfvG968AZXnwGv09r5y7UBHbxn-kQnynrOAPnER7ZAR4FucTKwkmIp0F2Yt5qNvXEemX-9f_DadB6E3InPWXM5ubV16Xfd1Zte_1TP7RaVsPOBg4UNUDaXkYlj6G4mg06j0d1TdACa24Wk9i74-Mjn_opiIq3u9xaBG64gnEXe-Zj2-iY255i6vPQElBBUdGyPbi9yGonL6n4kf6AkYD3rF10HuQtHrkDstVy9CVLoUbfEH7GxtTCHVSL9l2j2NRCYVP1tlQGUhRKlxIjbkd1Zzp6-qBKiO5tzqKBk2vKTa-SEBnf4sJK4fOM8CPWsyafFWn1wMleHOlfMY9qbfdPIToJkUgmruukgZqdEsE3PgmCk1mlqHLJ4dYd_x9BlmY9STysA8u1YUZb8Xd1yLi9bke_XFLQP-h3DRS_QfMxrZO3JP0KYhosV6i3XTJ4h64Sy5vTJln0e21Z32XXH3sbBLpYTDuaI4B67YcTgFDKBrqBscGtpa-RFLpaWoEM0vN75c2_XNFwgoUMYnM5jxhlnXmw6esicZHnQtssrneU44Ah5mXwVNIEdvILWbMTgNX",
+      "summary": []
+    },
+    {
+      "id": "msg_097f2e40ef0f57f9006a5b766b5cd88198b45876fa0de40d41",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 448,
+              "start_index": 314,
+              "title": "Health Assessment Centre | Singapore General Hospital",
+              "url": "https://www.sgh.com.sg/patient-care/specialties-services/Health-Assessment-Centre/pages/default.aspx?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 682,
+              "start_index": 569,
+              "title": "Individual Health Screening | National University Hospital (NUH), Singapore's Leading University Hospital",
+              "url": "https://www.nuh.com.sg/care-at-nuh/health-screening/individual-health-screening?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 935,
+              "start_index": 804,
+              "title": "Health Enrichment Centre",
+              "url": "https://www.nhghealth.com.sg/ttsh/patients-visitors/our-programmes/health-enrichment-centre?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1122,
+              "start_index": 1040,
+              "title": "WELL Programme - Preventive Care | Alexandra Hospital",
+              "url": "https://www.ah.com.sg/our-services/well-programme?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1438,
+              "start_index": 1334,
+              "title": "Health Screening | Parkway Shenton",
+              "url": "https://www.parkwayshenton.com.sg/services/health-screening?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1666,
+              "start_index": 1546,
+              "title": "Enhanced Executive Packages | Raffles Health Singapore | Raffles Health Singapore",
+              "url": "https://www.raffleshealth.com/enhanced-health-screening-packages/executive.html?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1907,
+              "start_index": 1790,
+              "title": "About HealthConnexion",
+              "url": "https://www.farrerpark.com/Services/Health-Screening/About-HealthConnexion.html?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2126,
+              "start_index": 2012,
+              "title": "Executive Health Screening | Fullerton Health Singapore",
+              "url": "https://www.fullertonhealth.com/sg/services/executive-health-screening/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2336,
+              "start_index": 2230,
+              "title": "VIP Health Screening | Healthway Screening Singapore",
+              "url": "https://www.healthwayhealthscreening.com/vip-screening?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2513,
+              "start_index": 2444,
+              "title": "Lifescan Medical & Wellness - Health Screening | Novena | Orchard Singapore",
+              "url": "https://lifescanmedical.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2703,
+              "start_index": 2627,
+              "title": "Affordable Health Screening Package in Singapore | Minmed Group",
+              "url": "https://minmed.sg/classic-health-screening/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2876,
+              "start_index": 2804,
+              "title": "Our Services - SATA CommHealth",
+              "url": "https://www.sata.com.sg/our-services/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3269,
+              "start_index": 3176,
+              "title": "Healthier SG Screening - National Health Screening Programme",
+              "url": "https://www.healthhub.sg/programmes/healthiersg-screening?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3668,
+              "start_index": 3560,
+              "title": "Screening Test Review Committee Report 2026, Volume 1 | Ministry of Health",
+              "url": "https://www.moh.gov.sg/others/resources-and-statistics/strc-2026-volume-1/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Here are reliable places in Singapore that offer full/\u201cexecutive\u201d health screening packages. I\u2019ve grouped them so you can scan quickly and pick what suits you.\n\nPublic hospitals (one-stop screening centres)\n- Singapore General Hospital \u2013 Health Assessment Centre (customised packages, coordinated same\u2011day tests). ([sgh.com.sg](https://www.sgh.com.sg/patient-care/specialties-services/Health-Assessment-Centre/pages/default.aspx?utm_source=openai))\n- National University Hospital \u2013 NUH Wellness Centre (customisable, evidence\u2011based screening; in\u2011house certified labs). ([nuh.com.sg](https://www.nuh.com.sg/care-at-nuh/health-screening/individual-health-screening?utm_source=openai))\n- Tan Tock Seng Hospital \u2013 Health Enrichment Centre (health screening with lifestyle advice; pre\u2011screen prep available). ([nhghealth.com.sg](https://www.nhghealth.com.sg/ttsh/patients-visitors/our-programmes/health-enrichment-centre?utm_source=openai))\n- Alexandra Hospital \u2013 WELL Programme (tailored screening services within a preventive\u2011care programme). ([ah.com.sg](https://www.ah.com.sg/our-services/well-programme?utm_source=openai))\n\nPrivate hospitals and dedicated executive screening centres\n- Parkway Shenton \u2013 Executive Health Screeners (centres at Mount Elizabeth/Gleneagles/Paragon/Republic Plaza; wide range including advanced options). ([parkwayshenton.com.sg](https://www.parkwayshenton.com.sg/services/health-screening?utm_source=openai))\n- Raffles Health Screeners \u2013 at Raffles Hospital (tiered packages such as Classic/Executive with add\u2011ons). ([raffleshealth.com](https://www.raffleshealth.com/enhanced-health-screening-packages/executive.html?utm_source=openai))\n- Farrer Park Hospital \u2013 HealthConnexion (comprehensive and cardiac\u2011focused screening; integrated with hospital services). ([farrerpark.com](https://www.farrerpark.com/Services/Health-Screening/About-HealthConnexion.html?utm_source=openai))\n- Fullerton Health \u2013 Executive Health Screening, incl. \u201cThe Signature Longevity & Wellness\u201d at Paragon. ([fullertonhealth.com](https://www.fullertonhealth.com/sg/services/executive-health-screening/?utm_source=openai))\n- Healthway Screening \u2013 flagship centres at OUE Downtown and Capitol (VIP and comprehensive packages). ([healthwayhealthscreening.com](https://www.healthwayhealthscreening.com/vip-screening?utm_source=openai))\n- Lifescan Medical & Wellness (SMG) \u2013 executive and cancer\u2011focused packages; Novena and Orchard locations. ([lifescanmedical.sg](https://lifescanmedical.sg/?utm_source=openai))\n- Minmed Group \u2013 clinic\u2011based packages islandwide; also home\u2011based screening if you prefer doing bloods at home. ([minmed.sg](https://minmed.sg/classic-health-screening/?utm_source=openai))\n- SATA CommHealth \u2013 community non\u2011profit provider with multi\u2011location screening (often good value). ([sata.com.sg](https://www.sata.com.sg/our-services/?utm_source=openai))\n\nIf you just want subsidised \u201cessentials\u201d\n- Healthier SG Screening (Screen for Life) subsidises core tests (e.g., diabetes, lipids, colorectal, cervical, breast cancer) for eligible Singapore Citizens at CHAS GP clinics/polyclinics. Useful if you only need the basics, not a full executive package. ([healthhub.sg](https://www.healthhub.sg/programmes/healthiersg-screening?utm_source=openai))\n\nHow to choose sensibly\n- Start with your age, sex, family history, and goals (e.g., \u201cbaseline check\u201d vs \u201cheart\u2011focused\u201d). Singapore\u2019s Screening Test Review Committee (STRC) advises using evidence\u2011based tests and avoiding unnecessary ones; most major centres above follow these guidelines. ([moh.gov.sg](https://www.moh.gov.sg/others/resources-and-statistics/strc-2026-volume-1/?utm_source=openai))\n\nWant me to shortlist 3\u20134 options and tell you what to book? Share:\n- your age/sex\n- any family history (heart disease, diabetes, cancers)\n- preferred location and weekday/Sat availability\n- rough budget range (e.g., <$300, $300\u2013$800, $800+)"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 7
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 33018,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 3669,
+    "output_tokens_details": {
+      "reasoning_tokens": 2624
+    },
+    "total_tokens": 36687
+  },
+  "user": null,
+  "metadata": {}
+}

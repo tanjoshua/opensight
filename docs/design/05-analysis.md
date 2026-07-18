@@ -1,0 +1,81 @@
+# Design 05 — Analysis Pipeline
+
+Depends on: [02 Data Model](02-data-model.md) (`result_analyses`, `mentions`, `citations`, `competitors`), [04 Monitoring](04-monitoring.md) (`AnalyzeRun` child workflow)
+
+## Shape
+
+`AnalyzeRun` is the child workflow started by `RunWorkflow` after prompt execution. It runs in two phases — parallel extraction, then a single serial reconcile — because entity matching and competitor creation must not race across concurrent activities:
+
+```
+AnalyzeRun(runID)
+ ├─ AnalyzeResult ×N   parallel (~4), one per succeeded prompt_result
+ │                     LLM extraction → writes result_analyses + citations,
+ │                     returns ordered entity list (verbatim names)
+ └─ ReconcileEntities  single activity, serial:
+                       match names → competitors, create 'discovered' rows,
+                       write all mentions for the run
+```
+
+Analysis is **derived and rebuildable** (02): both phases overwrite their own outputs idempotently — `AnalyzeResult` upserts by `prompt_result_id`; `ReconcileEntities` deletes-and-rewrites the run's mention rows in one transaction. Failed analysis never touches the raw results, and `ReanalyzeRun` (manual trigger, or after an extraction-prompt improvement) is the same workflow pointed at an old run.
+
+## Phase 1 — AnalyzeResult (per response)
+
+One structured-output LLM call per succeeded result. A small/cheap model (mini-class), configured separately from the execution model; `analysis_model` is recorded per row. One call per result rather than batching the run: retry granularity, bounded context, and at ~20 calls/run the cost is pennies.
+
+**Inputs**: `response_text`, the raw citation annotations, the target business's name + aliases + category + location, and the prompt text.
+
+**Output schema** (validated in Go; one retry with validation errors appended). Validation includes a **verbatim check**: every `verbatim_name` and every excerpt must appear as a substring of `response_text` (whitespace-normalized). This is a free, deterministic hallucination detector on exactly the fields users read as evidence — a row that fails after retry is flagged rather than stored. `result_analyses.extraction_version` records the extraction-prompt version so future improvements can target "re-analyze everything below version N".
+
+```jsonc
+{
+  "entities": [           // every ORGANIZATION recommended or discussed,
+    {                     // in order of first appearance
+      "verbatim_name": "…",
+      "is_target": false, // model's judgment using the supplied aliases
+      "excerpt": "…"      // the sentence where it first appears
+    }
+  ],
+  "target": {             // null if business not mentioned
+    "sentiment": "positive|neutral|negative|mixed",
+    "keywords": ["…"],    // recurring descriptors/themes about the business
+    "excerpts": ["…"]     // quotes supporting sentiment + keywords
+  },
+  "citations": [          // aligned to the response's citation annotations
+    { "url": "…", "subject": "business|competitor|other|unknown" }
+  ]
+}
+```
+
+Rules encoded in the extraction prompt:
+
+- Entities are **organizations only** (clinics, practices, hospitals) — never individual practitioners or employees, and not directories, review sites, or government bodies (those appear as citation domains instead). A response that recommends only a person ("see Dr Tan Wei Ming") without naming an organization yields **no entity** for that recommendation: practitioner-only mentions are not business mentions and never become competitors. Matching keys are organization trading names exclusively; `practitioners` profile data is never consulted. Extraction test fixtures (replay data, 07) must cover the three canonical cases: practitioner-only, organization-only, and combined.
+- Sentiment and keywords describe **how the response characterizes the target business**, not the response's overall tone. Every keyword and the sentiment must be supportable by an excerpt — excerpts are the user-facing evidence (PRD §6) and our spot-check surface against extraction hallucination.
+- Citation `subject` is judged from the response's own text around the citation, never by fetching the cited page (02 decision). `unknown` is the honest default.
+
+Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **no mention facts**; those come exclusively from phase 2 into `mentions` (02). If reconcile later demotes the model's `is_target` judgment, the stored sentiment simply never surfaces, since metrics gate on `mentions`. Returns the entity list to the workflow for phase 2.
+
+## Phase 2 — ReconcileEntities (per run)
+
+Serial, so name-matching and competitor creation have no races and one dedupe pass covers the whole run.
+
+1. **Normalize** every verbatim name: lowercase, Unicode-fold, strip punctuation, collapse whitespace, drop legal suffixes (`pte ltd`, `private limited`, `llp`). Meaningful words like "clinic" are *not* stripped — "Atlas Clinic" and "Atlas Orthopaedics" are different businesses.
+2. **Match (exact pass)** against (a) the target business's aliases, then (b) all existing competitors' names + aliases, *regardless of status* — mentions of dismissed competitors still accrue (02: dismissal is a display filter). Exact-on-normalized only; no fuzzy string distance. The model's `is_target` flag is a hint, but a target match must also pass normalized alias matching — an unverified flag demotes to a normal entity (conservative: better to surface a false "competitor" the user can merge than silently inflate own visibility).
+3. **Match (LLM pass)** — one cheap-model call for the run's still-unmatched names, judged against the existing competitor list (names + aliases + any known websites). Bar is deliberately conservative: *"same real-world business, only if the evidence is strong; otherwise new"* — because a wrong split is visible and fixable, while a wrong merge silently pollutes a competitor's trend. On a match: write the mention with `matched_by='llm'` and record the variant in the competitor's `suggested_aliases` — **an alias becomes a permanent matching key only when the user approves it** (one click in the competitor detail, 06), which promotes it to `aliases` and hands future matching to the exact pass. Until approved, the variant is re-judged by the LLM pass each run. Exact-pass matches record `matched_by='exact'`.
+4. **Create** a `competitors` row (status `discovered`, source `discovered`, the verbatim name as first alias) for names unmatched by both passes, deduping within the run first.
+5. **Write** `mentions` for every entity occurrence: subject self/competitor, `matched_by`, `mention_order` = first-appearance rank from phase 1, excerpt.
+6. **Commit** — set `monitoring_runs.analysis_completed_at`. A result enters the metrics base only when this is set *and* it has a `result_analyses` row: succeeded-but-unanalyzed results are excluded from numerator and denominator alike, so an analysis failure can never masquerade as a visibility drop — it shows as a badge instead (06).
+
+No minimum-mention threshold for discovery: every recommended provider becomes a `discovered` row — suppressing at creation throws away unrecoverable data; suppressing at display costs nothing. Noise control is a display concern (06): the Competitors tab shows everything ranked by response coverage, while Overview auto-surfaces only tracked competitors plus the top few discovered. Expected volume with 20 same-category prompts: ~15–40 unique competitors after run one, growing slowly.
+
+Known limitation, accepted: despite the LLM pass, some real-world businesses will still end up split across two competitor rows. The onboarding research step (03) seeds aliases to reduce this for the target business; a "merge competitors" admin action remains future work — noted, not built.
+
+## Cost and failure posture
+
+- ~22 mini-model calls per run (20 extractions + 1 reconcile matching call + retry slack): well under $0.05/run — negligible next to execution (04).
+- Per-result extraction failure after retries → that result simply has no `result_analyses` row and is excluded from visibility math entirely (commit step above); the UI badges it. `ReanalyzeRun` picks up stragglers.
+- `AnalyzeRun` failure does not fail the parent run (04): raw responses are already viewable.
+
+## Open questions (owned by later increments)
+
+- **06**: how discovered competitors are presented for track/dismiss triage; unanalyzed-result display.
+- **07**: spend alerting shared with execution; where the extraction prompt lives (config vs code) and how prompt changes trigger re-analysis.

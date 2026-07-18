@@ -1,0 +1,290 @@
+{
+  "id": "resp_020ecc18ce09cd31006a5b77a487bc819aa0eaff806ac3c650",
+  "object": "response",
+  "created_at": 1784379300,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1784379353,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_020ecc18ce09cd31006a5b77a52994819aa9b013251f08c8d5",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3fZEJCXjVUidXZjpq77wjfFb2MbyKccB_OEl4GG16Aq3MxI9kk4g4cvrJIrJRnSGCxq9Ed5BWJiHQQR-F8QPMiL_UH5B0emuOGj_L9CmSrhs7FbQj8UZLhQaNakD0rRBNMp5hK79gsA-xa0wiD68n0XXKcVbU6oFCBzPk151I36oAHr71uG1VqItJdCAYvjnMHRuh6TZ6ClmIIaRNbKF7CvlY43BLeFAEOjMvUBFl8zYhLQBwb5vCDYx5X-ftSsWHKPiwRpC80d1zuNMYywQDQetftdgff7O0YI5X1GxruhL7RBhEt2U6weVCBuraVHUy9--2r22aFQtg0JPBfOxyuaisrlkPH5NTUhC0YCeCqUOBdvKRml4Nc0rIIM0pFm2tp144RyJvKmd2X-seuIQyKxAH6Vxo7cCloeMZ1qPoKzPF1RZZ8Cb9ElEb4yhQXl-xC7uCRKWl4VGXCSVEfNmGVMf4TOTlealV9mUgtAmxQTiE16oEvvVsz692TJTXQ96lfOqjMMUHaT-3WC62aaiJOGgAUiV6jOAXndx-WAUcezxZSSFnGnTP0W88XJujPn8YTk0H1Fj8S3m6lJ-hN_4YiWsf5_Ue0py2ScZoGn86SYq_kB0ftTGJ1DSTnk0E4ONxaQMhD1mQ9kSOgOswfCFoL5y4urCSDC6wO3LOxdIBqVwvUlL7zdNAmTF-nSdt2R1kHFVZUMO7DOQ-28y1DN-Q10dFdWDe_qnbthjYyAKv62PxqrFkgjI7lpxSBkE8Gl0L2niBnDwbntdgAHTTd68f4V1KErtQh-ig9nYtNMnPcB41Mcn-9iEXD4YnrAj7iwA6kPKRFQ_zkLZWrGzq9vPPBhUzph6L4hi_UljFUIuYI-3OnNaZ_o6p8UdfMcSug6SyqkuDhGn1o8wBRWaR4zMfO07Uqu8OcOl7-Qzj1lOyaoX47pbi7Ulp-JrW2G7Vkq0DRZpDzuKvoWeODjzM3H9Nx_TRPsz4ctngmB_XRyVP9FWOBh9zP716FowHebienv6W8VQ7BD_hyc_UvA2kqL50Zb81NpcBRSFMWVFE-mons-6WQp5OalrxCzBLv_kSoFzUS2iQTWK-wlQyqSfWMXgOTOh9N9RwcYJcA6JUv68phc6qLH0HNKVJGI5-In8NGv0p7bJFkU2ZVb3SQnBTsU1_NKiJFIpcD9zxjvvdJpItQjCUhCx3Fl8JYnGd_1_FOOYcKHpOJmlRTc2zSLi0ZLzig3gexiYFcW00CTl9qel7NcQ0pcUquXPI3zVhv0CqXPvTyfD9EIIG55ymYV64fuya5pfZRpnNmGD7sIgBvPPmEp_4OZV1v-_ymmG9Czy6EmvzMHLpr9S_K8VOUQWr1zejZtDVKKsAY6tcnYuJollcYpU7m8_z3BnY8Tl8H0vAqrd3fyuMyOgvP3CBRRBS25O6bgqnWIJoZH8ckkYemAVaDuaYa63FhoC6AuCkSVz1tIHA8wdqHTd76ZwQ1GCUmlENk0gjUg4atbMgfwHlfw-41T-KmLQrdMoVcEwmg0kACaYY4zZFmcmsS323s1j5dMRjbdKfn0H_K2Fkjk1VEBxNVTcYVcfflbb99g4zJO3gHY1yx_xX3ki8cjIwJuDBFyFmE-g-5t8e17QAMg7gW_uM3DwmZZdg4tIkmCHzntFGJZyJDt79lIqTLBj6CDqToStiuDnL80v3XhKMYwuxXWIx7K6EESpFtXbxpdVqBqnMRh5u59Ju_wBFSJ5x_G79alcwYrCQTy1OB1KW8VQT2btEr6-FMIgimz6-_U2GvwHES6Q2JzDzK3Ijj0Bk9cnNTxTbFsPppavKr_493hkK7Ri9fOz41EpN4TFS7wMmSG_PcV4GEQCz0mxQLTqRusUpfZhujRerYbkWZKHPy_lnIthX0HBib298jIkcgrJow-p-ERxmYRiaUbdfFkoB1MmTZGF0_ZPGblvHVYosTBnNP80rEppt1u51UQA8ERlJ-79xLl8YqtYQwYLIGHOlNSgUUCSU3wJ6P-yH5zU-7AptjdZWQXKDmfRlO8Co-8pGcEeZEw1ptTIFQTOR-8Vg5mPsa8RyjBBl313Hby3vJZIYD67Yo88WcRItesQAVuL4978wGkuY4Wl07Z3ITyNU8kSlyEZw3GH3R-9gpunnxEIPcJiAy69foSXEW_R4ngFIx5vlVBtNHN1Fx2Zj9dDSvLhxlhCRrx6KeIJjeTE3P1BAk6n-Hw_R-6b6lfKJvw6k-lkmT_C-keH9umlWlvLBmZ2LVbDrWdqA7o1QjHkb1m17lJ6RnNucycDjE2V0ZOyZEALtgY14NV1zJ6v4zZUFOTQ-S0EzhjtPsSmf_iYOUnuYfY_w_cxszA-N29Zh19zX7AiSpdmr9tle2JWSO1jsCdZWASDfVrbuOFasuFJkDHH-7knpcVuZxRO0tRflik78_xyZXZIfEf92D_XeYn8gA0-HWiRx4EdUmaJUkn0QLhzK5-4CiBe2aClD2EAmE6nb8kUHR95S3dQAjEfCOgB9VbFz_XgkPfRwHStfVNSjCQQq23OSAu5yoHqEHs_TreQVu-mQ3ae0qd_7jyhX8gOoJS0qaX9ZcM6BUZ-IX403KBdeUQOjVqDSOKf-o1j2EWRir_slU3KnAFJyTUfNosauUKZZ-gbr2Inj_nc4ojVlqi_qbasTWKm-tpMtO4ekxEnRX18H3N-zN2n7K-q4lKhb3c0KdfoPdr9iF0-sx2G4XvSIIkQkxyJeEYgIz6zICYnAUmbzDMwzPWKSH6gautlNz8fmAYg3zJWDg8jjRc2IkjGkv6v7lRGXKLszQTynI7UD8DEEQtx8y4uTBujiCbaZj7X9pvh8QPLq8Rq6aSsq6uA5qP0opjbHhEQtkMPwqRwFBBZTVsKLBFL8qPf_pTavGSnp7zt4Y4mQ==",
+      "summary": []
+    },
+    {
+      "id": "ws_020ecc18ce09cd31006a5b77a8cd70819a9c97df93d776deff",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore paediatric dermatology clinic eczema children",
+          "KKH paediatric dermatology clinic eczema Singapore",
+          "National University Hospital pediatric dermatology Singapore clinic",
+          "National Skin Centre paediatric dermatology clinic Singapore"
+        ],
+        "query": "Singapore paediatric dermatology clinic eczema children"
+      }
+    },
+    {
+      "id": "rs_020ecc18ce09cd31006a5b77ae1738819aa1da661e8c7b33bc",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3fZ8Ah0ynRGhUJ83Nua5tv7c7CKkJE6qUO8TWjds6ak04NeaKR25RwkKjfsxFHvidlTg0N04-ahXG-jMJxf2I7-fvswgrTpfPPNhLZ1EU2jGN1Bg90HV_nvrFsH_3dP0MrDgT17s79oBbra6xzavPQ2JmV5u9h8KSQnZL17J9HIKgXyVplcWf_Gphq0cqDsfLJJz0f0yHJ36bYtWbc-yBfiSNdH1UmRsqqrpTGXsOGFOZ7YmtJcjEpnMnzLbV00z2ZT_6UVKcqMLqWyOBzU8Tt8Tf5xwTdhaJGkY7SI57-wXywnUEgIPsWEo2CemAYds2_XB7EKNuNSxGuWjbcDbcAmvKkbOQAHkSJOKsuFYO4avQ9L5lI2wW8Rn_JjOdq213XUqy6ozavtoZSmQtOxYb20B7onkDLPy-ChCTFAZ18mN_ctVvADO8qPTacL2BBYfFU1wrF_gIw_0EV7OUshCZUlegokwYzccmQy8iOtT4b1ONGoKH9cgigPtRdd7nZ_Cdk5VBhgST1B9YF71OM4fuqV03VAruVuB4AEHcJF2W0yheQRd1Pv0hW8HNFI9eIAe0l_YzQCo60SE54994gWywEVrCZTQHXwtqptUrLTB80s_O8-_gqkB3cPRD9OgoL_wXfTR3hZNx8mhsAQVrl9l7FAB0KmIo7IbVGvfu73fnZ-j5n1h-1ikPBmFtMM1oF6E3KXmluOWMBL28mZXpD64fykdz7iwIvVTjpmVQXgXCFwxL0DwtqB3ylIMtr3_4N99XW2wos3nIH9snf8jUFVkg6vgo3GqOJG8wr6yqFvegc19FXEHwy4boxFqm2P_pkiBXIArI_2B88y_N2kdJINJFqaD2QD6VTP-RE3YQqpHLqintTmIblPqOyAvEzPOswa8AxG7yoQ3HrS3aGPNF2CX1nZAdCo56AQE8wHG_6ayt2C7qkqfAO2v6jdc5F0X9FYPbaK-XSG_xX9jPFt0N0LxmlSzfTM8y6GC3YUkQ48w6vvLUZUAJ8MUhGo2O7Zu8K3QJXp7tiF05-KH0DBQJD96As-FYRxx3tI0EUQIOBEWQq2-jA6tXnwBLrt0wyGr28WCZaRFrc3DDbIdHLfKMeDACvX8YL8JgsB6_B-v6kpXY0Fe6GfZg6-3Fd4tg7nxpm5-UovDk4CuqDdy9Wu2KO6p3UlFVmtPuyq_oorv-Nt4Qji-nS6amehBC8W5fTaGSaFKO2N8T7ZWM_XKLpSb7wDcDxpMQ==",
+      "summary": []
+    },
+    {
+      "id": "ws_020ecc18ce09cd31006a5b77ae91a4819aadab08a487a8d7b6",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Dr Lynn Chiam paediatric dermatologist Singapore clinic address Children & Adult Skin Hair Laser Clinic",
+          "pediatric dermatologist private clinic Singapore eczema child Mount Elizabeth Lynn Chiam",
+          "The Skin Specialists & Laser Clinic paediatric dermatology Singapore Lynn Chiam"
+        ],
+        "query": "Dr Lynn Chiam paediatric dermatologist Singapore clinic address Children & Adult Skin Hair Laser Clinic"
+      }
+    },
+    {
+      "id": "rs_020ecc18ce09cd31006a5b77b0da88819aa650e3975f1239c1",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3fZXWgufNXI5hkLyGi2jSk4Z-2zWwui3l1fIH0u18gxcIVy9q-V9mYrEwmU5aWnBuSHCPLbcZsNqJbV0O2QlTBtFtjwYvivEDj2PG4gWnX6iULUiKkwaSnDQDrZWVfzEASMU-eEgVVtK6PlwkjtearujFo-D5qPsyPS28kA-Z0IDQMGgI2o5J2qM1QYLWIz0X-TjlID7g_vP4-bJ24uCyGuoUHh-Ab9dLYsf6QLIt5OFrfIy7WADD3pTjRaGXH-ovxdEXQxbI30wyxC05uMGhQQvKt-mQRXfEuV3xghL7HU-WI09LwmGm48QIsyGwWcWX6IYR3qgPw99Z4JoADGUKkceMqFxKFkOyIWddl8q4FTSOitOsHhZ8sZIQlyJhsHHRp6myTgqofic5qxetgq468Wg1eGQj2dO0JPE_6-AR2hZP-yU-jAKZLO5Xyl0ZZbrvEoUQ9gOuKYZKkniXMPz4lZ-3PxE7WU3nQB6K-Bd5i9ORWNmg44Rm175lRMJ77JpFGazAxS9-c44WifT2btN9f-pu8y3z5bRnyBZQO05YAwewfXWi4IgA8KGG_mQhryvp9V2G2-MoctLbB7Y_XHgExLsH6znI8UH--iS2373O7n3elW4UrToYCaD8gsgNsbUNYk_edeDsNSuKyXceM5e_J_w5DYQ5t4Vu2t9IrLOF_vxT_0As9drGXR_XHfGolmGqhZNh9x3lJtXgki25V2utVjqvxyy-LGDpKgAkX54UhCAXihaM50XgHmjx2emx_rrtP4B_n1tnVLyF-fD_-NvQ5aYiW9u_hL6gwlh8e0v7o1Nzp5PfaxB81ERANCKaEs55afrF7Fuf-6WbR1Tcnwb_wFRUDfVnShawdu4wlu1V4xX2-2dGsH43vnLE3Dn80_-htKQqlrQEsL5qj_5enxCkkguFlt58iXZvvrKB6TeLcU3NheiYTIWoKzHRE1D38XXpmltwvmnz4GBatscwjTH4e71FTrA6LfRdmWlpv1roMkVGN5AAbo-UvnAqaj-RNv_YlxRUw0lE29dQTV9uchFWlw-a4aJpfTfgBuQ9GOZ8aV_XKtmTuAGESCNKDYjyXDX_CPNquougp-8QAkGYs96tnZAK1FcGOmJ819YOFdlDAeANxSM-n2W32NrzAG9XTGH_iPAvx0UiS0jaOvbbt6ZaDOrvVxBLWgUBGDo9lrRGfyftNKEnOljybZiAQPCDFp40VOnasK3kGNcdiyScTkEA-EYNf6j5zMwGz83MbAvfE4_ARjAggOhKxkQaqdsPzgEohMdJMnI348XjHDhyXp-LsfhR3HbgEed3Sp0zhzugDM_xc=",
+      "summary": []
+    },
+    {
+      "id": "ws_020ecc18ce09cd31006a5b77b15090819ab6558f0280ec88be",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Dr Mark Koh paediatric dermatologist private clinic Singapore Children's Skin Clinic",
+          "KKH chronic eczema clinic contact details Singapore eczema children"
+        ],
+        "query": "Dr Mark Koh paediatric dermatologist private clinic Singapore Children's Skin Clinic"
+      }
+    },
+    {
+      "id": "rs_020ecc18ce09cd31006a5b77b6305c819a83c04101c7fbb423",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3fZ2ShQ0nagdR4-Ww_i4v344n8ss9S7X2fdxsWttKFzqMA88Nbd0CONvqMuc-kpVHfLSTcpVWGPvCfi-wBQmnFcmHQctFtxCP59NqUX1rg0hoRiz1TiCmsZE3lZLVM3ALxCLJDId6bzNIwGjPXFx6RO5z6YMjAjS_VNwVcUOD4PnXby-0y7dfq7juHxcXEByEf9bo71b5guXxSCbajUrBrRoHo98_LxgpDBIAqtt-Z9mEt-DEc_Oqb-8sTTGSrvciRIgy6-_wqzAlO-mOSymjABoJHnn7yKDEwiRLW-yWH3YrsFZvGmbXNFQMlJCPxMshRcM8NjvArMPUlozIAITqehvXLZByOO2d0AGyr5-ZxyHR3Kn0L5TVou12xNFj238Ew_2pKigJmE6TWpxmfm2OeeU4VYmXvtWEmgbVtsPATr-1v7pVvyb3tDEyT0mEr2oc03RrHamVVW7tNAXAvYynPkVE16PGYZbzBqedErlw4roR9_rPTbVCjOOvwXB6iSDIpmSjnoVHOzCoUaOB7BhWRzXFOHl44eKYhBH5JGHqWId_NoUlmUc8aUGL7aK-mut7ILTCSeqyLGBhGBsBb2f40UJMzpXAgJtlGL19mKZWs3EWhkW7rLBBzrGjMQNYrbI6qu03_6ND5AgCHr3jVp9zLhzDz0QgMiwt40o38goByzvaIqsX7SFeSdnueEE6gxFzUXMpEQ4omT4wJILAknR0PWmmaH5XnHR0I_B7-UV981iJPTw4o5l9jV0ONcL6mLnWawmrJJKNQVY52ahPQx5fZhkbrXWz_RKPCOjYGmcu4WKVKZSRnbGUBoWEoofNW9ZXqRR8wD5F0Mi-L33DTiHQptBrXfWtr1-HQRUkFroq6ZZsN8uuX7USCmybWV_S2vo8tpAuZgZC8W7SGwhHscV4nV_LveHuMd38YjFuH-wY5STGEKssIMw__JAfKAX8HC2sWNIqIyXegYhZivcjiVUgbb_16M2YKiu_NF2yiE_ovdi-51uR3RM8Z1D341vUhhlCOQKphY0z72_sVZBS-3pXVUTqElKnWrvuN5lyHiYwer5uuetkjT7PaBTuoub3Fzwh1Z_mGsV7qC6NYH6Tqd7sQWWeNNvh6GVwK4FkLNfc1xP5vF87aAX5LO-UYmYrQMXaCbUhGxH-nWe_CqPLINC0OLGclhAcDBmAu8I5uclFqEQ718e2nr1-I9tS0uMQEaGoQ55pQeOt0E8-7X0yTayRi7V4n4ujE3iEXisnWNKQyObHnXNsvxDQlIUPSYeZxEoDMU4DV2OKBC7Vy6lwXCBdCpfb6DXKdHQ-kl3g2G3IubPvJqpmg_iiQCPhIb9j02jDRz-oyufwyZGkcgd0GQOs3uoFPflpFCkyi5ynSvyXQ7pEMg2E78EMAsB7IunRS4ZSLVi8BjfrREsG-IEGpsuqstKNofjWYAruv9GyiylJKFQfBtQI-t-8EPAe6VchNQPBgSGq33Mvpn_GP1KN5ohHCYMRhfbB8roM_e3xcRKp-aIVVafZj03pZxzOo7mLSYubeeoT7pwIoQ89ncr0nk05V4_LbLgOgveoXG6NpIyBQg-YPsiJRKIXUTqjJFofINkB1YIT1A_PW0uB53K7AzXuFAhmr6Id8r2-e7EX_gETAud1SVxLhV2McwIbNYDE27YgMUGXBrvvGK2P8qDBOiOdAlU6K0SjLFBs5zz9yiG6owdrLNuJZFNibr57aKw0onT0WBkzE8jg6gjOANOQlBrYXl4c54S1M87xYaxjF-67-i96B-7TuMxekgLky3304zWYP5kJMIUDPO4ywEHUeCDGp7sWcY1akBH6c3Fui5W1lEt3JpO_yfV_2nxztBO8wqq1abV-56aO7f0P3irluZrQe_REJeZGSXiQv1iZlGm5wyi0WiP9xvxXSHYCP56Sd8MP9DSJXWoQL1hUkZ5rkjQUurVZSB9uRFfGMyZSHFB79zPMhz76eXflH7u0dNqWNe1u2eCqY_MsVHgiWwzqBoBs6gFqcDwvg-vVWd2S9B5MJm84sdJVSV2nt20Eue8moyPV4XVot4KvNndQnHOqAKNN4xtG8SQ2Pe-U1hA2g4W49tshtHpSUeuqaLg_rqmxqOFWyWUWDNVfznem4ETYq8P7DE7KTz4G6YoNbwv_2I-TTqpPrqpy_WD_XkRhkLSvh_1dgw55Amqn-YYvpFGeK1YKGNsRPFPpqftm8AIvrrN-aSG55FSyZOaG1WkWzRpJEWe6wFUex1DRdlkrrSpknm3Jkfxd3L1qYH5dsWL0Lp7FVMt8Ed9utAY_3UIq5hF6VRZ2N4s_UP4CDZV7gEPdCYeWE7JCtrDy3RRaEHG2eVQxXgvVSFyVxAXc99LHMjphaRlbJ0F1VELREe3r--n4NQmuZ5BFRjLz9Ou1IBsnu8xEftUiw0nkcdESuuCpEa4TDHJyvR8jADhVcJY6OAiMyPJSCZCg==",
+      "summary": []
+    },
+    {
+      "id": "ws_020ecc18ce09cd31006a5b77b83d6c819a9244c29aeace2cc7",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Singapore subsidised specialist outpatient clinic requires polyclinic referral NSC KKH",
+          "How to get subsidised rates National Skin Centre referral polyclinic Singapore"
+        ],
+        "query": "Singapore subsidised specialist outpatient clinic requires polyclinic referral NSC KKH"
+      }
+    },
+    {
+      "id": "rs_020ecc18ce09cd31006a5b77c04248819a99de74f779d9ddd6",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3fZgqCOJBKn1832ABOa-LLrZqcWuorxb5I_Pu4G63pTIxO24C4CzS5Wwp_yC7ZPau0kYSHaFHFA7Ir3UPOlIrgYLTi2cIMUu9fvdKZS6cqEWqhp86-IjiI1EewXRRr0P6ECH3RNrEOB-rW8e7I9Np8aWwCgTvreYTIg1WJe0EkgofcJS1Ogxw7bjvYrhqxWL0Ycml2GLseZ9H5HMKI1VFmlXgKsoLHVQxRvlDucxbGKVPEkNYUGOqnNOenknQELDX1C2_9TB9Fy8r9j8_NflZ_j_i7efvfP067uh7B1c3hFrJwDYyWDGz6yzcH13xPb7yWb67JQ114pAtTHNGztBlzyvcQuzk6HnKRsR1Up75-sF1G57vl1wn_HZkSgbfg4s4bUq9IbpfyTpG24BmTDj6KoKfDI7e3RTnvs5Bi9DFdIIND0Kbky2SozxQBYUBntvkTpnO-NI6G7lLvoHlH-ArNFI4MKzuVaO9NfHYRquXO0ycMypUmjE83-Q-9Fl7eYF8nw1X9SwMHaeWkXbXlEafSxIPDuypI5-S81mAY1w-0qMPvuutRiwXmSnOTcVXBu059_PHBLMDsiGCZKSa8ei9Ubfn_JIhjQKz-HpCikyU5TBKlNslIPfatiOp67I3iuSisEetCBGom11-fMYNarpZhBALjE0ujGPS4Mg5tAMdSzsa7OkDxKSO-UEGqG_FUh7-RVc1oQXFKpbbu9txG3O3b0uf8leEktzd-sTgr7c4l4_UWjJWasyNLtOvwICqxGFt5KpfjfuUXttMQrH1I2tKOMuQ6jpHTyf_iP0CA6trqwRwvMMm9jC3TUcAI7LnnQtI56ocF7hdpVoHzhP0YKuLWDl4yUDwK--a3k-Q_qcER-VlrS4XseLyorQroNJNcdpPwI6zrIcSmv0qNzvfShblSM-_xWzxoBM98meSi4xVA-gAYMugAeHODlAow-xY-Rl7kkBbH2Dt4nVDxk4jcx0NTA-Ce2yXOIV4DiBkwgkuR1F4P13zdwLpnXn_PZwOjy78tJvY-giGge8A-ODntIk-U6UDCV51drhFH4OoNSScxZLVLEd4Vmqn20RaAyn31Hzwt6enMAIKmT3-UtjLJo_xEhDeuJq5os2FLV1gpcIv0lHfFcmwjQQMzu7cbekL_KGB2wbf5badsZoO9LSNUHEEfwvlAwMb0Y-zTq8C4PvNQStH8m1wJK71og4hIoKaW8R-WBBVjnvxauXam_xoVhpZ88mRUKRQgZgH5jXGVVMIesYPNQGn5Y4WOv_-p9pa63Nj6mVafMzqQQmPS_7A4bbFGPfBMUQxs5LgQLABmETC9oHo4H9IYmZWEZTv_jh76WydFd3qmbAoS76NLVTLJbP9L7s2t0kDGgaU7fo0-ehjI-UTBwXvWyAipfZMehhC-6kRa5Nvxxkx25JmcedZkf4csK45h151avos4aLr5v4B7We4C4vdFGnDQEUqdyiVbMrvpHYjOKwCE_r1Wul3v1L3nIQuevsJFqQZZID1dQOrD6wtpF4iXic62KqTI1tiPDPjG3jO_iEtfTTHybqM6aAII1uPLEx533iF2mpUnfSRMVqHLGvwPuYZ_kC4Fc4Fbs5DckA6L15ZqFjDT9Y6RQRfgiTCgPsBIq1RGHkqpjVp5oCfKWHDlzBl5L8KRVsyoadB0CA7lYnuTolKEBhIMi82LWX_nUbo1YdLPa3zlyD-XEwpovuTxZSNKCq6Mxb0ggtbwYkWvTppmzL5xKiiY7NKeOPXXsWtzDd-53bS7kfGO_htaoRpNDSBuHSQxC4aRIKA3XAXzRnLJkKtTva8iAsRS_jswnL5n5UZrSkwXF5UNK8SATjuZ1irPMeeNd-XwLQ7vTM5f4Gv367I5hzBl7J7-uuDI5rTtjNj4Zw18Jc8oiaSVbH5jfVm3E8ryQipicehXIOci7plTLEIIwQEbxE7cG4BvI1VuA8BY19zAIqXG9-4ndiWCYPBXiKDFCSzb5ddjdRbp3vlqh0HXFsT9aV9JaNeX2WJ-0r5ZB3fXKfJX1x0Vb-kU6xELaoY8zqBNUf57CZz113fRQwWvWP01KOF_JyEWwwSMiDdcdzum7ILZDz2YYsLxdrwTSxzoztw_sy88M-W7-UgQDbOHdsK0R4Gcf46q-IVp70oABmFSO6PkZoX7_4lX5C0kB2Kji5PEb9OcrNUpGcpxgsolrVOrv9_h2wWW-CwjXKOcgNj6TWsd96_qp_McleiTM0q-o-ikRZ3NnI_mcrRtA1C5Hi4VihbzI4Yp81mVye7vuOPx4JTE41nVaYS_KDz_42J4gZk35BPb9Gno7Oz9wOF7tEGQl146LENujz-Z1oKPoEIpoQKd7y6eruCrOOtgfJ6Lxgrju-CdkhKLgSmkxiJGVJG8WZuRmKJnTJTb9u3OVqjfjSXZSmPuubh1ZSLyaAobCZHFS4FK7o9lsRzZKiIUDJKLoDz-OEpxfDii-j4ydqq2-rFeXWeV1X-hVEys-RansR5phl2vIuKSAt8yv8ZCoO_VVe_97fX7wWs1-thqD_wTz3AlvpNGvhmqZNTevSaA6anSZI8ux3bOrLc2iMUMV4TNvEiBZqUqbeV1jGqyCloVahy9hLD25P2-_FNHM1W-EkQ6OAoXt_e-nt32BQ2i2pVxh7m6gqB7WsVHHDHGJf4linnbq-pPmIoObDS5hV8hD6YPQsUUCWBTupiYpYnPk_kOokbuc69uH7kVLT1NKFoKLuRyWstJ782k-WUFGYoFxEc8msRzsGwXyiB3YO8VkuExY3MswsH9AxwwJe3jkocNzjvhfMQ6T0-DYo7wFd-n-B_qdlyUYBQFNfR5NU2mxfoy3KbVUELiDaBbTWoTjP--icJqRv0Z3GLa8Bc6kZvPmwhzO_-jr",
+      "summary": []
+    },
+    {
+      "id": "ws_020ecc18ce09cd31006a5b77c13b44819a958d9c79ca86b1af",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Paediatric dermatologist Singapore private clinic paediatric dermatology Lynn Chiam Children & Adult Skin Hair Laser Clinic address Novena",
+          "pediatric dermatology Mount Elizabeth Singapore Dr Kong Yan Ling paediatric dermatology"
+        ],
+        "query": "Paediatric dermatologist Singapore private clinic paediatric dermatology Lynn Chiam Children & Adult Skin Hair Laser Clinic address Novena"
+      }
+    },
+    {
+      "id": "rs_020ecc18ce09cd31006a5b77c54f20819a90f9f37098e120a5",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3fZONwWMAD4mX5J998_PuyP2g3UvBPCHKkee_x1qyehj1g286Q1Nf-wgRNzKYWMQO5FyLSZ9Hw26344gjbES4kn7b4FfM7E8mFnfX-NxJdr5hfjKKIbbuuIOiLYQVmlXzmodS0c-imAAbSqUOiAAAur3DBEBMtkw1NmgYbIwEVBzWWSxxJ1flNnmqSQKxqL78UEEVPudndxWFyWGslQ3f_o__55fA3tIYJNccd0jwOFWTM4bpKUj0642a1PNgfHR_0W494NxyQi1SIelqKTUVIYMpU1cu8AsyOGQDX2tOSkFfXUWrOoBLgbST68ihopplWffe4f2KeLmqCDKb0jYRlHAnPe0NTUfUO4Zq1tM2boZZwDtNA4jHx-COtikPNdDPOlDyRFYpsmUqTFMJcfh_f4sJr0l5zPhITcOS1cCl7q3_jI-y6JuYC0fBzUO8p2e4zjCvyxYAKhuGlI0ORZw7TYa16JWnvK7JZRd12pTZuU4imxwPetk5l3dlDIe7CUdtHyodQhKaOQZ-RRqWM1Q_zV6s8qRc0gCm2W5Xr2Tw4hg4Y3QtKzHwvhsbISQpvVosUGYAM2goo7ufRgyD41-LuXKNJZLgy-upqn09tK4MjBh1aOoKu6e-337ZGr3cZ0dynYp3-3rU-o4OGGK50PGDuMjnQduJDkp1YFASYPBl_jfIQnWC_KYCUTyj0YgdNe5KBDvxntBER3U1i5GV5mUPqEV5yR_5uGGlUtJ66KaHzFP4wItu41Bm4EdoGyHoXO2er0DVqiYY7CDQmUKtDBDKRiPfYY2I00uD6DJPZKxJHH21cPzCWZmNgb9e1fdfzldL8xsOYmb6cg04YiSgvkYbup3h03XL6vnmR7dJExFpgZPktclkAjUgoPr6jue-QqTvnmJt_bHsWo6K9fZw2cJa_uxOq3qrUQhSRw9FKKVLGyR9lQsebIx4DOZ481IumZBC40g1vVxtXB4epsgK9MfghfI4Mu8hPUuisyi7EWOVbSoTQrO4LnjMg0RrKxWtovi23Acej56TJwIyskAVz92_k0mIh8W-6AIQECbULjyyISKl98NKYFAdXOb8NPs43AY_4vvwmoTUXHS77GN_H3n4OwFJQdbx3vDlP3EIlVpcdFMNXGyzv9lZTm5Jv-tJJdu2P8cGE5L6NPD2LUvvIc9KVxGzEpsvVst3ojJfbFmv5KtiijtdlHXFA-_0gjU0Jj4dAiQJNypfsGVaa9xiRa0TLM8Utt0V680iwJ6vG8xQKcpB4XDRlvQpBXuauiY4uoPuQhePZr2dZfnLrotR7bg9AopdSaUie60Y8ijwdaBcOmIpRvUtPDXbMgAzgb8ZN9M1pB8Az5tfxydVeJWaDmOzC2-w4DwJpjr0-lHwEiy_AybEo7h77t4-bJVc-3P2zh5fvX-yUzantn-wGXkL37eGko15QnFVV6dEBoiDqG7vyu4JuRjMqCMPonDZxo8EAd_Cm-ol_nfWHyg5YQ6F_YkRAj1Nsu1XeNs-EJ70rC6nCwOXzL3t56eyIdv-8XJJ4tLnx_8Ml7BbuOjur-ICd84hJ92ep56ZDA6l1TAsYtGmzCJotH4fRVo9hvoO2d8rTJtUJPxiu4y9mrM550ZI5AQi5eJ-YaorXsL35_XTXy-ghlGCx0qHIj0vkRKR7mLmODNSvoMyAFj-wBr-ZOgSH_9JaLB3oVaei_sFoAhgSKwwyP83ozBIYA06DZduDFBYm3N6tHNyNwrjWVBndoP-IneP64fULsNkUYL1ACPMDEheE11l7GQAwhsdlcyAgf0b2JJ_TDr_LZdENBGRJ5i-mAjQ8UTYYkJoYX0Z6z1_m_ZJLt-zJKTKbojuvbavJOk2AScgEV4hjmvDqEFGgxKNSfWXpn0HM_XR6H_LB1VyEh-9Uksf3OgneXNetrmP8SYwjMn1tkshgoj5eWv8ZtsGtJhDC6r8l-uJa39Ecoy8nyTADhyFWH66yw6lnLXLhD_sZ5tNCKkY0Pu9gzBsqNhVCUHUTrA_4nyLv6u-BvwCbxBwCehbiATSjayBQZmu0KRM0wfiwbO441for-9nMSbYXBjCK8Oe2uq15BNsXFBehm5Iln5_ArZCrN_AuD7bIGIrYougFvSkWEbGt94PHyeeXlC7cM9DvhIMaZMJOalohRpRfJF_g5075hMZnlGXjsI1CP2cScpVXVZHZQ5a4iLX1Z3bWRO4-tIvagai-Q2Xkr8_63CPVaQQcBAyb-_FVnPyLe6faytPEIEEIOrq8GxHAtWmraLk8-DsAusZwUOSTgbi3E_QvV92Jo2Nim5NRDMieromWZxf1z72OPa1_rR_bSCbpqANlKDrVRR0BrppP8WOs-M3y4zB0zKLWWZA7s7jMbnh4zabFxAfgaUpxTLBUz9JKmYa2sn9miBB3_j_vHY_2kXLFp3wPfcNJPrZt9TyXkXLQvTZnZebg52whBmTEzWWcZbmVwPk3AYhFl0oui2hkrAn7NPNBJYHtei4cAP-IjgFH1WSbW6pIIrIa5jxjXWRlWLvugbmq2hf_mJ2K-2qmsipR32NjQ0VHcMoLu99027dstgvj3GtQnmkNItxhBnn--W-eaTddmpmGVhAPLOHsrtMzeo3SI4_VOrr3P-_C72EdCfBRK9jBgWIAw2Jkl3rJniC8P5eF9SRfFN-cFXUTu1GAGs2oxmyc_0l3DGxpC7wdSUpDIhqb-RnMa-AwWaQ4h7gbjKzbL02HVL0JelMiw5WUAS-bWomiZ6VCpZf87mj5R-qYXCi3S3RDSCQBnBx-d-btdWr4OnY06l0wLnFC4iFpbjPnuEaEuxD9mkoozoKzcPrFZHXDZU5HoaxP-zvG1eOkyhbUhb2wAwtx-dBcWCSfHCXt5DBWW1aNJ6YAGkBAa8WKG5Lq_BX_xrtrKWj-949KmXZNPOHBDfFIG0hdxUDQjRaOM0cNSNKnxpau7eb8gVf_s5fPZ80PIA9kD6EVkhabgQ5eivhc4mm1fQf6Oc7Akx2hrVAsIXozEVbPhFbRoB-IhQ6N9HwiFBUOx9oqTzG11gFkdURqvpCbn_MKJDXg6ns814GiVu531mA13XwtEaaHrl0LaXKfggu9s5GPbSnT2IaGGY8chYALeLVASfpxYoesta4xIRU3kkjOJYxNA0-dkgYi2V86AUw7Op5nqwPfUoYJK5uRQ9snlI5d1kNQVOKHqd-0iR8lI1iD49wApo7A6MLCwHLprdaqWI2ZqZ8Is6jTdfHqcLJP6mkJeeEKkmGNA4X53DF8ADswNy4cB3Yn3kDO7yo5SdUlJ3zV72N3KIubsqW5an3Hxlzn5casi4NtoTSWfPClEizifo9hG2apSt4-jk67YFuNvwIp42wv7uqsGmlc71Ji9fqZm-n142Si8Eu0r8zdg4YXT_Gb0lPyl6D_Zwi61xo8ejpLLLZ8aU0BYS5gO9DOJOHIRSjbkPxzVFzbzJSPHPejdVCTMrY3sTPgRzaSIXeWl2mBptldVLM1l6zIpZdkRKDG4BHX304t55XPkr5oWqj72mSgjW94AGc93cvlFvXYrSTBpL1DmFFojsYUfbSNU4QMUOAjPWpAsLWQgXFBK8Wg1QF7zr34pZWuJvOZbCufmDMsDnNDcGWZ7wcC8vTELwDDzxdSk0br3em5bRapOowjszLUbQE8iYFu-AUheVjkkpWmj-lsCeiGrxkwCCerVtiPlX6IeRrTtlTiyGGaLOqbMJT8x2sFKhEsoxjbIv9YBptdfSmbocz2K9_J6j-Z_9WR0-0jx8rW9dn8SzfNVrTIp1RUJcxmIQVgHm7NY4LgW4NdfCr1h65_vvwLayIyHjmUvKmBak4DiwZvOZrVqGcVpj6DhbfZt0bkWH7mMNNl1080MZH9OIdX6HNlJuOR-axYaUWy41GAgIdbMqedL0fV2HMlukyTXzDhnLHlIwng_GaVJ3Wndcwh_5tMwuf0JF-zaSNMbmSpAeLF_dVFoeAK2L9zYCCrqzBOkYea3xsOnnaoH4KBCp2cIBfYXmphAcMtaKoDueFBUcAVnM_fSZhB3VCFFUnHFDyYK-gUgLfEPMni0bH6HAvq2mC_QMihFJfAc2j_zM-6K0xUIHMRY5h0r1rx7dZVZ_5yLMSaG3a3fHb9U2OGuUqorZvFPlpDft4y6oazrrwSMf_R19LEJNHyx6NZOGro3jzvKIQ_fhaZOb8H02OzWAhmtJxE7cIiFE-_NB8nAnNHjPphAUJ1TEBqEjoY9G14v5cBnOmDjBFvYlMyY2vYA0K9sC49C8lBjnexELfwbQD46v7_48G6ztyAJlCQNxby8lU7l9MhbVFMdq5gjwG7_VMLOZbIlNsUo5ISpGNrFzBMVilCvbK1pOtWd45jS--S5xIaqHPvChgmn4qJZpMQdO4MHhyGrmGd-xUxPu1DwayPcoYP1VPUiPJBBy9psBqeLjWl6DUkkjJ6ebCHJ8Npc4KkpbE0O35_DLmnMLCzKZD51MeLccUeBOGJirLlSyWzrCsi6uBeBYbGdKe5imA1hNEa3tlaHht04Tl_Y2oSXN7JPcciJ9HEBaBhe8blRmoivF3oza5k2O6GTHx71ZXfMB7ehbjnrNCZ1Zhff9yJymd4_J5NrUxpcPXl_-rALQVeBfY89AF3qIwvdf2_QIBUbnGNqRdSA1-xCLzznPZNeJTCHLt3oQqyw7yTPH4XUWQEa_oS81yDRPjUk4ZXShk_Gtr6kmCqZE7eRJhqQjcloKBCLRWZupE3TpI8aMIf2WGeLUYOJmtCx-6LfY8zAXS_OHan-JP9-ZmxxlTHIhlsQCs99Kv_Xd7goDz0RGazDLwLxzz63qjAkWIhDJ3H45vmoWtRkHgpS_L6zueouXWs21tcbIz9xplSZnOF5ZoXhVYsudpGcUr3Z0Q0n5mCOONMYyB4pwNHnecOiChn2RvnDnaADfzmJfZv7rlwtq3evIWkZ3VAcwrZVI3JYbgrhonf4_oQTv1lUVxstqwdImLNO5t69ZHmIzhxy23wDuZS3e9-haabq_l7ha4CxkBJ_OEQPbRGhiuLYhNmrqAU0neB3aZjzxMNuL0I4y0qDdESwKknFLbKgq3MyzPjL0p7v-w9MlTj1uCIML1NQ-VzNYggGMd13Bpzikc9dvSypc5bRvUa7g2Ku5A-Pqy8SNH6mettnuBQtL7n3kkJyPTQySZVY1zkmHCs6YaoXYcSatPB_aPxmskuBJFFuFTq103kGjYt-CUfT22j1I0wiHzPp6Dybx0OtvOAgXjJxnNboLLnR8eUYT-DqZyT0Uzmxq68jAue3v4QhUlHyRaCYxMTH1Hk05UzUdANWjZti_HL59yviGXI3FU5pGAb8GESORspMSAOHo_jOQgI3OnWDxWqUe5OczgZD2yAgvtcK1DrZnUEVSfZVv5adCqb3uhppRwT1fm33vYmq8ZBvj5jtWOqTZlGKI7Vtd0gfr69sUOMhe-aFXF_50GCUnEwxiew3J3i8QjqyMg4JmRLy9tQ7cDk5YFlq-Np_kXPWU8-g4Tfbqxuq_rjzoEc5Zhtv6bCj6JSQ7FPPOm1KLwhwvSaCSntVcxP0O3h5GubY2dn9FQx8dftavUoJ7ZFP8iCJHsDbTU56RpgtvQ1W7PFkYI0-xlcZg6GC8iZJJYIgkDXyKMwKdt3noSZv00CWee7ZekEoghXyFYW_fQQjACg5uONQjAmMGM_cemzx4gLzQ96-i2_QHMF6gFZkpWSXC7g95A3xgRpWLIYjC_B933k3j7Fy_PR-0XL2SmGcuPVqMFBJtTIrTXzR089L8OS_m3MmoVwRzCp4mmzbZlFzTYfUjEisSvs6goMlBoiTJ7BnpDnHbGkRx5qY-OMlxFcY6TVRLFSMWrnXxjCvvEYPrBxlaRjqAtXVkB0ePaS136_n_z3sa7jh4kjzpirXeYiYBkftCVXh37JyK-c9eNeowHPZ7okPgNnceL2Fr45p24RweGe7wRjYdFNKhgtvTxDfPCO3aGFCo9zMnDqmLXK3U1aUJ_anqyX1JvDcGuJMGU1pe8VDO7oRbQNId5ybReOSnyNQz-BzjdxdoSOUtftVwcNTIoMOI_251hhmex3CUJ2jkDp_KngULbUg2uwWnpycG6lQuLF89___qSAPCejvd_gtnMzKoBbr2VKa86BHnv7hKC_g_A9deJWSy4AqLSS0MRW-XgcG6uU6UnRC8Q9GuCis6je4hYenmao2c84O1EUjz4ZLTZrIlp1zmZKQYSgfYS8OOWpRplGWmO4_BulQYkp3Q6DU2IGx0iZ-NvuEeNgM4AnNTuHieDaSSNJJYWrktDeDY6lZ8hex-V_tyNhMul4QgA3gmstlhE71saNMYuvJsoBfPNEIRXQXfnetPBf-M66QKjwa7xWwe2H9QqaWb6ZSEINbyb5-T_5LsGw1EB_mpQ2PsM4PXS55jBWOASPSMsBD4WgDdTQi_mnsdSH5riObSwRxQSBRjVTr9h3Lv-zgMx9dR4jHM8ryyWd7C4zJ4weJCayFmawJ1AJR0oQlCVLDBmmkHCB10Lf9s-Sw6jG81XwsCqpxL64N3AOihdGeDkt5cVPMVFjGYfqWzyXNoaTMrlLbjP8YAz6ZxLhim-Xxx1EQ6884T9GjFRnvBTZ6WKtP7lkBKbPP4bsfEqXOPB5V56ri7qa1KUdxP54HMRKBqeP-hnuW91L6Qe_0TIeca47KMIcxVAkvsltRf1CpPoDtgnr-N7J9X6PIw6XUkq2gytMgNxeMYDLDljaTAwKA1sZEAm-VcV8qJuX8mAI8gA4ZIiwoTydy1rqaBtz3qix77eXIIxxa2r9jekLyBgqabBYLMAjiN6fPk3AX34azIejVuQawsWhlCDoSRuI759stdPMR1y9wkF9JCX88vHWCdE3sQnRNd-bXvCtKb9ekti2F_PIn9GpRVJIoLsJ6eaL-rLja57qg2DR7PaTDtCPxor-9EaC21l8hcAbw9cwBIfLgT43jVJ8O9Pj0ZRRs0BBWZZP0IemgCwnJ5XavDe8k1ggWDdkS9L4HfKwhPAFl6B277SFnAqf-x6QyNjO21kUh5tjjsa6XW5hx4GRBWwokoXobGeMcpSCksGgnXrmzZSlr1bbKqvozSfd1mhhT841WsPrP7l9LEF6DVEtjCk8mORzHk0mIhuua9ODrNLtcvDjXZn6YZB63A3hOQWbB7v0Vu_4tRZnYrB0tkbSsGx-gj7P-cqSygLrnOJ_riJf2qFdWW69hgZZ8QB17GkF4LVaFMHYK1tZmzlORtWsdOK6kW0XciE310knbCyxK3hRvLQ-_KEHUrp-GGbK2fYnaFc1AgckmNRBhmmbDVEXkdLfWBIxNkG5_nyFK5KhCWo4LaklaJ7PqiIcoQfzRTw7xCuZJs91-07kr_WGfaz9lBSanXhGlMmL_gkB14u_lYqKedbkJHIswdp2mprTiAT847ctkeJthTh0ML96RWemz_Jhgdbrf-5Kh5yB2XNiajAMnEKecBUgYwy0ufpMO4jBcfEa1wtsFU44lgLWO4TfqExEEjFCm0TFFvwj7WcsC0msfLsAnjCjPNz4B2WolTxf57pTl1GsGBoBxV28GBoueEbyUyLC4TRDHymivLubIjH3R4vbTIzIprU8dwVFB63I91QcSnT57uwML6yuj_T9lf8ny5en6n_-_csm2M82RfDyEkQtWIMGFpoJVYPwlfDQQIAHwP_Kgo_0qCk3heOCi2kjES3lKdOVSYCHCvaIH5m2sKzx-g1hlSyd_YJI71CP_nIHb791cPlfaCJkp08aTEkfYqPF1AsiYPjKZyhKu4m0nSGA5Mc7pKhzFrLl-4tEP_mHVGdOyoMDCobxktjNmcjnH9b0tHc7VZDZtcOrkVkNkip0sqxqjIWllp75gzRNa3_7Ho9rU24EVsa1avV2vSNGRVRh9FAba4ggQAaKB9_v3qezHemTV6iMlZSaXHIHynl8MqjVVGgkkLYkWjEaXm5e2o2KP1dL4NOFvAuGRFjWAD6XPJdtEV1gKj5xsBZNviZW5Y6MhlCwHVMn9CDbRsy_xGvGDkTAtmbtQbgfUxq4E10SnlXWI_Acivkl6AtYY9OijDG49wE-0pWw274wtu6mjHyGhUJMX0tfoTtlMy7EPKgc9PJtdNKOYdpv-NM18Tea8TFk6y9OZLbW4C1cHyznQ1PY1t1yO2ozTLkDjiJdpEC5VmNt3lC33G84WPVCozCrt3VCboUlfj-ocg3mfyKdZ07M5aInEwh03HFLYfkleTr2F4pt9QlIjl_ToEE7_DnBqHld789TYIC8kdsJQ1GERwA6fAOU83sKRxV9-4SmeRUY5vYxOliYRLyVzSs-tFOo1eKflj38ulVyXePb7sfR5b2FAIC6er4O4pAEdS1rg8cMmLdeTZXaz1XdvFfh9GEH_36mvDqeq8Cf6MMqMMSUQWJshRZvtUx2zJTBbEk73Tp_V-PqKkYPBJS-Sj_ZmQcwD0-H3jWuEwFGAeDXXlv7nnz_YUAsBbRxcWHhwQtdW0OAFPLJuJwmEnxGGBTBYr_6l8rl8P12T_7_QuzxzbSsCMdz1sXFwsJ8vi4DhIkJ0bR_JO-MoxUygHG835WUF1F3N-k_sDw5XeTtumItifWRWAodIeJTWMMzcIRW_OZJffbwg6ADp80B-R-FswjxenED0YLaFi_QdFqJfT_EJ54vDG3CAL3pcZX5_6oDN3Udw7LflmzV_aO9U9wwQLTS92qmnwz841EGuMBcYmpYnbeaQZFtLZiDmklqeWjQvAtXQMqflgJ2umX6T7AIgkzI2DKWGd7dlpzU5fCUs2cVnBWC4LH8RoT_M15z84LZSvEdk3EvB7bOThgqO1GzrgYfGGQJdbjTTuBwbp2Bcxj-YkdiHqHCvT8d_kR-vYB4VnGNVS1Z1ASLaDg7CA1-7Iyt_evf2vWk_1gRFh2NhUC4CjuPP_bdTZ6tXCne7V5oEjGQmzXp1YytHZoEbXGBt5G-9W_hkOxj7Y5hIuxw4T6pffAafa8Qarbr0mtjPGCu1iftBTDTLsN1hJ01rFMo94Bce7LxHvEN0h_G2R3ZIs-SEdTizXmErXg7fk0ewvq5fZKFhrIxHTnwDgG_FyQl1ZccQlnMXlEzWyV2PHY7iPRN2pZLJ7zvqB1hG2NQ3QWkT1E5Kqn7WxYlmuazkXZJTymLf55WCBOlw6egNmi_Z8hJwwKOIfXdZtnYzH_nQXrkqDh628Ur9XtzwYToAddNmxS6irWRgDpI8fkgVcL9zVcgorb7un0FNR7Bq-6ba5RNUe7ZQwOKFPdb4Lv8BbjYQ9XYEfBMXij7Vslgei0OIZCqlirnoY5DAcd8F0NHzlJ26QfRhAex_VtDZqHDcQ1w=",
+      "summary": []
+    },
+    {
+      "id": "msg_020ecc18ce09cd31006a5b77d109e0819a9c5fb0ca4621cab0",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 586,
+              "start_index": 491,
+              "title": "Paediatric Dermatology | KK Women's and Children's Hospital",
+              "url": "https://www.kkh.com.sg/our-specialties/paediatric-dermatology?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 878,
+              "start_index": 760,
+              "title": "NSC Paediatric Dermatology Unit",
+              "url": "https://www.nhghealth.com.sg/find-care/Service/nsc-paediatric-dermatology-unit?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1200,
+              "start_index": 1111,
+              "title": "Paediatrics | National University Hospital",
+              "url": "https://www.nuh.com.sg/care-at-nuh/services/paediatrics?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1530,
+              "start_index": 1418,
+              "title": "Dr. Chiam Yuun Tirng Lynn - Dermatological Society of Singapore",
+              "url": "https://www.dermatology.org.sg/dermatologist/dr-chiam-yuun-tirng-lynn/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1745,
+              "start_index": 1658,
+              "title": "Dr. Kong Yan Ling - Mount Elizabeth Medical Centre - Private Healthcare In Singapore",
+              "url": "https://www.memc.com.sg/specialist/dr-kong-yan-ling/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1985,
+              "start_index": 1877,
+              "title": "Paediatric Dermatology - Epi Dermatology & Laser Specialist Clinic",
+              "url": "https://epidermatology.com.sg/paediatric-dermatology-singapore/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2375,
+              "start_index": 2203,
+              "title": "Subsidies for Specialist Outpatient care at Public Healthcare Institutions | Ministry of Health",
+              "url": "https://www.moh.gov.sg/managing-expenses/schemes-and-subsidies/subsidies-for-specialist-outpatient-care-at-public-healthcare-institutions/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2595,
+              "start_index": 2458,
+              "title": "Consultation Charges",
+              "url": "https://www.nhghealth.com.sg/nsc/for-patients-visitors/nsc-patients-visitors/consultation-charges?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2848,
+              "start_index": 2768,
+              "title": "Allergy | KK Women's and Children's Hospital",
+              "url": "https://www.kkh.com.sg/our-specialties/allergy?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3243,
+              "start_index": 3071,
+              "title": "Subsidies for Specialist Outpatient care at Public Healthcare Institutions | Ministry of Health",
+              "url": "https://www.moh.gov.sg/managing-expenses/schemes-and-subsidies/subsidies-for-specialist-outpatient-care-at-public-healthcare-institutions/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "Here are good, kid-friendly options in Singapore for eczema care. I\u2019ve grouped them into public (subsidised path available) and private (usually faster access).\n\nPublic hospitals/centres\n- KK Women\u2019s & Children\u2019s Hospital (KKH) \u2013 Paediatric Dermatology Service. Singapore\u2019s main children\u2019s hospital; runs dedicated eczema services and a combined Food Allergy and Eczema Clinic with dermatology, allergy and dietetics in one team. Good if your child also has food allergy or asthma concerns. ([kkh.com.sg](https://www.kkh.com.sg/our-specialties/paediatric-dermatology?utm_source=openai))\n- National Skin Centre (NSC) \u2013 Paediatric Dermatology Unit. Large dermatology centre with a specific paediatric service; NSC also has an Eczema Unit for more complex cases. ([nhghealth.com.sg](https://www.nhghealth.com.sg/find-care/Service/nsc-paediatric-dermatology-unit?utm_source=openai))\n- National University Hospital (NUH) \u2013 Paediatric Dermatology via the Khoo Teck Puat\u2013National University Children\u2019s Medical Institute. Paediatric services include dermatology, and NUH manages childhood eczema in outpatient clinics. ([nuh.com.sg](https://www.nuh.com.sg/care-at-nuh/services/paediatrics?utm_source=openai))\n\nPrivate paediatric dermatology (self-pay)\n- Dr Lynn Chiam \u2013 Children & Adult Skin, Hair and Laser Clinic, Mt Elizabeth Novena. MOH-accredited dermatologist with a strong paediatric focus. Convenient Novena location. ([dermatology.org.sg](https://www.dermatology.org.sg/dermatologist/dr-chiam-yuun-tirng-lynn/?utm_source=openai))\n- Dr Kong Yan Ling \u2013 Mount Elizabeth Medical Centre. Accredited dermatologist with stated expertise in paediatric dermatology. ([memc.com.sg](https://www.memc.com.sg/specialist/dr-kong-yan-ling/?utm_source=openai))\n- Epi Dermatology & Laser Specialist Clinic (Novena, Royal Square) \u2013 Provides paediatric dermatology (including childhood eczema). ([epidermatology.com.sg](https://epidermatology.com.sg/paediatric-dermatology-singapore/?utm_source=openai))\n\nHow to access subsidised care\n- If you\u2019d like subsidised rates at KKH/NSC/NUH, get a referral via a polyclinic (or eligible public source). You\u2019ll then be booked as a subsidised Specialist Outpatient Clinic patient. ([moh.gov.sg](https://www.moh.gov.sg/managing-expenses/schemes-and-subsidies/subsidies-for-specialist-outpatient-care-at-public-healthcare-institutions/?utm_source=openai))\n- NSC also states the referral criteria for subsidised consultations on its site. ([nhghealth.com.sg](https://www.nhghealth.com.sg/nsc/for-patients-visitors/nsc-patients-visitors/consultation-charges?utm_source=openai))\n\nTips to choose\n- If allergy might be part of the picture (food triggers, wheeze, allergic rhinitis), KKH\u2019s combined Food Allergy and Eczema Clinic is a strong first stop. ([kkh.com.sg](https://www.kkh.com.sg/our-specialties/allergy?utm_source=openai))\n- If you want the soonest slot, private clinics typically have shorter waits; call the clinic to ask about earliest paediatric appointments. For affordability, the polyclinic-referral route to KKH/NSC/NUH is usually best. ([moh.gov.sg](https://www.moh.gov.sg/managing-expenses/schemes-and-subsidies/subsidies-for-specialist-outpatient-care-at-public-healthcare-institutions/?utm_source=openai))\n\nBefore the visit, bring:\n- Photos of flares, all creams/ointments used (with strengths), moisturiser and wash brand, and a list of triggers tried/noted. This helps the dermatologist tailor treatment quickly.\n\nWhen to seek urgent care (A&E at KKH):\n- Spreading painful blisters, fever, oozing/yellow crusts suggesting infection, eye involvement, or your child is too itchy to sleep/eat or seems unwell.\n\nWould you prefer public (with referral) or private, and which area of Singapore is most convenient? If you share your child\u2019s age and how severe the eczema is (e.g., needing frequent steroid creams, infections), I can narrow this to the top 2-3 choices and suggest what to do while you wait for the appointment."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 5
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 24449,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4224
+    },
+    "output_tokens": 3262,
+    "output_tokens_details": {
+      "reasoning_tokens": 2240
+    },
+    "total_tokens": 27711
+  },
+  "user": null,
+  "metadata": {}
+}
