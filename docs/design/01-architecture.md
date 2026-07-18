@@ -52,10 +52,11 @@ One Go module, two run modes (`serve` and `work`) from the same binary — deplo
 
 ## D4 — Data storage
 
-A single Postgres instance holds everything, as two databases:
+A single Postgres instance holds everything, as three databases:
 
 - `opensight` — application data: tenants, business profiles, prompts (with replacement lineage), runs, raw responses, mentions, citations, competitors.
-- `temporal` — Temporal's persistence store (see D5).
+- `temporal` — Temporal's core persistence store (see D5).
+- `temporal_visibility` — Temporal's visibility persistence store.
 
 Sharing one instance is a deliberate cost call: Temporal's "dedicated persistence" guidance targets high-throughput clusters, not thousands of activities/week. Guardrails: cap Temporal's connection pool (~20) and size `max_connections` for both consumers; check Temporal's Postgres compatibility before major PG upgrades. If it ever hurts, migration is dump/restore of the `temporal` database to a new instance — no code changes.
 
@@ -73,7 +74,7 @@ Temporal is the backbone for everything asynchronous:
 
 ### Hosting: self-hosted single node
 
-Temporal Cloud's ~$100+/month floor is not justified at MVP scale. We run the Temporal server as a **single Docker container (auto-setup image) backed by the shared Postgres instance**, plus the Temporal UI container for debugging. At our load (thousands of activity executions/week) this comfortably fits in ~1GB of RAM alongside the app.
+Temporal Cloud's ~$100+/month floor is not justified at MVP scale. We run the Temporal server as a **single Docker container backed by the shared Postgres instance**, with schemas initialized explicitly by a one-shot `temporalio/admin-tools` container, plus the Temporal UI container for debugging. At our load (thousands of activity executions/week) this comfortably fits in ~1GB of RAM alongside the app.
 
 Accepted trade-offs, all acceptable for a weekly-cadence product:
 

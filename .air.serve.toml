@@ -1,0 +1,8 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/opensight ./cmd/opensight"
+entrypoint = ["./tmp/opensight", "serve"]
+include_ext = ["go"]
+exclude_dir = ["bin", "docs", "testdata", "tmp", "web"]

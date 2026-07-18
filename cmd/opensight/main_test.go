@@ -2,26 +2,30 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"testing"
 )
 
 func TestRunKnownSubcommands(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
 	for _, cmd := range []string{"serve", "work", "migrate"} {
-		if err := run([]string{cmd}); err != nil {
+		if err := run(ctx, []string{cmd}); err != nil {
 			t.Errorf("run(%q) returned error: %v", cmd, err)
 		}
 	}
 }
 
 func TestRunNoSubcommand(t *testing.T) {
-	if err := run(nil); err == nil {
+	if err := run(context.Background(), nil); err == nil {
 		t.Fatal("expected error when no subcommand is given")
 	}
 }
 
 func TestRunUnknownSubcommand(t *testing.T) {
-	if err := run([]string{"bogus"}); err == nil {
+	if err := run(context.Background(), []string{"bogus"}); err == nil {
 		t.Fatal("expected error for unknown subcommand")
 	}
 }

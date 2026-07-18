@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: opensight
+      POSTGRES_PASSWORD: opensight
+      POSTGRES_DB: opensight
+    command:
+      - postgres
+      - -c
+      - max_connections=80
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opensight -d opensight"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  temporal:
+    image: temporalio/server:${TEMPORAL_VERSION:-1.31}
+    depends_on:
+      temporal-schema:
+        condition: service_completed_successfully
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: opensight
+      POSTGRES_PWD: opensight
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+      BIND_ON_IP: 0.0.0.0
+      DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/config/dynamicconfig/development-sql.yaml
+      SQL_MAX_CONNS: "15"
+      SQL_MAX_IDLE_CONNS: "5"
+      SQL_VIS_MAX_CONNS: "5"
+      SQL_VIS_MAX_IDLE_CONNS: "2"
+    ports:
+      - "7233:7233"
+    volumes:
+      - ./docker/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig:ro
+
+  temporal-schema:
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION:-1.31}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/temporal/setup-postgres.sh"]
+    environment:
+      SQL_HOST: postgres
+      SQL_PORT: "5432"
+      SQL_USER: opensight
+      SQL_PASSWORD: opensight
+    volumes:
+      - ./docker/temporal/scripts:/temporal:ro
+
+  temporal-namespace:
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION:-1.31}
+    depends_on:
+      temporal:
+        condition: service_started
+    entrypoint: ["/bin/sh", "/temporal/create-namespace.sh"]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: default
+    volumes:
+      - ./docker/temporal/scripts:/temporal:ro
+
+  temporal-ui:
+    image: temporalio/ui:2.52.1
+    depends_on:
+      temporal-namespace:
+        condition: service_completed_successfully
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_UI_PORT: "8080"
+    ports:
+      - "8233:8080"
+
+volumes:
+  postgres-data:

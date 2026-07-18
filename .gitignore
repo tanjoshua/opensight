@@ -4,6 +4,7 @@
 # Go
 /opensight
 /bin/
+/tmp/
 *.test
 
 # Node / frontend

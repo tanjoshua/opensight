@@ -9,10 +9,10 @@ Everything needed before feature work: repo, dev environment, migrations tooling
 As the developer, I want a Go monorepo skeleton with the binary's run modes stubbed, so that every later story has a home and a build that passes.
 
 - [ ] Private GitHub repo `opensight` initialized; `docs/` (PRD, design, stories) committed.
-- [ ] Layout per design 01-D7: `cmd/opensight/`, `internal/{api,domain,store,workflows,llm}`, `web/` (placeholder), `docs/`.
-- [ ] `opensight serve`, `opensight work`, `opensight migrate` subcommands exist (can be no-ops) from one binary.
-- [ ] `go test ./...` and a linter (`golangci-lint`) run clean; Makefile or task runner targets for build/test/lint.
-- [ ] Structured `slog` JSON logging to stdout wired as the default logger.
+- [x] Layout per design 01-D7: `cmd/opensight/`, `internal/{api,domain,store,workflows,llm}`, `web/` (placeholder), `docs/`.
+- [x] `opensight serve`, `opensight work`, `opensight migrate` subcommands exist (can be no-ops) from one binary.
+- [x] `go test ./...` and a linter (`golangci-lint`) run clean; Makefile or task runner targets for build/test/lint.
+- [x] Structured `slog` JSON logging to stdout wired as the default logger.
 
 Deps: — · Phase 1 · Ref: design 01 (D2, D7), 07 (Deployment, Observability)
 
@@ -20,10 +20,10 @@ Deps: — · Phase 1 · Ref: design 01 (D2, D7), 07 (Deployment, Observability)
 
 As the developer, I want `docker compose -f compose.dev.yml up` to give me Postgres and Temporal locally, so that the app runs natively against real infrastructure.
 
-- [ ] `compose.dev.yml`: Postgres (with `opensight` + `temporal` databases created), Temporal auto-setup single node backed by that Postgres, Temporal UI.
-- [ ] Temporal connection pool capped (~20) per the shared-instance guardrail.
-- [ ] Go API/worker run natively with `air` reload; documented in a `docs/dev.md` or README section.
-- [ ] App config via env vars with defaults in code (model ids, concurrency caps, DB URLs).
+- [x] `compose.dev.yml`: Postgres (with `opensight`, `temporal`, and `temporal_visibility` databases created), Temporal single node backed by that Postgres with explicit admin-tools schema bootstrap, Temporal UI.
+- [x] Temporal connection pool capped (~20) per the shared-instance guardrail.
+- [x] Go API/worker run natively with `air` reload; documented in a `docs/dev.md` or README section.
+- [x] App config via env vars with defaults in code (model ids, concurrency caps, DB URLs).
 
 Deps: FND-1 · Phase 1 · Ref: design 01 (D4, D5), 07 (Local development)
 
