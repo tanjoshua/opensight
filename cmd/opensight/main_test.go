@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
+
+	"opensight/internal/config"
 )
 
 func TestRunKnownSubcommands(t *testing.T) {
@@ -27,6 +30,44 @@ func TestRunNoSubcommand(t *testing.T) {
 func TestRunUnknownSubcommand(t *testing.T) {
 	if err := run(context.Background(), []string{"bogus"}); err == nil {
 		t.Fatal("expected error for unknown subcommand")
+	}
+}
+
+func TestRunDoesNotMigrateOnServeOrWorkStartup(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	deps := commandDeps{
+		migrate: func(context.Context, config.Config) error {
+			t.Fatal("migrate should not be called by serve or work")
+			return nil
+		},
+	}
+
+	for _, cmd := range []string{"serve", "work"} {
+		if err := runWithDeps(ctx, []string{cmd}, deps); err != nil {
+			t.Errorf("runWithDeps(%q) returned error: %v", cmd, err)
+		}
+	}
+}
+
+func TestRunMigrateUsesExplicitMigrateSubcommand(t *testing.T) {
+	wantErr := errors.New("sentinel")
+	called := 0
+
+	deps := commandDeps{
+		migrate: func(context.Context, config.Config) error {
+			called++
+			return wantErr
+		},
+	}
+
+	err := runWithDeps(context.Background(), []string{"migrate"}, deps)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("runWithDeps(migrate) error = %v, want %v", err, wantErr)
+	}
+	if called != 1 {
+		t.Fatalf("migrate called %d times, want 1", called)
 	}
 }
 

@@ -38,6 +38,8 @@ go run ./cmd/opensight work
 go run ./cmd/opensight migrate
 ```
 
+`opensight migrate` applies embedded goose migrations against `DATABASE_URL` and exits. The API and worker do not run migrations on startup; run the command explicitly after changing schema or during deploy.
+
 ## Config
 
 Runtime config is env-driven with development-safe defaults:

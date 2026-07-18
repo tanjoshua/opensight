@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"opensight/internal/config"
+	"opensight/internal/store"
 
 	"go.temporal.io/sdk/client"
 )
@@ -48,9 +49,17 @@ func newLogger(w io.Writer) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelInfo}))
 }
 
+type commandDeps struct {
+	migrate func(context.Context, config.Config) error
+}
+
 // run dispatches the chosen subcommand. It is separated from main so it can be
 // tested without spawning the process.
 func run(ctx context.Context, args []string) error {
+	return runWithDeps(ctx, args, commandDeps{migrate: migrate})
+}
+
+func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 	if len(args) == 0 {
 		return fmt.Errorf("no subcommand given; %s", usage)
 	}
@@ -66,7 +75,7 @@ func run(ctx context.Context, args []string) error {
 	case "work":
 		return work(ctx, cfg)
 	case "migrate":
-		return migrate(cfg)
+		return deps.migrate(ctx, cfg)
 	default:
 		return fmt.Errorf("unknown subcommand %q; %s", cmd, usage)
 	}
@@ -162,11 +171,22 @@ func work(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-// migrate will apply database migrations and exit. Stub for FND-1.
-func migrate(cfg config.Config) error {
+// migrate applies embedded goose migrations and exits. It is intentionally only
+// called by the explicit migrate subcommand, never by serve or work startup.
+func migrate(ctx context.Context, cfg config.Config) error {
+	applied, err := store.Migrate(ctx, store.MigrationConfig{
+		DatabaseURL:  cfg.DatabaseURL,
+		MaxOpenConns: cfg.DBMaxOpenConns,
+		MaxIdleConns: cfg.DBMaxIdleConns,
+	})
+	if err != nil {
+		return err
+	}
+
 	slog.Info(
-		"migrate: not yet implemented",
+		"migrate: complete",
 		"mode", "migrate",
+		"migrations_applied", applied,
 		"db_max_open_conns", cfg.DBMaxOpenConns,
 		"db_max_idle_conns", cfg.DBMaxIdleConns,
 	)

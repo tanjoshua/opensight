@@ -31,9 +31,9 @@ Deps: FND-1 · Phase 1 · Ref: design 01 (D4, D5), 07 (Local development)
 
 As the developer, I want goose migrations embedded in the binary and run via `opensight migrate`, so that schema changes are explicit, versioned, and never run on startup.
 
-- [ ] `goose` migrations embedded; `opensight migrate` applies them against `DATABASE_URL`.
-- [ ] Migrate is **not** invoked on app startup (a bad migration must not crash-loop the API).
-- [ ] First migration exists (can be trivial) proving up/down and embed both work.
+- [x] `goose` migrations embedded; `opensight migrate` applies them against `DATABASE_URL`.
+- [x] Migrate is **not** invoked on app startup (a bad migration must not crash-loop the API).
+- [x] First migration exists (can be trivial) proving up/down and embed both work.
 
 Deps: FND-2 · Phase 1 · Ref: design 07 (Database migrations)
 
