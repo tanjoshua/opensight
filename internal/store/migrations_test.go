@@ -17,6 +17,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 	want := []string{
 		"migrations/00001_enable_citext.sql",
 		"migrations/00002_create_plans_tenants_users.sql",
+		"migrations/00003_create_business_profile_prompt_tables.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -32,6 +33,45 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 			if !strings.Contains(sql, marker) {
 				t.Errorf("%s missing %q", name, marker)
 			}
+		}
+	}
+}
+
+func TestBusinessProfilePromptMigrationCreatesTables(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00003_create_business_profile_prompt_tables.sql")
+	if err != nil {
+		t.Fatalf("read business/profile/prompt migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"CREATE TABLE businesses",
+		"tenant_id uuid NOT NULL REFERENCES tenants(id)",
+		"status text NOT NULL CHECK (status IN ('draft', 'active'))",
+		"aliases text[] NOT NULL DEFAULT ARRAY[]::text[]",
+		"practitioners jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(practitioners) = 'array')",
+		"services jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(services) = 'array')",
+		"location jsonb",
+		"activated_at timestamptz",
+		"CONSTRAINT businesses_id_uuidv7 CHECK",
+		"CONSTRAINT businesses_active_profile_check CHECK",
+		"CREATE TABLE profile_proposals",
+		"payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object')",
+		"status text NOT NULL CHECK (status IN ('pending', 'applied', 'discarded'))",
+		"resolved_at timestamptz",
+		"CONSTRAINT profile_proposals_id_uuidv7 CHECK",
+		"CREATE TABLE prompts",
+		"text text NOT NULL CHECK (btrim(text) <> '')",
+		"status text NOT NULL CHECK (status IN ('active', 'retired'))",
+		"replaces_prompt_id uuid REFERENCES prompts(id)",
+		"retired_at timestamptz",
+		"CONSTRAINT prompts_id_uuidv7 CHECK",
+		"CONSTRAINT prompts_retirement_check CHECK",
+		"CONSTRAINT prompts_no_self_replacement_check CHECK",
+		"CREATE TRIGGER prompts_reject_text_update",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("business/profile/prompt migration missing %q", marker)
 		}
 	}
 }
