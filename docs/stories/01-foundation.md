@@ -8,7 +8,7 @@ Everything needed before feature work: repo, dev environment, migrations tooling
 
 As the developer, I want a Go monorepo skeleton with the binary's run modes stubbed, so that every later story has a home and a build that passes.
 
-- [ ] Private GitHub repo `opensight` initialized; `docs/` (PRD, design, stories) committed.
+- [x] Private GitHub repo `opensight` initialized; `docs/` (PRD, design, stories) committed.
 - [x] Layout per design 01-D7: `cmd/opensight/`, `internal/{api,domain,store,workflows,llm}`, `web/` (placeholder), `docs/`.
 - [x] `opensight serve`, `opensight work`, `opensight migrate` subcommands exist (can be no-ops) from one binary.
 - [x] `go test ./...` and a linter (`golangci-lint`) run clean; Makefile or task runner targets for build/test/lint.
