@@ -8,9 +8,9 @@ The Phase-1 data model (analysis tables land in epic 07) and the tenant-scoped r
 
 As the developer, I want `plans`, `tenants`, and `users` migrated with a seeded starter plan, so that entitlements come from data, never constants.
 
-- [ ] Migration creates `plans (id, slug UNIQUE, prompt_limit, run_interval, platforms)`, `tenants (id, name, plan_id, created_at)`, `users (id, tenant_id, email citext UNIQUE, created_at)`; all IDs UUIDv7.
-- [ ] `starter` plan row (20 prompts, weekly, `{chatgpt}`) seeded **in a migration**.
-- [ ] No code path reads a hardcoded "20" or "weekly" — grep-verifiable.
+- [x] Migration creates `plans (id, slug UNIQUE, prompt_limit, run_interval, platforms)`, `tenants (id, name, plan_id, created_at)`, `users (id, tenant_id, email citext UNIQUE, created_at)`; all IDs UUIDv7.
+- [x] `starter` plan row (20 prompts, weekly, `{chatgpt}`) seeded **in a migration**.
+- [x] No code path reads a hardcoded "20" or "weekly" — grep-verifiable.
 
 Deps: FND-3 · Phase 1 · Ref: design 02 (Plans and tenancy), 01 (billing-ready requirement)
 
