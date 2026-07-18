@@ -29,9 +29,9 @@ Deps: SCH-1 · Phase 1 · Ref: design 02 (Businesses and profile, Prompts)
 
 As the developer, I want the append-only `monitoring_runs` and `prompt_results` tables, so that the workflow has its idempotency anchors.
 
-- [ ] `monitoring_runs` per design 02 incl. `trigger (initial|scheduled|manual)`, `scheduled_for date`, `status`, `workflow_id`, `analysis_completed_at NULL`, and **`UNIQUE (business_id, platform, scheduled_for)`**.
-- [ ] `prompt_results` per design 02 incl. `request jsonb`, `raw_response jsonb`, `response_text`, `error`, and **`UNIQUE (run_id, prompt_id)`**.
-- [ ] No UPDATE path for `raw_response`/`response_text` in the store layer (append-only).
+- [x] `monitoring_runs` per design 02 incl. `trigger (initial|scheduled|manual)`, `scheduled_for date`, `status`, `workflow_id`, `analysis_completed_at NULL`, and **`UNIQUE (business_id, platform, scheduled_for)`**.
+- [x] `prompt_results` per design 02 incl. `request jsonb`, `raw_response jsonb`, `response_text`, `error`, and **`UNIQUE (run_id, prompt_id)`**.
+- [x] No UPDATE path for `raw_response`/`response_text` in the store layer (append-only).
 
 Deps: SCH-2 · Phase 1 · Ref: design 02 (Runs and results)
 

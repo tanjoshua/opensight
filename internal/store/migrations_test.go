@@ -18,6 +18,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00001_enable_citext.sql",
 		"migrations/00002_create_plans_tenants_users.sql",
 		"migrations/00003_create_business_profile_prompt_tables.sql",
+		"migrations/00004_create_runs_results_tables.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -33,6 +34,45 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 			if !strings.Contains(sql, marker) {
 				t.Errorf("%s missing %q", name, marker)
 			}
+		}
+	}
+}
+
+func TestRunsResultsMigrationCreatesAppendOnlyTables(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00004_create_runs_results_tables.sql")
+	if err != nil {
+		t.Fatalf("read runs/results migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"CREATE TABLE monitoring_runs",
+		"business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE",
+		"platform text NOT NULL CHECK (btrim(platform) <> '')",
+		"trigger text NOT NULL CHECK (trigger IN ('initial', 'scheduled', 'manual'))",
+		"scheduled_for date NOT NULL",
+		"status text NOT NULL CHECK (status IN ('running', 'completed', 'partial', 'failed'))",
+		"workflow_id text NOT NULL CHECK (btrim(workflow_id) <> '')",
+		"analysis_completed_at timestamptz",
+		"CONSTRAINT monitoring_runs_id_uuidv7 CHECK",
+		"CONSTRAINT monitoring_runs_completion_check CHECK",
+		"UNIQUE (business_id, platform, scheduled_for)",
+		"CREATE TABLE prompt_results",
+		"run_id uuid NOT NULL REFERENCES monitoring_runs(id) ON DELETE CASCADE",
+		"prompt_id uuid NOT NULL REFERENCES prompts(id)",
+		"status text NOT NULL CHECK (status IN ('succeeded', 'failed'))",
+		"request jsonb NOT NULL CHECK (jsonb_typeof(request) = 'object')",
+		"raw_response jsonb CHECK (raw_response IS NULL OR jsonb_typeof(raw_response) = 'object')",
+		"response_text text CHECK (response_text IS NULL OR btrim(response_text) <> '')",
+		"error text CHECK (error IS NULL OR btrim(error) <> '')",
+		"CONSTRAINT prompt_results_id_uuidv7 CHECK",
+		"CONSTRAINT prompt_results_payload_status_check CHECK",
+		"UNIQUE (run_id, prompt_id)",
+		"CREATE TRIGGER prompt_results_reject_update",
+		"BEFORE UPDATE ON prompt_results",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("runs/results migration missing %q", marker)
 		}
 	}
 }
