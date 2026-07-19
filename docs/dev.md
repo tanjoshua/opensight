@@ -11,9 +11,10 @@ make up
 `make up` starts Postgres, Temporal, and Temporal UI in Docker, waits for
 Postgres and the Temporal namespace bootstrap, runs `opensight migrate`, then
 starts the Go API and worker with reload. It checks `/healthz` before reporting
-the API as healthy. When the frontend lands, the same command also starts the
-Vite dev server if `web/package.json` exists. Press `Ctrl+C` to stop the native
-dev processes; Docker infrastructure stays up.
+the API as healthy and prints service links. When the frontend lands, the same
+command also starts the Vite dev server on `http://127.0.0.1:5173` and prints
+its link if `web/package.json` exists. Press `Ctrl+C` to stop the native dev
+processes; Docker infrastructure stays up.
 
 Start Postgres, Temporal, and Temporal UI:
 
@@ -28,6 +29,9 @@ Services:
 - Temporal UI: `http://localhost:8233`
 
 The Postgres container creates the `opensight`, `temporal`, and `temporal_visibility` databases. A one-shot Temporal admin-tools service applies Temporal schemas before the server starts. Temporal is capped at 20 active Postgres connections across persistence and visibility pools.
+
+`make up` service link defaults can be overridden with `HTTP_ADDR`,
+`TEMPORAL_UI_URL`, `FRONTEND_HOST`, and `FRONTEND_PORT`.
 
 Stop Docker infrastructure:
 
