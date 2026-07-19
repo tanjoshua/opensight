@@ -2,10 +2,23 @@
 
 ## Infrastructure
 
+Start the full local stack:
+
+```sh
+make up
+```
+
+`make up` starts Postgres, Temporal, and Temporal UI in Docker, waits for
+Postgres and the Temporal namespace bootstrap, runs `opensight migrate`, then
+starts the Go API and worker with reload. It checks `/healthz` before reporting
+the API as healthy. When the frontend lands, the same command also starts the
+Vite dev server if `web/package.json` exists. Press `Ctrl+C` to stop the native
+dev processes; Docker infrastructure stays up.
+
 Start Postgres, Temporal, and Temporal UI:
 
 ```sh
-docker compose -f compose.dev.yml up
+make dev-stack
 ```
 
 Services:
@@ -15,6 +28,18 @@ Services:
 - Temporal UI: `http://localhost:8233`
 
 The Postgres container creates the `opensight`, `temporal`, and `temporal_visibility` databases. A one-shot Temporal admin-tools service applies Temporal schemas before the server starts. Temporal is capped at 20 active Postgres connections across persistence and visibility pools.
+
+Stop Docker infrastructure:
+
+```sh
+make down
+```
+
+Reset local Docker data:
+
+```sh
+make dev-stack-reset
+```
 
 ## Native Go
 

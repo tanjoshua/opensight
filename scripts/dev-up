@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+COMPOSE_FILE="${OPENSIGHT_COMPOSE_FILE:-compose.dev.yml}"
+POSTGRES_WAIT_ATTEMPTS="${POSTGRES_WAIT_ATTEMPTS:-60}"
+API_WAIT_ATTEMPTS="${API_WAIT_ATTEMPTS:-30}"
+
+cd "$ROOT_DIR"
+
+pids=()
+
+log() {
+  printf '==> %s\n' "$*"
+}
+
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf '%s is required for make up.\n' "$1" >&2
+    exit 127
+  fi
+}
+
+cleanup() {
+  status=$?
+  trap - EXIT INT TERM
+
+  if [ "${#pids[@]}" -gt 0 ]; then
+    log "stopping API, worker, and frontend processes"
+    kill "${pids[@]}" >/dev/null 2>&1 || true
+    wait "${pids[@]}" >/dev/null 2>&1 || true
+  fi
+
+  exit "$status"
+}
+
+wait_for_postgres() {
+  log "waiting for Postgres"
+
+  for _ in $(seq 1 "$POSTGRES_WAIT_ATTEMPTS"); do
+    if docker compose -f "$COMPOSE_FILE" exec -T postgres pg_isready -U opensight -d opensight >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  docker compose -f "$COMPOSE_FILE" logs --tail=80 postgres >&2 || true
+  printf 'Postgres did not become ready within %s seconds.\n' "$POSTGRES_WAIT_ATTEMPTS" >&2
+  return 1
+}
+
+wait_for_temporal_namespace() {
+  log "waiting for Temporal namespace"
+
+  if docker compose -f "$COMPOSE_FILE" run --rm --no-deps temporal-namespace; then
+    return 0
+  fi
+
+  docker compose -f "$COMPOSE_FILE" logs --tail=120 temporal temporal-namespace >&2 || true
+  return 1
+}
+
+api_health_url() {
+  if [ -n "${OPENSIGHT_HEALTH_URL:-}" ]; then
+    printf '%s\n' "$OPENSIGHT_HEALTH_URL"
+    return
+  fi
+
+  http_addr="${HTTP_ADDR:-:8080}"
+  case "$http_addr" in
+    :*)
+      printf 'http://127.0.0.1%s/healthz\n' "$http_addr"
+      ;;
+    0.0.0.0:*)
+      printf 'http://127.0.0.1:%s/healthz\n' "${http_addr##*:}"
+      ;;
+    "[::]:"*)
+      printf 'http://127.0.0.1:%s/healthz\n' "${http_addr##*:}"
+      ;;
+    *)
+      printf 'http://%s/healthz\n' "$http_addr"
+      ;;
+  esac
+}
+
+check_processes_running() {
+  for pid in "${pids[@]}"; do
+    if ! kill -0 "$pid" >/dev/null 2>&1; then
+      if wait "$pid"; then
+        status=0
+      else
+        status=$?
+      fi
+      printf 'A dev process exited early with status %s.\n' "$status" >&2
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+wait_for_api() {
+  health_url="$(api_health_url)"
+  log "waiting for API at $health_url"
+
+  for _ in $(seq 1 "$API_WAIT_ATTEMPTS"); do
+    if curl -fsS "$health_url" >/dev/null 2>&1; then
+      return 0
+    fi
+    check_processes_running
+    sleep 1
+  done
+
+  printf 'API did not pass its health check within %s seconds.\n' "$API_WAIT_ATTEMPTS" >&2
+  return 1
+}
+
+ensure_api_not_already_running() {
+  health_url="$(api_health_url)"
+  if curl -fsS "$health_url" >/dev/null 2>&1; then
+    printf 'An API is already responding at %s. Stop it before running make up.\n' "$health_url" >&2
+    return 1
+  fi
+}
+
+wait_for_process_exit() {
+  while true; do
+    for pid in "${pids[@]}"; do
+      if ! kill -0 "$pid" >/dev/null 2>&1; then
+        if wait "$pid"; then
+          return 0
+        else
+          status=$?
+          return "$status"
+        fi
+      fi
+    done
+    sleep 1
+  done
+}
+
+start_processes() {
+  log "starting API with reload"
+  go tool air -c .air.serve.toml &
+  pids+=("$!")
+
+  log "starting worker with reload"
+  go tool air -c .air.work.toml &
+  pids+=("$!")
+
+  if [ -f web/package.json ]; then
+    require_command npm
+    log "starting frontend dev server"
+    (cd web && npm run dev) &
+    pids+=("$!")
+  fi
+}
+
+trap cleanup EXIT INT TERM
+
+require_command docker
+require_command go
+require_command curl
+
+if ! docker compose version >/dev/null 2>&1; then
+  printf 'docker compose is required for make up.\n' >&2
+  exit 127
+fi
+
+log "starting local infrastructure"
+docker compose -f "$COMPOSE_FILE" up -d
+
+wait_for_postgres
+
+log "running database migrations"
+go run ./cmd/opensight migrate
+
+wait_for_temporal_namespace
+ensure_api_not_already_running
+start_processes
+wait_for_api
+
+log "API is healthy; press Ctrl+C to stop API, worker, and frontend"
+wait_for_process_exit
