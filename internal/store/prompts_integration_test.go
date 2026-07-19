@@ -68,6 +68,7 @@ VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::j
 
 	promptStore := NewPromptStore(db)
 	if _, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
+		TenantID:   tenantID,
 		BusinessID: businessID,
 		Text:       "best clinic near me",
 	}); err != nil {
@@ -75,6 +76,7 @@ VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::j
 	}
 
 	_, err = promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
+		TenantID:   tenantID,
 		BusinessID: businessID,
 		Text:       "where should I book a clinic appointment",
 	})

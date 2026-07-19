@@ -25,8 +25,10 @@ func TestCreateActivePromptInTxInsertsWhenBelowPlanLimit(t *testing.T) {
 
 	promptID := mustUUIDV7(t, "01950000-0000-7000-8000-000000001001")
 	businessID := mustUUIDV7(t, "01950000-0000-7000-8000-000000001002")
+	tenantID := mustUUIDV7(t, "01950000-0000-7000-8000-000000001003")
 	prompt, err := createActivePromptInTx(context.Background(), tx, CreateActivePromptParams{
 		ID:         promptID,
+		TenantID:   tenantID,
 		BusinessID: businessID,
 		Text:       "best clinic near me",
 	})
@@ -70,6 +72,7 @@ func TestCreateActivePromptInTxRejectsPlanLimitExceeded(t *testing.T) {
 
 	_, err := createActivePromptInTx(context.Background(), tx, CreateActivePromptParams{
 		ID:         mustUUIDV7(t, "01950000-0000-7000-8000-000000001101"),
+		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000001103"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000001102"),
 		Text:       "best clinic near me",
 	})
@@ -81,7 +84,7 @@ func TestCreateActivePromptInTxRejectsPlanLimitExceeded(t *testing.T) {
 	}
 }
 
-func TestCreateActivePromptInTxReturnsBusinessNotFound(t *testing.T) {
+func TestCreateActivePromptInTxReturnsNotFoundForMissingOrCrossTenantBusiness(t *testing.T) {
 	tx := &fakePromptTx{
 		rows: []rowScanner{
 			fakeRow{err: sql.ErrNoRows},
@@ -90,11 +93,12 @@ func TestCreateActivePromptInTxReturnsBusinessNotFound(t *testing.T) {
 
 	_, err := createActivePromptInTx(context.Background(), tx, CreateActivePromptParams{
 		ID:         mustUUIDV7(t, "01950000-0000-7000-8000-000000001201"),
+		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000001203"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000001202"),
 		Text:       "best clinic near me",
 	})
-	if !errors.Is(err, ErrBusinessNotFound) {
-		t.Fatalf("error = %v, want ErrBusinessNotFound", err)
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("error = %v, want ErrNotFound", err)
 	}
 	if len(tx.queries) != 1 {
 		t.Fatalf("query count = %d, want 1", len(tx.queries))
@@ -103,6 +107,7 @@ func TestCreateActivePromptInTxReturnsBusinessNotFound(t *testing.T) {
 
 func TestNormalizeCreateActivePromptParamsGeneratesUUIDv7(t *testing.T) {
 	params, err := normalizeCreateActivePromptParams(CreateActivePromptParams{
+		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000001303"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000001302"),
 		Text:       "best clinic near me",
 	})
@@ -122,6 +127,7 @@ func TestNormalizeCreateActivePromptParamsRejectsSelfReplacement(t *testing.T) {
 
 	_, err := normalizeCreateActivePromptParams(CreateActivePromptParams{
 		ID:               promptID,
+		TenantID:         mustUUIDV7(t, "01950000-0000-7000-8000-000000001403"),
 		BusinessID:       mustUUIDV7(t, "01950000-0000-7000-8000-000000001402"),
 		Text:             "best clinic near me",
 		ReplacesPromptID: &promptID,
@@ -146,6 +152,14 @@ func (tx *fakePromptTx) queryRowContext(_ context.Context, query string, args ..
 	row := tx.rows[0]
 	tx.rows = tx.rows[1:]
 	return row
+}
+
+func (tx *fakePromptTx) queryContext(_ context.Context, query string, _ ...any) (*sql.Rows, error) {
+	return nil, fmt.Errorf("unexpected queryContext %q", query)
+}
+
+func (tx *fakePromptTx) execContext(_ context.Context, query string, _ ...any) (sql.Result, error) {
+	return nil, fmt.Errorf("unexpected execContext %q", query)
 }
 
 type fakeRow struct {

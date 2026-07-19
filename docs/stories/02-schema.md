@@ -39,8 +39,8 @@ Deps: SCH-2 · Phase 1 · Ref: design 02 (Runs and results)
 
 As the developer, I want all data access to go through repositories that enter via a tenant-checked business lookup, so that there is no unscoped query path.
 
-- [ ] `internal/store` repositories for the tables above; every business-owned read/write requires tenant context and validates business→tenant ownership.
-- [ ] Deeper tables (prompts, runs, results) scope through the business join — no direct-by-id access without the tenant check.
-- [ ] Tests: cross-tenant access attempts return not-found.
+- [x] `internal/store` repositories for the tables above; every business-owned read/write requires tenant context and validates business→tenant ownership.
+- [x] Deeper tables (prompts, runs, results) scope through the business join — no direct-by-id access without the tenant check.
+- [x] Tests: cross-tenant access attempts return not-found.
 
 Deps: SCH-3 · Phase 1 · Ref: design 01 (D4 multi-tenancy), 06 (API conventions)
