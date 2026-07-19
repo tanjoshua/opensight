@@ -6,7 +6,7 @@ Depends on: all previous designs; closes their open questions.
 
 **Email + password with server-side sessions, hand-rolled in Go. Invite-only signup for MVP.**
 
-- Passwords hashed with argon2id; sessions are random tokens in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
+- Passwords hashed with argon2id; sessions are random tokens, stored hashed, in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
 - Rationale: a managed provider (Clerk/Auth0) adds an external dependency and an eventual cost floor for what is, at invite-only scale, ~200 lines of well-trodden Go. Self-hosted identity servers (Keycloak/Ory) are overkill on a 4GB VPS. Revisit only when self-serve signup + password reset + email verification become real needs — that is the point where a managed provider starts paying for itself.
 - **Invite-only**: accounts are created by an admin CLI command (`opensight user create --tenant …`), matching founder-led sales for SG clinics. The PRD's self-serve success criteria all happen *after* login (onboarding flow, 03), so this doesn't compromise them. Self-serve signup + billing arrive together post-MVP.
 - CSRF: state-changing endpoints require a custom header (`X-Requested-With`), which cross-origin forms cannot set; combined with SameSite=Lax this is sufficient for a JSON-only API.
@@ -15,7 +15,7 @@ Depends on: all previous designs; closes their open questions.
 ## Secrets and config
 
 - Twelve-factor env vars, loaded from an `.env` file on the VPS (mode 600, outside the repo) referenced by docker-compose. No secret manager at this scale.
-- Inventory: Postgres passwords, session-cookie signing key, OpenAI API key, healthcheck ping URLs. The OpenAI key is a **project-scoped key** with a monthly budget cap set in the OpenAI dashboard — the hard backstop (see spend guardrails).
+- Inventory: Postgres passwords, OpenAI API key, healthcheck ping URLs. The OpenAI key is a **project-scoped key** with a monthly budget cap set in the OpenAI dashboard — the hard backstop (see spend guardrails).
 - App config (model ids, extraction version, concurrency caps) also env-driven, with defaults in code; no config service.
 
 ## Database migrations

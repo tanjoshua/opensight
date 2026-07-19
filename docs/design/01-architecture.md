@@ -91,6 +91,7 @@ opensight/
 ├── cmd/opensight/        # single binary: serve | work | migrate
 ├── internal/
 │   ├── api/              # HTTP handlers, middleware
+│   ├── auth/             # password hashing (shared by api + user-create CLI)
 │   ├── domain/           # core types, business logic
 │   ├── store/            # Postgres repositories, migrations
 │   ├── workflows/        # Temporal workflows + activities

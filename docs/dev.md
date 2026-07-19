@@ -44,7 +44,7 @@ go run ./cmd/opensight migrate
 
 Runtime config is env-driven with development-safe defaults:
 
-- `OPENSIGHT_ENV` defaults to `dev`
+- `OPENSIGHT_ENV` defaults to `dev`; when it is `dev`, session cookies are set without the `Secure` attribute so login works over plain-HTTP local dev (prod runs behind Caddy TLS, where `Secure` is set)
 - `HTTP_ADDR` defaults to `:8080`
 - `DATABASE_URL` defaults to `postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable`
 - `APP_DB_MAX_OPEN_CONNS` defaults to `10`

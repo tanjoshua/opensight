@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	"opensight/internal/api"
 	"opensight/internal/config"
 	"opensight/internal/store"
 
@@ -87,19 +88,21 @@ func serve(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = io.WriteString(w, "ok\n")
-	})
+	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = db.Close()
+	}()
+
+	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
+	// behind Caddy TLS, where Secure must be set.
+	apiServer := api.New(store.NewAuthStore(db), cfg.Env != "dev")
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           mux,
+		Handler:           apiServer.Routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

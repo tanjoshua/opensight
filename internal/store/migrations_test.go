@@ -19,6 +19,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00002_create_plans_tenants_users.sql",
 		"migrations/00003_create_business_profile_prompt_tables.sql",
 		"migrations/00004_create_runs_results_tables.sql",
+		"migrations/00005_add_password_auth_sessions.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -73,6 +74,28 @@ func TestRunsResultsMigrationCreatesAppendOnlyTables(t *testing.T) {
 	} {
 		if !strings.Contains(sql, marker) {
 			t.Errorf("runs/results migration missing %q", marker)
+		}
+	}
+}
+
+func TestPasswordAuthSessionsMigration(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00005_add_password_auth_sessions.sql")
+	if err != nil {
+		t.Fatalf("read auth migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"ALTER TABLE users ADD COLUMN password_hash text",
+		"CREATE TABLE sessions",
+		"token_hash bytea PRIMARY KEY CHECK (octet_length(token_hash) = 32)",
+		"user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE",
+		"expires_at timestamptz NOT NULL",
+		"CREATE INDEX sessions_user_id_idx ON sessions (user_id)",
+		"CREATE INDEX sessions_expires_at_idx ON sessions (expires_at)",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("auth migration missing %q", marker)
 		}
 	}
 }
