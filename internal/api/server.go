@@ -33,7 +33,9 @@ type authStore interface {
 
 // Server holds the API dependencies and configuration.
 type Server struct {
-	auth authStore
+	auth    authStore
+	runs    runStore
+	results resultStore
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (FND-2 local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
@@ -41,11 +43,13 @@ type Server struct {
 	sessionTTL time.Duration
 }
 
-// New builds a Server. secureCookies should be true everywhere except plain-HTTP
-// local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, secureCookies bool) *Server {
+// New builds a Server. secureCookies should be true everywhere except
+// plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
+func New(auth *store.AuthStore, runs *store.RunStore, results *store.ResultStore, secureCookies bool) *Server {
 	return &Server{
 		auth:          auth,
+		runs:          runs,
+		results:       results,
 		secureCookies: secureCookies,
 		sessionTTL:    defaultSessionTTL,
 	}
@@ -76,6 +80,9 @@ func (s *Server) Routes() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireSession)
 			r.Get("/me", s.handleMe)
+			r.Get("/businesses/{businessID}/runs", s.handleListRuns)
+			r.Get("/businesses/{businessID}/results", s.handleListResults)
+			r.Get("/results/{resultID}", s.handleGetResult)
 			r.Post("/logout", s.handleLogout)
 		})
 	})

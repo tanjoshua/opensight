@@ -46,6 +46,15 @@ type PromptResult struct {
 	CompletedAt  time.Time
 }
 
+// ResultDetail is the response-drawer read model for a prompt result joined to
+// its prompt text and run metadata.
+type ResultDetail struct {
+	Result     PromptResult
+	Prompt     Prompt
+	Run        Run
+	BusinessID domain.ID
+}
+
 // CreateResultParams are the inputs for CreateResult. If ID is uuid.Nil a
 // UUIDv7 is generated. Zero RequestedAt/CompletedAt fall back to now() in the
 // database. The status/payload invariants are enforced by table CHECKs.
@@ -87,13 +96,16 @@ const (
 	resultColumns = `pr.id, pr.run_id, pr.prompt_id, pr.status, pr.model, pr.request,
        pr.raw_response, pr.response_text, pr.error, pr.requested_at, pr.completed_at`
 
-	// runOwnedSQL verifies, inside CreateResult's transaction, that the target
-	// run belongs to the tenant before the append-only insert.
-	runOwnedSQL = `
+	// runPromptOwnedSQL verifies both that the run belongs to tenantID and that
+	// the prompt being attached belongs to the same business as the run. The
+	// schema has separate FKs for run_id and prompt_id; this check is the
+	// app-layer composite integrity guard for WEB-2/RUN-4.
+	runPromptOwnedSQL = `
 SELECT 1
 FROM monitoring_runs r
 JOIN businesses b ON b.id = r.business_id
-WHERE r.id = $1 AND b.tenant_id = $2`
+JOIN prompts p ON p.id = $2 AND p.business_id = r.business_id
+WHERE r.id = $1 AND b.tenant_id = $3`
 
 	insertResultSQL = `
 INSERT INTO prompt_results (
@@ -117,6 +129,17 @@ SELECT ` + resultColumns + `
 FROM prompt_results pr
 JOIN monitoring_runs r ON r.id = pr.run_id
 JOIN businesses b ON b.id = r.business_id
+WHERE pr.id = $1 AND b.tenant_id = $2`
+
+	getResultDetailSQL = `
+SELECT ` + resultColumns + `,
+       p.text,
+       r.business_id, r.platform, r.trigger, r.scheduled_for, r.status,
+       r.workflow_id, r.started_at, r.completed_at, r.analysis_completed_at
+FROM prompt_results pr
+JOIN monitoring_runs r ON r.id = pr.run_id
+JOIN businesses b ON b.id = r.business_id
+JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = r.business_id
 WHERE pr.id = $1 AND b.tenant_id = $2`
 )
 
@@ -151,11 +174,11 @@ func (s *ResultStore) CreateResult(ctx context.Context, tenantID domain.ID, para
 	}
 	err = withTx(ctx, s.db, func(q querier) error {
 		var one int
-		if err := q.queryRowContext(ctx, runOwnedSQL, params.RunID, tenantID).Scan(&one); err != nil {
+		if err := q.queryRowContext(ctx, runPromptOwnedSQL, params.RunID, params.PromptID, tenantID).Scan(&one); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return ErrNotFound
 			}
-			return fmt.Errorf("verify run ownership: %w", err)
+			return fmt.Errorf("verify run/prompt ownership: %w", err)
 		}
 		if err := q.queryRowContext(
 			ctx,
@@ -220,6 +243,55 @@ func (s *ResultStore) GetResult(ctx context.Context, tenantID, resultID domain.I
 		return PromptResult{}, fmt.Errorf("get result: %w", err)
 	}
 	return result, nil
+}
+
+// GetResultDetail loads one result with its prompt text and run metadata,
+// tenant scoped through prompt_results -> monitoring_runs -> businesses.
+func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (ResultDetail, error) {
+	if s == nil || s.db == nil {
+		return ResultDetail{}, errors.New("result store database is required")
+	}
+
+	var detail ResultDetail
+	var promptText string
+	err := s.db.QueryRowContext(ctx, getResultDetailSQL, resultID, tenantID).Scan(
+		&detail.Result.ID,
+		&detail.Result.RunID,
+		&detail.Result.PromptID,
+		&detail.Result.Status,
+		&detail.Result.Model,
+		&detail.Result.Request,
+		&detail.Result.RawResponse,
+		&detail.Result.ResponseText,
+		&detail.Result.Error,
+		&detail.Result.RequestedAt,
+		&detail.Result.CompletedAt,
+		&promptText,
+		&detail.Run.BusinessID,
+		&detail.Run.Platform,
+		&detail.Run.Trigger,
+		&detail.Run.ScheduledFor,
+		&detail.Run.Status,
+		&detail.Run.WorkflowID,
+		&detail.Run.StartedAt,
+		&detail.Run.CompletedAt,
+		&detail.Run.AnalysisCompletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ResultDetail{}, ErrNotFound
+		}
+		return ResultDetail{}, fmt.Errorf("get result detail: %w", err)
+	}
+
+	detail.BusinessID = detail.Run.BusinessID
+	detail.Run.ID = detail.Result.RunID
+	detail.Prompt = Prompt{
+		ID:         detail.Result.PromptID,
+		BusinessID: detail.Run.BusinessID,
+		Text:       promptText,
+	}
+	return detail, nil
 }
 
 // ListResults returns a business's results with optional hard-coded predicates

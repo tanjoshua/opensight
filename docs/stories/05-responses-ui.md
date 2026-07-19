@@ -20,10 +20,10 @@ Deps: FND-1 · Phase 1 · Ref: design 06 (Frontend stack and structure)
 
 As the developer, I want the read API for runs and results, so that the Responses section has data.
 
-- [ ] `GET /api/v1/businesses/:id/runs` — scheduled_for, status per run (visibility % joins in Phase 2).
-- [ ] `GET /api/v1/businesses/:id/results` — filters: run, prompt, status; `limit`/`offset` pagination. (`mentioned` filter arrives Phase 2.)
-- [ ] `GET /api/v1/results/:id` — response text, run/model metadata, request params, error, raw JSON on demand.
-- [ ] All tenant-scoped through SCH-4; RFC 7807 errors.
+- [x] `GET /api/v1/businesses/:id/runs` — scheduled_for, status per run (visibility % joins in Phase 2).
+- [x] `GET /api/v1/businesses/:id/results` — filters: run, prompt, status; `limit`/`offset` pagination. (`mentioned` filter arrives Phase 2.)
+- [x] `GET /api/v1/results/:id` — response text, run/model metadata, request params, error, raw JSON on demand.
+- [x] All tenant-scoped through SCH-4; RFC 7807 errors.
 
 Deps: SCH-4, AUTH-3 · Phase 1 · Ref: design 06 (Endpoints — Responses, Runs)
 

@@ -352,7 +352,12 @@ func serve(ctx context.Context, cfg config.Config) error {
 
 	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
 	// behind Caddy TLS, where Secure must be set.
-	apiServer := api.New(store.NewAuthStore(db), cfg.Env != "dev")
+	apiServer := api.New(
+		store.NewAuthStore(db),
+		store.NewRunStore(db),
+		store.NewResultStore(db),
+		cfg.Env != "dev",
+	)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,

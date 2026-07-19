@@ -226,13 +226,46 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	}
 
 	if _, err := results.CreateResult(ctx, tenantB, CreateResultParams{
-		RunID:        run.ID,
-		PromptID:     prompt.ID,
-		Status:       ResultStatusFailed,
-		Request:      json.RawMessage(`{"model":"gpt-5-mini"}`),
-		Error:        ptr("boom"),
+		RunID:    run.ID,
+		PromptID: prompt.ID,
+		Status:   ResultStatusFailed,
+		Request:  json.RawMessage(`{"model":"gpt-5-mini"}`),
+		Error:    ptr("boom"),
 	}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("CreateResult(tenantB) err = %v, want ErrNotFound", err)
+	}
+
+	businessB := mustNewID(t)
+	otherBusiness, err := businesses.CreateBusiness(ctx, CreateBusinessParams{
+		ID:          businessB,
+		TenantID:    tenantB,
+		Status:      BusinessStatusActive,
+		Name:        "Other Clinic",
+		Category:    ptr("clinic"),
+		Location:    json.RawMessage(`{"country":"SG"}`),
+		ActivatedAt: ptr(time.Now().UTC()),
+	})
+	if err != nil {
+		t.Fatalf("create other business: %v", err)
+	}
+	otherPrompt, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
+		TenantID:   tenantB,
+		BusinessID: otherBusiness.ID,
+		Text:       "other clinic prompt",
+	})
+	if err != nil {
+		t.Fatalf("CreateActivePrompt(other business): %v", err)
+	}
+	if _, err := results.CreateResult(ctx, tenantA, CreateResultParams{
+		RunID:        run.ID,
+		PromptID:     otherPrompt.ID,
+		Status:       ResultStatusSucceeded,
+		Model:        ptr("gpt-5-mini-2026-07-01"),
+		Request:      json.RawMessage(`{"model":"gpt-5-mini"}`),
+		RawResponse:  json.RawMessage(`{"id":"resp_cross_prompt"}`),
+		ResponseText: ptr("Cross prompt."),
+	}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("CreateResult with cross-business prompt err = %v, want ErrNotFound", err)
 	}
 
 	if _, err := results.GetResult(ctx, tenantA, result.ID); err != nil {
@@ -240,6 +273,16 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	}
 	if _, err := results.GetResult(ctx, tenantB, result.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetResult(tenantB) err = %v, want ErrNotFound", err)
+	}
+	detail, err := results.GetResultDetail(ctx, tenantA, result.ID)
+	if err != nil {
+		t.Fatalf("GetResultDetail(tenantA): %v", err)
+	}
+	if detail.Prompt.Text != prompt.Text || detail.Run.WorkflowID != "run-"+businessA.String()+"-chatgpt-2026-07-13" {
+		t.Fatalf("GetResultDetail returned prompt/run %+v/%+v", detail.Prompt, detail.Run)
+	}
+	if _, err := results.GetResultDetail(ctx, tenantB, result.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetResultDetail(tenantB) err = %v, want ErrNotFound", err)
 	}
 	if _, err := results.GetResultByRunAndPrompt(ctx, tenantA, run.ID, prompt.ID); err != nil {
 		t.Fatalf("GetResultByRunAndPrompt(tenantA): %v", err)

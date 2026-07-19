@@ -46,6 +46,11 @@ GET  /businesses/:id                 profile + plan (read-only plan info)
 PATCH /businesses/:id                manual profile edits (the only post-activation path)
 ```
 
+In Phase 1, before analysis tables exist, the Responses endpoints expose runs,
+prompt/result status, prompt text, response text, errors, request params, and raw
+JSON on demand. Phase 2 enriches the same `GET /results/:id` response with
+analysis, mentions, and citations.
+
 ## The one UI contract: every number is a door
 
 PRD §6's "every metric links to the underlying response" is implemented as a single pattern, not per-feature plumbing: **every aggregate the API returns carries the `result_ids` behind it**, and every stat component in the UI is clickable → opens the **Response drawer** (a slide-over rendering `GET /results/:id`: answer text with business/competitor mentions highlighted and **inline citation markers rendered at their annotation spans**, sentiment + excerpts, the citation list, model + timestamp, raw JSON behind a toggle). Charts deep-link the same way: clicking a week on a trend line opens Responses filtered to that run. One drawer component, used everywhere, is the whole traceability story.
