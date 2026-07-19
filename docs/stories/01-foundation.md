@@ -41,9 +41,9 @@ Deps: FND-2 · Phase 1 · Ref: design 07 (Database migrations)
 
 As the developer, I want every push tested and `main` built into a deployable image, so that deploys are pull-and-restart.
 
-- [ ] GitHub Actions: test + lint on every push/PR.
-- [ ] Multi-stage Dockerfile: Go binary with embedded SPA static files (placeholder `web/dist` until WEB-1), pushed to GHCR on `main`.
-- [ ] Image runs both `serve` and `work` modes via command override.
+- [x] GitHub Actions: test + lint on every push/PR.
+- [x] Multi-stage Dockerfile: Go binary with embedded SPA static files (placeholder `web/dist` until WEB-1), pushed to GHCR on `main`.
+- [x] Image runs both `serve` and `work` modes via command override.
 
 Deps: FND-1 · Phase 1 · Ref: design 07 (Deployment)
 

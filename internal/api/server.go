@@ -55,8 +55,13 @@ func New(auth *store.AuthStore, secureCookies bool) *Server {
 // r.Use(...) middleware and further routes here.
 func (s *Server) Routes() http.Handler {
 	r := chi.NewRouter()
-	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
-		writeProblem(w, http.StatusNotFound, "not found", "not found")
+	spa := newSPAHandler()
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		if isAPIRoute(r.URL.Path) {
+			writeProblem(w, http.StatusNotFound, "not found", "not found")
+			return
+		}
+		spa.ServeHTTP(w, r)
 	})
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
 		writeProblem(w, http.StatusMethodNotAllowed, "method not allowed", "method not allowed")

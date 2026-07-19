@@ -452,6 +452,40 @@ func TestHealthzStillOK(t *testing.T) {
 	}
 }
 
+func TestSPAFallbackServesEmbeddedIndex(t *testing.T) {
+	srv := newTestServer(&fakeAuthStore{})
+	req := httptest.NewRequest(http.MethodGet, "/responses", nil)
+	rec := httptest.NewRecorder()
+
+	srv.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("SPA fallback status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "<title>OpenSight</title>") {
+		t.Fatalf("SPA fallback body did not contain embedded index: %q", rec.Body.String())
+	}
+}
+
+func TestStaticAssetRoutesDoNotFallBackToSPA(t *testing.T) {
+	srv := newTestServer(&fakeAuthStore{})
+
+	index := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(index, httptest.NewRequest(http.MethodGet, "/", nil))
+	if index.Code != http.StatusOK {
+		t.Fatalf("index asset status = %d, want 200", index.Code)
+	}
+
+	missingAsset := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(missingAsset, httptest.NewRequest(http.MethodGet, "/assets/missing.js", nil))
+	if missingAsset.Code != http.StatusNotFound {
+		t.Fatalf("missing asset status = %d, want 404", missingAsset.Code)
+	}
+	if strings.Contains(missingAsset.Body.String(), "<title>OpenSight</title>") {
+		t.Fatalf("missing asset fell back to index.html: %q", missingAsset.Body.String())
+	}
+}
+
 func TestRouterErrorsUseProblemJSON(t *testing.T) {
 	srv := newTestServer(&fakeAuthStore{})
 
