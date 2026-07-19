@@ -40,6 +40,15 @@ go run ./cmd/opensight migrate
 
 `opensight migrate` applies embedded goose migrations against `DATABASE_URL` and exits. The API and worker do not run migrations on startup; run the command explicitly after changing schema or during deploy.
 
+Create an invite-only account:
+
+```sh
+go run ./cmd/opensight tenant create --name "Acme Clinic"
+go run ./cmd/opensight user create --tenant <tenant_id> --email owner@example.com
+```
+
+Pipe a password with `--password-stdin` to set the initial password yourself; otherwise `user create` generates one and prints it once.
+
 ## Config
 
 Runtime config is env-driven with development-safe defaults:

@@ -91,8 +91,21 @@ func realHash(t *testing.T, password string) string {
 
 func doJSON(t *testing.T, srv *Server, method, path, body string, cookie *http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
+	return doJSONWithRequestedWith(t, srv, method, path, body, cookie, true)
+}
+
+func doJSONWithoutRequestedWith(t *testing.T, srv *Server, method, path, body string, cookie *http.Cookie) *httptest.ResponseRecorder {
+	t.Helper()
+	return doJSONWithRequestedWith(t, srv, method, path, body, cookie, false)
+}
+
+func doJSONWithRequestedWith(t *testing.T, srv *Server, method, path, body string, cookie *http.Cookie, requestedWith bool) *httptest.ResponseRecorder {
+	t.Helper()
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	if requestedWith && method != http.MethodGet && method != http.MethodHead && method != http.MethodOptions {
+		req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	}
 	if cookie != nil {
 		req.AddCookie(cookie)
 	}
@@ -271,7 +284,66 @@ func TestLoginBlankFields(t *testing.T) {
 	}
 }
 
-func TestLogoutIdempotentAndClearsCookie(t *testing.T) {
+func TestStateChangingRoutesRequireRequestedWith(t *testing.T) {
+	f := loginFixture(t, "pw")
+	srv := newTestServer(f)
+
+	loginWithoutHeader := doJSONWithoutRequestedWith(t, srv, http.MethodPost, "/api/v1/login",
+		`{"email":"user@example.com","password":"pw"}`, nil)
+	if loginWithoutHeader.Code != http.StatusForbidden {
+		t.Fatalf("login without X-Requested-With status = %d, want 403", loginWithoutHeader.Code)
+	}
+	if ct := loginWithoutHeader.Header().Get("Content-Type"); ct != "application/problem+json" {
+		t.Fatalf("content-type = %q, want application/problem+json", ct)
+	}
+
+	login := doJSON(t, srv, http.MethodPost, "/api/v1/login",
+		`{"email":"user@example.com","password":"pw"}`, nil)
+	cookie := findCookie(login.Result(), sessionCookieName)
+	if cookie == nil {
+		t.Fatal("login did not set a cookie")
+	}
+
+	logoutWithoutHeader := doJSONWithoutRequestedWith(t, srv, http.MethodPost, "/api/v1/logout", "", cookie)
+	if logoutWithoutHeader.Code != http.StatusForbidden {
+		t.Fatalf("logout without X-Requested-With status = %d, want 403", logoutWithoutHeader.Code)
+	}
+}
+
+func TestRequireRequestedWithMiddlewareIsMethodAware(t *testing.T) {
+	called := 0
+	next := requireRequestedWith(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called++
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/future", nil)
+	rec := httptest.NewRecorder()
+	next.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("POST without header status = %d, want 403", rec.Code)
+	}
+	if called != 0 {
+		t.Fatalf("handler called %d times for rejected POST, want 0", called)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/future", nil)
+	rec = httptest.NewRecorder()
+	next.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("GET without header status = %d, want 204", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodPatch, "/api/v1/future", nil)
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	rec = httptest.NewRecorder()
+	next.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("PATCH with header status = %d, want 204", rec.Code)
+	}
+}
+
+func TestLogoutDeletesSessionAndClearsCookie(t *testing.T) {
 	f := loginFixture(t, "pw")
 	srv := newTestServer(f)
 
@@ -294,17 +366,13 @@ func TestLogoutIdempotentAndClearsCookie(t *testing.T) {
 	if len(f.deleted) != 1 {
 		t.Fatalf("DeleteSession called %d times, want 1", len(f.deleted))
 	}
+}
 
-	// Repeat logout with the same (now dead) cookie: still 204.
-	again := doJSON(t, srv, http.MethodPost, "/api/v1/logout", "", cookie)
-	if again.Code != http.StatusNoContent {
-		t.Fatalf("second logout status = %d, want 204", again.Code)
-	}
-
-	// Logout with no cookie at all: still 204, no delete attempted.
-	noCookie := doJSON(t, srv, http.MethodPost, "/api/v1/logout", "", nil)
-	if noCookie.Code != http.StatusNoContent {
-		t.Fatalf("no-cookie logout status = %d, want 204", noCookie.Code)
+func TestLogoutRequiresSession(t *testing.T) {
+	srv := newTestServer(&fakeAuthStore{})
+	rec := doJSON(t, srv, http.MethodPost, "/api/v1/logout", "", nil)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("no-cookie logout status = %d, want 401", rec.Code)
 	}
 }
 

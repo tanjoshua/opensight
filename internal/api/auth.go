@@ -152,9 +152,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleLogout deletes the session row (if any) and clears the cookie. It is
-// idempotent, requires no prior auth, and is always 204. AUTH-3 adds the CSRF
-// header check.
+// handleLogout runs after requireSession, deletes the current session row, and
+// clears the cookie.
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(sessionCookieName); err == nil && cookie.Value != "" {
 		if err := s.auth.DeleteSession(r.Context(), hashSessionToken(cookie.Value)); err != nil {
@@ -169,15 +168,9 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 // handleMe returns the current session's user and tenant, or 401 if there is no
 // live session. It does not extend expiry.
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
-	su, err := s.sessionFromRequest(r)
-	if err != nil {
-		if errors.Is(err, errNoSession) {
-			// Evict a dead cookie so the browser stops resending it.
-			s.clearSessionCookie(w)
-			s.writeLoginFailed(w)
-			return
-		}
-		s.writeInternalError(w, "me: resolve session", err)
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "me: missing session context", errors.New("missing session context"))
 		return
 	}
 

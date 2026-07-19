@@ -8,10 +8,10 @@ Hand-rolled email+password sessions, invite-only. Phase 1.
 
 As a user, I want to log in with email and password and stay logged in, so that my tenant's data is private to me.
 
-- [ ] Passwords hashed with argon2id; `sessions` table (random token, user_id, expiry); logout deletes the row.
-- [ ] Session cookie: `HttpOnly, Secure, SameSite=Lax`. No JWTs.
-- [ ] `POST /api/v1/login`, `POST /api/v1/logout`, `GET /api/v1/me`.
-- [ ] Login failures are uniform (no user-exists oracle); basic per-IP backoff acceptable via Caddy limit (FND-5).
+- [x] Passwords hashed with argon2id; `sessions` table (random token, user_id, expiry); logout deletes the row.
+- [x] Session cookie: `HttpOnly, Secure, SameSite=Lax`. No JWTs.
+- [x] `POST /api/v1/login`, `POST /api/v1/logout`, `GET /api/v1/me`.
+- [x] Login failures are uniform (no user-exists oracle); basic per-IP backoff acceptable via Caddy limit (FND-5).
 
 Deps: SCH-1 · Phase 1 · Ref: design 07 (Auth and accounts)
 
@@ -19,9 +19,9 @@ Deps: SCH-1 · Phase 1 · Ref: design 07 (Auth and accounts)
 
 As the operator, I want `opensight tenant create` and `opensight user create --tenant …`, so that accounts exist without any signup surface.
 
-- [ ] CLI creates a tenant (on the starter plan) and a user with a set/generated password.
-- [ ] No signup or password-reset endpoints exist.
-- [ ] Documented one-liner for creating an account.
+- [x] CLI creates a tenant (on the starter plan) and a user with a set/generated password.
+- [x] No signup or password-reset endpoints exist.
+- [x] Documented one-liner for creating an account.
 
 Deps: AUTH-1 · Phase 1 · Ref: design 07 (Auth — invite-only)
 
@@ -29,10 +29,10 @@ Deps: AUTH-1 · Phase 1 · Ref: design 07 (Auth — invite-only)
 
 As the developer, I want every API handler to receive resolved tenant context and reject cross-site writes, so that scoping and CSRF are structural.
 
-- [ ] Middleware resolves session → user → tenant; unauthenticated API requests get 401 problem+json.
-- [ ] State-changing endpoints require the `X-Requested-With` custom header; requests without it are rejected.
-- [ ] Handlers receive tenant context; repository calls require it (meshes with SCH-4).
-- [ ] Errors follow RFC 7807 problem+json app-wide.
+- [x] Middleware resolves session → user → tenant; unauthenticated API requests get 401 problem+json.
+- [x] State-changing endpoints require the `X-Requested-With` custom header; requests without it are rejected.
+- [x] Handlers receive tenant context; repository calls require it (meshes with SCH-4).
+- [x] Errors follow RFC 7807 problem+json app-wide.
 
 Deps: AUTH-1, SCH-4 · Phase 1 · Ref: design 07 (Auth — CSRF), 06 (API conventions)
 

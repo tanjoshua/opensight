@@ -65,9 +65,14 @@ func (s *Server) Routes() http.Handler {
 	r.Get("/healthz", handleHealthz)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(requireRequestedWith)
 		r.Post("/login", s.handleLogin)
-		r.Post("/logout", s.handleLogout)
-		r.Get("/me", s.handleMe)
+
+		r.Group(func(r chi.Router) {
+			r.Use(s.requireSession)
+			r.Get("/me", s.handleMe)
+			r.Post("/logout", s.handleLogout)
+		})
 	})
 
 	return r
