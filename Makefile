@@ -7,8 +7,9 @@ GOLANGCI ?= $(shell command -v golangci-lint 2>/dev/null || echo ./bin/golangci-
 build:
 	go build -o $(BIN) ./cmd/opensight
 
+# Skip Go source that npm packages ship inside web/node_modules.
 test:
-	go test ./...
+	go test $$(go list ./... | grep -v /node_modules/)
 
 lint:
 	$(GOLANGCI) run

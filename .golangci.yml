@@ -2,3 +2,7 @@ version: "2"
 
 linters:
   default: standard
+  exclusions:
+    paths:
+      # npm packages can ship Go source (e.g. flatted); never lint them.
+      - web/node_modules

@@ -8,11 +8,11 @@ The SPA foundation and the one section Phase 1 ships: Responses (raw results). P
 
 As the developer, I want the Vite + React + TypeScript app scaffolded with the design system, so that pages can be built consistently.
 
-- [ ] `npx shadcn@latest init --preset bLTjNXma --template vite` in `web/` (style rhea, stone base + chart colors, Lucide, Roboto).
-- [ ] TanStack Query for all server state (no global store); react-router with routes `/overview`, `/prompts`, `/competitors`, `/responses`, `/setup`, `/onboarding`, `/login`.
-- [ ] App shell: nav for the five sections; unbuilt sections show a placeholder.
-- [ ] `web/src/{api,components,pages,lib}` structure; typed API client module; Vite dev server proxies `/api`.
-- [ ] Production build embedded into the Go binary and served (completes FND-4's placeholder).
+- [x] `npx shadcn@latest init --preset bLTjNXma --template vite` in `web/` (style rhea, stone base + chart colors, Lucide, Roboto).
+- [x] TanStack Query for all server state (no global store); react-router with routes `/overview`, `/prompts`, `/competitors`, `/responses`, `/setup`, `/onboarding`, `/login`.
+- [x] App shell: nav for the five sections; unbuilt sections show a placeholder.
+- [x] `web/src/{api,components,pages,lib}` structure; typed API client module; Vite dev server proxies `/api`.
+- [x] Production build embedded into the Go binary and served (completes FND-4's placeholder).
 
 Deps: FND-1 · Phase 1 · Ref: design 06 (Frontend stack and structure)
 
