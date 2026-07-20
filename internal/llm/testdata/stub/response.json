@@ -1,0 +1,53 @@
+{
+  "id": "resp_stub_0000000000000000",
+  "object": "response",
+  "status": "completed",
+  "model": "stub-responses-1",
+  "output": [
+    {
+      "id": "ws_stub_0000000000000001",
+      "type": "web_search_call",
+      "status": "completed"
+    },
+    {
+      "id": "msg_stub_0000000000000002",
+      "type": "message",
+      "role": "assistant",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "For general and cosmetic dentistry, three clinics come up most often: Brightsmile Dental Studio in the city centre is frequently recommended for implants and Invisalign, Harbourfront Family Dental is well reviewed for paediatric and family care, and Orchard Aesthetic Dental is known for veneers and whitening. Booking ahead is advised as these clinics tend to be busy.",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "start_index": 62,
+              "end_index": 86,
+              "title": "Brightsmile Dental Studio — Implants & Invisalign",
+              "url": "https://example.com/brightsmile-dental?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "start_index": 155,
+              "end_index": 179,
+              "title": "Harbourfront Family Dental — Reviews",
+              "url": "https://example.com/harbourfront-family-dental?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "start_index": 231,
+              "end_index": 254,
+              "title": "Orchard Aesthetic Dental — Veneers & Whitening",
+              "url": "https://example.com/orchard-aesthetic-dental?utm_source=openai"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 128,
+    "output_tokens": 96,
+    "total_tokens": 224
+  }
+}

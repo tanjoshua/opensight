@@ -20,10 +20,11 @@ Deps: SCH-3 · Phase 1 · Ref: design 01 (D1), 04 (ExecutePrompt), 07 (Secrets, 
 
 As the developer, I want env-selected `stub` and `replay` PromptRunner modes plus `opensight seed dev`, so that development and tests never spend OpenAI money.
 
-- [ ] `stub`: canned deterministic fixture (fake clinic-recommendation response with citation annotations).
-- [ ] `replay`: recorded real `raw_response` payloads from `testdata/`.
-- [ ] `opensight seed dev`: tenant, user, active business, prompts, and two runs of replay results — every UI section has data on first boot.
-- [ ] Replay fixtures start from the SPK-1 spike captures; refreshed with at least one response recorded through RUN-1 once it works.
+- [x] `stub`: canned deterministic fixture (fake clinic-recommendation response with citation annotations).
+- [x] `replay`: recorded real `raw_response` payloads from `testdata/`.
+- [x] `opensight seed dev`: tenant, user, active business, prompts, and two runs of replay results — every UI section has data on first boot.
+- [x] Replay fixtures start from the SPK-1 spike captures.
+- [ ] Refreshed with at least one response recorded through RUN-1 once it works (blocked on RUN-1's project-scoped key/budget cap — no live call has been made yet).
 
 Deps: RUN-1, SPK-1 · Phase 1 · Ref: design 07 (Local development)
 

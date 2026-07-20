@@ -6,6 +6,7 @@
 //	opensight migrate       # apply database migrations, then exit (07)
 //	opensight tenant create # create an invite-only tenant (AUTH-2)
 //	opensight user create   # create an invite-only user (AUTH-2)
+//	opensight seed dev      # seed a dev tenant with replay results (RUN-2)
 //
 // The same image runs serve and work via a command override in deployment
 // (07 "Deployment"). Foundation stories wire the first health server, Temporal
@@ -40,9 +41,10 @@ import (
 )
 
 const (
-	usage             = "usage: opensight <serve|work|migrate|tenant|user>"
+	usage             = "usage: opensight <serve|work|migrate|tenant|user|seed>"
 	tenantCreateUsage = "usage: opensight tenant create --name <tenant-name>"
 	userCreateUsage   = "usage: opensight user create --tenant <tenant-id> --email <email> [--password-stdin]"
+	seedUsage         = "usage: opensight seed dev"
 	accountPlanSlug   = "starter"
 )
 
@@ -68,6 +70,7 @@ type commandDeps struct {
 	migrate          func(context.Context, config.Config) error
 	createTenant     func(context.Context, config.Config, tenantCreateOptions, io.Writer) error
 	createUser       func(context.Context, config.Config, userCreateOptions, io.Writer) error
+	seedDev          func(context.Context, config.Config, io.Writer) error
 	generatePassword func() (string, error)
 	stdin            io.Reader
 	stdout           io.Writer
@@ -112,6 +115,8 @@ func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 		return runTenantCommand(ctx, cfg, args[1:], deps)
 	case "user":
 		return runUserCommand(ctx, cfg, args[1:], deps)
+	case "seed":
+		return runSeedCommand(ctx, cfg, args[1:], deps)
 	default:
 		return fmt.Errorf("unknown subcommand %q; %s", cmd, usage)
 	}
@@ -122,6 +127,7 @@ func defaultCommandDeps() commandDeps {
 		migrate:          migrate,
 		createTenant:     createTenantCLI,
 		createUser:       createUserCLI,
+		seedDev:          seedDevCLI,
 		generatePassword: generatePassword,
 		stdin:            os.Stdin,
 		stdout:           os.Stdout,
@@ -138,6 +144,9 @@ func (d commandDeps) withDefaults() commandDeps {
 	}
 	if d.createUser == nil {
 		d.createUser = defaults.createUser
+	}
+	if d.seedDev == nil {
+		d.seedDev = defaults.seedDev
 	}
 	if d.generatePassword == nil {
 		d.generatePassword = defaults.generatePassword
@@ -180,6 +189,21 @@ func runUserCommand(ctx context.Context, cfg config.Config, args []string, deps 
 		return deps.createUser(ctx, cfg, opts, deps.stdout)
 	default:
 		return fmt.Errorf("unknown user subcommand %q; %s", args[0], userCreateUsage)
+	}
+}
+
+func runSeedCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+	if len(args) == 0 {
+		return fmt.Errorf("seed subcommand required; %s", seedUsage)
+	}
+	switch args[0] {
+	case "dev":
+		if len(args) > 1 {
+			return fmt.Errorf("unexpected argument %q; %s", args[1], seedUsage)
+		}
+		return deps.seedDev(ctx, cfg, deps.stdout)
+	default:
+		return fmt.Errorf("unknown seed subcommand %q; %s", args[0], seedUsage)
 	}
 }
 

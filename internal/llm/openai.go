@@ -144,8 +144,15 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 }
 
 func (r *OpenAIPromptRunner) requestJSON(prompt string, location Location) (json.RawMessage, error) {
+	return buildResponsesRequestJSON(r.model, prompt, location)
+}
+
+// buildResponsesRequestJSON marshals the exact Responses API request body. It is
+// shared by the OpenAI runner and the replay/stub runners so a persisted
+// prompt_results.request has the same shape regardless of execution mode.
+func buildResponsesRequestJSON(model, prompt string, location Location) (json.RawMessage, error) {
 	payload := openAIResponseRequest{
-		Model: r.model,
+		Model: model,
 		Input: prompt,
 		Store: false,
 		Tools: []openAIWebSearchTool{{

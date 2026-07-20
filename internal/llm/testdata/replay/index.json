@@ -1,0 +1,10 @@
+[
+  {
+    "prompt": "What are the best dental clinics in Singapore?",
+    "file": "01-category-dental.json"
+  },
+  {
+    "prompt": "Is there a good dental clinic near Tampines?",
+    "file": "09-location-tampines.json"
+  }
+]

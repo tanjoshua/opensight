@@ -103,6 +103,42 @@ func TestRunTenantCreateDispatches(t *testing.T) {
 	}
 }
 
+func TestRunSeedDevDispatches(t *testing.T) {
+	var out bytes.Buffer
+	called := 0
+	deps := commandDeps{
+		stdout: &out,
+		seedDev: func(_ context.Context, _ config.Config, w io.Writer) error {
+			called++
+			_, _ = fmt.Fprintln(w, "seeded")
+			return nil
+		},
+	}
+
+	if err := runWithDeps(context.Background(), []string{"seed", "dev"}, deps); err != nil {
+		t.Fatalf("seed dev returned error: %v", err)
+	}
+	if called != 1 {
+		t.Fatalf("seedDev called %d times, want 1", called)
+	}
+	if out.String() != "seeded\n" {
+		t.Fatalf("stdout = %q, want seeded line", out.String())
+	}
+}
+
+func TestRunSeedRejectsUnknownSubcommand(t *testing.T) {
+	deps := commandDeps{
+		seedDev: func(context.Context, config.Config, io.Writer) error {
+			t.Fatal("seedDev should not be called")
+			return nil
+		},
+	}
+
+	if err := runWithDeps(context.Background(), []string{"seed", "prod"}, deps); err == nil {
+		t.Fatal("expected error for unknown seed subcommand")
+	}
+}
+
 func TestRunTenantCreateRequiresName(t *testing.T) {
 	deps := commandDeps{
 		createTenant: func(context.Context, config.Config, tenantCreateOptions, io.Writer) error {

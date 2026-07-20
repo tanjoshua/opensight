@@ -1,0 +1,356 @@
+{
+  "id": "resp_02f7c59816c4fa5b006a5b754745d8819b9db1138464b28097",
+  "object": "response",
+  "created_at": 1784378695,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1784378774,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b7548a9b0819b935e343804ce8955",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WWqnt3NtEUYdybIlfDIpyTd6jhP0sWK9ClHUH2kr7qYGDAmbeQNWLPoEJL65SI8g9z_eARLrlYEDP9m5Po0jrSAZH0aC03bOODHWvcvIpKUIJi5rkN7VeOIPXpInIdIejQDXVI_TTvnT6b68borwiv1vXGXSE6KPc9lvLVPdmJyP7UkS_iWPxcHDjXoIgte4i1nqXvt5cfF4hhmuEh_N85GNYTpa653vSa3XJDhw6qbHAegQ5XgmokimQXGg1G2s5b3G91l1Z3_qoSoT8D0o1DIhErTu50kI-euuR1K2GY9IwrtYMcsxzdzIsYXXQbAI-xHVjHjIcbzEQPokrGtmjN71Zd7YNGAp_ElcEIT_KnWi9SkJtVFP8aiqr6wDGU3OBnuP2D5nEMw0FZ4LqIvLwIANSacEMTs30kJcBi6KY8HHEC3zzmZmSY9ZItiJUE354ApBX_s6nr8cijID4VM1yirADyRRo89eayQQrB7kgH-_oBJavwKmcPtClm1mpF2v6yi1vPf6tshUOFEw90w_M2I2ybjhr10KhF1GOAx5ciLcVVomFlxpK_RcRnHshuto0IrXPotXx50i1Z1q35JdsCBR8Mg4M6HgWkVR_3N4U6557WUBhEQf1NBjVDgHqXOuKKHBhJwAGfe1s6W39Fly17hMFel1UFIm81sodkfh9KDAnn0WZdyzMQMAR2YSPEEsajlOqaU_WHOdnBqFjMKU6tjb3HzSqEmKXklVlfTBHDZ9UBvH_qMgKLvTnSTB31LsNd01Ah8_lZwsAA-lZSTgwKnKai4DRhuMRGGahrAsv7DmOZvmtyaDC1Ryu7hZmmzBVaBoSu9TjtWpmptJovdww98pjD2PPeBhirlZCfA0Vx7j4MHoqVHkuLS6wRiQnhFhrZMuU3TzLTYeckViZsp4eYyUBiTXmaKhU2H_KjB3tlskOmPo9_-8kA2xwW28uAOhZ7XpG2aruqy0EclxZ3Uq5dLHOkf7Z5nGUf_0oFmAUkVJ_PtMrw_z6rZEY10J85_OlBAWytaRwWyeNXvtg7YKni2mNnZOsYzP37hCxzrCCXwHD1aospioUn1DqZ41hd2oc9o9sHuPSACKQ5ZV6ZKsQMy5j8WaZkeFEksBm30dKfA2sak1k8bmFzjUtIQ1O5yACZJIVj-0bPmxdpVwZgeuLfYxqT_ijtItQ0BGvZTeZ0OueZlHUWNYwSUJFZY3jZU44uOeVjlg5lceBaatwTSoKU4TaRfaonaKEChwhdvDYBdDa6-xo0K2hA9yDrX-XnOm9HvUCcorA_2WTKs-UOZsAlKiBAIjdFKhpombhvTBO2wcZSrCTKtHc5-yBuP-psWlradLmDo9q234OwZ2HgdDUS7RHes74IY05Kt6QLOLCSVC_audYE6fJOn1lgINYnDAaExTg-k785EDam0ItAlmka9ilIznwm-3AtrsHEHxDI7Uth0W4iN3CWf5VKYS8cEtJlblpailxK4-N1S1y83XrsRns27UEF4ZLLZoDqcTJHGgovj76-GHDMmS9a-5_RfCM7O7YY1_9mEwW9C8bnQOHxdHyzwItRBKoZYozWSqqZJeRUu4TIB_f60fQopnzJycbBVFAiF-9yC3_adN_4c9G1xvETSV0hVq_2CjiqH4IoCIUoDpjLh6I1-SPSuI4BYUHuhLf-rGokzCAEjSkPHS3w9Oiuby9BueNwNr7cFbKkOxgsJaEEgHLqMDWPv1iHvvK1Fkv0zw6oBwfpY3KAB36sx0jFg6K-lDGyH_IfxVX6GRnUjGeQjxAAkVzadf6XLxwmG0OaqwiyCVX94xDMRctdzn5cVFz0Gkw_y1e4jxhZCYm-q1SPMB1c0vfzKAJM1jiYvzfrTl5v-yURSHS6uazXtvfhUpxN6agNKSTWIfKc52XryDiShQHQx5ABP5C7wxE5S9wZn0iLgwWn839voCKgOLK1kzzSpqoY_aURC_h0wB9W8pyu_otq392Ny6DsH1XABY4jgycexss1MkQCgA7GWF5XauXhxZWcFHCbeZvh9st5knQcs2BSV4IbmnWKq-nocXsTSD7b2Zjqp3UkaNkAij0KkABqZkzx8AN9iCE6dM-Ik7RjGyWEsLlXJGGJLvExzQezBukNfFjysOVvwpf-iqgEyRvMmHc_eHOlsU2ufB_83qD5ehnRXEdlSLkr6kIcVUxM03N2D6TdOoG0g0JtmuPdUfWvNLRFVgKLLRBaxeqGV-cGKh0y5IAC3FpVAtqh4FrE29sh-ZZI7mZgqJ0q386fguy_tSstqQlatHAiPXCrXgNASpFnnpqilAxxgxhxdL22XGAzTfUxpRZ6F99NXnjnTgIpA3iaat-ACraiJlgdCKmqx5t3kE_YR1OrncT7B-vqjThiosXW0VsTztiIL18dLHvx9ELZ1p10TCH26E3pLE5LCvr0YBmmgFAgq5bJHOu7o8-PxN12TTu69yB9H0KT6KnKt6JpQKa2YH0tyAO_nCcGV-siIfB3POReJhjZMe7gZqlYBAlGANu-0__3hoBM1nnKX9V5ZAJR3wDz9t8_-t0MahMa_m_xWSg2lDg1ytKOUujHv9rOI4ela2SMo_ZCbjufSBkpbSaAZkYbHOUVqR54V8AqLEu8bZkqvCKCQdlZ35DYPZIHcs617KfCu-ZZi5nmFbPcg66nZk3s9Gw6MG_5DxMhIkDvWduqPo6oLeEZeeYwudJbYP50FSLgpiHw9DJDC02SeuvTNEYe8ZfOhPD1yTr0VVsHSWnCciofRZVajYFnqKYz5qoQyXbGqxwVNp4jrrmxPP5NERQhfLK6JUgSxHAC__X4j_lRxoqTnUcPBmSqLBS7ilFVw-gDalpDYiWd4Ecd8SUsXxnHMwLOkPEpi3DX7jx5-s2yjwGgfF9FV3JfMZvime7Vockhdt000nqNjzmOyrq4UzCfX1aiM3BXNNPEnGo7X6fBybB7cchVf79Fguo-hTs9xQQPg7njh8_b18-61PX8xAJpaRPdNaoApQyKvs4o6kApY-PCVrCCLQiaCFzVD2nLLdfGl2qhDUSGVspf2aCZWRPokwmR85UcSDQ24BDYndvr1cingnzH9ZY1WhbSuBbvPcjCyMEjWHZyPgaKSpIHf8xxxFjgY5cHV5c9mBjAN35F8uKmCNAdENc-5J9JdkqlEmew58ysgv97yobm82W54EnVSKEZCO7qXD_bK0VeEPuKupRtweQOtTeRSj7mvWPk8eT1Rs2O4xl9XwMGilcm3BKxeH7Wf-rlq98Njm5gd4NAgXFwuK_5XTdSR7u1QhrqO0Wh891ZYHz6ep8A6P4hkzF2hSf9qNkv2G77Y7N_kNFJpBvJQ_5gAxy4AMvw4YDXwFhe-cMDTrHv-WbTNDVllkKgmZo4grlJoVMCMnm-frfPxABK-Qj3g11BB6dtcdOEV6vT6kta5eCPPXHRrDBv2MCGPIRDhMCv2HDwdGsJZ728AAxMilgJqnh4JmxHfVPxyp506BUPQcZSCRvlZKMCwH76EOZgeidW-gTymbR5jb1XjoI8JgiZLaAcTYP25VQA6USS0hgIBP5sSQLHiK3gN5z1izV8TErrGw8_mN72bOUp-qXB0idyjWdiWHNm7w5PvYv6ootNgh5SwN2omkaE8mS8pdXxJJR_H0Kt8JVWLcCvLDxuqAmUyNMdlSDLhjSFN1jz8Dp5-umonqKNfUcCozRODs2RJZCLpKh71OurZvgC0uRgDWgNddzG6HgwOyPdaujzQzp1a91V4MRQ5xMSbN0ScQxh4TMp5dLWsX8w_-vOhdZXDo0mtrs3BdGnHsfgIQKy7OdkHJyDpxEZWVkq2dgfYQMdJyFLLHX38lP55v4KQL_RxzSQXTR_lYTu_--ssB5Bl72iM2S58IWWxomNqcOaElKo7rXizGW3mks6BCA7aHYzywsN4F-6pclgn0j8xLNK2WcJHMKi6Ku16JLc-t3QQ0JOmyoHBf7TZ1rbonJOi32ZHJ1M_Lzhb9ZfUcpbCcOdDTJm-PAURZCAy82LganyppditL6XWQA6A8P5H7Mu8iU3P80FBf9CSTnCUimZj8A2BKd1U6UXcGBKF3IWHC-Vj1oKPYD38mQ781KfpF3rzo3zq8e781elUvunqDwPp1yMfj-FegrrrHBYZto3HK3aa2jXLrp7szG8aKiPImOh-ewAehugWQ252lUAD_IUDukNmRYE3eeuhrVFd6uDB0Vq0vKIbEZGQsY2tHHsR_T6rAEoYqF8MuIMzjsmLle9opcF1A==",
+      "summary": []
+    },
+    {
+      "id": "ws_02f7c59816c4fa5b006a5b754f90a0819b94235a90dd688cc6",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "best dental clinics in Singapore 2026",
+          "National Dental Centre Singapore NDCS specialties and reputation",
+          "National University Centre for Oral Health Singapore NUCOHS services",
+          "TP Dental Centre Singapore specialists"
+        ],
+        "query": "best dental clinics in Singapore 2026"
+      }
+    },
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b75522414819b97943bb79429e4bb",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WWjUGHOdLl4InAuPiaxku6G2UmEFKNdTnhkSsacykEGENVbmkUAnr_u45jHyskqRiUsYvwtSKkZCIi6Z_AdnCr_-nqqh1yVasdgv1nLZ1DZpgBDEVNdyrY7EddoESt4YFeQ8QdGFCxVp_0TJzonDysy-J37o_H2u1_ifpBfnGYloHNmK2vmP_3XoXQLZinxBuIjh_VyemkgPOSDyT4k_0m41lCoh0Mz_H1cA02J-vZ5wzdgwl7wvMQvCExWprSfhwFh1tbB47EMhFV5fyBILyKiyZzrZTC-i8N8h2iqxYKf7V2rOzLSZ0COsY0kvwgm1aUL4xPInB97q5RimsqDZA_rVuqaJMPnnFBtkgCixffumPvV2JGK0B0KlTCFBy4LzlDGyf6kIg3l9qxae3VYdkz5xe9Y0nNG3-nvcO3ha-d8sa85rUds_IRaqw7bsB3VqvKFSix5OYkmyU-96lcugAPq6hq1rSSD9t546cbyzEleaXx1upY5QexMHW20j8m-Bmk21AfItJ5bRBAidoETq3j-GjrdMfOfjjOWAxNrQN6zhSwCOBJzyFeR0bVAuZ5AyIgvn5nxQZLg2IbSQPNUZ6pLC-xZyGo8FoDDTCkVX_veJEMBNWRDPoEmdGUEgXezY3dFK_Cxm6GqMd1xbcpR34DJQeErwYVdNXqrIsLECkFnalabeVU8ISouIo3YlsbZAb4GPGKQ9FyCVqvcqWkZje5P4nDJi8O7fVS5PgBUHOEBnq1KGH4093rTnFtsEqcrIlCvGvDP0Yf8AVL5SACMfr9TpnmnTmX9yTOsSSadQJ17UOCqJd5K-TMMxSuFZyfDjd1U9TKorL3mozTEHqp6GuhEZ_yAS4Z0TCY2BOpEM6xz30JbIabaCtSYqjzJgooBYKuwmUFDxPihexKuz60g_JGHsCjm5UDIdIrbPnf1nciQyGewb0PbobbzTf_NKnOpQtEPE8T9S1dmCYsz6KnwD0gITodzJ-TdmOEzIN8QiKN0MyNUyHQ6LbRyTAtM5Qj7_ma2nQ2gfK2-SDjbkZOj8l3DhN3q44O3ivoyXHNB7iUamYaEdTASRIJuL4IIi6radMJoIJHRYyS1_xVtKMEUtyBtOlz86E-ecV9Jt-shnt5mhPuG0wz8MsM4_dV-Rt2TYUbtx23NK_xRlxRDjSWRIjlyGcRTJOuD2loegNPOPm-RERkGKJI4jo48QAd6qf_R4MW0MWqwKqpcaQjUWTx2fPtir2fS6nzfUKvnI066iw4f7PlWjaLdr8mhJ6k55__496fKCmTx4XJMh03TmD0RVNv-V0T5Tb5c3_FS7mKiaEX0ue6fS1a9BaMxBlz9lj-8gsKLhOu-2SzDmejZzTrHQVHeNDYpCD2KRDaKM1kHZdUD853u9CUuaXyUI4oVTffuUUkDeCTER42BmUijXwCBAez2Kthb-wbvVoE-EHaoqOsBDVqJ4YA4EKGEfyt16_5P8H9j4sRFwJ-FqygSJe215-FVxVN65lE6v7YeRlSyf0WSKSR48wO8Y7_psIlhzJvc49-vVV2i6vC_nc78DQNYcMN45q-cMmbUGjmt5q9uFGjiIrKpmLqKgZGlW1WK9QsJmwzXq0F9JXTUtaeFWu1S3WcGKIeJ4aiiBH6bTKYd2ntzxU=",
+      "summary": []
+    },
+    {
+      "id": "ws_02f7c59816c4fa5b006a5b75528b30819b9fad96c04ec92a9d",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "24-hour emergency dental clinic Singapore 2026",
+          "i.Dental Invisalign flagship clinic Singapore accredited 2026",
+          "Q&M Dental Group largest dental network Singapore number of clinics 2026",
+          "Specialist Dental Group Mount Elizabeth accreditations Singapore"
+        ],
+        "query": "24-hour emergency dental clinic Singapore 2026"
+      }
+    },
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b7555ccec819baa09892148317720",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WWZO8MlfJencjcmYSQy30Bus5Vd3xkoNZI_sF3dX5ebnqip45g6a4m_XLQ8pJPhUM9fPL91hzeXkeEN6oDT5QGrnmtZBVH9GmSw1HxI2BLt8in1q2M21XYLZTylSr_qSYFrS4RQBmhfHqnk9m3fgggaFSkayMw1MyG8dMFt8eqUVDsJ40O_SO61RWv6Pr6p8o2hTO22YwzFYJRnllqBCyjd2L9PjM_ztk9ahG9oyozaG148Pu7y5Gcm9cV2rRi5X2ni0fjVnkc8065hyxPxSOH4erCe7e0IItHYuHfX6VScuCvq9Lm6e8MwXOTL8TwWM-s4ex1qbvWHe75FLASMC5BgcC6I4NOpZrBB0W_eLsVO6N0bd1TJPmTuwsZHV1CpBdSAAO8R_mDfPF57rEe3fC9amliyZxyeYE4Q0Y-UHmcsOGAu5tcJWXsNgL3530q5Ms-XrGkWbTSiE8ts8o3X2Z32Pi2Jo_sYoJnyLPqIXjb3AqZKa4wQVnLojYZjGcOQidA2BEAe4H_gqZTjzjPIBlZsGmVusix_zcaTWvPmVJy0AFW-a7NrvOTjNilYLZfgxlqhrBoGz3lcessp40mZoD1V-xTOPnkVzm7lI0lVDZSsKF0S6jnQsr4WdbO_I1YjxioNQU4klAIE70PV5OosbjVxTGH0l7FRd__wd-r-o3eK9a_nY7tjNwy_PLvxBZz2xED3IoVpRB8IkqLm1rwOmK6qBH7QBNNVXUM-3PdZxg2Rj4HEOGhw7FDnM_1oInXVTEW8c5ww5vvV_p_dtyWOnjTsK_o_xH95A4fnduQywsaC8oPvWJsmeQ4MDIQtRf7MgGBKs3jbCsHGqa8GI7LAl1PuT_yJTmxnWMLHthgmtVVb22YgJiPcAjz3D2eZsYFzkV81BV-WgIl-ZuGpptzLCi7482LgDDxZWJRDkiGNdkEtz7krrCo9G-EbbFQOmCV3ObYiDEzO84pMimpMFAsklbjjf065rUXPtwMGUDXTw-c-mbfjYLHN3aI6HhvAtFJzpVbJJ4rHxSCnBsFEq3OAbKUWj5Mwzxci1WqLEw48WdnUMng48gvVfN5LEsCy02tb6rqb6dokUyIG_egyFgs6au40WEWlOcDeSSlmZ7nLLqbFjdiG3sPrO7r3x5t3sPXPXjwDZoyhr6P8OLYWzda4ZL_DtGt3rtwTnKxLaDXHUcVAva32gBjascCZO_cP6Ov_tacGpsJCsfVDDDHmwt0Qa7jrZPbHX-ruIYXjjfbEvFKIRpX3K0kF1WGcSNF_hwVhbkeiXAuVuE1aY5_FLjY1xyh4R6arBjNPrrcTbaVDQZfBjDD3bsI6aWObQ35JXZFpjj1donpUdHWQpxKcUDJDKSU1tNqG8JbAyPUbKfdlALhz1voh8MKi9f4TtDrzmUOXH0biWr7WDsd2sCUP2OHkitMKrR1NHLZ2NbpzfDrKgLGSs4=",
+      "summary": []
+    },
+    {
+      "id": "ws_02f7c59816c4fa5b006a5b75568114819baefed162ff03df8a",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "T32 Dental Centre Singapore",
+          "i.Dental Invisalign Singapore flagship clinic provider",
+          "Orchard Scotts Dental Singapore smile makeover",
+          "Elite Dental Group Singapore sedation dentistry"
+        ],
+        "query": "T32 Dental Centre Singapore"
+      }
+    },
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b755d2ec0819b89982a3e1a8f75c6",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WW0KYtXgcJIs5Aoy3FtuTjTQl4riBi_wNnNZ0Gcj0CFHbPmNou1HhUZVOz-60326uBlcFmlDfgd3HrUY_Q_L9DBEWoFZ9YrGhxLjJaazJzTqyfiFHHDihvJJYQL-tHsJmfqpPvm5BSq2hnSgECFhOgrEVdgBzmu5kP5aH-EfbKjmXNBkOqLG4-sKbL2s-YkrQjxPT3Ietjr8Z8FVelVRAmBu3fc7W1HNsK-slgNenb_s41V6X4wE30tFe4E1fFI7O1OPh-n134e5g2if2-8j9vB3GiFh8png9cACN_DhsM0teeh1U08tgrdyqDxlk7qqf8zukcA97CzL16MXOSFHLVL8upBM3MONCofgNAy2WWooJV8GIGKB0E-M1GC7FfZf9goeo-Y7Dx6k9EzYWMRkVskN3CPeI4eBkz74ctBViCx-xzEJEGDE-FRU_BeMHoja0Did1x6U0ppH1IHhiTL_IxLEQT_5o3oXRujyb94GoFDYx53AUFTfHQdVAOZIw5h6pkEoOjoak1pcuYD7vaH23_cbgX_PXwnhWV-u7nxNPPc2sv4oCGAjglgQx_Qi7z-lhhaNb9XjqYiHP5D4q8t95GSaRw8S3mghHOqk2lA8up07Xxnetbc6hZWdsGeu-JImbY4M33aFHeQ-Zm7KLv_k6x6oFAhv-BkwMe8vSuWIYOkobuVIqlNeYmNqKodhvL6G77f9Qi5yaZqriIZptgzEZ41DZyaAQUaGtvA8OzOfaI0OzF55WcPW-JxLkFn7PRXoqw_w9F0-M85mqXYQXqnVel5jg1k2VW8Y1JusU2Orz8Ex2Fc5PnQIEZaMy_Wv9oUA1IQ5FcGpgiKoXdYumawiBrQ4T9QtUs4DARHweUh5MzQBVJHFpWluSCFGv21KqPv_4gOgBIYzKTkJQOHAzXpvDQc2a2IP6lR7cmvUuESSv1nnpBD0rsyI_0jG0iIVReyhYluR1MyCJIGjpfIntPoL_aDCVtzg9QSpsMbr9CYJbxhxAREnlmn_g8922H0slt3ymQHUq3_DW5My4d5jcDBRtzRtvWx0vy1FwlOPvvbetTKMuciGePmbCPhw74LSdEUIw5L9__67D8CcsDd9dbxbe7x8Q7JuqHltc4IAvvC-h0o88M4nwkxUl61byooDc7b_GT2ONBhAHz0oA4kZDoOEwME3Ip7l1UOwlacJDuCoDaF8xESI1toypskHRCjIvYzmuo0ZXtah1J1UTdZSisBhwq3E-b_cCEWlb_xLwqneWPaYOf8ASDWNV7RGW2H9Nj8LiXdL9Ztf1jKsrkgISef_Wl_fqgBGqDK8R3Hoxgk1C2aOT-_DMHI2JvoabkVJuES26Q6ddoExBr4xlIDLTNHosEqpA7s8coguGsfuhKGDT_2KAtqShBLpHxMEcWyEIy7gbNlQZd2MAArINawav-MPx6TKUqhKZ5fYwQWzA2yRwjHpqNiKkWScss24lcTDC168msqKNNUhyfLfTuY17ECwfICf34eL8WHsSAa-8kolU6uq1N2-_Ilx0LFFms_LgmZ8Poy1eVsn71TA1Mc2YZ7CDvxuHpj3hFwoAnN1ox1hggCXze7LlEc29uqxXPkLEune3p9_vx_8FN5Tm9IH2AGfZ2-g==",
+      "summary": []
+    },
+    {
+      "id": "ws_02f7c59816c4fa5b006a5b755e3cec819b83e253a082e26012",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "i.Dental Singapore Invisalign Dedicated Clinic since 2014 site:idental.com.sg",
+          "Invisalign Black Diamond provider Singapore 2026"
+        ],
+        "query": "i.Dental Singapore Invisalign Dedicated Clinic since 2014 site:idental.com.sg"
+      }
+    },
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b75654a90819bb25225bd85d32794",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WWPYg-5fPrz5Xrd3FGT6YQL6oDEOii0pOipkR62S8T7i_xTBId8xKYyK4Ue1Iclkiq1uUUzEUdBvN2__fRXR0xGaF3w8FVhE_dAE21QrRWEvqAFVcjEeVtKa3MmSK70AXIdK53SKPlI2Vcg790tNZ9zu-r3qQW9ktij6sGS3PRjOCCWpCTarHAqcGg574fZANZvR4tit5FwE0u2g-LLNHEUnSvIFiExjAewOTLttdTRpWHoopRgHmetnn8KR0gYVlTpOP-Z2lQZbQ1igB9721FIoNwllYHs8Utbh20iCeI5PTr7VoBxdyQhIUsqke65HBkIg_UaGPsgkM21OzOHqx1SdYSS9KiFLuhfMPpEgS5grs_zokWO56M93ST0iDVXrVTCAkn8h2Z2VZm5mRuYtP9Up0Hb8zs_fC12Z7Gy-GQz6Q1C4h9OHN8vla5zjDY6ri6UUP4S4AFxlWhF7xi64HBMLzzG86RbV0iHXXVTnEFH73u9OeSaYYK4rJZFgv7Shg0ez6haVsNINJD501IDjdCIhmYqzfP1uHf2-198mHYCLFNfxiwVbMtRiY4550anQxDvzOzjXuhKtE3ZGlig84M-TWQ_IHlzxpLBLUGHcFNH75DJHLCkWOPbTIxPIxLV4TMgDhyfgci5zsGGu3EnFJ5Q8vc0cWfhsY8rzlNM3rBCUzV8cG0R12WzhdLU-4ejxVcKTvjvNbVZYMNs7IJYPzoyfqfrlyQ5wBQ1MJ8memu9U13uIxv6uzNBQPBgnGNv3ppGClD11n10QwLm4G3HdyBqX_EVOXymdiysd1RXNbO_qvqgfP92j_pv5z36T02OdOhf6UKB9vhFv7CitdYxGj4PddxCI3WuzKnful0ivQQHAvAUxB2ytlGioBYS15UfN_3i6BxHEXTLZ63s6IYohzwX7Q6S6FkOByqc4bGgdbwNiWhp3WONRIxdtt__wtrGy6deAtNYzmktC_zS8zuX3OfqP0SBYzLgBsiRSWKGdB3XLd_TZfwMLaxJK_6sjTwix07T2Ob28I4UI_FfkqdoZcEDIuub0rOE8ogL_phENf3GTcLQKu_pZr8KAW7irq3alzezEY9Dm6MOOfR_5RXUE3qROD6cJWmq3cpVPTTmyctTYAfwCZBVi6y2YkIiZdByhBFQQqQv3x-JxbFZEemXOeFSkVvNxioLomSYCd-x_v2ESVtMWqaefbJsqc1pCSTRyla9nTDNBd5TQCYkUOTofB14MIX6D_d4outyj435n318meN_LHMiXTbz0ZY1lNfAgy1T_OCfk_cf-ajpm2rTIk-cXMNLx1xT4n5vE754Te_c0_M9gZjBNv5lQPrjW9sH_Atm5lNt1bFIqxBSmWD9yiIT7_RKtRWEaSfOTBlSgCRc7yVMjykiKNH1SEh8FU8WKOrueaRUqhWG_Olq1ztLfdX9fsXqIfRFZ8UBJH0offINe5r5v2y7TXvXM5aDJan4cswqgdqPnz_MIRGt97lVzvf-c9NLQ0XFO__UCfERGpDXZ5VEv8bpW5Hld5FjI3a97cPXeGi0CZv0b1OC4UqSlgQkuqDugSyYXK7XkHh2OVultB1CMRmRgmGrZC7jNgpdygBZOFmE_s5J04i15kBOxIHJ8NICBvM10NW5EncVGeAfe6wMtps_iHeB_sa4Ie-bl3uBrmfEk1Wo4WlWwfSAL7BjLSmwv0RigOSkNflDqqb-iADbonnFrMyGzkyYfHgEkMww6tsDtkK7c--lokfwksUVQ==",
+      "summary": []
+    },
+    {
+      "id": "ws_02f7c59816c4fa5b006a5b756662f8819b93a86d2f41a7fd8d",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "paediatric dentist clinic Singapore specialist paediatric dentistry clinic",
+          "The Kids Dentist Singapore paediatric dental specialist",
+          "Thomson Paediatric Dentistry clinic Singapore"
+        ],
+        "query": "paediatric dentist clinic Singapore specialist paediatric dentistry clinic"
+      }
+    },
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b756c9b64819b8b014bbded7cd899",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WWulTnOIXMQCOxbBrepFvMtJ3nlLbOkZC2iyWFuYfTR5KjNLxdicPGbxdV0kiyfaFEpNjMeVvGGKCoBW6vnuIJuQfuWecijZsQfSc9YcnW-kR8_JRON1v5TD7liO0p9HoZbqXcXLTU7lG-nLnxBkjJqs9vy2pEtPxv43z47BuvqhwcY4_fbMC88l2w3dTNpdZWCu01SvQvlIm4CMHb97QvcvGj0THGRxMP8UwqCsoabVj_iNHBFUTWj24ujH7_2PK1WFh2F-xUtnEKQSNaC31SErp_qpHwDZkEhLsm4vc3QmNPPEVajuBl2VDTWzAZvQHzncGz3oEQgEsPAToGi6dC3G5bc7GPT8IAQLCZVNvXfXp2cYYfWzEj39eLGimVxIrX5zhhe7jC_RINg5YHfnoZgKunObakub9uJ8x2vfXaLKhFt0Ytht3ELFfQudz_u_OGdSSvvjL_EiIcwSmhDpyVoZoQWpB1Q21Mp9Q_M96mf-FvVss366KDwE6E8hJZ4h2gm5PmoUvw5s7QEJjy1I6SjOaadSRmfV4phseL2ZBAbqdSvUwHfCVAwDbhWglKl5BdlQPJThlD9dr2ezCYOch8X4E8daX2A931Vc-1QEgU6yaOIlmHEd4f3Zc1ofby8eN3bkrI_ELYAcosMs-bYtOlkFJ0b33HPr26-lXHkWfRqEmoHPHBPrRCoHPlAv6Zg_yNWv2URPlFQyfOabzM4FdSnRP55vLKfkbfwMhY6lqqsZEv5p1NO5GhUA4xRiLaOEbZqWqXQ6LzKHibq_mhu3tnpyX9bpKl756S1ukRs9zs1XBaTNgUusUBn1Ysr5dOyAL0J4u-_dbz6rP3mgzNJBr-l_kwC8lo6-nC5X5yrl8OTCqZqqG4zR9RrLpzR2f9ppKisnrprKEMJm1TsBrOAp4ueuc9QwVbOgbOTPBuuspRhq6f28OVdXvo0V0xJ1eYgbF42YpiBlmbDF36iKhblht7ZeQ21k1w9r9Nn7sMfFiY8Af-uO3Af8BzxIIjar1HvPEDt5TfTBBIRBpjJsaN2r4j7gE3ONh4UD3IIuriv2YbC_IiyLQfMfVz8KRFPbTEAelQy3-hbeKpS4tnOdbPskiTblrbk9ziErxp6gLWqI71dvb4EkzamqiCf6lWikaXFkJtvJtHJ3JlfZBTTkBxBHN7iKfYyQLDSQ4VWIU50MgG9maZqjE9v5DJXH1m-95xfOGRvviIOo0yHNGJuTs-R2Aud2OXykqp1V-wCpCvznCviUx_swvxJpCz-MP7tVNfxSQvxN-7W_3z1_EUqwaUtP92IB9H3LEW0ARDy_ljAo0sKrqaMVoLh7XsC8b3Ake1gEdZ6po2mLN-CN7yacpVOcJMMF7isKh5Jb3_gOZT19DF2FnOukYX7Zy6RujjdmMGYoHBUpzhZLa4O1IzDx1d5iA6daBWovFIyHkKZVaX_AUKpSb0o0utx4GDoWZ1eghWkPavzb_cQXQQaPApT6mh8GaYl-LZQev-pFZ37dszEs5i8KBrHyU8jRoF_rQRhrNZfBornxAh_vj07semL6f2z0dUlL7Zy6ViWkjlZUBLv0UOuueM30myKbwC6AuqzPxkwV4Y",
+      "summary": []
+    },
+    {
+      "id": "ws_02f7c59816c4fa5b006a5b756f9d64819bb6fe5a612234352c",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Raffles Dental Singapore clinics list network Raffles Medical Group",
+          "National Dental Centre Singapore new building opening 2026 operations SGH Emergency Building emergency dental"
+        ],
+        "query": "Raffles Dental Singapore clinics list network Raffles Medical Group"
+      }
+    },
+    {
+      "id": "rs_02f7c59816c4fa5b006a5b757878bc819b8c8d1c8b96e1f5ae",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3WWsT9sLbv3tLgn3INlGpH_wi9N79XOIok24WBpuS6NuhwhXVrJaE8bDbEogW6dNdebD4WK7uhYrQto1nglFerjJ6yAiVJgzK9sn-O0VbVeLglvSVHTbp8moqhOKlqaEqVwxFs6Y5YDkI50wnmEZTmLA80F77943sR5fItwRT-RbSm4Y1yMqIFQNYMYDN3s7QXyHFJvS7U0tzA6i-_R7oAoaucP652t9zqzMxB2e8UlmiAwU-nPNF4mGrepFX5nc2MdHnb7j7-9L8DDy2T2JfmYX11xtg9h9q-QPrD6s4QRHt88QGoqD21z1PevNhbs6rpD8xuB1W49vk9OijJaOS--KrVnkrIfUQ0POjhGy3V-jH3NmDV3JbD0XPMXpoLT4h3ulK_BQjxz4NrllR8SyOWytOYhxrkS_sf_zuHtDIUH8e_0SUMS73CW3IJtWsOHAnq5k6L6RsbPGyLAz-D4JiqXaYJSSiH4Sn89yzAeUzt1in2uRtJBJ-NItGq0I5if55T2t5jafosuIHLyyF8T2DkmfPqQqrVSEP7EuvXHhbO7DGGmqjneOazzhVWSl80QVkAS0SUAIwdEUbv6UfySiLu04CAlYRqslkG5yD806Pf_zr_yW4dvQaQjKl7sxOf5KPVhLIUM4mOdnJZ-kSzsx87tMf63j89ckeUPykHC5jg7ctsYLptODyd6LK44QWMePc3hoz2Tpdjzqv-UW6Yc8XhbOeuBbbg-VWQi80NkNKL1QFGJgHVEmhihfyWIM3kz7_DLr7AjlHvWutfHbA1sBZ2nIhfpAEk8_ari73uOiZLgE7ZUsAmChMiBS8XKYilVVXhSdSh2zj560fl6-6fgLiSsmlmkXcaHRpA1Ui6hl2-FEtvr9kNOD2t_Iv76126fl4bgbj3uPiwwNx1ITuCHo4wPBOHUbNh6e-WokTf_k_V_fNSHH8noxYkl4ARm5JhTK4ro2XT60BBt4i6vB5SIi7FK1Z0spa2o8XsNZGJJNnbq1jXVZiTlSj-bDZ9V8FmWN4U027da727RPMswTwEbJbk81qMpBTCa6MqD12wn9_W2JGWmqYROOx3F9GvJ8uG9xHwygPSsGbfnuSp8dw3yABy0a3HhREmVLAz56aVa7Yv_uhxvsFSY4SytazV2ycbkrNjB8VZGpB5R-ywItFmdE5jLwf5403Xx8XrIaS3JnaLxMz1BaiXYm1sPiUX5DkSwgHzsm_TqbuOvQ3x_85vHethRF7XfDLf1MsPClFGJ-jP7p6dvBGC_woTSxVyfEhhtt21FvrfXboWIY20u5Vha1v63jfccXBAPxSFYf_bOcQw7OrvIJMwGmj82xDeQBThYQphv1qWw5q4kML6PSY-dNphpplZXSfLeGgnx0OsZttFF9igdgmYeWbtHvWEhWHWmsZy-CbGdvUDqZEDJEFx3l2Q-sBTxfE4_FoFeNoEkCNV8TBjW5waGUmz79yCznuW0vQeazTrBNVQc3UGMSBXEosFNCaNvWVDsFrJR6HF_jiX9tEOao57ema58QsmXmI0mrsQWf4nyHdR9umF32HnR-iM4yMG-m6-9xdjAhxSZnboWFucUoiqu6kZOJAyZDO_5vL2JxFW6ZkWWihjcuFIHZF4YQXcBZ5csO89XipVzdfPf8m-U3SyX5EHZjrzvXdS0I1r1EAVxHALSClQ5j5khDc6Kr8Bh57Ho5eBC6PhAhtZo4rqm4D6YcF3GD3QGL5ByZ7vF3CIOr9OGvHiQEBNJWAXm7WZMooUECr3YxaSetbENQmZfls2cYKvfZHC80tEsH568WCMKAgd9cMftIKdK0t2zjsDM0FZJHQav7LVmruW8T6NJk0iTW57IRbIgFW-mkAD-gkVrPU9yTSKpvtbNuDyqcdeD8Gs528xKbzswW4HHPAPaFQUNBFa2aIM_ab5cZX2eKI1Uvk9JItINz2ExBJRqahx1X81r7Z8kItFrEK06LN0_QHrfqGowPn5qqxORH8Y4KYlVC11sTmdsQbMTfie2Mz1JflzriPH2FQT8fgU7boVOA0WnLkQ3c0Xae_Cg4c3iinaywn-PsQMa9-KOnqjXftsmnP6pcHcO9qeQDi9rXNoUobi-hmU3gBnW0r2-al_jM_29icH10tiJbseSifolrMktHVANSXWzZkvUnYpkG7MWPZHwKLIoavPLci_0OtzIMQopORVYUdMv1Ryb5td80L51elDq74wfhj-nN0WpfJr6OzpKN6k6laoZXwPRWNeb_XQatvvAexK-wEa0Le9RN_4AgPSzAHYE7UjhgX4dOSlnxo6oWhfNtSfcrE1eOaORunq33VAt-q_qtMDQlT2ON1XMmNmSynquoH7KHBT48HrGeKIQLQTJQs_nAJXLXVkZnuE44eztcj8X-Ii4mOVgLF0XIGkbGw60L26wh4daFP5HnvPs85w9i-fmgq1skGZxWpcBp0N_9ueaVrp9GWm7M-gofi0zauVAKVPGK8fWOUvuZkIu9EgcI1eiZB4crBA7AEXZ5kJUN5ls0YnugC5dEePCBj0H2ECKgT6We-vMH62kCrAS54EXBDg85AW1k1TkVaPOBL7OrYLwk7JbyCSCRu6Jn8RWrd05P5Z488SZjM3BRelClzkIDSwSvCkjMolbCd-3vm_n4c6v7kjaTQKPjEZJsFcJEzCylMUVx6LdHlErONcnKCEF9kHg29B9jwtjkP1sh-S0KwDRp6EWtmMq7x-dXzDtuUIow75dj4SVHG2JEXidApCq0o-FL8tDsXgRjSfqI3kbMeLVEOuPOcgnvNk7NGmI1BT2gOswxyeUJSQCfCTkDfQg-o2U0DUPWNF9Pcfa0t4RzUvGhSdFyquS_V-ncbl8CAvn2PTDH83qjG5LEIE4Rml6HFXZ8wSowoH1cxj-EPAntvlmu3j2kuwrXwzgI-DrrCQcyKI8QI6UuVKU0k-jXQPAXo7_mQuh6IsyD-10H4SWUxWXPseqKW1dJgLlhCN5Rzj3xJ_1MIfr-ZbQrv09tTqFCN4CdfJS6zSPWAkkeQfMAe--r5ExOei5X6yPpDJQHx8ruoXLm5e7KVjExFyj971C8Jxnn8y5T043a55ZFlEkfACz2jwoQegnZfymlkpQB0vBtrjVj4psQsJ9hE8Hl0t_ff_z4to-6wz1lDlq9QLAQFSMoLImvASNxDtx_WDK7qaHFmupIq-i34JICZmZ84tlaJpb0YUcY9nbS-zd9WCzS__WZWkRE_VefkGRAEmg99e4Xj1gOrhgkadWisAMUv1_X8heE1uo9CgGf4aXozFOCfE4b2748t9xSRLRn9FKJQk3wkpnuKOY05qz-PZe9QseLxNwanufypW-HgtFsG-NvPpiQKtozYoASKtx3ds21Jal3z2V5jvIfintpSyaqots4nWbtyJHjw1u-6aFEU0uGUTJlJrn1Bt6Q1qDDMmGSEP9pWwwuMKgYFM6BFmPkpYD6k_cnnnrbPIY591zoPbtuCBf1ayYAZn1eLgZOYeWG03Nfj9b_1CuENdsgwVKLtvWp3uCyzlPdgSLNNQqmhdgSCzxtXDF3VM-vh7HEQkti883D9Eo89pPgXDq4swfvG9DzIrmQW2ef4pO-SxEbky7eB0_Cz73tkBOw8yzkNiU5Bg3PoZH7mzLu-y6f-51E-V9gGhMgAtn-MWEiIXTeL5f73u3AtX0KcOu1DOUrm6hcg10coLcvgQv2rSYuHiXXL-ew49rVDjFekFytLwfMyxtiAn-9ASFtq4WUmltzpW113hT3t71WAcc0CRfAgai-bPynh4btZv8l7Rhsap7TredrhkTi4OdGJVb4PGZmJZm1AeHCwRLw0h5YuBJZZJi2YqU_EWI4wqMae6gkAqCb_ZqQof-pS8OTvV0-X53ViXz7RRf0jqTNZA6YEDnGh02QxaMawxE8cowvgiX3Nsj8GBKSwyQYDAWzAzZDgSAAosRqKifvgQUrYeHAe_sZ6ZAknGhij-yXisTYhUxf4FsUMZsZwH7Ja00JRNkb_CuqJDTF3OyTA4ELhGixMSC1teSx-acuPniOiuwAWJV4Q0lDSkPaN-kQPiF4rwyf0izNUlGI23OOTRj7tFMokLp0z9Znyno2dROP9DktMQ7CZSJ4XLYTk9dAbLJVmHuM2NIwHJERw_j6TrLMy0Ghjn3ewLlIL9x2O3CGMQFEJVhOeDq2V3JYYzJAUNhJ-ptJL1I11nTr0IrGvjJIb6kNidH--GKIBqZiWPmhn2WM8Vz2A7gUvqNWV2VV_E7nJf120gSViQWppxsYxqw0wsdt-4mq2oUAW8ss4rcP8C99DV9MHptSCgfL0Bjj9HEgA8SpmjDUCUbh1W5q4jD59L16f1dax_43pc8Q0wZY5wblBG10OsghesHaU5uWhFWB271Qox3H-lIbiBYfeIhHYZzkN679AzY5UKeqziGXaXitNVxdigfMMthLrK94Nz__c_4yxMOR51_t255FQVe3L9wRKGP6Tqooooar1tg5LFMuMh_jCZeSKkc3fCTlk74cNagz8n9O6UceB939Xkp67ESwq3GX5WMCZUG9GrdIZrrHtgmGXM4Qa_oyYEvVWn7_CCnev4OEDF54-w6xDisUI7eKCUNPd5ZroW0K1jeVHIU2KZZYXJ0px-c64Bwhb-iHbsbE4FGe7OUlTsPVpl6UAwk1L_oRzseEWs0pwEfeteXlSZBVFJfWoYFryfU3cX_UnIMkdOyubHsNqSkT1E_r1XUjXAxl5GOqM4QfSTFfaReexdoz6In41aGjZRLx3puO_kOuz3c90-p_szenTUCZx3aApMSVRhN8hvWSm3j_UPsl2kzmyrMLw_fkDVXwks7bTBawV6xbrmaEOdxO3mzaGsqGfeizO5HkKqPvDP1WN18qQ4BlGd7Q6ja5zZhwd5juNAE9UXMzbdair_SnLW7wNM6sHAFN0MznSM1mjjzl_AdD-24sd-hcWe8cXTvKh1fYA8LsxwVEATKpvuNsvM5lNml7OwqwmycR_IJecT2Buv2li6ZbXGDlnRN4ryY8DKei1fe_YtZpdqzZQIlS-zqhBCeI_iJX7V4finObNLY3ooxNkcmFtm7Y5dREi9bK90JfVeGljA7jMXJMA-fb16YaQxeP_0XsXl7128WREQaFDcy0Sp87wspkYCzX7kJBBQkfOKDZG_vTNi-nFe0ev5M6CtYLBBoO8GOgcWHv3XgbxjZ7xq3oYo90D0UVPhnYpFcuNWBbI9mnB_WAkPTSPQf7f1Es9MN4vqHsWd2_wySvfGqXr6RR22udE7tVEf5dLYbSDIZyj1kjWoldDj5MKGJXKnHZT71PD_a0_YniRa5BEszjx-4OuLcxo30taizCVWND8BLCWXTizzX3j18--TR6r_VH9tR9oAHqp5UwJMCqiIarBO2RyCU5PU6zSnqSqt_LMU1ecJjxCoIff1842Lz4LT2627zmM0IFWOKCchiD19aRJqNW3_JgRkaph1AMD_F1x7lx6cQUQD0MKC9PKk3kRSCoHVYYOnPUAcVZr_MIDrWeoI7X43fsRnNg6jp3t7NbHZi0eGCmCpe1vDRwJm3z3Cvbr2YeOJFlTiEAIvD7T3U47sBZd9TagJ_Nj1aNmCXuljhqyaSu9dUojieoeObX7VhFoSiAaXdjQ74-bIN37PLrsQjCQQrgKepVrVdosw82a70tbPQGXBCBsxiZkqVjLEXtBwszR_F07pj9-wZbXG8ng30wI21W-b5hEKjKxwRBwc6CXnJByuaPwmB0ptjLoGmTw34MAI8QWpRsfmhQTjzHt_XhgWbaBwBKLDhGyBlWIzeySh4KnXyYAIeqQlH5S5cR6339roLtpUqHBNZ5IUWEiaZG-uWwUBZJbnln1to6SVCdM088x-FUP1N9H5wtlFtpixd5Aa30rEZMntoKKnMhbo8_zwLYIxqPT7s1UTeRGkT89wQlQpzC36kEL8i-R7-R4QVzQl_j0ePJ99-kLS8rHsUgKz9-GQ3UIqcz_KPkXbCDlMf5pXLXCr9o9IlKYcOFDgPPFzpX5-uiPT7qdJY4LsFWWgQqX_VuDKntfkpUhoPCw25ELea0hxOTUQCUbHjy9SGIalF6CPQUb-OAmDpldAeGnt19SGOlQQgb03A8B3R5Ty2ACTzioY740EIZpD12gIKd2eki34WMZUyTxSw5nWZ5u205o4MIE12ae7lpcUNDcpTg8YecRJglDxAFfiVx33buT5lTbUNsMV6J4OfFWZNHyxFTdKLU-8xCrbAn_camPzC0s1SvA1p48VNxeFkLUqCLllZ5wjSt_qkpouOyL97phsTv_k7dPaWrcmPsUxrHZo2bDNApn68IVa4_2BQfFj5nXDhzaW0ddR9el4OdvuVO_dGf8gB3tp8y3d7YLqu7sMZehOfdUx7ejJM_YrNWqR2aBY2v8cPa4xTStcX5bcNdkse5FpyH8ZmklNWCP4IHuiS8-BGWS1ih46cD3IyY6o=",
+      "summary": []
+    },
+    {
+      "id": "msg_02f7c59816c4fa5b006a5b758651c0819b824eb5dcbd97a188",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 664,
+              "start_index": 586,
+              "title": "About Us | National Dental Centre Singapore",
+              "url": "https://www.ndcs.com.sg/about-ndcs/about-us?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 935,
+              "start_index": 860,
+              "title": "National University Centre for Oral Health Singapore | NUCOHS",
+              "url": "https://www.nucohs.com.sg/about-nucohs?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1218,
+              "start_index": 1131,
+              "title": "Specialist Dental Group \u00b7 Patient Dentistry, Singapore",
+              "url": "https://www.specialistdentalgroup.com/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1422,
+              "start_index": 1346,
+              "title": "Our Comprehensive Range of Dental Services - TP Dental",
+              "url": "https://www.tpdental.com.sg/services/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1586,
+              "start_index": 1523,
+              "title": "Dental Clinic Singapore | T32 Dental Group",
+              "url": "https://www.t32dental.com/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1803,
+              "start_index": 1742,
+              "title": "i.Dental | Dental Clinic in Singapore: Invisalign & Braces Specialist",
+              "url": "https://idental.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1996,
+              "start_index": 1925,
+              "title": "Tanglin Dental | Family & Specialist Dentistry Since 1994",
+              "url": "https://www.tanglindental.com/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2207,
+              "start_index": 2128,
+              "title": "Paediatric Dentist | Child Dentist | The Kids Dentist",
+              "url": "https://www.thekidsdentist.com.sg/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2411,
+              "start_index": 2316,
+              "title": "Paediatric Dentistry | National Dental Centre Singapore",
+              "url": "https://www.ndcs.com.sg/our-specialties/paediatric-dentistry?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2661,
+              "start_index": 2575,
+              "title": "Sedation - Elite Dental Group",
+              "url": "https://elitedental.com.sg/service/sedation/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 2880,
+              "start_index": 2799,
+              "title": "About Us - Q & M Dental Group | \u5168\u6c11\u7259\u79d1\u96c6\u56e2",
+              "url": "https://qandm.com.sg/About-Us-Q%26M-Dental/EN?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3157,
+              "start_index": 3017,
+              "title": "Directory \u00bb Raffles Hospital | Raffles Specialist Centre",
+              "url": "https://rafflesmedicalgroup.com.sg/services/hospital/patients-visitors/visitors/directory/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3448,
+              "start_index": 3351,
+              "title": "Emergency Dental Services | National Dental Centre Singapore",
+              "url": "https://www.ndcs.com.sg/clinic-visit/emergency-dental-services?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3718,
+              "start_index": 3598,
+              "title": "For Dental Specialist | Singapore Dental Council",
+              "url": "https://www.sdc.gov.sg/for-professionals/apply-for-registration/for-dental-specialist/?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 3934,
+              "start_index": 3816,
+              "title": "NHG Polyclinics Dental Services",
+              "url": "https://www.nhghealth.com.sg/find-care/Service/nhg-polyclinics-dental-services?utm_source=openai"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 4162,
+              "start_index": 4030,
+              "title": "Dental Insurance - Direct Billing (Cashless) Arrangements \u00bb Raffles Dental",
+              "url": "https://www.rafflesmedicalgroup.com/services/dental/payment-schemes/dental-insurance/?utm_source=openai"
+            }
+          ],
+          "logprobs": [],
+          "text": "\u201cBest\u201d depends on what you need (complex specialist care, aligners, kids\u2019 dentistry, sedation, convenience/price). Here\u2019s a concise, up\u2011to\u2011date shortlist (as of July 18, 2026), with strengths and why they stand out:\n\nPublic specialist centres (complex cases, multidisciplinary care, subsidies via referral)\n- National Dental Centre Singapore (NDCS) \u2014 Singapore\u2019s flagship specialist centre with Orthodontics, Restorative, Oral & Maxillofacial Surgery, Paediatric Dentistry and more. 24\u2011hour dental emergencies are handled on the SGH campus (new Emergency Building opened Jan 18, 2026). ([ndcs.com.sg](https://www.ndcs.com.sg/about-ndcs/about-us?utm_source=openai))\n- National University Centre for Oral Health, Singapore (NUCOHS) \u2014 national multi\u2011disciplinary centre integrating care, research and education; supports subsidised pathways via public referrals. ([nucohs.com.sg](https://www.nucohs.com.sg/about-nucohs?utm_source=openai))\n\nPrivate multi\u2011specialty groups (one\u2011stop private care)\n- Specialist Dental Group (Mount Elizabeth/Gleneagles) \u2014 team\u2011based specialist care; Singapore Quality Class/Service Class accreditations. ([specialistdentalgroup.com](https://www.specialistdentalgroup.com/?utm_source=openai))\n- TP Dental (Orchard/Novena) \u2014 large private group with multiple dental specialties and many clinicians who also teach at NUS. ([tpdental.com.sg](https://www.tpdental.com.sg/services/?utm_source=openai))\n- T32 Dental Group (multiple sites) \u2014 multi\u2011specialty centres including a large flagship at Camden. ([t32dental.com](https://www.t32dental.com/?utm_source=openai))\n\nOrthodontics/aligners\n- i.Dental \u2014 appointed by Align Technology as Singapore\u2019s Invisalign Dedicated Clinic since 2014; long running focus on Invisalign. ([idental.com.sg](https://idental.com.sg/?utm_source=openai))\n- Tanglin Dental \u2014 long\u2011standing private clinic; publicly lists consecutive years as a Diamond\u2011tier Invisalign provider. ([tanglindental.com](https://www.tanglindental.com/?utm_source=openai))\n\nPaediatric dentistry\n- The Kids Dentist (Camden) \u2014 dedicated paediatric dental specialists for infants, children and adolescents. ([thekidsdentist.com.sg](https://www.thekidsdentist.com.sg/?utm_source=openai))\n- NDCS Paediatric Dentistry \u2014 public specialist service (useful for complex needs or when subsidies apply). ([ndcs.com.sg](https://www.ndcs.com.sg/our-specialties/paediatric-dentistry?utm_source=openai))\n\nFor dental anxiety/sedation\n- Elite Dental Group \u2014 offers nitrous oxide and IV sedation in\u2011clinic; GA performed in accredited day\u2011surgery facilities when needed. ([elitedental.com.sg](https://elitedental.com.sg/service/sedation/?utm_source=openai))\n\nFor convenience/coverage\n- Q&M Dental Group \u2014 Singapore\u2019s largest private network (100+ clinics; helpful for quick access island\u2011wide). ([qandm.com.sg](https://qandm.com.sg/About-Us-Q%26M-Dental/EN?utm_source=openai))\n- Raffles Dental \u2014 part of Raffles Hospital; good if you want care within a hospital ecosystem and broad direct\u2011billing insurance ties. ([rafflesmedicalgroup.com.sg](https://rafflesmedicalgroup.com.sg/services/hospital/patients-visitors/visitors/directory/?utm_source=openai))\n\nEmergency care (nights/weekends)\n- NDCS provides 24\u2011hour emergency dental coverage on the SGH campus; routine toothaches are best seen in a dental clinic unless there\u2019s fever/swelling/trauma. ([ndcs.com.sg](https://www.ndcs.com.sg/clinic-visit/emergency-dental-services?utm_source=openai))\n\nHow to choose quickly\n- Verify specialist credentials (e.g., orthodontist, paediatric dentist, OMS) on the Singapore Dental Council and DSAB sites. ([sdc.gov.sg](https://www.sdc.gov.sg/for-professionals/apply-for-registration/for-dental-specialist/?utm_source=openai))\n- If you want subsidies, ask a CHAS clinic or polyclinic about referral pathways to NDCS/NUCOHS. ([nhghealth.com.sg](https://www.nhghealth.com.sg/find-care/Service/nhg-polyclinics-dental-services?utm_source=openai))\n- If insurance matters, check whether the clinic offers direct billing (e.g., Raffles Dental). ([rafflesmedicalgroup.com](https://www.rafflesmedicalgroup.com/services/dental/payment-schemes/dental-insurance/?utm_source=openai))\n\nIf you tell me what you need (e.g., braces vs implants, sedation, budget range, preferred area), I can narrow this to a 2\u20133 clinic shortlist and include estimated fees and next\u2011step booking links."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 6
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 30737,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3277,
+    "output_tokens_details": {
+      "reasoning_tokens": 2048
+    },
+    "total_tokens": 34014
+  },
+  "user": null,
+  "metadata": {}
+}

@@ -1,0 +1,523 @@
+{
+  "id": "resp_04c78fd4c011ef65006a5b77db3b108198aa7d69e22ebf5d5e",
+  "object": "response",
+  "created_at": 1784379355,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1784379485,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5-2025-08-07",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_04c78fd4c011ef65006a5b77deb2d88198a2766c5404a38025",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hetiVYb7iPAhUiypaGDihXpMkoa8eosBPKL-isNTK4_nMkf-D5GvVdhzsQrnWwp-2IampPzmkAaBNAsidj--D3ZAQ8Xks47XHIENpBcHU9gIDbfO6vZOGa4P3cC_qnypN8YC89vQyzh1f_zHcswWfHKPePFgzNqEFN_o35L6GX0BwRW2KfoCjAAusAlV5IKMUQ7ivESt2B2MRxeHx1_XHnRAdxtV18JSY4iSSN7Bd8bs9BLtM2ROH-kHz3PJAh62Xus-IthXSoP6fx-qSksr_gHg9XhDj5_Y-0t8eJ9l1Edq5ZKv0qO9mCCKiYQWQ15iETaKxJyjkRcr7eQDkwiRRKoRi1NVyUtUVhMXu27thjLw_ueG97K_SW33H1vL8o_4PT69XZ9ZUlLcGbQFM3l9273-h3NGlMJV-5TXM-Kn7D31EpJszPtoPPZBnOt8rbGs_KAEFUuFBJjL0zk031wywMatnugjZSpHCUkTZyr2T4-K64mdjbJwXH6GYjtbytNCpW47_y2sXqMpQWhkc_hFDRwsF4l6YNVtzzdThXZYZIQp1WM-Nse5-SV1qWV9gbKkMqnISystmjwkIOJ99nqYfQWzL2Jw3GbTKBO-zlNaOqijPKykOh5Ba1OZE7oaqFpYJChWkJ0gjraSH_9VDilllavozrreFI3ur9_fYGrX4t-ooGcC5eZhBtsQ7qvToY8Ljw-BigaCkBtCSIMgMWRwHetfd8MzmaPpvo06SVmeSCDn1IGL7YwhoZgQJFNsru51YUgRV3i1nc8MGW87sIzeduWM9AhLqd797kyFXgBy22ZEnkpppGVpDifpOVHk1g64wGSnpP8FtsnKVfw5rR7NDeYRiOCtY48GoEFxNAyXJOM2KPyQ-zxf9H2ubvZkZDCs5_k38rkNO9GMz26p1gi0FYqlcqYCpxkwRG_YgdwlfLhTmen15as3J-89cP8HHL8QuHn8a_ctoFdl0XFRSulLxHoxeVcyK4Y4RsDkzRa9GkbF3FyoWxzM-BA2GJufboEajprllKBnjnMlsaDcwxs0aCS_4Y9X7xWyOBqJkY3ceTJfOctsMQ3Q5WaxoTWlkeOAVqBvrVvByNhOIwR_M1RttuOxSekEIpHTNFxm5UVyU7XabIkxcivk7386HbKzEh61QoSEEC9NdT7B0drTfNHlOEyjE7SCAj1hPrPnp7fE_IK235VeQNwQTVCdMN27C0yTW_KuVhHq5rSdpl9PdqPes-WMJaROClsGYjBzOLymjUkgIBpyvn2MzGHGizR5UhOYdsBdz5T-hASBqWGZWDxA1b_kny-emFi97KDOYxrwB2_Rbn4YHBMnz0VW8-LZph0_KKkQESe50rwK_-GG3Rm4N6j7G2GqcDfwZBHfPjBZ0BSxuwoD8Fk0q25oFVqiw6yaDA7hYdV1gAW_ZwDjjrASwm4QyLxyNjd25UFokctRm5naqYexd9_jXFRqVrU-fQNsGRhY0grefaR-ITt7SsXlWB5jdm2lZLaCZ4yT5G6Qdhm44oSZ9LHqRbzTykNReV1_BBRrrrdLAJmGFe8LXcqhoSTdAFIi6LPQUkN4T7ik0x27J5osfrK54vdAo3Q2qpfglR_7_Jl9FlbNSuQ7VF7qP90vWru0zyp8yQJB2vbGDtjzgxJGqNLHH31Y8NEipuBJZE-K9DmaEpYA6I7c95NaD1LQyibPo6uLhxNOwv3VL-kPkqy2wgFtJ47hsHi2R0IlgnfUkXvzUcYkAAmcRpOXhIAEYLIcXE_CKZHamCLd4RiGnUl1w-oUMZD6FOKekefBinT6yhLYwZYCGa2So9fqgKwVJ1Hx6nCDm5wwNa4YktoaPNF91AW7yQuK8Itm16Yk25wG7w4Vf9f2oPkDjH9daoc7xImft5M4760u28pnp3h9FL4zQOwLXrH0Pf1NFrDW6V5Sid8_rXGXlMHDUl27-ud_TsOHFxlLwkHHz6Gu_MjiNXVrsWNLqD9rhb8v3Cfva9IkdzALhkdLOwLgSzp5UopqLGgwzH6ms7HV5OvNKD4SsrNU8hAY80QfwEiKXxUoj_jyuvTNa5Y1WafUj9hGfGXkrUWupOu3ujxddxNWKDYEnHzhJDzDnbqFcIseX_TVnqcmVv3SgLnWa8l-8VAYEo-ZdV69fAYWr1Rh-qE1igD0DRe9bMVYjMFI-PuuPAcQigib34Y5qXLPn2SpOi-5UPnP6Baepy0Bo0RfadPBVMgsufIwfPPaNLlBHgGlJEtf7i8Bh6GEL8ZuIizDXNV_MjKgV6eefnV1fjHRL2xJfrfmUYAQrFkVn6TRWzNwPliphLSRk-_FTwKsaqtfSEX_cLTGMTpYvKb7d7nFt3TMDln2Z7qr-kpl45BcUkSPQcFTULgut4VI-ievdO3c0QG4GsfwifrI9cknSuezeMq89bNhalFPSiPR6NRc3pyVf1JFjjReVZzc_tzjlMZZzfFkKT2hKJe1HSeSW0VBMncy4QepYhmIXjID4qwZwH89GSZD90Sb5dzAx4Fa2o4nlLZvW0Wesmg-jODXiR3sP0j-wmA8rnf30VBBkQkf3i1RHMZ86g5enUletytxhbDlBCsHYvcZReUi7eNCq7AnBvjp56zPfkEZfogdAaRqLWxZBXOFr4D4maVofCOUFXQE8uISCf3iEDRZ0JBGzLvz5GxBEMIyo1DsQAoII5copnes4FOzRVQ9G8Ec7ns1scUqgvixyog_xbJdbfY_WkuKllpC9rBpzbTlWEbZjEbNvhiKTVSBXWH-NWhO9ZtwV_G1IxxcY1lMGenO59ujdSozt6rBp6GGmjoDi3BjJQ96Ft3xHZRkWCwx_ANvGoleAJtfZPP_GMLBHiAIyFTjM6a9AbYEl5XTw5VrJz8dCXUbcJMOXqHtd2MlHwc7xPfAaLwocEDxSzj7O5ESI6KO-Dy_1iSv5wlbGGqrNwsr3cF8QV35X8dUS0fCIaT3PGo6BkqPR4CyxSMjlGO8bI83zBZP8BAKekNvpm95gcqe9i1bfu1DwVQ4iZBHyAsKmiMICKOHhj28Cxklh7bnAQjcnlWwbUsHVLCpSA4by38-A5V_7zLt3nutFzZHS7lko5NVP410PiBSuZ6Yh0u5uTDCpGsfG2BhUM3yBStBPkxAdyoQ0GAglttPvd8-4H0hzjoAiPaYQJy2DM_0dFnmEgbwHHNCtmRU0Ia853hNUwv7fnG4JR3pqoKrPtZ7rwU8o8j5B3BAzEhKKqcrah3G5C3sXC1IPq_f6016W-8fQEMkhvE9WfibaDDf27IGjxp9I3jZhRlXnJbvrSYx6_l6p_0DrdbBeRQOdShrYtUAa7DRRXfp7jxGmgJjRU4Wm4VnhfCrcpVLATCHHF7sjaLBpx391qs3-CVi3eYHvatAVfp_IM75TregGTvT6cJqZygkHBqFs-CEPA_m9kmOywn2CJvrjqXitXTlk9dv45yJCY6bT5Y_9YjUlpQ4uy46OWetQFJSBtDKnBdnPbCvomki3_wi03v662jNQkAckXUL9UyBfoSBtUkFDFjZhi7p87pmHvVRAXEYIIoqwYRtiQW13xfpvKkv_SshKb8ghLK-Ul7U4OzqIevl-NgWDpoeUERvt1sQloi4umwTJdEgSy2My4XcbtDSzAm3dyQnkSr5vRRIe-VkDaxJHsK2Et_r9lFrU5AutyBjt3-6ASOvqGSfuyRKfgxBs3RJpgPnTl_FNwelH1E45KKkXue-GotJXR21t2nzCwFle72Qr5GaC7_tqI13i1UyELnuvcsPqcY2BEaNkw_9h-8zZ7MV-8ge0rTAnhH0g5PkrjLLb2PiKtII1WEAxswAWDa2thR2KTjIOmuRi1lMW0MzJ02-lh0oGqQDHWAySZHM3YGE7Y9JDZxS0K-y2YlmfUTXw3fETm51Y1kns8cqIt_onuTFrLBZVE_X1RWtEQWe1SUw1dfS0hFHdyfImLVdU6yiTvkIxOSJ43MhRnLpa3QjsZsX7UvH3K15gHvhezSUbaQBe_aL_LPreS3wXM1Z78a0sW2WjoqECg0K3Oju99rghmsyT4iK0Qj3zyC1bXiqUU-lORmh0aw1RE5FWg64cmBGUKevPhtjbUlsI2kHgoA6vbLi1yCdzyv0eaM7bzfv3kJvpLLa6PFo0OVZzPYdbVrHFRjw_pP7879VTj0dopY1g39bERp77B_rVkpGJZwzgvt66POH8tvFT2FqmhFECyiNPTfqXlQb2f93d-BBKqWupPb7jfPRlNa7yjlKjdJn9vQtD5jWF7GoACV2VeOF7P1ylpOQ9OvTni_I5k8bFT3q2jd4c6cvSQDdYO1hUgqBpDaWFEA0DMzu4HvLYDJ6BI4KlXRzbU08NVOuBmfWcauj0TBO_CXxuAocvexNz2QpRHywrkknQK7gRcA5gc4lXMhIJznsIG1SLGJPKSlsAlQWon53OoR-JruEYi7DqswEqJAgB6REqDVOGhRcQK6mg0_00J3PE0VyOMZSfvkG2ZN64BdyL6",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b77e9e4f88198af8ca634da03d4a7",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "dental clinic Tampines near me",
+          "best dental clinic in Tampines Singapore 2026",
+          "CHAS dental clinic Tampines",
+          "NTUC Health Denticare Tampines address"
+        ],
+        "query": "dental clinic Tampines near me"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b77ee74488198886f7f454eee2cf6",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hemiQxmylt9oYdx4xegHpvwQR-1BXOCfagoMLF2Xf-Xc24BWr6Vrf63Dly0wIkaZ27K7fXRUw6URD8Qzax6C_WtaYRs0jnaBYklVVY0l0EK3fPNTns_UZjnHer0ifoAhaZzSEOx2Nh0MprCP3Ek2KeDeAdrp5hnpdz290cfLFK5xHor6DFoMDF4ESAA_6onOp8NJdsi3y-9Vyf8ScbNeRbR9ob18IWaHWHoxxqSMWoICH5dESRC5XVSDBjpMIxk1lEIW848xrDVyS7pzJYR4W0lTnJaTyWhciNBeJyBd4GtHRtY_dKx6RMLzgb0F3cVdVe0B6sIAHqjDjyDCJ68FtqfK_lseFe5c_aNOQWN_oddx0a1oeADTJaMUbX75fCx6fInBRO3waDcFKXI0J1VRERt820FnJrqvMbVc1G4hYp-M_McjZ0Lf5T3AY7x8pjCyQ7ChqejkJ6IKunEdiqWxmORMvrYEuQpDnWTHQ3Znfhm9UXwSsLynGwaCWwlmjqyV_xIq9-f8M_uzeMDgd7IIuxs-UXmTyrI4oMP684tIb1kmrp7Mb3K09HPOCJQLrFTbLhVLJxuLu2mHIMl6maPiNKD3WiwCRc6JzLu_cQgxg-q2ik8xzEPbJX6U3eF7LsMlFLDb7xhsskChkCks9zC4YsKSHZgD2rRiKQQxmmlJCEiZonDcxZ1D-i9gFMqkrKFn8OGKe8Zd6PptY1zWNjm5alQt1et-myttRpv0C6KNpav4dOoUKIrkvvnkG_4Ib3xgVbUodArW03oC90CIwqrpqW4lN3LZIQjVyb8aNpjxj_sLXr_ScDuZWbKmra4lq9qi6RRFHFM9tdKj47cshURyIEU-7RzVfBnW1QohyityNAUXHKNSilzrDxssZH33Rr64IQNpjeF1jmtbBG1s-bl-n3oLFjComuS_UMzCoXAVWTV_x8tpODsq8hqGDIPxgcUPzd3tq9q-EOxVCXpSJmIiy9Eh38QcQOeuV8itlbzQT-h2ef30WiixWa6-hR0W5ZPxYgn0MN5pSUa8zXowGpbiRUycHlO9cQbf4wFHZjper1fT9lJ7BHL67xvj5SqnHB5VvR8KD9u4e68qR3jj2oDAeinCkF6jsHglU3VnP7Sds7rUAvFfgwz_NEeljrTWAGIexr",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b77eff5408198be480124d370a2d0",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Q & M Dental Tampines 1 address",
+          "Advanced Dental Clinic Tampines address hours",
+          "Greenlife Dental Clinic Tampines address opening hours",
+          "dePacific Dental Clinic Tampines address"
+        ],
+        "query": "Q & M Dental Tampines 1 address"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b77f1eafc8198bc0a31c25f068161",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3he8vg6OWsjxFtm5AEzjvE7kMGRE1zpgOKsBs8gSPLekFaSYneQuBBr3V5hsQ6bxqIN-B1Mn47Vt8lll6EG7AGio-ThBVhKTq0Hm7G_8ghW8yDPWT_Cqd7rNBLbbkEANK3LBvjk0lkA0rZc83ETf5huBVWDXf7FKgWNblovdYUhjB5EeGxbq5xIldRXOIc6ib7zYyZCmOt-zMw05bYyDXpBJodu1r5T5WeRNP3irRUxVdS1cZ5jS2m8ZS5xh9LR63G-k0gvOP-vi5rHXJFAFtyZKAaNcxK6CIQE_s6j17dWGy99EC28fmCf_Whr2q7zH4Q0L8IJo6WFoQ-qlTyPGtusD8gpTh-kaJhFJssUuN7UHO9O7iAe2hgScP-_w8TQ0Xne--kt7DKlZpfzqoetUxCYBbnsJpS0fdS8SOaLEqJ9cjwM3oEbe6JsQvcbPep_x-V8C0kMXSpYcyPv_ovVOrJUyK6oeD5XMWhZ7oe6oHmqnTl0-AJ90BosV6_rw2_xiBvizSMdIqUvzmsi4JS6ZXDqSecebHOA9CXQB_kRbyF1V5FhlND-r5yykyjlDXlDbhA5eFrEb1DalPVK7DL8jbZ-OauKrtl9WpbLQAlylVE_B_LkLg44mk2POIZDGHi0uAdb84qU4cXoY_GT77RI8K93vXLhCgQ6db6_4xTthAVzi61SZQSH-hgOZBD0ZofZM6nqpUevj-DWqwnJVaKKGByWFJohb5Xu-FVEUjMND-_1rd8LMbFDfJKGy-GsfvWOpJ0YLt75ES5S-4Fn2SLmSMRYh_YILNCJwyfcoQ0_tF79-uYteAHgE636lkhM0bKpyBPG0j3CDFc4ylJFIOZy3Si8wq4OAgryqsveXNbfWO9tbF1TmO-Itfze2NuuPCVVNKi-dykte96IYtV4-d1Mh6NCyewx9bUVOXoMb2jZBTSyPfFn1laYurwK97yqP5k_BzXYKDUwUy53G5MRez8uDVm3RskZEsB__InGHau8PomisPqgCc-UT2i5Sn4_tDtgmdMBpN186K6T36NCRBW937PH0vQDwhl3yPjJWqc6eLy92-LQbIlDRYqTGEQLTvPFRbulJDtf_1XrZfpnM3ZDXT1W4i8UAb_n7VxzEaBln7AfqdlC3IADWghSn_rnY5JgK7U0lQ0qJRetfTd-jDeOctcgNkRh6PXRMm4VF0NUi8bFWjZV6OWYjEOtvowmHPXCWTCRwuKSoQwO9xr96_JQ1NdBRd_ST3RribtrBGbZFmats0xx8e2RmDLfMll0bcUEBoYKRSt_1spfKblhWxve8erL7t8GEvQGa2Fk69j7N6jGm70ZlhTAcqEffY9VJ5l7T_ajV4GRyJD5ZBy2yy93fBZtRU3UvYD_yPFot7CXdih660M=",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b77f32e7c81989e834e4a9bad5cb2",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Q & M Dental Tampines clinics site qandm.com.sg Tampines",
+          "Q & M Dental Tampines MRT clinic site",
+          "Q & M Dental Surgery Tampines address site:qandm.com.sg"
+        ],
+        "query": "Q & M Dental Tampines clinics site qandm.com.sg Tampines"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b77f6bd888198948b4222529cc50e",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heGQEJ5s58zNt1qZVfYV8lCxrXVyaQamQM2jlpwcecRu1EQrcy_wQzG0SZUK8qFR-FuG3wxFJtfk_UW_d2V0MVc8049xoNCh9KlMtsHfguPijBHiUXlYIXxpN3PIc0taX8nH17h9r7uMw-7mIKmfuqbF6wzviLoPMved_PRgWqAW0nftg6Fuf9MkWcVyqvbJ-equEUrCmEMg6ZtS7r3xTyThbQcQ7w4jcQwlUp9EAuDtYwIb70cP3Q2MnbcNB8X7PZpbfD_jmTNbePfQ8pdE0zOizS0QFMNQuZOgTWdg4jtDNcVAZMIlShl25ZmPAVhQ3kbcdAsJ6hNOcv6WJKcmpPTyOpPj-ZcEqSO7gZypVO4dSgex8bbA8h7vvtnFjJEONjqiOCqy79UeRGkfM3VZ4BdBgwGZXG5hvhU-JIWECs1BW0f8Pf2bzaz8nxBKRvDcxRVov0vVd31Rze0moHMSd6hoE1X9g65QR78UadQXqOTfNqb7EpQp7dMz5l-uNjFata98zqrA1Ixjnrfy5H3iYrCohy6zVUCxi6sjRZh1i8_kp-YgZo37LE9d0QJHHZYxIlRG3EVfip_asiDQOPAIQEB4hCF2Tghutwxn4t7osTRAFDSN19xGqfINAW1A0BMI1KfVVrlth7ox1JL9aW0Pd8LlrfDR7zt4g9aSJzoew8W2m-wwojrPMVtkgCQi8VhQoeeKcxXZB9LzM_D25Uo9Ro6VGw1XtT7WEAqzaRHQWUsTj1njsURukokGS40O_FTmYFLCL15JPxbTfLJ3RQ7c_PDCFp_jVSPnPWVMQVA8drokjn31qNQ45-VaZfFunZ2lz8_ZGnfXlkZcogspoIUlBkJWfnjJbH9PDrI3PnycH2_6uy634mhY6Q6WsFgpZVZ26tvPpadF0xDEbIPgaSkqX7bzyFbgJNRLxNP_tACNdKaZcivACu4620X16C30uBnNq1etPZ133r7dW5zY4bGE7x-pdw1ZcRuuQxb6cnFKeQCTccNTPl_O3BQr159k2MKer_IBZZGUSlENGhmPp5uDTdmTyw-Tn5Z33OeEwCi5059N50Xujyecrvnr0K9b6vl-fEqfCxw0_gboS4tf0dYxRs4g1SlQ6aSHIgpqWUNdn0C0PmBei7P91DqU4pYN4c-JQR50YXAVhfhFiI_bcEVf56hdo4wIkIHoatSDwMHJO0xSfiyvMcQ-fj7yw_0bpz6FuD2x7Zm8WaFV1IqeHep-O1bOc0opMhnL4PCHKoaA5-o10EydluwE8MwNtTOUraaIoVJDTlftx17Z-6LA_cMVlYOdCgYrlq4j8fXLiIF2wjz23h-2ckE0ax68abyKG6VmcM",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b77f71cc4819896a5dd795e328b8e",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Family Dental Centre Tampines address opening hours",
+          "FDC Tampines Our Tampines Hub dental"
+        ],
+        "query": "Family Dental Centre Tampines address opening hours"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b77fb1074819898746ceb32e62b09",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hexh-53L7N-gUgpLtH4nVHHo04ZBZUV0fgzTAIRSb1mpSEgEiy4AuKsCZ21IQMusxzzrZN5E9zsCyTYIgwTNQ127jxombewHYDyLj6qonXoThbZ6GF9g2XvulbEnW9QuvHUTR1VZZio5KJI52e2wkWQQZfKPisbh1T7WqD51S33JfRJjcHecv86qsWJJjLKwpFTUQSD9QPvVTn6I9-ObI8C00ygV77uVD_ppHM9keqSTq055D-Uvosp3AI7bY4XatjJ8RrXCQqGr6NrBdiLYHoUuXNAMyUAa9kf6eIjoed4Nfoc7HidQ7zfSeGFlAPXoGvXle3TgLKLMUJJ1Cmf1E8gfvi_DK7pjJZIqKw8J21cPcdKc26izY-7AJ-yqShMpcta_MHgB1yDPRZvoNna8z7g6u0WcPT2xYU6acdXI6oJ9Tl5Wl8wyUT4MaPEKquZVh_Ptyeg_9fnbncNj_X2cqrdw5mlmiurvepFTOTzrjnXj9FdtAYBcBvzaLvpS_-9PhVA1qYrRi5KGd4fj9jur66xx2k5y9bcO99Jes3VvaeR7EGpL9maLwKX7f1_48E3GnE5RvohjroLAgVOTnc3nKRMxJ3wQT2IpOzcJASFYjzFsnUO8wZAXT_EM8-h8btRunKGU3A2PKMI9PTVOdCzCt-Gh2CQPUJEKiK8aTPIfvpQ_yjoma4WS0g_TRWunDV42_mr9vrOpioGSr48U2dJ0xsvqOWLLeV1R5fHDeGFGaXjtRnVJL0MRJGVOVuRrT1eF_eDQ6zatRLPUVn8rZ-Erdf2-ZkEtAMvqShJw4hA8MvoZ5UUtGrhaFezZF3CBfL5JuKcKISikFkopPaf7aCxYVnYT_kx3Bil3TgQqCZyiKmTFMVKrLlw3jSAtVC7MrGlrA_Dp2e-BkilCHqNDraZoy_1PfVw4TeqbXFMRlUKEW0xvb8qrgqoLYD72dW1pqcDJeKEpez_D9SiN02PVXGcrUd4C4r1Sd4PrmR2pAJ2nwHYv-p4aURAukbACOnbs4Bs_-OBV8RRb_87RXWZCiJXmXeD_FnVUFWuOSirvmrUHdDwVgDPo45OCBw0QtzDwDz1Q_WrQBOmGh2iY0zELa5iS9uWUzq0H_qT4n2sVVFU1HU29gq_3cvHznO28mXzYOqe2Uoe5E4vdUlt7cQTwtjrCul0VoU6P1UMxYjyMgstuIiYMg5uFzzwCNGt06YOKoFBYJGAjbySlE6p7lnjBgFiuufx3fr_OgkwJDHZEPiM2YI8YGDP8VTgT6Jcv0_4N1SzRdPcLTG_37AQL8M0Qs4nGgfZDN5vCx0iF7Hy2F5ijjDr1r8hCTyNp-Ev4SEt4ZPv41mimCTup8M2qO1ZqbbKYn1VHjENcrLoIwusJ81IihHzjIXl3CzrvUxSiDFKr4GaX1rQY9Ln9YtQ5wPpjGRIM_FK6uKYPC9jrIJzyXz20rdiKnthSAwKiHwGAS3YBC--sTs33IbFry4EeVgjvq7jeqkyQNvHr_S975qp4JQNDZf-yWdBMJLx0BbiqZGPKbW8PGGAnldsKW-ohKPqd9uqbrAT_9z_tcF_LQhkiZmGR8s67eUpAae7Hrq-TC4vBpaksEpDzdEvnOIPfEtENEY4LLHfD17qAkmH99-XbAbzOOqcw-Lu88BaPcHW93pSCVe4d6cEjwYYD80jLXhqylTtq8ylr9CNbB0QEYMMrwy7t7jnho=",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b77fc944c81989ecbb59bf28640ef",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://depacific.com/reach-us/our-clinics/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b77fdbce88198a3d6d78fdecfe930",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hewj0XycX_Qyb2H7fEzm_YHTiIL7oWXhYsuMF_lN7IcdKkxY35QXIcVygubKaC6FiJpUlKLA5Vh4vhp3mAOUjLm-ADr5UtFQIDDDMBZsT5ovBEU2W3_lJso-8F6ZgeaoIsJ7_MUS735pYbt1doSb6_Hd8MDCEu4lO_uYV5E-gvCl923VqL8ZiqKY-Oh1SdyDVeXaEAf_BzvP_jGp-sC4EdznEGGlq85AKnqg5ASqkLUcBlHDfuHpKmdO4QpfQbukqFZhXuX08hyX_7Noq78AGX7qakxsRh6SuaQhqd0S0nvJwflCPMkWLeVZVQ_ArVJMVI_7yu5ra1Wv93sObO9mvHVPQz-chhh5EAa_Hj5cfsasKQmRI4AuNoOyHWkf-fJgHLHVOfVq-_1R1UOgJqin0GzHkpxOAtwlVTueabQ-LmMDek5PqMVe6sTzgb_5A330NgLFXH11_adK49-XwNdrUQ3aQZWtfxbSIvcgOGUfQXHkfq7RbobVSVpj0tJbNchos9jGdoOX5wOLZOxKpA2T_yzLbPm3MOtLghX7dplO3v673wwDZxbdvpZUHteNUk3fmIAAafcG9ebqxW_GOnugIhdT8JUE0zezuFUwWeXfxqS8Zshq45xkJhMW6vLZZoltcqNTmKGgkAShGUfVS82wFfX56F3Gy01zPjLQ074zpUSz5nKLunOlCuMzRRSm6htpnts9c_hPuX5CnuqTMdvqpXTuoWyCFiRCbgEiMFq527ZrQmoQZfm3o3BoviFrXxGm8-gI4b7wd2xsu7Br7np5REXl8eahv_kgzg1THl-ry9tp5vyauYymUYgo3NcOxSUphxarLwyxCd5uzMCIKBOYNiU9EDySGDX1s6Jt8az8fcy0HqhOrLWaVi8_89dYUHPQVwK-wkNC6Iaixu-WgWYv3oNN1sgK8NJEqd-7aj1rXiFL-vOSenVjwT7W6J8EQEhNOTrEYgSy8nE1OlL0Nxu7s9hAZcdhLkn7Z1-N2QwBIAOdutYvQQVj2skR7iUYO5usfu5dLtT5WKv3WIPnR-hFA5U9vZ8lLlObxJUsmimgCzU2xKRzUgtoqFlkT1qz7VKxkUOi31CFDDuFl0cUHuhZBymi7jErM2RWUZTvxFqQU4F5IXWIUOq3MbezUWrrEV7qn3I61RTgf20P068zrQGQ85AAnaBBjr2E_0YyWZZqt3jajUHHzvxRb5BVUYlQcjHZ3phynvsh6nthVvA4ccvJMYLcw3Exk99D1cw0-SC53hpCSeugqwKkmYkxrvM26yDbXFHlO0xIWoIGb73s3aS1mcfSrN3cnxGfxhaTJ4goE9_govDPI1DRFYnXjph1ogf7WIhqEGWxwljIPTDb-QgElTCqOuMLleTpalLI8h2Q__rXyCfxbpEAj1feY6Bqc-vsfWzFYaSjR6sN1jSe-kfFHfvPuYRwSShMNaPnphIpU7F37SnE7oZvHMD404Iy9x4GtLSPXNzpWThHolrB4LzM90Qmws0y6B3eG7Z-rqlfeELmsyq1Bg_JWnbBCUBOI264hbcc3RwzIEq5HxNH7TRDDn-zwqKTnXCvnCv5gzk7HdDi8pf7r5hAKpodVZNrF_Qfpjrrl_KdVnOjgiT9305J5ySDklMczb459PR9DI11fzwytae15NReJtcKOAeFztRG-e",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b77ff75448198806a106db659ffab",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Ease Dental Tampines address hours",
+          "The Dental People Tampines address hours",
+          "Tampines Dental Surgery address Tampines Street 11",
+          "Universal Dental Centre Tampines address hours"
+        ],
+        "query": "Ease Dental Tampines address hours"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b78029cb88198a3a6f1f3361803b3",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heNHK0h_ErpDCVk8kLQiVP9Q9QUTSXSZedGV1IGgKCGctAcsmkVCBtL1CSOeaFYB92G_NuMZ7XSBOf4bETcOIk440r2tyP044_-OQBOZzP5SHIbXrmprlasFvXMfiUDADBCJFUeHYeSSJYz1Mdja43J7UY5C6fZbIWiJhXvI5rf9P_-OBA9RI9-ksD8qHG2fj8ZlZuWAwOSVAP92HDvp5fkFoDOWWIZpgxZUMl8CseASJ02C64oz78PTcms2rY4q95cdL5GqRVRyW4aqMLSr04je1stmynmIryVvmgvKIDjQWwLzUAbtWu_12LMFPOuVrx0aqF_A3_QEZ9ZUeuSobodyfP3JfGD-Hl6H8bTRT9xQuAD7K74ZARodrYcakbSWLTWyMPiElFIcjnYhTbYcv6zHUb3ocvgVyxU1m_fMtCl4uW48LCmmiU5GqQECSBAKMup81q-9n4EcRCMkHGfnojPZKKPfhJTbJWfFwH-3NtKPG6Kcq6-j2oDATeDvAORugwFZR0bD3Xb9edeEgkNyQhO1GRW-p0YzvQIweHzPREyHWbGUxKVWMOMn5UlWq7y1sFuamOpUludrJxOEeVmgtTFZimXYfSKit8R2uNwuVUaaiD06K4kyAiWmBDIJlbs98RFbnD5ehDgVSzuFPOR27ga35D7Y3jg9Q_yBBGnZQMraN9PoftC7o2s_EP2-Vm4BakdBfU7XyyxURKkVrk8JZmwWywCaIl0btKJYX1I-WKkD6jldGqUfLcjF830XOBK_qlHXVVM-yjQhts8DSG8KIq4HjqaQ9cuBJnxLEFFR8VIxtIo_UJ9JLol6yo5hpIpPSUMABX-BnBhqn0IT-leCbutDDylkD9h6GM0_VhpBDyX82rgzJLdJhluEgmhi5wbd4heK41SiIl7KMc2Tccv4YgbCeVdp5OxWRZV7Vt4d-Q9wbScqcu69B91lzyD_l01a3LPlNWeerjDMuWUDeL801d-Qz9gVPi8figaYFSrCYEROsO_mQuruTt4E3d7gA6FlPCGeYQo6XczIB_M2exggTx22EFI-qiDJaU2frTf5gUX2u7fPGY1pHN9suOo8IMiXN9cYv6a-ztiLmeSLGgja8EJdFPyYSQqRl-csyNCb67Xxeugnsg3zZqJBnj_CozKSrcTseiXwoWemEh31TwBeg_jAo_ZgrjAYuS6lRNpQ5AiN16SlOTLi15fRaxKQEMdk9Jh4TKoiwgOVQvUo28ka7gs6PJbZJAy4DBhpKUL3vyhsF_GWWdrhudchpqTK5MO_xbLuAUL4XWl-gY4cDZjS-LQYZVcHxtZkO8rJO3Cd6VtaGjMT-iCeWmC29XqMAxOiWJpX3kL6_S0M--NARP7tuQGA==",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b7803c0a48198ae1db76f9df2f173",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "TSD Dental Group Tampines address hours",
+          "Royce Dental Surgery Tampines address hours"
+        ],
+        "query": "TSD Dental Group Tampines address hours"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b780871cc81988a07b3e7dbc2d051",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heAw1mAjpNbY6Yk9CTgp7w17FmuNsuGu_xVLhb5Lf8JxKHRs6zg-hjaEYxkbd1kG40Q_7kCbLtIt1iXIQXPbnsuvNyTVkJeBpP44M-aGOewUcZoKJRlZ3iCawXU9Y8SAfP2Edjr9k2mG1f66OGqgIHKuC73U4cAN2btQVo_ig-BvHy90v_NUjjIsO1az_LUNQXb9wrXhpuGCxayQvgNWRVFO0-fc4GWATZ7EZbU17CRtQ5CNwVjfxvwlzN91eDD_i3nau0fH1paOLQIJKrEd_hYG3SMnNdAQjjLBlqPHLai6mkxO-rVngNwi7tUX90hJxmxJIycVzmZ4qZKG74mb0P-cMJiy8bifwftk07wCoqEgbosiy5LXMGgZMRlCV0MTBup8KqPLBaTvJTXYEz7rQYYu90Kb8uQH_5y_Iw6uOyxJw995E7kHcZ8RZ6Nqld2bMZE44cUTR1_6OLeGgULOlDL3svqvGrfuhjnsJ_fDPtVbvaSH3_bvR2FrB2Sz-Agc9Z-CnGQHYOjH0U3T3fkz6xvlBOPXEEAM7MM-6koWLrYblUzccxua1CnWEhtE0mtqRRpXIwg25MvlyFR2xHUmMOJuUmK2-kGwVEmOxW6wuTdAAKPPNQzBEytCVwd0btTuNJW-oOVt5fHvsKSMGNq4l3aDE_Hq4pIaz1JDWOTKLUKVAVkounaZoQmJlSnv6Hv9u0EEle_VR6oSytmOCJ6DXJxqF0PMJEnkwxpWKIrOmgOoH6L_W8qce82nzBzi7xoPp1fbaTzSibHMY52Jj7QMlvp53GujGu4Pz0f3urzP5asZi5DkdHhDUs5xVBm_OvqiVm6t7sZayZ9LRf1w2QmJCK7Ae8O7nWFpY-2w9CfEUnOk8xoGSNKhhudtOR67c5sPdaBOF8wTxmWzTvOS9ZRfWMjWvniLgLhBuTKhfYt1fmRP0nfTECUeFQwzMDupq_SDJAE_9Gn0HQeM5fQi1SdJJnvye5GBM2gqpdWwWkXv03AcrqnWt5rZS5hGfvNNA5j3Hg-B4-xXK0aiZrpqqQeiGK3wJVP6FzGVS5jsttQBLSvZwustTZ7MVM4qh194FmNEGJL_EeF5jfDbPO5Vw3G54k9B6M2CI7AeilNi478srOUvZAf-tAWESRGscricWSaCLLPd-_vh8e46jYPEJ_BEVYq5YWvDTNGXa-6CLbMK22VJyAtBAQZmckGNsFinoLD78VgEOZbyfd4qY-t-Edyjh1mAJWMcOMn2M1OL42RbO0EtV3CSqTpC3lq9zUEbau6UGBGROsYWHyFjG8vQ1YEhxaxuzklu-avOsQAcviAoDODTKGVA_zjP_R6k9J5rWzDrV9NIRXy_Y_flQ6qGL12kXN0KqKQ6ObCl9faVpFdo1KSw3OiE7ssMFFgj9zEJhelCkRNcFCBbbXmLBLNiNUeo2VTWzfr0imz9iiYbqScFygLVxaTB6vp5MgsUwDq8epLzqCK24ZTztKe7tF3bU3i8JEqyQ_7sdVs88NMsmLYgQLSMDvzPcV2mzrcLmMAcNeIzi2iYZ0ZA9spS6tpyejoqr1goj-6m5JwGSfkQ4y-buDNxpH_GL0m_6ati5x3rJSua-YuKaFJ3iiVQmv0d9XEL8bMQtPCNb6zoTb9KQUYmiJ-O8=",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b7809f6148198ad37d38da939a6a4",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://qandm.com.sg/Clinic-Locator/EN"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b780c5dd481988e65e0ffdbc115b3",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hewDh32dTseqSbu0HmQsudx_k6VMB7-XwExH6juDEt5hIB-QvL6JxX2ZkxoHJb6j4B-cS5C5kDcDwySPlHT9XIUUg1q_Sa2GRLCECnsq9oiqMl7dylfpjWUH4Gf8z0CJ7sGKrf3bV87zmB9XchlMBx0denTSXeIxexIgNkj849n_5_3SDV3gwKeVHbnFCRT9v83nAb9WkD5De11Un8m2xsbKVVzFAvyP5hXoyM9fGofSmIO9YYbbQmEosB5BlbzO1Mgv3ANtYOB8oCjSbWlCVIWS2ATITlYJUYsAMFSYhzveDKHZknmoIXm6bgMzuFgD1WKpc5Xznj4IlzaXpVG5l1VjZ7I5fbn9XTZgdkRtFwz-XiScpFX5JaGeKZH1vA_aArgErDjsdkLpC-E9IZHeAMrGu5bd7lT6am0jChuFz5c5CcWEgaUeAuah8-X3SJGOH1DisOTQGp7L-bF9ounCrfk95akX9zr3gllHjSfM8TVB_nDnsm-53zuNg4y3izrZuPqzOg5LSNRAQYN8olv7Iy3JIlyZleOkoAmprJjIEdKqPJrp_DAg3cxzk5EHjGt8jYIAnjrDbD7PUowqYGYpZEtlnOsyEdMfdIe1iWyWhxglXCJxzruT-Pw8SgBJVbgUprPFd8GvBTpZoZj3cph76FstGSKzCpJna3BujMgyIZsMPtz6BiQAyLzhXDugAvOFUIopCmzr7AlZOaAQbNXNy4njI_w_m6_ghlsd-YyB0OIPRu21F7J3uLqmBRvsua9_-G0NaE8QBYtjXzaRrM_2jofXEd2w4fy9QR9eekhSg2zu6HqEAArQcYgkZlxq0x6fLL0Eg5Hbyqw3GMd8cg-4EYQWmghgUqvVoXtITAbJNnumKg1ooa9QOhiuJsN2SuNHjrH4wMfQvCG5YXe8TO0LnKUIc5yd4fqLu7_6PQZkmrhKHZDpG-WsVlmB2iiHox6-lk01gkSMyWDQjWzdDYFvHjWWRuM74LOjSoJG5Devy8r6ZLzuShvbN4zWvMGSVLUpW9wWPOOxoX72EWUQzNrlo6xpP1VSMr2Q05ia3y8YJfHRCedcsyqv3eBsQoVOWJ-G2uP0oBlh3los9HrIkL8YbAPjzA5hnjm908WcHvmXr7P5CN_hIla6BW6-phD_uSYYLDIrGV8yiY8bA4rnSzpc0Er9rQ0136R3x_FGDxpU9wmVQ7bWZ5Ztp0uKvZIt8Aff_RklS4LMp3zMPuP8JKafkE2jf0q13FFBMU1VaGAHEVQiJjsmmwXevWdKTTR8gilGexWO4ETnR7BdX9oADHnBCIVIfnnBKseYtPKvi_vz42l1EdQjjx6vjWKGBtzc94oe5T",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b780cfc60819881416351e472ff8e",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.advanceddental.co/clinics/advanced-dental-tampines-east/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b780edbb0819882fd069336e37081",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heG6mbNiGFsBR20cSH8AB66udSse-npj5BvRL_Rn-5OZgJZb2WS8qTzUGGTWXoG6ha8-faisNEaFLTZ1vBGsLCqpJhjBQw0SoygtcokxwanY2KPFrnkiswPJAJpqDQzXWkQoWfH3aDUbkhO1lEJb1fji3SD1y-0IjKDc7RFw89tp9iVptEKhPFZrVRr4cMMpTyqGtEGiJ90xmpStjW6M1U-p6O6HwIoz7wm9ceKmX1dM2JFTwcbnnKh9qnjKsF0khFvnumImBfRB-iZcfAJ9X4xmXH3rVZmJI9rcxuos2liBvCCKZayJfbOgG7Mmk7HOKToKSfN29H_gY7CFkq2AE25cto9eKA8-RhKHw7ZffLwm1f7lYXK7iixJG2RsAjyeZaQ0uKYGiy2n0o4cURzFPlK_XPHO_30Ij7jhi7D543ZrJLWk-wGZmhQbvI0Oe938lGGTlX8S7HBDDaWwyA4oWPgJAW9IwS2HN5J7EOo8XTWJzbYw_Xgm3i9asx75C-FlFxWi9-Ucxpx0bkYvwfa9P5E-ZCASv0yodaPn6_csKWtD0QW7C1wrWOB0zBoSOTbMzbLxjCxZxfqiPbmJcqfbrpDGg_baiFvr4-8pdpunUvohuEZEF8E7jImkQIpU6oxDNjjibDgzaolK2LVUnZ9kcycrv6oSfqF7LFLemESgNO5YIwLsONPQzIzSwdlDEkTT4w66QypZNnewUBfR-K6Hg1-OMTxQSwJAjDmLR8qNE6kUf2IGTQRwCHW-YtOY5chpNB1vp9J3UqriOzS-QySipk5VU7S1auX9Jp9fbh_Qblh-we1H1MzJCZV1Dg4EkH3KcLDDgQaaV04YeqnxBqwjpRB2B_qjQ_Yp7XnMQt_GXoJnanJjOm760-h2qfVVSp8Un5K-MYCYsJdSv988g5PWoTPSrlRlKyaSLxzAzC0GSquFUYd1st25qbYoPiSjVq-snontzbBEOnbrJGsSet8HpO0Cl0JHdUd-ev6Z1G0kBRt-JYMkgmjt_2eReeif3c-5ZNDf3NCvxvaN5hHf6qVGocnwUGm0rc2jX3IphSTh6g2T4ytHE86FZrBboZ5I-on6SL0DUu3eTD0xCHN2tZ8XOt6WPQOvuWamNEGoV7k84QpGCk5sbRUBBW8tEKNqyOBVl1upn5Fki37A5vbq_eJlmYbg==",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b780f3d8c8198b826a0a229c91f66",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Advanced Dental Tampines North site:advanceddental.co",
+          "Tampines North Drive 1 Advanced Dental",
+          "Advanced Dental Tampines North address"
+        ],
+        "query": "Advanced Dental Tampines North site:advanceddental.co"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b78159d5881988d4780c009061696",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heEuEYoLFnMgIUwp0-yPgPLsG0z1MZPAhKt2mgof8PUvFwKD0ThhXpGB6839kAeuYqIKGRzD7AFTSHrruWMI4jfeACd8QfpWucZQqL5P6izqmpZ9IXfOKjLeS80Pv1Lw873kHKaK5Gas7HGNO-WwBmUQ-9v1ZLWubYgRtYZnHqrwLyN-AelLrIxwza40CvxPKXWKiOh6tZW3pGCY1s8QiwOIdGNVVYA0Es7VyZE9kPEXs-5-8d84C3yOIzYqkDMBtpnuoTBjUtRyvYPpYnrdTdIayIkIIsn6CVNH4UI-HDBnRYNH_Jrby-HLKs-6j-5RqJIHMG8mlkiSKaDviGSvYWI7r_lrhlsVQMg8HsYKnr7Va4k0NaCYs2g3S5LhhvaJkcVve3pC1Yqp5SRlHNTm8P5RzR2mB1lXWtom8UWBwayosE5ewXoZOVBGX-dIPT5uZTZ68WuUC56yAEupv9UvuS1GLaCDEbnTB6j2sJdePA1E1Ezh7pHK6GX0SDbXzlYi8orBIEX-VMqAg_cGdk7r5fucnWxzzHG5adYlR85GaX1ukf99OgiLEfUKolD9f3ARKG800woBrLfB1ZS1VkputCS7BNalh_lQNAEIJt-8F-1Tcm9mqG_f5bx4vyWhPDPtw25PiFxchhxgsD7VZni_5rkxDEIatldY6-3h3XQX7js0OLx08iFNwXxPupdaBi0N-cuzxG5PMSUjzj77V6ZlpAkwg95_JaAPUgfEiFZHaI-rln-4o49RG_lgRbFH9eNUgZALuIiPcxCdJ7BaRbM-jJhvhnZMSi68MSOGjJQ8S3EcZBG20GVHMrilHGy2Uw9Ekic1lgiefqFLXe7zJ_9Vv0WtcZev39HK-prFk3iQT-7fnZsuza6pc1SWKgamdV-vFJH7Qc8AnPqkdk6rvD9HYVStYficDqnWthLvUHp34U55n_7Y_5muO0fLA0fn5QgNvCzWXAMvBgInjUVI0dAnz6LHQ4iJISR1Ak4Psv-UMxlY-kW6-EaK1EWR12vcdQRSNrQlSszdOIsD5mxJc1F5hltcohlSSFpJFBFMltx5MIXyfbSLRN1QtV_EKZgHYoyX3ip760cH9IjDq_DfCLwjvQ2X_D6DQp8uabYqv55T7smLnHnbaFf8mNMJoBFX0B8C01PjHwxMwjvBI5F6Tgz6R7cqJS5AaAEU-tBil-9YY4hJWlJk6uAP7PFhJoDfMwj7IQuKSZq0-foHaxugUNRN-YblWH07QzWIXmA06cjC8SQz1JGgDgrkl1wllzlxdYEE1bOfMcyZEGhhFbUMmQdKoYXJQrY6oWwrwMkGArFqeTpdeK4EEpKihlGSzR_5ysTdThAcqyJCZE2bOgyMZS6RGwc5sjuMjhvC9ZuLxv4yPChP9PulFjYf7KlUWuvZtfkBozrmbV00qXvIqGKBogVpAGjy9V-pyQHJ5mYOQYZXSoWnCEsBPt3oqCGpcbYZU4ncjtbtrERokfBXJoOYbSqk-Q5ooglEc2599dFDQ5ubNoP5VP6MtSnSdASxQ3GD-H1HmxQXJxxzTSUEwHFNswlUDTdPOLhozikwFUsQbXnCx4B0Saiehg-9Wgbt_xsyjqGXcr_VLFigzyApXJWFmryhBdtTkezIeAneggBu4weuKp0Q7D3ww4OeaZEV4dDrhtSwN4BS1zof2cSvn8VW5L4ermOCIJi8ZjwI5qFQhhNXeKca54oMOAlbYPFPgo1v3wohzzLtm_TuDkY1iYQMtewbC5kS-8wTcCcRixEuzbyL2pZHLxOwv4qVj5dGDgZ0IDYvNIi0_StQJGp7byhg2eSRx5o3N_0myQvnNA4a62RgNp0ZM1WN-DHqGfXuphOY9E0G3zxkNb0x-FfN5WKp4HyUtvYVtsMnhSrV99V9mIbM2JZtO7a14S9V5J24apm3I4xdm0ZLERADUWliVyeFmgkVOFpYIILhUbxSuIYtL1PM5ygJQOCm32yTZQXoUPOpBgUaTtrtAoYw2bAK3uSQ07XGCycn-lab1wFZT_ewdV-dxo6SzypkpDBSfwR1B1Yn2ggW-CLtPD8TGsbh81zD-BfJZsLGFXKfcKIZSy9e8vq9K3Lcxhxp9vYo2YR0qe80RPXhEel8F55C77kuzjE3TR1miQ2tsZV-CDrVQ0n8ilAFPEoY-tVr9uZ_onaHbSUJyG34u8aEymLdMhZyDNQRBqhbbdfdTPTgC5N4j-fPhPVyqViYsdTlvABIOBRjX3XPK9emJAKaWTDHySHyWFXEgkdc7fN3uz_0CQiBVHyePrt7JZy63CRjtSQE6aj5Qal8Absgpp-pQZIvBJiz9tNW7D11YjMSru-Bv3N1Y76mzeOrjZLj4eA2PiRTVUwcD2mZpSbPhz",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b78163e78819882089757e52ad215",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.easedental.sg/contact"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b78183be481988a136da26d05216f",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heQoM-JmFphYchbVk7ziozvE4fWCmuf7Bed4vdak-LoFsBco6L5KnAVO1_b-dUDdfy8eJ_RMI0H6YIBIM8Q9yaNNzRvnn1b7cMJqSdrR3mOc-VU9-5RA6IT7Lcim4UWbt0HnegggIC3g5uHBQHzrdf2laK6WtuftIp7uHn_q-83-OEfRSSkjQPObXUgwb37AL6w-1d5okaq2tqSpUX_IaqB53y-C_ZJlqwwAUlOlktXaop3L_5qCeK4KhYxFwP_nDez-eqMYChst79KjhxVgPgAJRzbNOYjoTAX_1BUqeOvK0tRoCb_NGjOaVnHJb-Sl2LkHX8BBqbT700dKi4uuF8sTa3AfNNzeZ9pIwqBqiiGcRyzgb53vQ7Jg8D-9xUDlGAsKndypchlmIIGqnNtr2Gj62xoaTHyNAjD-73_Iyvt5N3Gop5fK_ETre4T63ivZhbnb5vndOVQPnc6M5tGqvsbM5q63Fa5NMwKVAQIXZUknfSnkm6wWj9OmdPUYerby3yHbiBojcqGq9BCWz45yk3amosIlxuJ2utr6TSs3Axq5sVEZMSnWgxKz1GhYhYLZEDisgLVvjOVa8yEHJ62UB-1SDM0agVBGWTInv5dy9b2UF082-NkIhkGk0x2A9FGauhpvcW7FplvZqv9PGOXCTna2Q4-dU9YNtAR6hrHag2n2ZLhbPrKMQyhN6nwM-4lVclU7m7D1f5hC78UHSJ6R1UBQwlYYx3JGAhK_XmyRxrRGMYz0EHKq_GBqT-Uxl9W1Pqpz4o5SehNOIVn3Vwe13iPIjfinHPOo16FCm0Xv8t7EwcNT5ted8jybqYsGfQsrLdwsugGF3VTtx8d3ryg6cGJ_BjM-WFEegr7DwY9aiOHCTI3lTRFurDjyxB1Tj8Zyi0OjIyjHW29YPTdmYwu5F4If6hw5WiOn0gib1kvXgtUEfF5B2B9tYw0SY978c7ZX_a93Fgy1O3MZSAEdH0U8jGavp2pFdMCg0HGKFVkwmD6srR6AfUIp45-Bbg0syHCHuCdDX8IDptPe7t0f0zI3GQbQBTVdw5eY0-0gh-zVyYgXoEYfSOMWsfwgfMifqSVBbQ9OfgHAtRPYa0kD_HFGQgeHbvFRIZScJdzjNGhU8QC5piWbtco9iP-6qHCMdJz5aIW8DRkpxVT3aDSH-Xt1_5VTbXyknYT4gtLvntL_fi4mPyrwuu4wT_899Hn9o3rNOT14K9zWxG-k14FhxKs6kxUerMlfOHRBdoIKZFFeRqIP97YfC0miHLazhZhund1HUI",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b7818d6988198bab9e69198d4b01c",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.tanglindental.com/tanglindentaltampines"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b781bff5c8198b5b04ba99b2ebc66",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3helAQ3wmY0JHWbjpNOSlM7rf1hh5r2HHBWduhJrDbtw2xophgp2gXAide4CB9FHKCO-Xrq_gFSbKDCVz0E7TgOxclTapljKlQ3nkq6P8isl_CgR6VHRAQfa6LL9GgdT9ZrOurZocbIZ87nG9OM0TakTNH4cw32GWbmcjaL8WGd7OYjzpN-myBzVKCHlV4w7f3PecqusErTyuyZB0DJYbuUCxXph91HN_vIQ60XT0RC0aIU2vHAUAffuuZLaxVm8BNUo_a2rEN9zWymP42wUSihOS4PT6vhQAEepqJvS0ElSUb_9svEfbmU6upruWfQWaa9hkHklFE6ribFdRW7uYqJ3bVu3390StRwvIN6AVFngqcp4WjEIO6kb4DueVRuAEP0rJ2V9oYMQJVTkYwPD656Ea9vABwQ73YIvgdI8aLEi2g7fVA-6AUPRYKDvt_wVRxjRUbGb_C1tJryzFI-RBomuV1_2i52ke6rqAOU9ZAXezl79k9Xo1PBLrNPKe_V5Z6fjrBbWLObTuwo-XBS1KVPWw6yW1tnG_RoN1Z6E9N2blv4VGT13MiBbz4L-TuQ7ONLJO0lEfxNdWkgiQV3x7CTfRVcTfGo_xY0D2nA9CTRAv7EvsLuMGv-hQKqFmYdDvdhhnJvxKeEJEje5ej7qDsZLPggnstkFa58CSmZUgxJpqqMJIZUo9yc8fZIBCG74VfFBTgnvHCxYiTaa34m0K2OgqO8h5j2MJSxU-FXTYSjoKm0oYvaY695TB2cIoqXe8LvLm0r2m5-P2JCmZZjeaAmPYt603zB6YFfjOSkoDw3uAs5P21zfbFZlNT_x8DOWjdlnXQO_JZY2oGpzKud141pDdeKNnwnabIY-pfAeMRawiZmhrG7ws_XsAMhv2pOlzex7Ve0SQ8h2Bw2uImBltgHPxmssY1mDiaEebRo8IVH78nFEPMxr2UHO_aCe5zKgPj3r1REgQpH2p_Botb_i0vMmQhZdU5BWR6-XYxEJoEyQ9myRrpaDe7cGmyynhRWs_PGqP7h-tqzkDXPQJyxyP-xUwptKBFKgl1yyOsUZvU3cU4aERV0KI_M6pUzUj07crfbM3ZM5CHpW2ZtRvwLcshcavCys6wL0Si7MfuC3ofKcUeLZaFn5HfINrVWEq04vTKXSWTE1CS2vLQ3C7_FGz00WLWA-w9xLlgAvQYVsKNTxwp08VRWNFkdI3rl2edpc_WatjSF0Ih2Pkm2MhmUk7OEX3qFmDuIjUcVmtGvxf9DPR6fowDNWBePYcG1ngfx23ard6d1-f8akBsSjOZa6mS9LZ2C58FKnXtLCuZTfiRyVE6uKh6rSRvJhBHnCw2EdX3tt9o-L4ZXMb3P95UJjt7MSzjEV2UbDrxcd65d0aThP7fGK92PEJQ75LjVfaza6-R9o_tosks5G0bk_KPHkN6McyX7bP7STyFZdy-i3M1RtdmZQgWuDkE5RCsz6vxqa1ioM1bnieVgZxJdbsIbgcH432LL6PDgMrxJ3IaZKQpp60MQz3ormFQ9XCwJW5DYb-tAvDaWXJUkEa7Ebi-eJQ2g_R4vNQzhd2QrqXKo5Fpj9rq0vX8qq4BlWjyB-fEFIQrYGU9i-aLHXJ7YXbmPaOv-VBFMqVJAHerziqEci3w6MpJYhNxm6mRiGdIyep4BpO1F_OlgxEizT7jdjRSaXxvq43tr0VHjW6-VKsLS2d5IcR33dHcaqTRw7bxUwgf1fyW1Axbs-c0JYq-zF4GJP_7TEK8dDX6z85dYyB3OoXJVT92UCoEQ4G0fyTN7CxC57UxOfPAK3hp7PKVg2Kj2NJP3qBe_tPKti3qPmVZNL6jynXUbI_PLQZ3jyI0LrtxwwTxgIq-86Pf0HWPZc49rn1H4kylkNMXtSv5yB-XGOP_17Lfvdhe7u2TxyVweKBo9wDjp4qYKJzcU0fWQyWMMuE8O-TbWSkeKv7dOmSVYqIynpRkIRvnisOmGOeKXddTQ7oLS1Qi7H89lmUg_1YNOm20tij4yCJUX_QXn3RTbP6Iu_z8kMf_-qEIzhoOe8M_jWT9_LyWwg9t91GMISbXW5VMfmbxtqgWnxildqoqE3odpIX4ZCwvL-wfHjB5yGvg_Et5hdr5nm_H75vw8kh3VzFJBvCkqg03GpJ0yW-wIL5npQwaURJ7vHflsRigWpTFRfU14njZyquJZaOO4Ot4C5gpWRdUK-CE0fRZ-9R_izY_4nwc1hbWUUnGXmc_IeEG_zFJu9ZXoSe3vEEdnWA5_OXKihu9NA00EFkHL3Jzfkx0BmRnThWIudnwaVBPlopFZYLn2j6nS0L2lqUR_8wsjY2yE-iNLXuMu4tGp8HN3mCKcvdREwlUuL6aXOp07KqtjBVE3qwnkFnVqibkr9HM0jRMFjrgnk-PnGeKLT6pkwFlgFQid8hnQxqfU9KCbEXmBgr3VX3zS1q21rnQU-r4vn4aOtyw7on4uFP2RvsC2OeBF4q7ogRHCy28mfVFfwOKQ0QE8J3A0HNvUnElN_Ip1pNEoEwGEhTu3MWwd5uPPbUqa04K107NqfZsp-qBL2zTTvRY09Sf1I24BX0JmhDcCoYNopOc0ta0_bh2P2arilKUN1kukPsLwfr_LrenNtPTye17_L93apLuHWRC8Ei9mbMF8p51SQ0UfrkAVF4mn8SjNNv8BXlOc7T_EK7sqDKOVhmv2eYIfgU0oTwxDNFThX_BKf8F9J_oLWozjShfb11lMkOtpzo9eArnFgyIm1ZS93JAOFu_bt-ruNe2RNUG678eBB9Lx7GqxYGzAvir1S3y7SwkBEzt3KN8fUUFZVoIzoUvJ",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b781f24c881988fceb038932d4bdc",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Denticare Tampines clinic address site:denticare.com.sg",
+          "NTUC Health Denticare Tampines Junction address opening hours"
+        ],
+        "query": "Denticare Tampines clinic address site:denticare.com.sg"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b78281c048198956af64f3c3da296",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3he488X6S5syWaN44zcauOBo1lYo6spN9pAXS5nSPdwdXmJJtKvKFOVUudYjfPAfVi_zuc3oatsEmNR2IxHVEKOOnbpG3KNvdElP5KZMbfQr1rKqWsWxOnTPJ3mWyTgypd8Xx16GhBnB8FuhvPrTH409FhAHb3NJrPJkqQX1f44dQJqK4hJtYtQ78q8dRclMBkOOcugvceECDW1f6N9v1oNt_H8jIjIZL3gz7DQwcdQAsbhwOqqmbnHC9k1sUz_9t-z-83EPHw9S9ANeCQbW4vi-axTVwpFocmCIfx83Fnlr5pZBhFrIX5EHsN7DD0DHbpoLIG6fm7HqVZnXJCQ0StDBDg8Pf8wXzfWt7mHa4X72nDcD_UijVjby4rRVR2oKFlnNmaUlYkmzNZ0PhQ30TQPGHsZrwPuWJLPtSAJOVrW-lgOGgh94sEg7flIfEMh6jy2PEhtWp2mXsXWV_8CpWJu2zsobsA6Qz0vZkASw_Fj5kAEyrccGIfCthd-rbFPkLEPnAUyMEZhnV5Q8_Q-p6UwGZmhgmhgzCJMdIngK7vz428qA1KwrzGoXudXh04fyMoRznWmatj40-9kULOLqVCx1JhfNnrI7ZfLW-tgustj2px8EJ9W_gYHZPrCI-v-CcX1dZ47jPWG5JOJuBTt5xWh_aOrDEjntjCInIPCCF3ZW1oZ1RTNhTgs8IxReixyx7ICM0bSjGtvDLp5I4gtlOVkAzayY1sHAJUvRaUFPKiOHvTjXBBaMZUKv-tTkqopGJJGvNTSypETwZsfGxj7osM6x_gTOZ52ktMCZJVBCnB3f7ZUW-BVZJo2wvhLHzcmo5s5lfvz5IoET9rwXsKWpi5lVg2TB6D4Hi3OuzNJhth9FXdxJHpR-64q144pTtDf_0ytbXDZ5k9jCcqbo3Z5igNtMb03-OfLTFWwkdrCY61a32rNa8cgfRlaAOhsMqDC_B829a6LuMFucYxnDFudotUdqP5uonU7wEXp2J2trFxxIbLnQzl5fZxP9-6oys5Nf8OyOOSPSsqosntlkxTQgIwyfEwrkRHa-unTi40IwokSH94LFaVVhLHXjjL8hOAjnjgpsS3mR_aS3B2E8AL7b2cXdSi80D1M9BIRjVVLWQIZzDiIIaKLRkOZznn80DEkkE1t",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b782891648198823499dace54796a",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://denticare.com.sg/locations/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b782a5ad88198b2fb8743e1bbb526",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hedwQiROr2YG9pTgoUp1spPjqj0Wcie80NXyhrfMkwqRgL9GtDNg5Y2yQRH0YwPJZNYRM9PKeUsY-3D5UDad25B-8gGMmEMPCWtbGcAvExqeHOAiS81xnwfwGwY1KeWe4GvYYJoBdfSs8m0oeCL9YQa82tBBJzqiXWMs5DDBTNx99KnlOFr0LFWA6OG4LWduZ1OyCpy6ekTolvwkq2eQVvJOjTdWfBZythEnnHjyuNCY1WpEqTfCN_iAUC18EAxoI_ekDLozbi42edqIx2twjN_rqEC4h7EM7M5-mpE26BUNFOWrC6DTnzoFAKGO8W5KVa3zM7Ns7rNqFkNrfIpWOej_2VKymwoAYmyLSKO2vvxuCWrvm8r_sup5708pgN2R0Xk-F6pFvKRujP-kOjbJ1ZZR_jFAzNpfLTM6Gvk3LHNRVoUbqRR-IwL0GtffOPk2Rsk-Qog6zDTcl6Q-S4aoOYuRFOlAL7iYQygPloKHwj4R6xVSoW-Fcdo_gblPpmi0as36IAsA2lKUK1fveTTJZHqF4YMHOOBLRcBP7tsEgNeEIqr7APwQsQ4Lm1iwJTDS4N4OtLwRq2TnDa3Tca-0i1K5Uf4WoQtA5EoWbycncf_LsXKakaI8JJJ1jILhC2YExHL4PZs3oQadN8nL08_JSJ20o2isYkvskKOhyzmhhaiFE68U8Nk5HFxFp-l-vFcMQDvBqnNp1OHmDYZXNs85K2AnQPZ7QaN95aTlm_6OxZkA25YBniVhLo94Sqh2lDUm-u-hPizuuu_NtYFVfz49Snng8SNu52MNzs4Flk2Xzhfh6e9LSoAQFQmkhocRjyfFyUu8CSCXeoGjXJ7w_cZ_qJOULDkzppGXS7Tz0pbQWPQVup_p385GOZ_-WoXrtiNJOK5j6YuXNYLCD7IA05aFTwRoXcTfPjJP_Qma4E-4lmbXHOcQvlr6sngTV97W9_UYFxOjvtCGSdaLxCsvBT4uEktCc5t2dBUsLb_Gx3nSFx8E-WanQXInUHrA0tl2p8wPy8N_KqqNbEp0j6QztcyVZHwoUpeBP63BjdN3xHTOmolPcKt0FOdrI5S96Lxg6MlCjWTDgGiHmGz9PQHie14WqZ6rxR5101E8QP4pQqfIBkhH79G4XNVonDcQ3_GaFu6AvHfdF_4fp0iGFcIKPXSnAviNx6niqJh6FuRhpJXhVrPink6QKce8BMwDnN1OnBwyB5LG8_BnaYdJLvqlSQg30V3cxXpzWGO12SMftuJGuzejI=",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b782af6308198bb1f1cf12dfc733b",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://denticare.com.sg/resources/region/east/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b782c3de08198be3018849003c591",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3hefopSbGd-d5BKqUqh7xTpDuLqpMeeIQrBOpFsMNVz9V7USxI3mmsGegZpiTgAr6RGUdcDL4mOaZreNJLm0onZmMvW5YTjOjPnnDuDeLu4fpw2gqmX7YPZsPJ8E6Kt6qCNcemijR40cUqYZKHloarkkSfW4T5zKgS7hw0nnIQb2SSZcQ4CyyGtH2qpW5rhTkotk8NF12PSefBTU7CEbmgqt6XGxpBh6MbufdeuAngsBlNHVvtpG-D7z_RYrYvZ8qAuWiqmtHKyhUudzubTfIb8wsGiTgvCLKyRPHVKJqt03s8fA0oVZ-gcUGybBQYbqAM_zzPIY01i18EbuwjK1sSTWBxCkkL-xuJuqkybm6Lnmnip5mT3Wf5EJ-PGNW2hCOxaYYmP4n68wC9iFzU5SFXMOeU9GjTf40RQSmrr5XIfrUx-ZC9TXTvNkYDmlhilmhYX_RBoH-11R6PjMUr1z_CoO1NKp6ShTtef9fEvtcVBhABYChAXUnXzvMbr0GRBi1O2if1scXvv-nWGLU61s3DJ9dO6mEsS41lbM-SGbeGTHtCq285jnxgV3qXYg19Sw90R3FZd1rjTM8OUGydlYSsXH-1CDEh_iEtmRSuJQTg-rNVlUxo6-4x4IsyyESHOH6PYGgmD8BWOiTHnF2-dL_5omuZeT_J9OR3J8rDKbQNX7rzKQSmjXMeEbeODPihirclw2W-2ceA01Nte9OuGiqN9LoIBUlfYSSSVk38EoxpliAluH0GOfbl-o4w_AroB9TNMWDT5fZAvRlr-k_j9Czw59Xkc4q8H2Yd0Mx68Dy1pUBiz54KS4g07FWB7XhE145-hKNutGwWuYsXmiUp_MPVhouZachfy02jqVzDIaOyz-y18XnER2JEp3eSfFZuiM9or66ozt4ZjAkr9VyDnlamPjR0j-ILN0vCjREfmQRNyJbdmhcwTvzjoplyRV07YcqGUDyuTqVV5P5YTo2rS8ABqxMDyTRYw9VJqU3LBGBXG2ngEj4hLn0mbnyjXY7mW-bMNDtTez6Ywgh5Oid3WCuxsjth5BzU3fft3xmQ6rWbcYm2z7V_jMF5f88TS8KTfCUBMldsi5KxwC7Mq9ttezkeu6A7XP2C9qUY-0k7fnedLF35asCR5T-YLCayAe-3pKXr4IVJiEAfAo66_Ko2oH6HABqP6l0qvOBot_PoaDdywXxJ8XNAXhun_SyQJqoHzWgcMIc5EjpyeiVWkTWoHzUF9kYM7WWEbOiR3mejEurmBCegxM4WJRWPq2uUOFNpXDYEQT3D4t8rsgC_UhvUnkWXLDalGfIpOkJhQo3lvpVK_08WQIelHq50WtOLtCAqY3ZqYLp3Kka6nqyF7LSIotuCPcEMIM5GmrG58vX5ESNJyD9yQGdVGoCS8pWDJwdYO53e4PnE1-mgzvrvv7cUR7PaIqsSNsvHVSlg0xivlzqSvkHmsTCXfMccdr_iP3A-UhIqfTXKPiTyE9s8uX6RN7hS36fNLzenuqFA_OxOa2P6ZPIzAhhoN_e8RH8A4uBUkXtXkzt-R352GSPA62RHj9fC2PqatVa9FbJngAMLQJJ66XIPl_yhONfRDb4f49VPbXlrrd8imHDaan3FcoTaABA-H57mVDjVl2ErnbjnS32b891OnsoxCSwnOWoBDPTrH3GsBbFUiNlbrBaHSQPA6NPmKkSOksJUOt0uvHUAabWYNi9gicqzMoQoMemMEaBVz1WIwn1U6M90VOo22Q0f32aHdTJIckVQsDOcQNl_dYvjqfEFtnrUIZI-odY3kat3mkBB7GFhFELOkyXc5Pg6p1Hywi4K39J5tJNfF7mARdBC8P_3mx2FHn0d5uzguS3eC6QwhZ2-gk5yb5c2vB9u2YTghK5i7RP5cxPj8xlPN6H2sASypYz_tu5Ea3fvXr7wZGS94XtL4WpS_VG_kkbCF5K0EIViwW6KycDiSL82Vo-8pWrrcxqnDf8jD_aiahJcUhw4i",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b782e2520819899f6de6b403209bd",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "Q & M Dental Tampines CHAS MediSave accepted",
+          "Q & M Dental Century Square CHAS"
+        ],
+        "query": "Q & M Dental Tampines CHAS MediSave accepted"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b78351fa08198b74a89abf328e775",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heVFCIW4fyObCFZioGuLUiBodLBlGqi3az99h535M2yetQxdZE_ManrVhfXZv9ovA4Zncahb8W6eceCJyS0ZlWTVwMNt9DXxEftriWzLFrohYqPpgf6QLf1zMiMMQsEG_t2dvEMTLpCDcPv57uzqDC_PikCuqTzcxXKFRsDe1T_9kVYwq3CiFOryLregWX7OkejdcAlxxUrmoZ0oOwkaQCEFFopRiCq0RMzrOne18NqSKVS4eJjEzub6SdYkdC3ZNYJezZHU4Avtn7NyJs8EJyCcBHcxBTvPXch7eAzDU7fYRnHYuYhZv7TcY-fgFa27iO6pNNE16Z4CkP9DUDJLYhRww8BxqES3kl7igNXGh0aHADGyopbckMDipo-kClrXNW3rCKXaRQnBj4ImYgnHeAP9C5JfUZMPFm9eBg1FoCNe0i-GHKbXovkZaSpmyKJpUma8WnUiABteM78Sr2na8fXZhortsTDPf-j-0vrftebgE-k1dQrCeHpx4kwgO0I2K8O3pQ3Tx3DA5hQqot545UXfxJaUzRvcqemo2cUXYI9qKgg49C9tzot8ULUw4jOkT7H9F74PynNyDPaTtWNcwzGHsaFRF-3d7M52jQ6GaZK1FemP5sNdz3i4nR1F4jTVcbozGxrNc_azbovNkDUwOGntKKJ_r3BoTZ84f_rs_xWhet0kJdS5foGqC0vwrr4VVRLjWEXLstWG6WqYTujxlLB-l25-h1jabr4vihn1D0LFBs9_HjZun0pZZojIhKOQqvH5O6atCfiwxYaUnmB_0fiS90MX3_Cg4V6qKsrDieNldmD8HoFM95ESuKcr0Zt9oFQ_624hZbJKiX5qw_SwB8CmUzB5GEFRYm30tbLGwiLxNY0A9oBGGrf8ISlhp_LdMzke_mtdxtossFbjHMSjAh1lTMa1dAh9QB9rX6QxpqHOcWo3AB8_SpoUsN3mRXXDLrSrprqDZEz_YmrQqQ0zgqyY6XiQrJWKk64B439lTA553PNMk-Xa8sKsngWxkXLr_0Opkv7Apry3vafFEYzPT56RSg_zmnZtVwhlZmkNGv75ReCb4amWsDPgO_PrztlpL87Zz5ZrtjRBxs-BARNxKuPpojCOjsH8TVezWY59g6PaIOHB6jYl6L8zbFMZelOOGZVtUWtlcXG5st6JFU3YxXmomP2dJWvT1rCOVg-aySzOsY63zdjOrJE3jtC5rf_XJXZwC95yOFOz-Qyb6GBQjpHfhCP-kHLS4OC1eF9D4Ud2DCcgWLkscEy5hRYpW9FA76nNZlV5OcFv0dBDTE0tXV8wHJkpkFY5EklitxombkxRGN4g-yy3TupdVqf3JRotW1rr-gYrHoXsEe3gVGg-b5TDtjDlUjYn1LhErdAK9-F0KPbc9XdrLS0nwVL1444RIypIlhMLZxmRo4ecDJJV-xV0kcVGTsbYehZCJIuAU0V7_D3Hcv4LhaNnVjh4e89_uH",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b78360e1c81988b8f610667403acf",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.fdc.sg/location/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b783985cc81988825e789513e512b",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heP6AsfIqQl-CReUHqtfJe7XZuA3bsS6YbtMirRtv1LkbG60f6EaDDwjTyaaL9mnCx1GmVv6d7gzoa1igJEActrsvlNp83c0k6HzBq1cUz2ydag4O3uWaHiPR15nugjFxJLze5K9eH5zfm2i-SepdUhWfORZy2KP8N6NjY6RGsJgqRcJd7xJIfs6m9VcxFLiWZiYJ9FxIbcngbXhCGlMNUxI7V1yF0w7oUZazlr_KwPYxq7zDg6YaOpm9blBadxjbHDxQTJfal0zN9wE-uLJdGpTHH2FMHl5urfVQtREq1B471rzU0CdNdhRV5Lo26kUT6HhIpztgycVLlcSBn2kJxY5lbZkZkwXziUG5o1hK7RvaShDR93gtiAVlKHwVn_sMjKh3_pVLtQZq7oczrmG90UACMtwA7fT1yP2lDUX9bc6MPy4y6fMRqJNQHCccAifsIaVoksT9iKisZ3Lm_f-GCw_NUOVeCmR65Bg_5uZaxTZSmmMR1Hr82UF09RPz6N7cS3drsbbEagL-93rF2gTBhuEb0zFMuaa2loAv5pSY48VX7qL_GjzQMzvN0VnqaRAlmjVIEVMvb4FIEOWrVmXIIcxTm-xDy0vPxI8hBT9_XBO8gAGnGHppWS6NY2D6ID86lgjBi1gisg14iluC_k_BH6J6L_tuUjpTrDPiRVYa61lpjeyikF_jsGZBAtv8_Dz3jRY2xudxuHUaVYwLTWxDXYEVrOR9sXYf1Uj3VyoF9GqllzzE-uS4Xs9d35uoHPa4a50KPR9MiGe20Tck83WRs5_KpWN_p6mCEcavdQyYZVYbh0mYJJ5hQJLSEIs-XjXVVznBG9xV6ha601FVDY-lQg2ZHg0sF4lFS8wR4hXceAnW5Moy_vkrt-QJI1HWswnENTg83fmR_6ul3FKqJZLXUAeSlfr3WSHclDJFjENFagTEPw0405LZs6VvOtxJNAwZmAsm0vEPa8NQmaAm_xvJoYjF0TbmKLA33RcY6kW8U0tPTqu7LrmNlVUWt9o11MfIcD1OmYTpEdpOh-o4yaXdquId_thecASJuCgUhLTZjo0nnVguUyPLY2hr0NYD6cyC60Z9iFNMGBTw9RK4vPia89rRf0bjjX18N_n1JMbWKD_ni3rTK6IOjXj0kCbWPGmR2q854NkYAiF--1nWm6PonD6_3aHEbh8r8mjhLy2HU8H9SWmTsqZKtxYC7sRubxCGpG9IlkQmMc-VOzX97_3pXbi5H3XUmKdsANXcYenJSlg2iIbfGs6ad84mOGeAylFa1CeoY3IpezBfZA1W2sa0ImVwvMuiyBGhrO1NPnCp2LGoB-mBaF7SdDJ2pWp7K-I-IV342h5bbI6j-3krDwywyDgkS_2ctFRiYkrv-yBI_l7ydj6vz961pbBAEh_V-2sCa-gGAi5GK3lCH14XueBzGoqGZaI4yKci0EvAQw0IkhZgFizPMYq04p5V2wiijulJw3FHkrkkYjZJ0nsRnZxdBtKBseGqxqHGocTZZtsgzOWZOd6BNSvGVwJdm1mzUDbK1XyYMP-4pMgYPQeBquhT2yWSGGw3ogQoyZpDQdQS0n6F8ZB2JJOANrNbc3wWeUlDR",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b783b0288819886b92a753fc66474",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.advanceddental.co/clinics/advanced-dental-tampines-north/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b784362f48198be02ae668fd2d8d0",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3herv3OIpnxXUSwCQ52e4P_WAIKLX6n0ArgDY6Cd7DRkmmfJ99clH2C_VI5w6Atc-ECJIFMnE9dsBQiRjySA_boxc0o0ag5Gm6knnTFrhUF0isE97qzUCDwua73qcwZy2S_SCpu7X6_jdwHC4Ktnrx33D5YoO1dIP3MGxcp523VKTA1S1nIVHla9xM04nZaHMem90gprY-WUmToTtHe51JLF4g5IKa76WPsdODOq3uVIb4EdhcLS_i0ZcObzAfBS3r7vh68KdQA8NyQ04pZi_-6pyHW8hQkgE14lJjxy0L_MivfBQ5xPIpVxHD0Ls1kxWcBorNyPEbpIK7txBt6KNA5c4CtdqS4e1Nd28w4j2HsXBjm0dNQETMh2-ftblxot9Kc14pdA-3oqyR29st2tI7Oih15FMlXTaRFDVmrjcMmGGXZQHK691zIiCspy74UawNXfsavOBX9chUrNgso04FHfMAo98udxdpfABAtTxBoWYYm7uMexSE3DX5VjAY28F-dm2gJgUWN_usI1HpZRWqothUiXfsiwfKY3NlM-chNmhAJmK3FFpDofw5HJZa6ldq3A0qhqDgZ9KejNwIFq1O-iB3N95IIHjcQBhem17DGPiQpDSblUMrWlZkpqidMHqTWcoyT-pz8ueUcLWGAd0WYfRxyBGSspUg4O5qX-i6wcVtEwbaB6Qdbw6ASQJwBHqZ5RNPxzrbtBj80M_N5QWpkxiDpzIZIodYE1f9rVdu_iDDnI1qiV3xaKoMwfx0jfJCRj7LrTQMRiYsF1cCjK-J92YfhUTSLAGfLw08-V97gFdOMn9HO-p09DloOKItkWVUZo6R94DXD3UHCCq26cHapeBiHYbWG5fyn9qNibDF50O2G9eOAkfPFtZxKplK4OZIoMjs0az9OZhCHXUI21KiLvu1akr7zKdXJlHUAsQ046QdLaX5Y-EJiiyet_7HV8Yu_Ka6qGrcWUPye0LqZZvuNjvZjrAMlo3r-0y5Aexa4CatPecQe5jL-3irpx7irOzAxTEh0UsxVthwglB46MPKE3cji_GrTqFa8jhiGP6MIsuCjKqRiK2sNN2YMF75gf7hqOsjjrbYBZEP9nUjuOo6y7I7tTFASnbDMWIUqhHnA_dKlDKzphCPl6Nb8kbjVNgIRY6zehW2UE02FeTiE67xdkpeRz9K9uciyl1gJ4Dw4B9m0xh7eR_VPzdIZ1F5U2kylH-HNoFr73ACmT9_EiyMi7DDL3idO2qb3w1dNk0nE5JbdVH98gGaITR8Ua3fY7BNEIT1ycfkW8BzxkDfKai1C6Xn--xl7y-AHHeM-KWjUJDdLZc1vFK6ir-dSE5DLxlIsVc42Ngvxlo-oHuN0AGjx2ns-V-pter27aiaYgflX85TbitwlMxOO3F-5Xq380Z6S3_RZkoG9DzIFaovvEVTOC41i3u_QzwIuuFRYs9uRiiZdCey2oDUyI9UlZzoDitIVfDnB84aODJji0MmkNaD3XpBQj10R3VxjbQjzyW0Y3mweMCT0dlEa2FNY9KBxu1jhUcRnHmPd6aimvLBnX-ZgMc26gBEhcyutP8WJ4QtNnLb3T_eVaQhHDz3axEPLlLtbZTZ1lYsyjWX29oBYEdIn323_TDAi-FevLl9BnVflVPnYc7o_Mmq94l45k8MEQKjDC_fv4SeVo5Fa7fUKn0680mQLv8vSK6TbEmlXJQHQkfzD49xrpVDahPDJJ2rBUzpmKUzWE3BXBL3X5WG1dmDBkcDAsdo-XfWP3Qkxv88jhViAxkfZQQpTC-gCVTFs_EVfCQxRvvsdMkYznD1k9SXGow7uNrfs0Uj8Ltoegli7ZsCC1KD_UcGpFejhOf8dkoos_EF_HxBljhipa1djdDfRy3sCgRYoJy5k8cYUTvVxwQOf1vFMOnVX1_aU03gx2SNqWBmpGwilmkM_HfXNrcwpd70WulchNEu7IrPw3ZNLXzmbregelG9bvauvTpsbhNd-tP_2xkWTk1KmzYDoWhxa-9upptBW5_IL6qDFEPyQQ8a7vCSkXJ7SIVknO7Z6ro2NRT9M1Bhm0qkJsikKz1ZrDVt-cE8vNoL0DGoFemyhVrva9ImUgXXsWZ1BL5D_ZU_fAqnUpeD6rerUerTk4xtHZFXdnChI26s5P3TJTlrTCG2ryszyIMOaDqwAzKZyDHX9uC76Hw4MCVupn-xKRBHyIaaAoMzHuin0lMWQ6bkrX2iX0vQJvJtOfgSUBaejMCefdVk5-DJgZBlmtyXWVGlnXwJIYZRCFHJZnCUNw73xcywD_SVBlS1QW1lySf7KFiSK0Zi7kOwMEchmK3dlmDrgqoygmt1ethQ1n4XFIrlY8UpXGGc5_5o8fc9rzoWcfMN1UjjAYSD1aMXuq8yB2hLC7siIhJ9q6cEP1H5CiNFzgP1D8R2q58GvZbhHuoPexXLWKKgAjk7TnmjKeioH9TkDb0KkQ0o0GKgrBSniuOZ8RXJoBtMLUf5EAKG0TIUtZ-WKHwsz0F5pV9zgtLgIYfELctH3p6Fr6Nj8KLE5-0ar_CqWWedddPtIMugUgJGzxGFKkKkASYG5KdVe7e_HY5Z_hOXeUlN7IIQ08FxV4raSMXkJ8hx9cX6SLWNYxaxIY3RkqaPjkHbHqLosBMF0W6JpD2atWGMya_fBHrJDIWzd8Zi5Tm2VeJtP3o4hktemHHJjq1qCe6WdYs4O_tg-lw2zExFXHAbhLFrJZHoSdLFPVuzGh6xocnrv32hehc9Jr8eeDfTOQavaU3k3DXspCmQf6oiiEQfAtdMkU6DHUcIQZtnONe-YOzQ9xnMZ2Uerqf73oqcCIyhrnHUTWkCvIerdi4ZyHTwYebJQCqijbh8cumSoILVCVHWAOBKWKAus0nwgv59YnJ12i8YVOYC5OSqwOMYWsGC_TEGAIJ2leRKDGpjUODNI82_ssh2hkMPu9UkKwuAMSYKeb4teOpS8AGEYb4hGKXdEIg2S6NW2pn1gYVrOQ2DAHedCHwvnwviKq76_rTIZRM9ar7op2_Y_7uTOKlTWNGbc208k9EN8GMDV9l27R1fxu-4UgmA8mWxzNy2Xkea0w5S6g_bWfeyn_RaM0TKNMKXDBCS_X9J0a8E5r9UGdPUBbprB8edYAa-50khF4jLAmALZlZP0mHCQnKQJDe9yMQwCuTmCgrCP_Z6kHsv14xm9rTOtMmFQxJGncY4BcIa9ITikQ1lxHeyxU8E92z1oFe9J_UdjgN_apnRu0-Us64fTtCvF8hGnXSFnH5apsTkTSTI4IAAneOMr8cdUORBAXvMYaX7qaVL8dGDCCDrmxEgY0NbG2dnPA34BmZ2ckxG1s_aP204GZfidJOFSxG2Cul7PhhYGpfvMAD7qZvbU2dkI77gT5U9g8T8wCDG-DBj5iucIjP_TV0QImNylo9logoMg1n6dXtHbbnaEwf8gEybIOyLE8Xep6WyrEtfQTIxENAQs4IzygasN-c3dj6Vf-34LsjiP62TTn0juk0TmVELiQcGKBAFNsuH2_KyzG87ocLHimk6OQpq29AcvK_jQKrVQ5QmOI5wpKfwWHtF8WNm2ILSorNVuuAahg6vQ_qvaOONias3D2Ry686Z4bNMqCivmPPL4vrWjh3-6RFFrFeLGFX9txnH888B4ZSqX8CcEzD4Evs8vwg3fHi__gkJ_aAqpSkJMGuCkzFAdkjaT78LvSbYJ6gTKyUQ6n3KcmuaozZciYOV7Y-gKBznQqTcY1uyu0-8en9SKEVQS7HsNpSShEIyxW9ba_-Ciaxdi5Hcw2HPgRXJsVxARLpjutt_s2REr9VNZ5jCVO9n1vyuSqtuhn8fAh36GiIXAKyZFIZ22F-gp5wzc93xDxyq4B61cuQs1J-kCLhnoflH1PrjTtjEjYFfvZIFUgNxrtq9FezXEsM5IfEs4zL88AQU2CG3DjsKsQ3Siy4h4LBAIuXrNB4bwd75Oo9Mw_dIn5VjMEs-Lk6qhxYHFa2mf8sEHvpY-czzuJDS_HCEATCx8qCJOCWsG20wm8ZewEQ9UvzAv7rStzYnvHMi6D1Oe2XMX4A==",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b784984608198bc2a38e23fa9f7c3",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.tsddental.com/dental-clinic-tampines/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b784d6c288198acdbb53e28aabcf2",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3he7Cocjv67G6ZzzVnqZf-xhVRl9GN6j8wKXnTo79EE_WLCY_1HYh16cf8MYtBoLMfSPLLmhV_7Mr8-JE6zYi1ifJMoWNoGorV8RhDkQfYYy_WjeJZndRGVBINLWE-3ssWOav0Xkf4S3X95L4lLkScAJPkPObahjE8J1M0-YpCg0TdnYfSqrg2QG3JuAZqGm_9EP4zxY7rL4qrj6mIsn9_jdTqRosON9xSq4gs8_nOPeTv9lzccKh3nUgTB3TSCAVDsOUqBvNsNC2-l9Z8Kdu5xc3dnsyknk2NOnXfNO6F-Eu0IHzENSC-Gy0cuyPfmNy2Abn8SUFAGKNgZidqV7hJAXrVfh3XqakBXENPJ53rZvf8RyWF8R5AOcTiRJxvzsWd0XnKcTAaf1P13XVk7AtORoDndbhctxVsJ2zuYCu9B6wNwXWT6X9WOLNEjJUYVWYBV_-JoZgUBa5HwMxpKinMgjj2OMnvrrp9PvCzmtB_QQp0d5DQ9buTv5Np68QiJH_F2ZZV-1vzPKvir9Gaq9VOIOOeNAz-qS7ur9SlW4LMUEwaaZMpFmebDNTouBdGJ3LNSw56NwAo1CQ3ukwhbW9VMPFrzUjgHA_tkTs-j47PALww42UCAjK5Frw-RUj1lsCcDN9ixvOngYxNXFPhfKJWEsGAeUWrY1IU7wqFaFnRsMCRIiJ-1JKQyxtUdkfUVzcUi1OIsVpCD-DmrUcVNgyHziOoCqxyXOF23V22RJB5XMC9TCmAatbcR5j_XnNFO60R3ooUZvgK0I4lya6PNwpKqJ2PPGqjiJYWUpbuNJlduv3AROeBftWt-KJu2S69BaZ0C6Y8N3UKhhuHQHyU_SQFgBiqGGFsjJtOsBT5YACWJi8OUEBX6nbMinBLwJkXuuHH4bbrXPYWSq_pE_brAA8I1UShHRv3BdknPUh3cStZxZeguWVGqExLkZOIWGjlvQffsJT6Z13hSLnLGjGWwrh0HHiCI-SpH-kB0jzvlSecBuxUYL4roMF_B3dj-uvK0MAnwo7wTSDF9j1J2pCmlv9tRFw5SQJu7ywqOuYYfzfU5LzHNhgfPXE8Cl7sFiyOmSzdGmqbhvFNsE1a52aZ7ZMvdxV0albxVANtkoAyFxFXbkDhPKSLp5V4PZOFCfKzYq-UiJSSJpQ2Kpimtp9s1D9x3aX1Zs0IIMDb2gKCukyfbHREBpThx85VY0AGc0nUvAtIy8n0Jj9tsUmBC6kj9ZFKKiYwneM5KJ1Ba1ELyxxUJGO5vWtO9ecIdVxgrlOTNOkELYua4JCh67KCtKF4fDKjGxyZR41ubUIAGPWs-KAeughoxa_ctTpychNtcYJ8g4n0se9XppOZGbxkL0ykipvmS_D_tC_M_HfDTcoXc_hwt-Ivfqim2j9p57A5qdXHG1SK3FK9SrWfbWDFLPyUnRtDqHWkSG048lj-VIXZEVqKJWNDcEmee0iUJ9W_seJFKFtgm_mFFrmTIxU4rugVuj84O450M0gm8WqdVRXVSuBVy8UdQ2uIbkjOMR3D1R9SJVjQkPdfRQpgS6mhywqNDP5UOl1mggmzqDmVCv39W-EWIJke3-wxbA5XE5QAe-LxcYLGvLnDrG58Pg6Dr1Ocfu2qgl4OVUDlzB75nzU4TJEx9n_J05OXpkKeHWKabEeQpcpmq0xaz1X-Wi-UcCvWzlEZUPs8Z51xcJA0vJFRwSTDc27-Lo5mZz6yGIrayIQDxIqHPD43MkArGS4jc_ekJ_nMs_JJTJA-skjJNpYmLcXme1BVla4Nyhovz86YHfghBKE_T_0ivHJ1ijDwTDvOzUYL5y7PaaJ2nvyi7OEQmkD0DTFAfURd5Fw3X3E7Gn89e0xaJkV2svsREsfpaWEktploq6MCcIhIIoBqjRwEu3m464fCFh2ffx7xDaYW4N0VLTjA4pIZUfYMQyuYSR3mShoeM5Je8U6USORq9bVzdXNAhHb7FfeQdkr0Uoo5c1pJrkAPto_XPARoWUDtKQvUWjNmtZAAVa9JuSW0rpb-qhaefiH_3pYrWdoBH2aCAQF1bhMf7jpXA0D4rVzMxjq_GDejFew==",
+      "summary": []
+    },
+    {
+      "id": "ws_04c78fd4c011ef65006a5b784f94d081988d6cf808a4d598d8",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.fdc.sg/location/"
+      }
+    },
+    {
+      "id": "rs_04c78fd4c011ef65006a5b7851ddb48198be579989ac15c261",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqW3heA36gnIk033c6d0451dpbyDe3Xup-dl0Yf8h5t9xwjIfi4GogbBaUK_ze28rt6CKIY2mUzSVi_KNlMpTnor2-22MViiCUJPdHuZSTpQYgYTw-poY3NPF88IcQIzMgDQzFXM-rWMHg2XSePe32EkexER6VPf4M1PBVlkgvgwxBWESmPydJIm_6Jgcrqbrg_PWtOmS8DOq__t8i5rtytKg2wWGO6BimmA9UycduvoEYt-15gyypCtcj_7Y_Y5ngEiVZYeY1T6etF4Fc1pWJDp7DhkF_cl5lSm-Tisp_3fv2JPuMUqXkXMGOXebwZIIxgjSkqZ52XX6B7Vlz3a9cDW7SfAluUawfAAKB0vpv2_qf_sa14oPAN6s-0BYNMrkQiQ3-ApUTPe7Jww1S6w71Ma9cGzOZlTm3AecdTUmkv92a3_b_uOoDzScL3k9SJXwlfhmaC2zQVRWYz7q7f5J-cqJzg3QdwZArQZuo1Gk2ewpCGZRgyfNhSXQriF-xYTDoa6L3JaAEKXzmHZRoBVGYktytYuuWysgopQMVUakNJioo0P6SwJwD9v74Io7cAmkG6yuPX53PR0c10T-4SsWCcbmR6DvAvvNjZ6ie2C9yOiMZBkEqjC8i1OwdVy6QxTgz3mMEv-mw7j8cnutyDhMr9NW_7Kg1rVM6-ei-U5RHVvNgDk_Sjomfg2FEC4AEipE0Y4_gRgh_CmPVCupBLRDfD0xTVxu5TdLQvOMUeyfKPYgagfBbTs20QQhosye_17ow7qdrD8E_26qSByy4JJhjbOexlaHXS-wzcvR6bHq4gWiRv28TClEwNzCk8cY9oqXLhz8V6RH640qwENMUO5V3N7rwZ-DTnxJCGuOrCCsuWQ2sC9vqlPeNZ5N4qag8iXMv2PUGOGN-ckc91hlvTn1InpT2GeM3oxiMK8Te1PeHBTjRlR5-cBtmhrdYX0RF0JJ9x4P5cbN6XWMT_MltxEsVRxN4vVyzg8FrDYJm4RXAXVDmcbmX-1cFNOQkGwI-mQI6dL_ChDixHHflja7e0M_0BAhr1u9vp1luKOt7EW_3-wCCenyvJ1RqoKtnNbwWjkuPn9pHRdB9UKloLakSpHLZpCZenqiUkZpCIh1cu7uFOq8DuzJex45L2B1AGeqMLLh7QZhGyWj3HQ5_ZRT1NAsBfKbU3xnYIE7KxA1nV5ei6yovwwjIRiyxAxIO2p2X1Z2Rlk1KnV2iHKKNJcslFHOKF8rGgvLHCqJtWJ3XabAUFkB5F9Jl8P-pMO08bQQWBDt-ZcqsSyZidhYlU94Co8yqj4NyBh9QRY-Y2KNtXq5wUujUSUDiABifGs0vccFfOlRtId00_3OlUJLYS8whcK13o6Pz3c_jGp1maickni0_s7DNkqjzcwHaP6QD70soYJyUV65CyGw0h_bTQD8ows3iq82nU3-bD8GP3pYsisS5cuM7O0i7sdvnFNUj-rndmFIr8Z0-cCIphsgjz24zHYeo3ZGiL5WPSlNQd_DRcADtmLwTmxFqAxFx0AeOjjSxR7Su-iXa4KqlN5Dw-6pWd82FciM0eVPIPPD5_uEJr2reYxYmXyiTtrj9eIXCJ5nP3vOgkyETSPkny0iSxo_DDuEy9OEyXjjNPrCfnjUJCIfEacE0q2-wXF125ZI4V4sW0m1yDeK5OOuF3pKcvkt8ylE02urOiFV31F6D89KYTHAVWWC8EUabSuxsqGFjyEA4VN6TdgDy2cHn9YhudFdYQZ7bLA2xUTt8swVsFsll_Gt8cDcEcrp1cuvSQ5m52R5WcghsrD9mkMnjH4XdBgBYfGOOC3Cc32-i6f3ZSugmC-Cm-nmsu_9SAEhAsGO7v8AjPZ29s1uZt9FrRvYkb3kapF2YU3hsA03XgqKyXOL78jS-QDt3I7TVDVVhJAtibhsKKSffzQ5tDxXBuSKOtLWZYFJM7iQKJ9EoXjdgZZY2bfZdpjMgDIS4Kc5PrxsBEDteBfUGB8LHbQu07lqvlR9fqM0IryEJD8e48wBU96Sy8WqSYYE4lnBAE_O0g0JFUp1qapa5gt_FL1tM2vypLfGgFhiIwOCAqUDSkU_0tYp75lisy4FoVpGiry5iPjIJdesXc61MdWJUUZamhTufWKh4mXDusKJ1UnxJovky-g47tG2VTvV4KLwq3N4OxYaB-i2bN-sqCsPNusK8V17DPQpr0q5BIsP3RSzi0I5wd-od_IXNSORCvkJ2HdJj0snEqDABRh5qN3jRFS8rZgKh-ErCbr3rplEGIuHAaEa0UiPzyhS1AJvmodC-rRVwWo6rvjRoQTe4jChVQkVpOO5sDJpCQmQ2XmUGp_7e9dDDui20SzNyILBExEi4cgeD1NVNM6m05K0bw_bD4_ngZ7MBlMjBcokHnAmfdMB_L6o2mlpYdWdgu1mjskBFjXzQuivdyy_XRwmivR2ADzagblUvvIIr2cYRXez80Zr8wg9eyyN2euJZ2t3pzHsYNc4jbcF22yK_YvqC1VBSEwet329H6x4M8N3hxiVtRkmd4LlPp3EcZx-4rG8xIy4r2mRHJl62De5dPDexgr65H9O_7oi3u_x8D7ymx2HzUq-tX-JzFfnl5izHVYYvTFG4nLyB8zFIA_KkdlKJuGAaDNmNTuZIzoFIxcFL7J_1nsYHra5mn2Q193CTywrlixXqgHnYpVtPbQ8i-TJjECr8yks6ibefrLn-3NE4Czx2LFndf4B1H0liWDdxuKSS6a0sf9wmlJs24LuFxrKe2ztHhPdlFFTxmimBH1p-r4P-AdF39MZyEziX9Q4jWSw4moSGiICccZTuZE7Byp4XxSq8Rz-DeVj83vlNwUh8BtuR6sjjt5vFVuq7GQnyIqsC6cvFbdTzVMVgYdvtdWEnJkiStaRhwuB-Faz-8cQIqpftqyKGcrD2U3rsN7EpSLGwo7Zam5GnlkfZzqwzGXXsWJnpBp5ENLUL0v9XfmyZBLx7fFOzHBb4_Vf43y3NGHspUlhhTV0-gJoO-GSgphOwVZKy4CHyd5YsLYkdExzQNsTeV_C2viyMcX_9J-AgkvEfD1ZIloNiBepeo_-I0tHvx1mlIsrNrfbivh1RyxG-cQw2G3pfSmoKgoFlAxUnr-uZ0odKpWanWlqtRSnQ0P6fpZE837tx5oOuQzQJsEc_hKkZwX5TkXRJDKO0n_SdqP1xHl5ZWzlzFv10c0gKCanUxVTiMOJ_RjEscACv_K2zy3zGDb4ZqRJQ-opvxGpoE4-CSn93fvcb_B-vLD2GymnmD0XDPN2BTiogx2dKK9fT0ipoJM5XtAnpZAdAdftOjwhutizbNr6zIuIIAxqAGcpAEMyIzGRe4w-m0C5_-5GiQ_NXi-BVCyoqz32Xxtdp0HOKb_huFsaNnUrip9SY6gQr1cgim8m_DLp95kC8TVu6xYl2lm3k45Z4GmUUoOp0ZtLA-wWYArdlMHnNxX5CcsfYab5q5jZvlkIXAX5caezh-4dQjQrIrD36wq0wk8-W79rwaFlrT5gMDW6NixmuOc3eIh41DISPuJS_EJCP6o6fanL7jtq810EWo04aBAHcsh9zGV_ry1SUwgoRvAtF7dKsuDIbjs8kK-qF381ipM8SJyccdZBcR2dhAsghTkqe-VwkTPoHWR_W-ZjO-mN18Fky984c08HO7kWDfwnciRr4R6ChIff27_nNaVKp8Se529E_kiE2Nwj3-_dcUYw39pNtCGXFGCLTuTFwT9UHcTnntZCvpqTx5nikLYqyjy00nR6SAdinv35L32_IDX1WK_QUzt1pTkpxiJLFVwRBUYji5F41EITfkZp3wXDI-4xwQnukejbMg6dIgUsOjgAo64v2fn88d0N5Rbn6FZ3_q1xljJCyiQaiM_MZwN5B1KXSVdSG68VObavUgr4Gbvy2KlNDYn5sA4WMz6iBHHfXE_iv2gFh_qqXvey_tCSDznuQRTDG8nwlXy3zv5TFECiysy-SXzSV",
+      "summary": []
+    },
+    {
+      "id": "msg_04c78fd4c011ef65006a5b7857d4448198a57e80b7b19259ae",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "end_index": 336,
+              "start_index": 268,
+              "title": "Dental Clinic Tampines | TSD Dental Group Singapore",
+              "url": "https://www.tsddental.com/dental-clinic-tampines/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 571,
+              "start_index": 480,
+              "title": "Advanced Dental Tampines East",
+              "url": "https://www.advanceddental.co/clinics/advanced-dental-tampines-east/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 802,
+              "start_index": 710,
+              "title": "Advanced Dental Tampines North",
+              "url": "https://www.advanceddental.co/clinics/advanced-dental-tampines-north/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1213,
+              "start_index": 1157,
+              "title": "\n\tClinic Locator | \u8bca\u6240\u5b9a\u4f4d\u5668\n",
+              "url": "https://qandm.com.sg/Clinic-Locator/EN"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1394,
+              "start_index": 1354,
+              "title": "Location - Family Dental Centre",
+              "url": "https://www.fdc.sg/location/"
+            },
+            {
+              "type": "url_citation",
+              "end_index": 1532,
+              "start_index": 1480,
+              "title": "Location \u2014 Ease Dental Singapore (Tampines)",
+              "url": "https://www.easedental.sg/contact"
+            }
+          ],
+          "logprobs": [],
+          "text": "Yes. Here are reliable options around Tampines (with addresses and hours from their official pages):\n\n- TSD Dental Group (Tampines) \u2014 510 Tampines Central 1, #01\u2011250B/E (next to Tampines 1/Tampines MRT). Hours: Mon\u2013Fri 9am\u20135pm & 6\u20139pm; Sat 9am\u20134:30pm; Sun 9:30am\u20131pm. ([tsddental.com](https://www.tsddental.com/dental-clinic-tampines/))\n- Advanced Dental \u2014 Tampines East: Blk 482 Tampines St 43, #01\u2011238. Hours: Sat\u2013Sun 9am\u20135pm; most weekdays till 8:30pm. CHAS/MediSave accepted. ([advanceddental.co](https://www.advanceddental.co/clinics/advanced-dental-tampines-east/))\n- Advanced Dental \u2014 Tampines North: Blk 614 Tampines North Dr 1, #01\u201102. Often open on Sundays (check the week\u2019s schedule on their page). ([advanceddental.co](https://www.advanceddental.co/clinics/advanced-dental-tampines-north/))\n- Q & M Dental Surgery \u2014 multiple Tampines branches if you want a big chain:\n  - Tampines 1: 10 Tampines Central 1, #04\u201118/19\n  - Century Square: 2 Tampines Central 5, #03\u201116 (CHAS/MG/PG/MediSave accredited)\n  - Our Tampines Hub: 1 Tampines Walk, #02\u201189\n  - Tampines North: Blk 633 Tampines North Dr 2, #02\u201107\n  (Check each branch\u2019s hours when booking.) ([qandm.com.sg](https://qandm.com.sg/Clinic-Locator/EN))\n- Family Dental Centre \u2014 Universal Dental, 479 Tampines St 44, #01\u2011231. Hours: Mon\u2013Thu 8:30am\u20138:30pm; Fri 8:30am\u20135:30pm; Sat 8:30am\u20132:30pm. ([fdc.sg](https://www.fdc.sg/location/))\n- Ease Dental \u2014 824 Tampines St 81, #01\u201134. Hours: Mon\u2013Fri 9am\u20139pm; Sat\u2013Sun 9am\u20135pm. ([easedental.sg](https://www.easedental.sg/contact))\n\nWant me to narrow this to clinics that:\n- take CHAS/MediSave, \n- are open Sundays/today (Saturday, 18 July 2026),\n- focus on kids/orthodontics/wisdom teeth, or\n- are closest to your block/MRT?"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 9
+    }
+  },
+  "tools": [
+    {
+      "type": "web_search",
+      "return_token_budget": "default",
+      "search_content_types": [
+        "text"
+      ],
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Singapore",
+        "country": "SG",
+        "region": null,
+        "timezone": "Asia/Singapore"
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 83127,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 5208,
+    "output_tokens_details": {
+      "reasoning_tokens": 4032
+    },
+    "total_tokens": 88335
+  },
+  "user": null,
+  "metadata": {}
+}
