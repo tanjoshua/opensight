@@ -8,10 +8,10 @@ PromptRunner, the weekly RunWorkflow, schedules, and dev/test execution modes. P
 
 As the developer, I want prompt execution behind a `PromptRunner` interface with an OpenAI Responses implementation, so that platforms are additive and every result is reproducible.
 
-- [ ] `internal/llm` defines `PromptRunner`; OpenAI impl uses Responses API with `web_search` tool and **`store: false`**.
-- [ ] `user_location` built from the business profile's `location` (country required, city/area if present) — nothing hardcodes Singapore.
-- [ ] No system prompt beyond the user's prompt text.
-- [ ] Exact request params (model, user_location, tool config) returned for persistence to `prompt_results.request`; the **response's reported model id** is what gets stored, never the config value.
+- [x] `internal/llm` defines `PromptRunner`; OpenAI impl uses Responses API with `web_search` tool and **`store: false`**.
+- [x] `user_location` built from the business profile's `location` (country required, city/area if present) — nothing hardcodes Singapore.
+- [x] No system prompt beyond the user's prompt text.
+- [x] Exact request params (model, user_location, tool config) returned for persistence to `prompt_results.request`; the **response's reported model id** is what gets stored, never the config value.
 - [ ] OpenAI key is a project-scoped key; monthly budget cap set in the OpenAI dashboard (the hard spend backstop).
 
 Deps: SCH-3 · Phase 1 · Ref: design 01 (D1), 04 (ExecutePrompt), 07 (Secrets, Spend guardrail)

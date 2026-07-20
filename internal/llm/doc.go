@@ -1,3 +1,4 @@
-// Package llm defines the PromptRunner and analysis interfaces plus the OpenAI
-// implementation (01-D1, D6). Stub package for FND-1.
+// Package llm defines model execution boundaries for prompt monitoring and
+// analysis (01-D1, D6). OpenAI-backed implementations live behind interfaces so
+// future platforms can be added without changing workflow orchestration.
 package llm
