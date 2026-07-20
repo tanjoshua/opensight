@@ -1,8 +1,6 @@
-// Auth/session API module. Read-only for now: the login/logout mutations and
-// their X-Requested-With wiring land with AUTH-4.
 import { useQuery } from "@tanstack/react-query"
 
-import { ApiError, apiGet } from "./client"
+import { ApiError, apiGet, apiPost } from "./client"
 
 export interface User {
   id: string
@@ -14,13 +12,38 @@ export interface Tenant {
   name: string
 }
 
+export interface BusinessSummary {
+  id: string
+  name: string
+  status: string
+}
+
 export interface UserTenant {
   user: User
   tenant: Tenant
 }
 
-export function getMe(): Promise<UserTenant> {
-  return apiGet<UserTenant>("/me")
+// /me additionally lists the tenant's businesses so pages can resolve the
+// business-scoped API URLs (design 06: MVP is one business per tenant).
+export interface Me extends UserTenant {
+  businesses: BusinessSummary[]
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export function getMe(): Promise<Me> {
+  return apiGet<Me>("/me")
+}
+
+export function login(req: LoginRequest): Promise<UserTenant> {
+  return apiPost<UserTenant>("/login", req)
+}
+
+export function logout(): Promise<void> {
+  return apiPost<void>("/logout")
 }
 
 // useMe doubles as the smoke test that TanStack Query + the /api proxy work.

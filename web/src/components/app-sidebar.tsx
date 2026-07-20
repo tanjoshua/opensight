@@ -1,14 +1,17 @@
 import {
   Eye,
   LayoutDashboard,
+  LogOut,
   MessageSquareText,
   MessagesSquare,
   Settings,
   Users,
 } from "lucide-react"
-import { NavLink, useLocation } from "react-router"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { NavLink, useLocation, useNavigate } from "react-router"
 
-import { useMe } from "@/api/auth"
+import { logout, useMe } from "@/api/auth"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +35,15 @@ const sections = [
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { data: me } = useMe()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSettled: () => {
+      queryClient.clear()
+      navigate("/login", { replace: true })
+    },
+  })
 
   return (
     <Sidebar>
@@ -63,14 +75,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {/* Session summary; AUTH-4 adds the logout control here. */}
       {me && (
         <SidebarFooter>
-          <div className="flex flex-col gap-0.5 px-2 py-1.5 text-xs">
-            <span className="truncate font-medium">{me.tenant.name}</span>
-            <span className="truncate text-muted-foreground">
-              {me.user.email}
-            </span>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <div className="min-w-0 flex-1 text-xs">
+              <div className="truncate font-medium">{me.tenant.name}</div>
+              <div className="truncate text-muted-foreground">
+                {me.user.email}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Log out"
+              title="Log out"
+              disabled={logoutMutation.isPending}
+              onClick={() => logoutMutation.mutate()}
+            >
+              <LogOut />
+            </Button>
           </div>
         </SidebarFooter>
       )}

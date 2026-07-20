@@ -1,16 +1,93 @@
+import { type FormEvent, useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { LogIn } from "lucide-react"
+import { Navigate, useNavigate } from "react-router"
 
-import { SectionPlaceholder } from "@/components/section-placeholder"
+import { login, useMe } from "@/api/auth"
+import { ApiError } from "@/api/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
-// Bare placeholder route; the login form arrives with AUTH-4.
 export function LoginPage() {
+  const me = useMe()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["me"] })
+      navigate("/responses", { replace: true })
+    },
+  })
+
+  if (me.data) {
+    return <Navigate to="/responses" replace />
+  }
+
+  const error =
+    loginMutation.error instanceof ApiError
+      ? loginMutation.error.message
+      : loginMutation.isError
+        ? "Login failed. Try again."
+        : undefined
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    loginMutation.mutate({ email, password })
+  }
+
   return (
-    <div className="flex min-h-svh flex-col p-6">
-      <SectionPlaceholder
-        title="Log in"
-        description="The login form arrives with AUTH-4."
-        icon={LogIn}
-      />
-    </div>
+    <main className="flex min-h-svh items-center justify-center bg-background p-6">
+      <form
+        className="flex w-full max-w-sm flex-col gap-5 rounded-lg border bg-card p-6 shadow-sm"
+        onSubmit={onSubmit}
+      >
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-xl font-semibold">OpenSight</h1>
+          <p className="text-sm text-muted-foreground">Log in to continue.</p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Email
+            <Input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.currentTarget.value)}
+              disabled={loginMutation.isPending}
+              aria-invalid={loginMutation.isError}
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Password
+            <Input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+              disabled={loginMutation.isPending}
+              aria-invalid={loginMutation.isError}
+              required
+            />
+          </label>
+        </div>
+
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" disabled={loginMutation.isPending}>
+          <LogIn data-icon="inline-start" />
+          {loginMutation.isPending ? "Logging in" : "Log in"}
+        </Button>
+      </form>
+    </main>
   )
 }

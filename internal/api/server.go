@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"opensight/internal/domain"
 	"opensight/internal/store"
 
 	"github.com/go-chi/chi/v5"
@@ -31,11 +32,19 @@ type authStore interface {
 	DeleteSession(ctx context.Context, tokenHash []byte) error
 }
 
+// businessStore is the consumer-side seam over *store.BusinessStore. /me lists
+// the tenant's businesses so the SPA can bootstrap section URLs (design 06:
+// URLs carry businessID; MVP has one business per tenant).
+type businessStore interface {
+	ListBusinesses(ctx context.Context, tenantID domain.ID) ([]store.Business, error)
+}
+
 // Server holds the API dependencies and configuration.
 type Server struct {
-	auth    authStore
-	runs    runStore
-	results resultStore
+	auth       authStore
+	businesses businessStore
+	runs       runStore
+	results    resultStore
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (FND-2 local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
@@ -45,9 +54,10 @@ type Server struct {
 
 // New builds a Server. secureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, runs *store.RunStore, results *store.ResultStore, secureCookies bool) *Server {
+func New(auth *store.AuthStore, businesses *store.BusinessStore, runs *store.RunStore, results *store.ResultStore, secureCookies bool) *Server {
 	return &Server{
 		auth:          auth,
+		businesses:    businesses,
 		runs:          runs,
 		results:       results,
 		secureCookies: secureCookies,
@@ -99,11 +109,25 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok\n"))
 }
 
-// userTenantResponse is the shared body of /me and a successful login: the
+// userTenantResponse is the shared core of /me and a successful login: the
 // session's own user and tenant, nothing cross-tenant.
 type userTenantResponse struct {
 	User   userResponse   `json:"user"`
 	Tenant tenantResponse `json:"tenant"`
+}
+
+// meResponse is /me's body: the login shape plus the tenant's businesses, so
+// the SPA can resolve the business-scoped section URLs without a further
+// round trip (MVP: one business per tenant).
+type meResponse struct {
+	userTenantResponse
+	Businesses []businessResponse `json:"businesses"`
+}
+
+type businessResponse struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 
 type userResponse struct {

@@ -67,8 +67,20 @@ func (f *fakeAuthStore) DeleteSession(_ context.Context, tokenHash []byte) error
 	return nil
 }
 
+// fakeBusinessStore is an in-memory businessStore for handler tests.
+type fakeBusinessStore struct {
+	businesses []store.Business
+	err        error
+	gotTenant  domain.ID
+}
+
+func (f *fakeBusinessStore) ListBusinesses(_ context.Context, tenantID domain.ID) ([]store.Business, error) {
+	f.gotTenant = tenantID
+	return f.businesses, f.err
+}
+
 func newTestServer(f *fakeAuthStore) *Server {
-	return &Server{auth: f, secureCookies: false, sessionTTL: time.Hour}
+	return &Server{auth: f, businesses: &fakeBusinessStore{}, secureCookies: false, sessionTTL: time.Hour}
 }
 
 func mustHashV7(t *testing.T, raw string) domain.ID {
@@ -403,6 +415,11 @@ func TestMeUnauthorizedClearsDeadCookie(t *testing.T) {
 func TestMeSuccess(t *testing.T) {
 	f := loginFixture(t, "pw")
 	srv := newTestServer(f)
+	srv.businesses = &fakeBusinessStore{businesses: []store.Business{{
+		ID:     mustHashV7(t, businessIDForTest),
+		Name:   "Acme Clinic",
+		Status: store.BusinessStatusActive,
+	}}}
 
 	login := doJSON(t, srv, http.MethodPost, "/api/v1/login",
 		`{"email":"user@example.com","password":"pw"}`, nil)
@@ -422,7 +439,7 @@ func TestMeSuccess(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("me status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
-	want := `{"user":{"id":"` + userID + `","email":"user@example.com"},"tenant":{"id":"` + tenantID + `","name":"Acme Clinic"}}` + "\n"
+	want := `{"user":{"id":"` + userID + `","email":"user@example.com"},"tenant":{"id":"` + tenantID + `","name":"Acme Clinic"},"businesses":[{"id":"` + businessIDForTest + `","name":"Acme Clinic","status":"active"}]}` + "\n"
 	if rec.Body.String() != want {
 		t.Fatalf("me body = %q, want %q", rec.Body.String(), want)
 	}

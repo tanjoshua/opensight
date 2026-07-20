@@ -15,13 +15,13 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/overview" replace />} />
+        <Route index element={<Navigate to="/responses" replace />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/competitors" element={<CompetitorsPage />} />
         <Route path="/responses" element={<ResponsesPage />} />
         <Route path="/setup" element={<SetupPage />} />
-        <Route path="*" element={<Navigate to="/overview" replace />} />
+        <Route path="*" element={<Navigate to="/responses" replace />} />
       </Route>
     </Routes>
   )

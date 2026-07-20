@@ -40,8 +40,8 @@ Deps: AUTH-1, SCH-4 · Phase 1 · Ref: design 07 (Auth — CSRF), 06 (API conven
 
 As a user, I want a login page and a signed-in app shell, so that I can reach my dashboard.
 
-- [ ] `/login` page (shadcn form); errors surfaced; redirect to `/responses` on success while Overview is unbuilt (switch the landing route to `/overview` when INS-1 ships).
-- [ ] Signed-out users hitting app routes are redirected to `/login`; logout control in the shell.
-- [ ] API client sends `X-Requested-With` on all mutating calls.
+- [x] `/login` page (shadcn form); errors surfaced; redirect to `/responses` on success while Overview is unbuilt (switch the landing route to `/overview` when INS-1 ships).
+- [x] Signed-out users hitting app routes are redirected to `/login`; logout control in the shell.
+- [x] API client sends `X-Requested-With` on all mutating calls.
 
 Deps: AUTH-3, WEB-1 · Phase 1 · Ref: design 07 (Auth), 06 (Frontend stack)

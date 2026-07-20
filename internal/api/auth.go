@@ -165,19 +165,40 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// handleMe returns the current session's user and tenant, or 401 if there is no
-// live session. It does not extend expiry.
+// handleMe returns the current session's user, tenant, and the tenant's
+// businesses, or 401 if there is no live session. It does not extend expiry.
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
+	if s.businesses == nil {
+		s.writeInternalError(w, "me: store missing", errors.New("business store is required"))
+		return
+	}
 	su, ok := sessionUserFromContext(r.Context())
 	if !ok {
 		s.writeInternalError(w, "me: missing session context", errors.New("missing session context"))
 		return
 	}
 
-	writeJSON(w, http.StatusOK, userTenantResponse{
-		User:   userResponse{ID: su.UserID.String(), Email: su.Email},
-		Tenant: tenantResponse{ID: su.TenantID.String(), Name: su.TenantName},
-	})
+	businesses, err := s.businesses.ListBusinesses(r.Context(), su.TenantID)
+	if err != nil {
+		s.writeInternalError(w, "me: list businesses", err)
+		return
+	}
+
+	resp := meResponse{
+		userTenantResponse: userTenantResponse{
+			User:   userResponse{ID: su.UserID.String(), Email: su.Email},
+			Tenant: tenantResponse{ID: su.TenantID.String(), Name: su.TenantName},
+		},
+		Businesses: make([]businessResponse, 0, len(businesses)),
+	}
+	for _, b := range businesses {
+		resp.Businesses = append(resp.Businesses, businessResponse{
+			ID:     b.ID.String(),
+			Name:   b.Name,
+			Status: string(b.Status),
+		})
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // writeLoginFailed writes the single uniform 401. Every auth-failure caller uses

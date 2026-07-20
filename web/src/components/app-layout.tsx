@@ -1,16 +1,40 @@
-import { Outlet } from "react-router"
+import { Navigate, Outlet, useLocation } from "react-router"
 
+import { ApiError } from "@/api/client"
+import { useMe } from "@/api/auth"
+import { useRuns } from "@/api/responses"
 import { AppSidebar } from "@/components/app-sidebar"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Shell for the five product sections. /login and /onboarding render outside
 // of it.
 export function AppLayout() {
+  const location = useLocation()
+  const me = useMe()
+
+  if (me.isLoading) {
+    return <AppSkeleton />
+  }
+  if (me.error instanceof ApiError && me.error.status === 401) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
+  if (me.isError || !me.data) {
+    return (
+      <div className="flex min-h-svh items-center justify-center p-6 text-sm text-muted-foreground">
+        The app could not be loaded. Try reloading the page.
+      </div>
+    )
+  }
+
+  const business = me.data.businesses[0]
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -19,11 +43,47 @@ export function AppLayout() {
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
           <span className="font-heading text-sm font-medium">OpenSight</span>
+          {business && <RunProgressBadge businessId={business.id} />}
         </header>
         <div className="flex flex-1 flex-col p-6">
           <Outlet />
         </div>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+function RunProgressBadge({ businessId }: { businessId: string }) {
+  const runs = useRuns(businessId)
+  const hasRunningRun = runs.data?.runs.some((run) => run.status === "running")
+
+  if (!hasRunningRun) return null
+  return (
+    <Badge variant="outline" className="ms-auto">
+      Run in progress
+    </Badge>
+  )
+}
+
+function AppSkeleton() {
+  return (
+    <div className="flex min-h-svh">
+      <div className="hidden w-64 border-r p-3 md:flex md:flex-col md:gap-3">
+        <Skeleton className="h-8 w-36" />
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-7 w-full" />
+        ))}
+      </div>
+      <div className="flex flex-1 flex-col">
+        <div className="flex h-14 items-center gap-2 border-b px-4">
+          <Skeleton className="h-7 w-7" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="flex flex-col gap-3 p-6">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-52 w-full" />
+        </div>
+      </div>
+    </div>
   )
 }

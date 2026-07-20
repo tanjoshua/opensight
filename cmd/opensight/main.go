@@ -354,6 +354,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 	// behind Caddy TLS, where Secure must be set.
 	apiServer := api.New(
 		store.NewAuthStore(db),
+		store.NewBusinessStore(db),
 		store.NewRunStore(db),
 		store.NewResultStore(db),
 		cfg.Env != "dev",
