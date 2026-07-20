@@ -32,10 +32,11 @@ Deps: RUN-1, SPK-1 · Phase 1 · Ref: design 07 (Local development)
 
 As the operator, I want a Temporal `RunWorkflow` that upserts the run, snapshots prompts, and finalizes status, so that runs are idempotent and partial failure is a first-class state.
 
-- [ ] Workflow id `run-{business_id}-chatgpt-{scheduled_for}`; duplicate triggers converge (DB upsert via `LoadRunSpec` returns the existing run for that date — no-op).
-- [ ] `LoadRunSpec` records `trigger` (`initial|scheduled|manual`), sets status `running`, snapshots active prompts + plan entitlements at start (mid-run prompt replacement cannot produce a half-and-half run).
-- [ ] `FinalizeRun`: all succeeded → `completed`; some → `partial`; none → `failed`.
-- [ ] Worker registered and running in `work` mode locally and in prod compose.
+- [x] Workflow id `run-{business_id}-chatgpt-{scheduled_for}`; duplicate triggers converge (DB upsert via `LoadRunSpec` returns the existing run for that date — no-op).
+- [x] `LoadRunSpec` records `trigger` (`initial|scheduled|manual`), sets status `running`, snapshots active prompts at start (mid-run prompt replacement cannot produce a half-and-half run). Plan entitlements need no separate snapshot: `PromptStore.CreateActivePrompt` enforces `plan.prompt_limit` at write time, so the active-prompt list is already entitlement-bounded by construction.
+- [x] `FinalizeRun`: all succeeded → `completed`; some → `partial`; none → `failed`.
+- [x] Worker registered and running in `work` mode locally.
+- [ ] Worker running in prod compose — blocked on FND-5 (prod `compose.yml` does not exist yet).
 
 Deps: SCH-3, FND-2 · Phase 1 · Ref: design 04 (RunWorkflow)
 
@@ -43,10 +44,10 @@ Deps: SCH-3, FND-2 · Phase 1 · Ref: design 04 (RunWorkflow)
 
 As the operator, I want per-prompt execution with correct retry semantics, so that transient failures retry and refusals don't.
 
-- [ ] Fan-out from RunWorkflow, max ~4 concurrent (worker activity-slot cap).
-- [ ] Idempotent: returns the existing `prompt_results` row for `(run_id, prompt_id)` if present; the UNIQUE constraint makes races error, never duplicate.
-- [ ] Persists `request`, `raw_response`, `response_text`, reported `model`, timestamps; failures record `error`.
-- [ ] Retry: 4 attempts, exponential backoff from 10s, 120s per-attempt timeout; 400-class errors and content-policy refusals are **non-retryable** (a refusal is a finding, recorded as a failed result).
+- [x] Fan-out from RunWorkflow, max ~4 concurrent (worker activity-slot cap via `MaxConcurrentActivityExecutionSize`, set from `PROMPT_CONCURRENCY`).
+- [x] Idempotent: returns the existing `prompt_results` row for `(run_id, prompt_id)` if present; the UNIQUE constraint makes races error, never duplicate (re-get on `ErrDuplicateResult`).
+- [x] Persists `request`, `raw_response`, `response_text`, reported `model`, timestamps; failures record `error`.
+- [x] Retry: 4 attempts, exponential backoff from 10s, 120s per-attempt timeout; 400-class errors and content-policy refusals are **non-retryable** (a refusal is a finding, recorded as a failed result).
 
 Deps: RUN-1, RUN-3 · Phase 1 · Ref: design 04 (ExecutePrompt)
 

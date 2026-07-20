@@ -82,6 +82,9 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 		return PromptRunResult{}, err
 	}
 
+	// From here on the request body exists, so every failure path carries
+	// RequestJSON: ExecutePrompt (RUN-4) persists a failed row whose NOT NULL
+	// request column is this body, even when the provider fails.
 	httpReq, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
@@ -89,14 +92,14 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 		bytes.NewReader(requestJSON),
 	)
 	if err != nil {
-		return PromptRunResult{}, fmt.Errorf("build openai request: %w", err)
+		return PromptRunResult{RequestJSON: requestJSON}, fmt.Errorf("build openai request: %w", err)
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+r.apiKey)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	httpResp, err := r.httpClient.Do(httpReq)
 	if err != nil {
-		return PromptRunResult{}, fmt.Errorf("call openai responses: %w", err)
+		return PromptRunResult{RequestJSON: requestJSON}, fmt.Errorf("call openai responses: %w", err)
 	}
 	defer func() {
 		_ = httpResp.Body.Close()
@@ -104,24 +107,24 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 
 	body, err := io.ReadAll(io.LimitReader(httpResp.Body, int64(maxOpenAIResponseBodyBytes)+1))
 	if err != nil {
-		return PromptRunResult{}, fmt.Errorf("read openai response: %w", err)
+		return PromptRunResult{RequestJSON: requestJSON}, fmt.Errorf("read openai response: %w", err)
 	}
 	if len(body) > maxOpenAIResponseBodyBytes {
-		return PromptRunResult{}, errors.New("openai response body exceeds size limit")
+		return PromptRunResult{RequestJSON: requestJSON}, errors.New("openai response body exceeds size limit")
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return PromptRunResult{}, openAIHTTPError(httpResp.StatusCode, body)
+		return PromptRunResult{RequestJSON: requestJSON}, openAIHTTPError(httpResp.StatusCode, body)
 	}
 
 	parsed, err := parseOpenAIResponse(body)
 	if err != nil {
-		return PromptRunResult{}, err
+		return PromptRunResult{RequestJSON: requestJSON}, err
 	}
 	if parsed.Status != "completed" {
-		return PromptRunResult{}, incompleteOpenAIResponseError(parsed, body)
+		return PromptRunResult{RequestJSON: requestJSON}, incompleteOpenAIResponseError(parsed, body)
 	}
 	if parsed.Refusal != "" {
-		return PromptRunResult{}, &RunnerError{
+		return PromptRunResult{RequestJSON: requestJSON}, &RunnerError{
 			Type:         "content_policy_refusal",
 			Message:      parsed.Refusal,
 			Body:         append(json.RawMessage(nil), body...),
@@ -129,10 +132,10 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 		}
 	}
 	if strings.TrimSpace(parsed.Model) == "" {
-		return PromptRunResult{}, errors.New("openai response missing reported model")
+		return PromptRunResult{RequestJSON: requestJSON}, errors.New("openai response missing reported model")
 	}
 	if strings.TrimSpace(parsed.Text) == "" {
-		return PromptRunResult{}, errors.New("openai response missing output_text")
+		return PromptRunResult{RequestJSON: requestJSON}, errors.New("openai response missing output_text")
 	}
 
 	return PromptRunResult{

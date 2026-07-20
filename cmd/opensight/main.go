@@ -34,10 +34,13 @@ import (
 	"opensight/internal/auth"
 	"opensight/internal/config"
 	"opensight/internal/domain"
+	"opensight/internal/llm"
 	"opensight/internal/store"
+	"opensight/internal/workflows"
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 )
 
 const (
@@ -427,11 +430,27 @@ func serve(ctx context.Context, cfg config.Config) error {
 	}
 }
 
-// work connects to Temporal and blocks until shutdown. Workflows are registered
-// by later stories.
+// work connects to Temporal, registers RunWorkflow and its activities, and runs
+// the worker until shutdown (RUN-3).
 func work(ctx context.Context, cfg config.Config) error {
 	if ctx.Err() != nil {
 		return nil
+	}
+
+	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = db.Close()
+	}()
+
+	runner, err := llm.NewPromptRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIResponsesModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build prompt runner: %w", err)
 	}
 
 	dialCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -452,6 +471,35 @@ func work(ctx context.Context, cfg config.Config) error {
 		"temporal_address", cfg.TemporalAddress,
 		"temporal_namespace", cfg.TemporalNamespace,
 		"temporal_task_queue", cfg.TemporalTaskQueue,
+	)
+
+	activities := workflows.NewActivities(
+		store.NewBusinessStore(db),
+		store.NewPromptStore(db),
+		store.NewRunStore(db),
+		store.NewResultStore(db),
+		runner,
+	)
+
+	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
+		MaxConcurrentActivityExecutionSize: cfg.PromptConcurrency,
+	})
+	w.RegisterWorkflow(workflows.RunWorkflow)
+	w.RegisterActivity(activities.LoadRunSpec)
+	w.RegisterActivity(activities.ExecutePrompt)
+	w.RegisterActivity(activities.FinalizeRun)
+
+	if err := w.Start(); err != nil {
+		return fmt.Errorf("start worker: %w", err)
+	}
+	defer w.Stop()
+
+	slog.Info(
+		"work: worker started",
+		"mode", "work",
+		"temporal_task_queue", cfg.TemporalTaskQueue,
+		"prompt_concurrency", cfg.PromptConcurrency,
+		"prompt_runner_mode", cfg.PromptRunnerMode,
 	)
 
 	<-ctx.Done()

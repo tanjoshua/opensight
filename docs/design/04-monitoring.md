@@ -18,7 +18,8 @@ Workflow id: `run-{business_id}-chatgpt-{scheduled_for}` — deterministic, so s
 RunWorkflow(businessID, platform, scheduledFor)
  ├─ LoadRunSpec        activity: resolve tenant via BusinessStore.ResolveTenantID,
  │                     then upsert monitoring_runs(status=running);
- │                     snapshot active prompts + plan entitlements
+ │                     snapshot active prompts (already entitlement-bounded:
+ │                     prompt_limit is enforced at prompt-write time)
  ├─ ExecutePrompt ×N   activities, fan-out, max ~4 concurrent
  ├─ AnalyzeRun         child workflow (design 05) — independent retry budget,
  │                     a failed analysis never re-spends prompt executions

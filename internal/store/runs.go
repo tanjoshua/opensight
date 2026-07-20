@@ -27,6 +27,9 @@ const (
 	RunStatusFailed RunStatus = "failed"
 )
 
+// PlatformChatGPT is the only monitored platform in Phase 1 (design 04).
+const PlatformChatGPT = "chatgpt"
+
 // RunTrigger is what caused a run to be created.
 type RunTrigger string
 
@@ -89,15 +92,16 @@ FROM monitoring_runs
 WHERE business_id = $1 AND platform = $2 AND scheduled_for = $3`
 
 	// finalizeRunSQL recomputes the terminal status from the run's succeeded
-	// result count (design 04): succeeded == expected -> completed; succeeded
-	// == 0 -> failed; else partial. It is tenant-scoped via the businesses join
-	// and safe to re-run under activity retry (a pure recomputation). 0 rows
-	// updated -> ErrNotFound.
+	// result count (design 04): succeeded == 0 -> failed; succeeded == expected
+	// -> completed; else partial. The failed branch is checked first so a
+	// zero-prompt run (expected == succeeded == 0) is failed, not completed. It
+	// is tenant-scoped via the businesses join and safe to re-run under activity
+	// retry (a pure recomputation). 0 rows updated -> ErrNotFound.
 	finalizeRunSQL = `
 UPDATE monitoring_runs r
 SET status = CASE
-      WHEN sub.succeeded = $2 THEN 'completed'
       WHEN sub.succeeded = 0 THEN 'failed'
+      WHEN sub.succeeded = $2 THEN 'completed'
       ELSE 'partial'
     END,
     completed_at = now()

@@ -40,13 +40,24 @@ func resultFromRawResponse(prompt string, location Location, raw json.RawMessage
 
 	parsed, err := parseOpenAIResponse(raw)
 	if err != nil {
+		// A hard parse failure means a broken fixture (dev-environment bug), not
+		// a modeled runtime failure — nothing worth persisting a request for.
 		return PromptRunResult{}, err
 	}
+
+	// Build the request body from the parsed model as soon as the payload parses,
+	// so every modeled-failure early return below still carries RequestJSON for
+	// ExecutePrompt (RUN-4) to persist a failed row.
+	requestJSON, err := buildResponsesRequestJSON(parsed.Model, p, loc)
+	if err != nil {
+		return PromptRunResult{}, err
+	}
+
 	if parsed.Status != "completed" {
-		return PromptRunResult{}, incompleteOpenAIResponseError(parsed, raw)
+		return PromptRunResult{RequestJSON: requestJSON}, incompleteOpenAIResponseError(parsed, raw)
 	}
 	if parsed.Refusal != "" {
-		return PromptRunResult{}, &RunnerError{
+		return PromptRunResult{RequestJSON: requestJSON}, &RunnerError{
 			Type:         "content_policy_refusal",
 			Message:      parsed.Refusal,
 			Body:         append(json.RawMessage(nil), raw...),
@@ -54,15 +65,10 @@ func resultFromRawResponse(prompt string, location Location, raw json.RawMessage
 		}
 	}
 	if strings.TrimSpace(parsed.Model) == "" {
-		return PromptRunResult{}, errors.New("response missing reported model")
+		return PromptRunResult{RequestJSON: requestJSON}, errors.New("response missing reported model")
 	}
 	if strings.TrimSpace(parsed.Text) == "" {
-		return PromptRunResult{}, errors.New("response missing output_text")
-	}
-
-	requestJSON, err := buildResponsesRequestJSON(parsed.Model, p, loc)
-	if err != nil {
-		return PromptRunResult{}, err
+		return PromptRunResult{RequestJSON: requestJSON}, errors.New("response missing output_text")
 	}
 
 	return PromptRunResult{
