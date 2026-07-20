@@ -153,4 +153,49 @@ VALUES ($1, $2, 'best clinic near me', 'active')`,
 	); err == nil {
 		t.Fatal("prompt result update succeeded; want append-only trigger error")
 	}
+
+	// Failed results have NULL model/raw_response/response_text; reading them
+	// back must survive the nullable-jsonb scan (WEB-3 regression: NULL cannot
+	// scan into json.RawMessage without the nullableJSON wrapper).
+	failedPromptID := mustNewID(t)
+	failedResultID := mustNewID(t)
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE id = $1", failedResultID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", failedPromptID)
+	})
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompts (id, business_id, text, status)
+VALUES ($1, $2, 'cheapest clinic near me', 'active')`,
+		failedPromptID,
+		businessID,
+	); err != nil {
+		t.Fatalf("insert failed-case prompt: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompt_results (id, run_id, prompt_id, status, request, error)
+VALUES ($1, $2, $3, 'failed', '{"model":"gpt-5-mini"}'::jsonb, 'openai: timeout')`,
+		failedResultID,
+		runID,
+		failedPromptID,
+	); err != nil {
+		t.Fatalf("insert failed result: %v", err)
+	}
+
+	resultStore := NewResultStore(db)
+	failedStatus := ResultStatusFailed
+	list, err := resultStore.ListResults(ctx, tenantID, businessID, ResultFilter{Status: &failedStatus})
+	if err != nil {
+		t.Fatalf("ListResults(status=failed): %v", err)
+	}
+	if len(list) != 1 || list[0].RawResponse != nil || list[0].Error == nil || *list[0].Error != "openai: timeout" {
+		t.Fatalf("ListResults(status=failed) = %+v, want one failed row with nil raw_response", list)
+	}
+	if list[0].PromptText != "cheapest clinic near me" {
+		t.Fatalf("ListResults prompt text = %q, want the joined prompt text", list[0].PromptText)
+	}
+	if _, err := resultStore.GetResultDetail(ctx, tenantID, failedResultID); err != nil {
+		t.Fatalf("GetResultDetail(failed result): %v", err)
+	}
 }

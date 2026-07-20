@@ -72,6 +72,13 @@ type CreateResultParams struct {
 	CompletedAt  time.Time
 }
 
+// ResultListItem is one Responses-list row: the result joined to its prompt
+// text (design 06 Phase 1 — the list is unreadable without the question asked).
+type ResultListItem struct {
+	PromptResult
+	PromptText string
+}
+
 // ResultFilter narrows ListResults. All predicates are optional; Limit/Offset
 // apply as given when > 0 (the handler chooses defaults and caps).
 type ResultFilter struct {
@@ -261,7 +268,7 @@ func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID do
 		&detail.Result.Status,
 		&detail.Result.Model,
 		&detail.Result.Request,
-		&detail.Result.RawResponse,
+		nullableJSON{&detail.Result.RawResponse},
 		&detail.Result.ResponseText,
 		&detail.Result.Error,
 		&detail.Result.RequestedAt,
@@ -298,7 +305,7 @@ func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID do
 // (WEB-2). It enters through the tenant-checked business lookup, then joins
 // results up to the business so foreign run/prompt filters yield nothing rather
 // than leaking across tenants.
-func (s *ResultStore) ListResults(ctx context.Context, tenantID, businessID domain.ID, filter ResultFilter) ([]PromptResult, error) {
+func (s *ResultStore) ListResults(ctx context.Context, tenantID, businessID domain.ID, filter ResultFilter) ([]ResultListItem, error) {
 	if s == nil || s.db == nil {
 		return nil, errors.New("result store database is required")
 	}
@@ -309,9 +316,10 @@ func (s *ResultStore) ListResults(ctx context.Context, tenantID, businessID doma
 	}
 
 	query := `
-SELECT ` + resultColumns + `
+SELECT ` + resultColumns + `, p.text
 FROM prompt_results pr
 JOIN monitoring_runs r ON r.id = pr.run_id
+JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = r.business_id
 WHERE r.business_id = $1
   AND ($2::uuid IS NULL OR pr.run_id = $2)
   AND ($3::uuid IS NULL OR pr.prompt_id = $3)
@@ -336,13 +344,26 @@ ORDER BY pr.requested_at DESC`
 		_ = rows.Close()
 	}()
 
-	results := []PromptResult{}
+	results := []ResultListItem{}
 	for rows.Next() {
-		result, err := scanResult(rows)
-		if err != nil {
+		var item ResultListItem
+		if err := rows.Scan(
+			&item.ID,
+			&item.RunID,
+			&item.PromptID,
+			&item.Status,
+			&item.Model,
+			&item.Request,
+			nullableJSON{&item.RawResponse},
+			&item.ResponseText,
+			&item.Error,
+			&item.RequestedAt,
+			&item.CompletedAt,
+			&item.PromptText,
+		); err != nil {
 			return nil, err
 		}
-		results = append(results, result)
+		results = append(results, item)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate results: %w", err)
@@ -359,7 +380,7 @@ func scanResult(row rowScanner) (PromptResult, error) {
 		&result.Status,
 		&result.Model,
 		&result.Request,
-		&result.RawResponse,
+		nullableJSON{&result.RawResponse},
 		&result.ResponseText,
 		&result.Error,
 		&result.RequestedAt,

@@ -1,6 +1,7 @@
 // Responses-section API module: runs and prompt results (design 06,
-// Phase 1 shapes from internal/api/responses.go). Query hooks for the
-// Responses pages arrive with WEB-3/4/5.
+// Phase 1 shapes from internal/api/responses.go).
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+
 import { apiGet } from "./client"
 
 export interface Run {
@@ -81,5 +82,45 @@ export function getResult(
 ): Promise<PromptResult> {
   return apiGet<PromptResult>(`/results/${resultId}`, {
     include_raw: opts.includeRaw ? "true" : undefined,
+  })
+}
+
+export function useRuns(businessId: string | undefined) {
+  return useQuery({
+    queryKey: ["runs", businessId],
+    queryFn: () => listRuns(businessId!),
+    enabled: businessId !== undefined,
+    refetchInterval: (query) =>
+      query.state.data?.runs.some((run) => run.status === "running")
+        ? 5000
+        : false,
+  })
+}
+
+// keepPreviousData holds the current page on screen while the next page or
+// filter combination loads, so paging never flashes an empty table.
+export function useResults(
+  businessId: string | undefined,
+  filter: ResultFilter,
+  opts: { poll?: boolean } = {}
+) {
+  return useQuery({
+    queryKey: ["results", businessId, filter],
+    queryFn: () => listResults(businessId!, filter),
+    enabled: businessId !== undefined,
+    placeholderData: keepPreviousData,
+    refetchInterval: opts.poll ? 5000 : false,
+  })
+}
+
+export function useResult(
+  resultId: string | undefined,
+  opts: { includeRaw?: boolean } = {}
+) {
+  return useQuery({
+    queryKey: ["result", resultId, opts.includeRaw === true],
+    queryFn: () => getResult(resultId!, { includeRaw: opts.includeRaw }),
+    enabled: resultId !== undefined,
+    placeholderData: keepPreviousData,
   })
 }

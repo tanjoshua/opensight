@@ -29,7 +29,7 @@ func (f *fakeRunStore) ListRuns(_ context.Context, tenantID, businessID domain.I
 }
 
 type fakeResultStore struct {
-	results      []store.PromptResult
+	results      []store.ResultListItem
 	detail       store.ResultDetail
 	listErr      error
 	detailErr    error
@@ -41,7 +41,7 @@ type fakeResultStore struct {
 	detailCalled int
 }
 
-func (f *fakeResultStore) ListResults(_ context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.PromptResult, error) {
+func (f *fakeResultStore) ListResults(_ context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.ResultListItem, error) {
 	f.listCalled++
 	f.gotTenant = tenantID
 	f.gotBusiness = businessID
@@ -117,15 +117,18 @@ func TestListResultsEndpointParsesFiltersAndPagination(t *testing.T) {
 	runID := mustHashV7(t, runIDForTest)
 	promptID := mustHashV7(t, promptIDForTest)
 	resultID := mustHashV7(t, resultIDForTest)
-	results := &fakeResultStore{results: []store.PromptResult{{
-		ID:          resultID,
-		RunID:       runID,
-		PromptID:    promptID,
-		Status:      store.ResultStatusFailed,
-		Request:     json.RawMessage(`{"model":"chat-latest"}`),
-		Error:       ptrString("timeout"),
-		RequestedAt: time.Date(2026, 7, 13, 11, 0, 0, 0, time.UTC),
-		CompletedAt: time.Date(2026, 7, 13, 11, 1, 0, 0, time.UTC),
+	results := &fakeResultStore{results: []store.ResultListItem{{
+		PromptResult: store.PromptResult{
+			ID:          resultID,
+			RunID:       runID,
+			PromptID:    promptID,
+			Status:      store.ResultStatusFailed,
+			Request:     json.RawMessage(`{"model":"chat-latest"}`),
+			Error:       ptrString("timeout"),
+			RequestedAt: time.Date(2026, 7, 13, 11, 0, 0, 0, time.UTC),
+			CompletedAt: time.Date(2026, 7, 13, 11, 1, 0, 0, time.UTC),
+		},
+		PromptText: "best clinic near me",
 	}}}
 	srv, cookie := newAuthedResponseServer(t, &fakeRunStore{}, results)
 
@@ -166,6 +169,9 @@ func TestListResultsEndpointParsesFiltersAndPagination(t *testing.T) {
 	}
 	if len(body.Results) != 1 || body.Results[0].Error == nil || *body.Results[0].Error != "timeout" {
 		t.Fatalf("results response = %+v", body.Results)
+	}
+	if body.Results[0].Prompt == nil || body.Results[0].Prompt.Text != "best clinic near me" {
+		t.Fatalf("list row prompt = %+v, want prompt text", body.Results[0].Prompt)
 	}
 }
 

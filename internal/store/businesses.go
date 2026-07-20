@@ -225,7 +225,7 @@ func scanBusiness(row rowScanner) (Business, error) {
 		&business.Category,
 		&business.Practitioners,
 		&business.Services,
-		&business.Location,
+		nullableJSON{&business.Location},
 		&business.CreatedAt,
 		&business.ActivatedAt,
 	); err != nil {
@@ -233,6 +233,25 @@ func scanBusiness(row rowScanner) (Business, error) {
 	}
 	business.Aliases = aliases
 	return business, nil
+}
+
+// nullableJSON scans a nullable jsonb column into a json.RawMessage.
+// database/sql maps NULL only into exactly *[]byte, not named byte-slice types
+// like json.RawMessage, so nullable jsonb needs this wrapper.
+type nullableJSON struct{ dst *json.RawMessage }
+
+func (n nullableJSON) Scan(src any) error {
+	switch v := src.(type) {
+	case nil:
+		*n.dst = nil
+	case []byte:
+		*n.dst = append(json.RawMessage(nil), v...)
+	case string:
+		*n.dst = json.RawMessage(v)
+	default:
+		return fmt.Errorf("unsupported source type %T for jsonb", src)
+	}
+	return nil
 }
 
 // stringSlice scans a JSON array text (e.g. to_jsonb(text[])) into []string.

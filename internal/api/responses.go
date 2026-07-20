@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -26,7 +27,7 @@ type runStore interface {
 }
 
 type resultStore interface {
-	ListResults(ctx context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.PromptResult, error)
+	ListResults(ctx context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.ResultListItem, error)
 	GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (store.ResultDetail, error)
 }
 
@@ -138,8 +139,10 @@ func (s *Server) handleListResults(w http.ResponseWriter, r *http.Request) {
 		Results: make([]resultResponse, 0, len(results)),
 		Paging:  pagingResponse{Limit: limit, Offset: offset, PageCount: len(results)},
 	}
-	for _, result := range results {
-		resp.Results = append(resp.Results, resultToResponse(result, false))
+	for _, item := range results {
+		row := resultToResponse(item.PromptResult, false)
+		row.Prompt = &promptResponse{ID: item.PromptID.String(), Text: item.PromptText}
+		resp.Results = append(resp.Results, row)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -261,6 +264,7 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeProblem(w, http.StatusNotFound, "not found", "not found")
 		return
 	}
+	slog.Error("api: store error", "error", err)
 	writeProblem(w, http.StatusInternalServerError, "internal server error", "an unexpected error occurred")
 }
 

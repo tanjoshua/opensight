@@ -31,9 +31,9 @@ Deps: SCH-4, AUTH-3 · Phase 1 · Ref: design 06 (Endpoints — Responses, Runs)
 
 As a clinic user, I want to browse all stored ChatGPT responses with filters and statuses, so that I can read exactly what ChatGPT says each week.
 
-- [ ] Filterable list by run and prompt; paginated.
-- [ ] Failed results show status + error inline; run-level status visible (completed/partial/failed).
-- [ ] Empty state via shadcn `Empty` when no runs exist yet.
+- [x] Filterable list by run and prompt; paginated.
+- [x] Failed results show status + error inline; run-level status visible (completed/partial/failed).
+- [x] Empty state via shadcn `Empty` when no runs exist yet.
 
 Deps: WEB-1, WEB-2 · Phase 1 · Ref: design 06 (Section notes — Responses), PRD §7
 
@@ -41,8 +41,8 @@ Deps: WEB-1, WEB-2 · Phase 1 · Ref: design 06 (Section notes — Responses), P
 
 As a clinic user, I want any response to open in a detail drawer, so that the raw evidence is always one click away.
 
-- [ ] Slide-over drawer rendering `GET /results/:id`: full answer text, prompt text, model + timestamp, raw JSON behind a toggle.
-- [ ] Built as the single shared `ResponseDrawer` component every later metric will open (the "every number is a door" contract; mention highlights/citations/sentiment layer on in Phase 2, INS-4).
+- [x] Slide-over drawer rendering `GET /results/:id`: full answer text, prompt text, model + timestamp, raw JSON behind a toggle.
+- [x] Built as the single shared `ResponseDrawer` component every later metric will open (the "every number is a door" contract; mention highlights/citations/sentiment layer on in Phase 2, INS-4).
 
 Deps: WEB-3 · Phase 1 · Ref: design 06 (The one UI contract)
 
@@ -50,7 +50,7 @@ Deps: WEB-3 · Phase 1 · Ref: design 06 (The one UI contract)
 
 As a clinic user, I want to see that a run is currently executing, so that a mid-run visit doesn't look broken or empty.
 
-- [ ] Responses section (and shell, lightly) show an in-progress indicator polling run status while a run is `running`.
-- [ ] Single-run accounts render sensibly (no degenerate trends exist yet in Phase 1; full degraded-state pass is INS-1).
+- [x] Responses section (and shell, lightly) show an in-progress indicator polling run status while a run is `running`.
+- [x] Single-run accounts render sensibly (no degenerate trends exist yet in Phase 1; full degraded-state pass is INS-1).
 
 Deps: WEB-3 · Phase 1 · Ref: design 06 (Degraded and empty states)
