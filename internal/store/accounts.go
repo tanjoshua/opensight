@@ -31,6 +31,16 @@ type User struct {
 	CreatedAt time.Time
 }
 
+// Plan is a persisted plans row: a tenant's entitlements. run_interval drives
+// the Temporal Schedule spec (RUN-5); prompt_limit bounds active prompts.
+type Plan struct {
+	ID          domain.ID
+	Slug        string
+	PromptLimit int
+	RunInterval string
+	Platforms   []string
+}
+
 // AdminStore owns invite-only account creation. It is intentionally
 // tenant-unscoped because these commands create the tenant context that normal
 // repositories later require.
@@ -69,6 +79,14 @@ RETURNING created_at`
 INSERT INTO users (id, tenant_id, email, password_hash)
 VALUES ($1, $2, $3, $4)
 RETURNING created_at`
+
+	// tenantPlanSQL loads a tenant's plan entitlements through the plan FK.
+	// platforms is a text[]; it is read as JSON and unmarshalled (see stringSlice).
+	tenantPlanSQL = `
+SELECT p.id, p.slug, p.prompt_limit, p.run_interval, to_jsonb(p.platforms)
+FROM tenants t
+JOIN plans p ON p.id = t.plan_id
+WHERE t.id = $1`
 )
 
 // CreateTenant creates a tenant on the seeded starter plan. Plan entitlements
@@ -126,6 +144,27 @@ func (s *AdminStore) CreateUser(ctx context.Context, params CreateUserParams) (U
 		return User{}, fmt.Errorf("insert user: %w", err)
 	}
 	return user, nil
+}
+
+// GetTenantPlan loads the tenant's plan (RUN-5 schedule creation derives the run
+// interval from it). A missing tenant returns ErrNotFound.
+func (s *AdminStore) GetTenantPlan(ctx context.Context, tenantID domain.ID) (Plan, error) {
+	if s == nil || s.db == nil {
+		return Plan{}, errors.New("admin store database is required")
+	}
+
+	var plan Plan
+	var platforms stringSlice
+	if err := s.db.QueryRowContext(ctx, tenantPlanSQL, tenantID).Scan(
+		&plan.ID, &plan.Slug, &plan.PromptLimit, &plan.RunInterval, &platforms,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Plan{}, ErrNotFound
+		}
+		return Plan{}, fmt.Errorf("get tenant plan: %w", err)
+	}
+	plan.Platforms = platforms
+	return plan, nil
 }
 
 func normalizeCreateTenantParams(params CreateTenantParams) (CreateTenantParams, error) {

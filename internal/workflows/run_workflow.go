@@ -39,6 +39,14 @@ type RunWorkflowInput struct {
 // FinalizeRun sets the terminal status. A single prompt's failure never aborts
 // the run — its already-succeeded siblings must survive.
 func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
+	// A Temporal Schedule fires with static Args, so scheduled runs leave
+	// ScheduledFor unset; derive the week bucket from the deterministic workflow
+	// clock (the fire time). Initial/manual triggers pass an explicit date.
+	scheduledFor := input.ScheduledFor
+	if scheduledFor.IsZero() {
+		scheduledFor = workflow.Now(ctx)
+	}
+
 	loadCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 30 * time.Second,
 	})
@@ -47,7 +55,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
 	if err := workflow.ExecuteActivity(loadCtx, acts.LoadRunSpec, LoadRunSpecInput{
 		BusinessID:   input.BusinessID,
 		Platform:     input.Platform,
-		ScheduledFor: input.ScheduledFor,
+		ScheduledFor: scheduledFor,
 		Trigger:      input.Trigger,
 		WorkflowID:   workflow.GetInfo(ctx).WorkflowExecution.ID,
 	}).Get(ctx, &spec); err != nil {

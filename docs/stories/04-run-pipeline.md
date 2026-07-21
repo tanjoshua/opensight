@@ -55,9 +55,9 @@ Deps: RUN-1, RUN-3 · Phase 1 · Ref: design 04 (ExecutePrompt)
 
 As the operator, I want a weekly Temporal Schedule per active business and a CLI to seed a business, so that internal test businesses run weekly without onboarding UI (that's Phase 3).
 
-- [ ] Schedule id `monitor-{business_id}-chatgpt`; spec derived from `plan.run_interval`; overlap policy **Skip**; per-business jitter (hash → day-of-week offset).
-- [ ] `opensight business create` (or seed subcommand): creates an active business with profile + prompts from a YAML/JSON file, creates the schedule, and triggers the first run (`trigger=initial`).
-- [ ] Deactivation path documented (pause schedule; data stays).
+- [x] Schedule id `monitor-{business_id}-chatgpt`; spec derived from `plan.run_interval`; overlap policy **Skip**; per-business jitter (hash → day-of-week offset).
+- [x] `opensight business create` (or seed subcommand): creates an active business with profile + prompts from a YAML/JSON file, creates the schedule, and triggers the first run (`trigger=initial`).
+- [x] Deactivation path documented (pause schedule; data stays).
 
 Deps: RUN-3, AUTH-2 · Phase 1 · Ref: design 04 (Scheduling), design README (Phase 1: CLI-seeded profile)
 
@@ -65,7 +65,7 @@ Deps: RUN-3, AUTH-2 · Phase 1 · Ref: design 04 (Scheduling), design README (Ph
 
 As the operator, I want a per-tenant cost query over stored token usage, so that week-one reality checks the cost ballpark ($0.50–2/tenant/week).
 
-- [ ] Ad-hoc SQL (checked into `docs/` or a CLI subcommand) summing token usage from `raw_response` per tenant per week.
+- [x] Ad-hoc SQL (checked into `docs/` or a CLI subcommand) summing token usage from `raw_response` per tenant per week.
 - [ ] Run against the first real production run; result recorded against the ballpark.
 
 Deps: RUN-4 · Phase 1 · Ref: design 04 (Cost model), 07 (Observability)

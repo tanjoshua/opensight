@@ -6,6 +6,7 @@
 //	opensight migrate       # apply database migrations, then exit (07)
 //	opensight tenant create # create an invite-only tenant (AUTH-2)
 //	opensight user create   # create an invite-only user (AUTH-2)
+//	opensight business create # seed an active business from a spec file (RUN-5)
 //	opensight seed dev      # seed a dev tenant with replay results (RUN-2)
 //
 // The same image runs serve and work via a command override in deployment
@@ -44,11 +45,12 @@ import (
 )
 
 const (
-	usage             = "usage: opensight <serve|work|migrate|tenant|user|seed>"
-	tenantCreateUsage = "usage: opensight tenant create --name <tenant-name>"
-	userCreateUsage   = "usage: opensight user create --tenant <tenant-id> --email <email> [--password-stdin]"
-	seedUsage         = "usage: opensight seed dev"
-	accountPlanSlug   = "starter"
+	usage               = "usage: opensight <serve|work|migrate|tenant|user|business|seed>"
+	tenantCreateUsage   = "usage: opensight tenant create --name <tenant-name>"
+	userCreateUsage     = "usage: opensight user create --tenant <tenant-id> --email <email> [--password-stdin]"
+	businessCreateUsage = "usage: opensight business create --tenant <tenant-id> --file <spec.yaml>"
+	seedUsage           = "usage: opensight seed dev"
+	accountPlanSlug     = "starter"
 )
 
 func main() {
@@ -73,6 +75,7 @@ type commandDeps struct {
 	migrate          func(context.Context, config.Config) error
 	createTenant     func(context.Context, config.Config, tenantCreateOptions, io.Writer) error
 	createUser       func(context.Context, config.Config, userCreateOptions, io.Writer) error
+	createBusiness   func(context.Context, config.Config, businessCreateOptions, io.Writer) error
 	seedDev          func(context.Context, config.Config, io.Writer) error
 	generatePassword func() (string, error)
 	stdin            io.Reader
@@ -118,6 +121,8 @@ func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 		return runTenantCommand(ctx, cfg, args[1:], deps)
 	case "user":
 		return runUserCommand(ctx, cfg, args[1:], deps)
+	case "business":
+		return runBusinessCommand(ctx, cfg, args[1:], deps)
 	case "seed":
 		return runSeedCommand(ctx, cfg, args[1:], deps)
 	default:
@@ -130,6 +135,7 @@ func defaultCommandDeps() commandDeps {
 		migrate:          migrate,
 		createTenant:     createTenantCLI,
 		createUser:       createUserCLI,
+		createBusiness:   createBusinessCLI,
 		seedDev:          seedDevCLI,
 		generatePassword: generatePassword,
 		stdin:            os.Stdin,
@@ -147,6 +153,9 @@ func (d commandDeps) withDefaults() commandDeps {
 	}
 	if d.createUser == nil {
 		d.createUser = defaults.createUser
+	}
+	if d.createBusiness == nil {
+		d.createBusiness = defaults.createBusiness
 	}
 	if d.seedDev == nil {
 		d.seedDev = defaults.seedDev
@@ -192,6 +201,22 @@ func runUserCommand(ctx context.Context, cfg config.Config, args []string, deps 
 		return deps.createUser(ctx, cfg, opts, deps.stdout)
 	default:
 		return fmt.Errorf("unknown user subcommand %q; %s", args[0], userCreateUsage)
+	}
+}
+
+func runBusinessCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+	if len(args) == 0 {
+		return fmt.Errorf("business subcommand required; %s", businessCreateUsage)
+	}
+	switch args[0] {
+	case "create":
+		opts, err := parseBusinessCreateArgs(args[1:])
+		if err != nil {
+			return err
+		}
+		return deps.createBusiness(ctx, cfg, opts, deps.stdout)
+	default:
+		return fmt.Errorf("unknown business subcommand %q; %s", args[0], businessCreateUsage)
 	}
 }
 
@@ -461,15 +486,9 @@ func work(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("build extraction runner: %w", err)
 	}
 
-	dialCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	temporalClient, err := client.DialContext(dialCtx, client.Options{
-		HostPort:  cfg.TemporalAddress,
-		Namespace: cfg.TemporalNamespace,
-	})
+	temporalClient, err := dialTemporal(ctx, cfg)
 	if err != nil {
-		return fmt.Errorf("connect temporal: %w", err)
+		return err
 	}
 	defer temporalClient.Close()
 
@@ -515,6 +534,22 @@ func work(ctx context.Context, cfg config.Config) error {
 
 	<-ctx.Done()
 	return nil
+}
+
+// dialTemporal connects to the Temporal frontend with a bounded dial timeout.
+// Callers own closing the returned client.
+func dialTemporal(ctx context.Context, cfg config.Config) (client.Client, error) {
+	dialCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	temporalClient, err := client.DialContext(dialCtx, client.Options{
+		HostPort:  cfg.TemporalAddress,
+		Namespace: cfg.TemporalNamespace,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("connect temporal: %w", err)
+	}
+	return temporalClient, nil
 }
 
 // migrate applies embedded goose migrations and exits. It is intentionally only

@@ -68,4 +68,20 @@ func TestAdminStoreCreateTenantAndUser(t *testing.T) {
 	if storedHash != passwordHash {
 		t.Fatalf("stored password hash = %q, want provided hash", storedHash)
 	}
+
+	// GetTenantPlan resolves the seeded starter entitlements the RUN-5 schedule
+	// derives its interval from.
+	plan, err := admin.GetTenantPlan(ctx, tenant.ID)
+	if err != nil {
+		t.Fatalf("GetTenantPlan: %v", err)
+	}
+	if plan.Slug != starterPlanSlug {
+		t.Fatalf("plan slug = %q, want %q", plan.Slug, starterPlanSlug)
+	}
+	if plan.RunInterval != "weekly" {
+		t.Fatalf("run interval = %q, want weekly", plan.RunInterval)
+	}
+	if plan.PromptLimit != 20 {
+		t.Fatalf("prompt limit = %d, want 20", plan.PromptLimit)
+	}
 }
