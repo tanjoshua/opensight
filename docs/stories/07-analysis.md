@@ -44,9 +44,9 @@ Deps: ANA-2 · Phase 2 · Ref: design 05 (Phase 2, steps 1–2)
 
 As the developer, I want one conservative cheap-model call for still-unmatched names, so that name variants converge without silently polluting history.
 
-- [ ] Single call per run for unmatched names vs the existing competitor list (names + aliases + known websites); bar: "same real-world business only if evidence is strong; otherwise new".
-- [ ] LLM match → mention with `matched_by='llm'`; variant appended to the competitor's `suggested_aliases` — **never** auto-promoted to `aliases` (user approval in POL-4 promotes it).
-- [ ] Unapproved variants are re-judged each run (no cache of LLM verdicts as matching keys).
+- [x] Single call per run for unmatched names vs the existing competitor list (names + aliases + known websites); bar: "same real-world business only if evidence is strong; otherwise new".
+- [x] LLM match → mention with `matched_by='llm'`; variant appended to the competitor's `suggested_aliases` — **never** auto-promoted to `aliases` (user approval in POL-4 promotes it).
+- [x] Unapproved variants are re-judged each run (no cache of LLM verdicts as matching keys).
 
 Deps: ANA-4 · Phase 2 · Ref: design 05 (Phase 2, step 3)
 
@@ -54,9 +54,9 @@ Deps: ANA-4 · Phase 2 · Ref: design 05 (Phase 2, step 3)
 
 As the developer, I want reconcile to finish transactionally, so that metrics only ever see fully analyzed runs.
 
-- [ ] Unmatched names (after both passes) create `competitors` rows: status `discovered`, source `discovered`, verbatim name as first alias; deduped within the run first. No minimum-mention threshold.
-- [ ] All `mentions` written for the run: subject, matched_by, `mention_order` = first-appearance rank, excerpt. Delete-and-rewrite of the run's mention rows in one transaction (idempotent).
-- [ ] Commit sets `monitoring_runs.analysis_completed_at`. A result enters the metrics base only when this is set **and** it has a `result_analyses` row — unanalyzed results excluded from numerator and denominator alike.
+- [x] Unmatched names (after both passes) create `competitors` rows: status `discovered`, source `discovered`, verbatim name as first alias; deduped within the run first. No minimum-mention threshold.
+- [x] All `mentions` written for the run: subject, matched_by, `mention_order` = first-appearance rank, excerpt. Delete-and-rewrite of the run's mention rows in one transaction (idempotent).
+- [x] Commit sets `monitoring_runs.analysis_completed_at`. A result enters the metrics base only when this is set **and** it has a `result_analyses` row — unanalyzed results excluded from numerator and denominator alike.
 
 Deps: ANA-5 · Phase 2 · Ref: design 05 (Phase 2, steps 4–6)
 
@@ -64,9 +64,9 @@ Deps: ANA-5 · Phase 2 · Ref: design 05 (Phase 2, steps 4–6)
 
 As the operator, I want analysis to run as a child workflow with an independent retry budget and a manual re-run path, so that a failed analysis never re-spends prompt executions.
 
-- [ ] `AnalyzeRun` child workflow: parallel `AnalyzeResult` (~4 concurrent) then serial `ReconcileEntities`; started by RunWorkflow after execution.
-- [ ] AnalyzeRun failure does **not** fail the parent run; run stays viewable raw and is flagged for re-analysis.
-- [ ] `ReanalyzeRun` (CLI or Temporal UI trigger) is the same workflow pointed at an old run; `AnalyzeResult` upserts by `prompt_result_id`; per-result failures leave no `result_analyses` row (excluded from metrics, badged in INS-4).
+- [x] `AnalyzeRun` child workflow: parallel `AnalyzeResult` (~4 concurrent) then serial `ReconcileEntities`; started by RunWorkflow after execution.
+- [x] AnalyzeRun failure does **not** fail the parent run; run stays viewable raw and is flagged for re-analysis.
+- [x] `ReanalyzeRun` (CLI or Temporal UI trigger) is the same workflow pointed at an old run; `AnalyzeResult` upserts by `prompt_result_id`; per-result failures leave no `result_analyses` row (excluded from metrics, badged in INS-4).
 - [ ] Cost sanity: ~22 mini-calls/run, well under $0.05 — verified against a real run.
 
 Deps: ANA-6, RUN-3 · Phase 2 · Ref: design 05 (Shape, Cost and failure posture), 04 (RunWorkflow)

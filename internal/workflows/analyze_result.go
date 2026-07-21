@@ -100,6 +100,13 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 			"result_id", in.ResultID.String(),
 			"validation_errors", result.ValidationErrs,
 		)
+		// Clear any stale result_analyses row from a prior successful analysis
+		// (e.g. a ReanalyzeRun whose new extraction attempt failed): a failed
+		// analysis must never leave old sentiment/keywords counting toward
+		// metrics under a result that today has no valid analysis (design 05).
+		if err := a.Analysis.DeleteResultAnalysis(ctx, in.TenantID, in.ResultID); err != nil {
+			return AnalyzeResultOutput{}, err
+		}
 		return AnalyzeResultOutput{ResultID: in.ResultID, Analyzed: false}, nil
 	}
 	output := result.Output

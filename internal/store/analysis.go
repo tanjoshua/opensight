@@ -101,12 +101,54 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	// match against them too (design 05 Phase 2 step 2, 02: dismissal is a
 	// display filter). Tenant-scoped through the businesses IN-subquery like the
 	// deletes above. aliases is read as JSON (see businesses.go stringSlice).
+	// website feeds the LLM match pass's candidate list (ANA-5).
 	listCompetitorsSQL = `
-SELECT id, name, to_jsonb(aliases) AS aliases, status
+SELECT id, name, website, to_jsonb(aliases) AS aliases, status
 FROM competitors
 WHERE business_id = $1
   AND business_id IN (SELECT id FROM businesses WHERE tenant_id = $2)
 ORDER BY created_at`
+
+	// runBusinessOwnedSQL resolves a run's owning business, tenant-scoped through
+	// monitoring_runs -> businesses. A missing or cross-tenant run yields no row.
+	runBusinessOwnedSQL = `
+SELECT b.id
+FROM monitoring_runs r
+JOIN businesses b ON b.id = r.business_id
+WHERE r.id = $1 AND b.tenant_id = $2`
+
+	// listSucceededResultIDsSQL lists a run's succeeded results in first-appearance
+	// order for the AnalyzeRun fan-out (ANA-7). Ordered by requested_at so the fan
+	// out is deterministic; failed results are excluded (never analyzed).
+	listSucceededResultIDsSQL = `
+SELECT id FROM prompt_results
+WHERE run_id = $1 AND status = 'succeeded'
+ORDER BY requested_at, id`
+
+	// insertDiscoveredCompetitorSQL mints a discovered competitor with the verbatim
+	// name as its sole (approved) alias, so a future run's exact pass keys off it.
+	insertDiscoveredCompetitorSQL = `
+INSERT INTO competitors (id, business_id, name, aliases, source, status)
+VALUES ($1, $2, $3, ARRAY[$3]::text[], 'discovered', 'discovered')`
+
+	// appendSuggestedAliasSQL idempotently records an LLM-proposed variant on a
+	// competitor without promoting it to an approved alias (design 05 step 3): the
+	// variant is skipped if it is already suggested or already an approved alias.
+	// business-scoped so a cross-business competitor id is a no-op.
+	appendSuggestedAliasSQL = `
+UPDATE competitors
+SET suggested_aliases = array_append(suggested_aliases, $3)
+WHERE id = $1 AND business_id = $2
+  AND NOT ($3 = ANY(suggested_aliases))
+  AND NOT ($3 = ANY(aliases))`
+
+	insertMentionSQL = `
+INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+VALUES ($1, $2, $3, $4, $5, $6, $7)`
+
+	setAnalysisCompletedSQL = `
+UPDATE monitoring_runs SET analysis_completed_at = now()
+WHERE id = $1 AND business_id = $2`
 )
 
 // CitationWrite is one citation row for SaveResultAnalysis, already normalized
@@ -236,13 +278,14 @@ func (s *AnalysisStore) DeleteResultAnalysis(ctx context.Context, tenantID, resu
 	})
 }
 
-// Competitor is one competitor row as read for reconcile's exact pass — the
-// matching keys (name + approved aliases) plus id and status. suggested_aliases
-// and other columns are deliberately omitted: the exact pass keys off approved
-// aliases only.
+// Competitor is one competitor row as read for reconcile — the matching keys
+// (name + approved aliases) plus id, status, and website. website is nil unless
+// set; it feeds the ANA-5 LLM match pass's candidate list. suggested_aliases is
+// deliberately omitted: neither pass keys off unapproved variants.
 type Competitor struct {
 	ID      domain.ID
 	Name    string
+	Website *string
 	Aliases []string
 	Status  string
 }
@@ -273,7 +316,7 @@ func (s *AnalysisStore) ListCompetitors(ctx context.Context, tenantID, businessI
 	for rows.Next() {
 		var c Competitor
 		var aliases stringSlice
-		if err := rows.Scan(&c.ID, &c.Name, &aliases, &c.Status); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Website, &aliases, &c.Status); err != nil {
 			return nil, fmt.Errorf("scan competitor: %w", err)
 		}
 		c.Aliases = aliases
@@ -305,4 +348,193 @@ func (s *AnalysisStore) DeleteRunMentions(ctx context.Context, tenantID, runID d
 		return fmt.Errorf("delete run mentions: %w", err)
 	}
 	return nil
+}
+
+// AnalyzeRunSpec is what AnalyzeRun (ANA-7) needs to fan out: the run's owning
+// business and its succeeded result ids in first-appearance order. An empty
+// ResultIDs slice is valid — a run whose prompts all failed has nothing to
+// analyze, which is not an error.
+type AnalyzeRunSpec struct {
+	BusinessID domain.ID
+	ResultIDs  []domain.ID
+}
+
+// LoadAnalyzeRunSpec resolves a run's business and its succeeded result ids for
+// the AnalyzeRun workflow (ANA-7). It is tenant-scoped: a missing or
+// cross-tenant run returns ErrNotFound before any result rows are read, so a
+// bad run id never leaks another tenant's results.
+func (s *AnalysisStore) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID domain.ID) (AnalyzeRunSpec, error) {
+	if s == nil || s.db == nil {
+		return AnalyzeRunSpec{}, errors.New("analysis store database is required")
+	}
+	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+		return AnalyzeRunSpec{}, err
+	}
+	if err := validateUUIDv7("run id", runID); err != nil {
+		return AnalyzeRunSpec{}, err
+	}
+
+	var businessID domain.ID
+	if err := s.db.QueryRowContext(ctx, runBusinessOwnedSQL, runID, tenantID).Scan(&businessID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return AnalyzeRunSpec{}, ErrNotFound
+		}
+		return AnalyzeRunSpec{}, fmt.Errorf("resolve run business: %w", err)
+	}
+
+	rows, err := s.db.QueryContext(ctx, listSucceededResultIDsSQL, runID)
+	if err != nil {
+		return AnalyzeRunSpec{}, fmt.Errorf("list succeeded results: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	resultIDs := []domain.ID{}
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return AnalyzeRunSpec{}, fmt.Errorf("scan result id: %w", err)
+		}
+		resultIDs = append(resultIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return AnalyzeRunSpec{}, fmt.Errorf("iterate result ids: %w", err)
+	}
+
+	return AnalyzeRunSpec{BusinessID: businessID, ResultIDs: resultIDs}, nil
+}
+
+// DiscoveredCompetitor is one still-unmatched name reconcile mints as a new
+// competitor. Key is a caller-chosen correlation key (the normalized name) used
+// only to link MentionWrite rows to the new competitor's minted id inside the
+// transaction; it is never persisted. VerbatimName becomes both the row's name
+// and its sole approved alias.
+type DiscoveredCompetitor struct {
+	Key          string
+	VerbatimName string
+}
+
+// SuggestedAliasWrite records an LLM-proposed variant on an existing competitor
+// (design 05 step 3): appended to suggested_aliases, never promoted to aliases
+// (user approval in POL-4 promotes it). Idempotent — a variant already present
+// as a suggestion or an approved alias is skipped.
+type SuggestedAliasWrite struct {
+	CompetitorID domain.ID
+	Variant      string
+}
+
+// MentionWrite is one mention row for CommitReconcile. Exactly one of
+// CompetitorID / DiscoveredKey is set for a competitor subject: CompetitorID
+// when the entity resolved to an existing (exact or LLM) competitor,
+// DiscoveredKey when it resolved to one this same commit mints (resolved to the
+// new id via the Discovered map). A self subject sets neither.
+type MentionWrite struct {
+	PromptResultID domain.ID
+	Subject        string // "self" | "competitor"
+	CompetitorID   domain.ID
+	DiscoveredKey  string
+	MatchedBy      string // "exact" | "llm"
+	MentionOrder   int
+	Excerpt        string
+}
+
+// ReconcileCommitParams is the whole-run write payload for CommitReconcile.
+type ReconcileCommitParams struct {
+	RunID            domain.ID
+	Discovered       []DiscoveredCompetitor
+	SuggestedAliases []SuggestedAliasWrite
+	Mentions         []MentionWrite
+}
+
+// CommitReconcile writes phase 2's whole-run outcome in one transaction (design
+// 05 steps 4–6): mint discovered competitors, append LLM-suggested aliases,
+// delete-and-rewrite the run's mentions, and stamp analysis_completed_at. Doing
+// it in one transaction is the idempotency guarantee — a re-run's exact pass
+// re-resolves against the competitors the previous attempt minted (reconcile
+// reloads them fresh), so the delete-and-rewrite converges rather than
+// duplicating. The business and run are re-verified against tenantID inside the
+// transaction; a missing or cross-tenant business or run returns ErrNotFound.
+func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessID domain.ID, params ReconcileCommitParams) error {
+	if s == nil || s.db == nil {
+		return errors.New("analysis store database is required")
+	}
+	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+		return err
+	}
+	if err := validateUUIDv7("business id", businessID); err != nil {
+		return err
+	}
+	if err := validateUUIDv7("run id", params.RunID); err != nil {
+		return err
+	}
+
+	return withTx(ctx, s.db, func(q querier) error {
+		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+			return err
+		}
+
+		// The run must belong to the same business, or a caller could stamp a run
+		// they resolved for a different business.
+		var one int
+		if err := q.queryRowContext(ctx,
+			`SELECT 1 FROM monitoring_runs WHERE id = $1 AND business_id = $2`,
+			params.RunID, businessID).Scan(&one); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrNotFound
+			}
+			return fmt.Errorf("verify run ownership: %w", err)
+		}
+
+		discoveredIDs := make(map[string]domain.ID, len(params.Discovered))
+		for _, d := range params.Discovered {
+			id, err := domain.NewID()
+			if err != nil {
+				return err
+			}
+			if _, err := q.execContext(ctx, insertDiscoveredCompetitorSQL, id, businessID, d.VerbatimName); err != nil {
+				return fmt.Errorf("insert discovered competitor: %w", err)
+			}
+			discoveredIDs[d.Key] = id
+		}
+
+		for _, sa := range params.SuggestedAliases {
+			if _, err := q.execContext(ctx, appendSuggestedAliasSQL, sa.CompetitorID, businessID, sa.Variant); err != nil {
+				return fmt.Errorf("append suggested alias: %w", err)
+			}
+		}
+
+		if _, err := q.execContext(ctx, deleteRunMentionsSQL, params.RunID, tenantID); err != nil {
+			return fmt.Errorf("delete run mentions: %w", err)
+		}
+
+		for _, m := range params.Mentions {
+			id, err := domain.NewID()
+			if err != nil {
+				return err
+			}
+			var competitorID any
+			if m.Subject == "competitor" {
+				cid := m.CompetitorID
+				if m.DiscoveredKey != "" {
+					mapped, ok := discoveredIDs[m.DiscoveredKey]
+					if !ok {
+						return fmt.Errorf("mention references unknown discovered key %q", m.DiscoveredKey)
+					}
+					cid = mapped
+				}
+				competitorID = cid
+			}
+			if _, err := q.execContext(ctx, insertMentionSQL,
+				id, m.PromptResultID, m.Subject, competitorID, m.MatchedBy, m.MentionOrder, m.Excerpt,
+			); err != nil {
+				return fmt.Errorf("insert mention: %w", err)
+			}
+		}
+
+		if _, err := q.execContext(ctx, setAnalysisCompletedSQL, params.RunID, businessID); err != nil {
+			return fmt.Errorf("set analysis completed: %w", err)
+		}
+		return nil
+	})
 }

@@ -95,6 +95,5 @@ Runtime config is env-driven with development-safe defaults:
 - `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
 - `DEV_PROMPT_LIMIT` defaults to `3` for real-call smoke tests
 - `PROMPT_CONCURRENCY` defaults to `2`
-- `ANALYSIS_CONCURRENCY` defaults to `2`
 
 Local development should use `stub` or `replay` unless a story explicitly requires a real OpenAI smoke test. For a low-cost real test, set `PROMPT_RUNNER_MODE=openai`, lower `DEV_PROMPT_LIMIT`, and override `OPENAI_RESPONSES_MODEL` to a cheaper web-search-capable model. `OPENAI_API_KEY` has no default and must stay in local uncommitted env only.

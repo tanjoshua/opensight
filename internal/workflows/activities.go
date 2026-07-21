@@ -24,6 +24,7 @@ type Activities struct {
 	Runner     llm.PromptRunner
 	Analysis   *store.AnalysisStore
 	Extractor  llm.ExtractionRunner
+	Matcher    llm.MatchRunner
 }
 
 // NewActivities returns an Activities with all dependencies wired.
@@ -35,6 +36,7 @@ func NewActivities(
 	runner llm.PromptRunner,
 	analysis *store.AnalysisStore,
 	extractor llm.ExtractionRunner,
+	matcher llm.MatchRunner,
 ) *Activities {
 	return &Activities{
 		Businesses: businesses,
@@ -44,6 +46,7 @@ func NewActivities(
 		Runner:     runner,
 		Analysis:   analysis,
 		Extractor:  extractor,
+		Matcher:    matcher,
 	}
 }
 

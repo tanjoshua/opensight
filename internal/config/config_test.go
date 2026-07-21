@@ -65,7 +65,6 @@ func TestLoadOverrides(t *testing.T) {
 		"PROMPT_RUNNER_MODE":     "replay",
 		"DEV_PROMPT_LIMIT":       "2",
 		"PROMPT_CONCURRENCY":     "4",
-		"ANALYSIS_CONCURRENCY":   "5",
 	}
 
 	cfg, err := LoadFromEnv(func(key string) string { return env[key] })
@@ -114,9 +113,6 @@ func TestLoadOverrides(t *testing.T) {
 	}
 	if cfg.PromptConcurrency != 4 {
 		t.Errorf("PromptConcurrency = %d", cfg.PromptConcurrency)
-	}
-	if cfg.AnalysisConcurrency != 5 {
-		t.Errorf("AnalysisConcurrency = %d", cfg.AnalysisConcurrency)
 	}
 }
 

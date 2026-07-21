@@ -68,6 +68,7 @@ func TestRunWorkflowDerivesScheduledForWhenUnset(t *testing.T) {
 	})).Return(specWithPrompts(t, 0), nil).Once()
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.Anything).
 		Return(store.Run{Status: store.RunStatusFailed}, nil).Once()
+	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, RunWorkflowInput{
 		BusinessID: mustID(t),

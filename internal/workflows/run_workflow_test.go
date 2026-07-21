@@ -55,6 +55,7 @@ func TestRunWorkflowFansOutAndFinalizes(t *testing.T) {
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
 		return in.ExpectedResults == n && in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusCompleted}, nil).Once()
+	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, runInput(t))
 
@@ -86,6 +87,7 @@ func TestRunWorkflowContinuesPastPromptError(t *testing.T) {
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
 		return in.ExpectedResults == n
 	})).Return(store.Run{Status: store.RunStatusPartial}, nil).Once()
+	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, runInput(t))
 
@@ -113,6 +115,7 @@ func TestRunWorkflowZeroPrompts(t *testing.T) {
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
 		return in.ExpectedResults == 0
 	})).Return(store.Run{Status: store.RunStatusFailed}, nil).Once()
+	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, runInput(t))
 
@@ -121,6 +124,41 @@ func TestRunWorkflowZeroPrompts(t *testing.T) {
 	}
 	if err := env.GetWorkflowError(); err != nil {
 		t.Fatalf("workflow error: %v", err)
+	}
+	env.AssertExpectations(t)
+}
+
+// TestRunWorkflowSurvivesAnalyzeRunFailure is ANA-7's core regression: a failed
+// AnalyzeRun child workflow must not fail the parent run. FinalizeRun still runs
+// (it precedes analysis) and the workflow completes without error — the run is
+// left flagged for re-analysis (analysis_completed_at unset), not failed.
+func TestRunWorkflowSurvivesAnalyzeRunFailure(t *testing.T) {
+	var ts testsuite.WorkflowTestSuite
+	env := ts.NewTestWorkflowEnvironment()
+	var a *Activities
+	const n = 2
+	spec := specWithPrompts(t, n)
+
+	finalizeRan := false
+	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.Anything).Return(spec, nil).Once()
+	env.OnActivity(a.ExecutePrompt, mock.Anything, mock.Anything).
+		Return(ExecutePromptOutput{Status: store.ResultStatusSucceeded}, nil).Times(n)
+	env.OnActivity(a.FinalizeRun, mock.Anything, mock.Anything).
+		Run(func(mock.Arguments) { finalizeRan = true }).
+		Return(store.Run{Status: store.RunStatusCompleted}, nil).Once()
+	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).
+		Return(errors.New("analysis blew up")).Once()
+
+	env.ExecuteWorkflow(RunWorkflow, runInput(t))
+
+	if !env.IsWorkflowCompleted() {
+		t.Fatal("workflow did not complete")
+	}
+	if err := env.GetWorkflowError(); err != nil {
+		t.Fatalf("workflow error = %v, want nil (AnalyzeRun failure must not fail the run)", err)
+	}
+	if !finalizeRan {
+		t.Fatal("FinalizeRun did not run")
 	}
 	env.AssertExpectations(t)
 }

@@ -16,20 +16,19 @@ const (
 )
 
 const (
-	defaultEnv                = "dev"
-	defaultHTTPAddr           = ":8080"
-	defaultDatabaseURL        = "postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable"
-	defaultDBMaxOpenConns     = 10
-	defaultDBMaxIdleConns     = 5
-	defaultTemporalAddress    = "localhost:7233"
-	defaultTemporalNamespace  = "default"
-	defaultTemporalTaskQueue  = "opensight"
-	defaultResponsesModel     = "chat-latest"
-	defaultAnalysisModel      = "gpt-5.6-luna"
-	defaultPromptRunnerMode   = PromptRunnerStub
-	defaultDevPromptLimit     = 3
-	defaultPromptConcurrency  = 2
-	defaultAnalysisConcurrent = 2
+	defaultEnv               = "dev"
+	defaultHTTPAddr          = ":8080"
+	defaultDatabaseURL       = "postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable"
+	defaultDBMaxOpenConns    = 10
+	defaultDBMaxIdleConns    = 5
+	defaultTemporalAddress   = "localhost:7233"
+	defaultTemporalNamespace = "default"
+	defaultTemporalTaskQueue = "opensight"
+	defaultResponsesModel    = "chat-latest"
+	defaultAnalysisModel     = "gpt-5.6-luna"
+	defaultPromptRunnerMode  = PromptRunnerStub
+	defaultDevPromptLimit    = 3
+	defaultPromptConcurrency = 2
 )
 
 type Config struct {
@@ -47,7 +46,6 @@ type Config struct {
 	PromptRunnerMode     PromptRunnerMode
 	DevPromptLimit       int
 	PromptConcurrency    int
-	AnalysisConcurrency  int
 }
 
 func Load() (Config, error) {
@@ -80,11 +78,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 
-	analysisConcurrency, err := getenvPositiveInt(getenv, "ANALYSIS_CONCURRENCY", defaultAnalysisConcurrent)
-	if err != nil {
-		return Config{}, err
-	}
-
 	return Config{
 		Env:                  getenvString(getenv, "OPENSIGHT_ENV", defaultEnv),
 		HTTPAddr:             getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
@@ -100,7 +93,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		PromptRunnerMode:     mode,
 		DevPromptLimit:       devPromptLimit,
 		PromptConcurrency:    promptConcurrency,
-		AnalysisConcurrency:  analysisConcurrency,
 	}, nil
 }
 

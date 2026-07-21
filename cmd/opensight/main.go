@@ -486,6 +486,14 @@ func work(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("build extraction runner: %w", err)
 	}
 
+	matcher, err := llm.NewMatchRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIAnalysisModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build match runner: %w", err)
+	}
+
 	temporalClient, err := dialTemporal(ctx, cfg)
 	if err != nil {
 		return err
@@ -508,16 +516,20 @@ func work(ctx context.Context, cfg config.Config) error {
 		runner,
 		store.NewAnalysisStore(db),
 		extractor,
+		matcher,
 	)
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
 		MaxConcurrentActivityExecutionSize: cfg.PromptConcurrency,
 	})
 	w.RegisterWorkflow(workflows.RunWorkflow)
+	w.RegisterWorkflow(workflows.AnalyzeRun)
 	w.RegisterActivity(activities.LoadRunSpec)
 	w.RegisterActivity(activities.ExecutePrompt)
 	w.RegisterActivity(activities.FinalizeRun)
 	w.RegisterActivity(activities.AnalyzeResult)
+	w.RegisterActivity(activities.LoadAnalyzeRunSpec)
+	w.RegisterActivity(activities.ReconcileEntities)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)

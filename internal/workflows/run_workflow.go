@@ -92,17 +92,40 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
 		}
 	}
 
-	// Epic 05's AnalyzeRun child workflow inserts here — after prompt execution,
-	// before finalize — with its own retry budget so a failed analysis never
-	// re-spends prompt executions.
-
+	// FinalizeRun sets the run's terminal status and completed_at. It must run
+	// before analysis: monitoring_runs' CHECK forbids analysis_completed_at
+	// (stamped by ReconcileEntities' commit) unless completed_at is already set,
+	// and the design's failure posture is that the run reaches its terminal status
+	// independently of analysis — analysis merely decorates it (or fails and
+	// leaves it flagged for re-analysis).
 	finalizeCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 30 * time.Second,
 	})
 	var run store.Run
-	return workflow.ExecuteActivity(finalizeCtx, acts.FinalizeRun, FinalizeRunInput{
+	if err := workflow.ExecuteActivity(finalizeCtx, acts.FinalizeRun, FinalizeRunInput{
 		TenantID:        spec.TenantID,
 		RunID:           spec.RunID,
 		ExpectedResults: len(spec.Prompts),
-	}).Get(ctx, &run)
+	}).Get(ctx, &run); err != nil {
+		return err
+	}
+
+	// AnalyzeRun runs as a child workflow with its own retry budget so a failed
+	// analysis never re-spends prompt executions (design 04/05). It is an ordered
+	// stage — we await it — but its failure must never fail the parent run: raw
+	// results stay viewable and analysis_completed_at simply stays unset, which is
+	// the "flagged for re-analysis" signal. So we catch and log its error rather
+	// than returning it.
+	childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
+		WorkflowID: fmt.Sprintf("analyze-%s", spec.RunID),
+	})
+	if err := workflow.ExecuteChildWorkflow(childCtx, AnalyzeRun, AnalyzeRunInput{
+		TenantID: spec.TenantID,
+		RunID:    spec.RunID,
+	}).Get(ctx, nil); err != nil {
+		workflow.GetLogger(ctx).Error("analyze run failed; run left flagged for re-analysis",
+			"run_id", spec.RunID.String(), "error", err.Error())
+	}
+
+	return nil
 }
