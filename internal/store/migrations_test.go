@@ -20,6 +20,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00003_create_business_profile_prompt_tables.sql",
 		"migrations/00004_create_runs_results_tables.sql",
 		"migrations/00005_add_password_auth_sessions.sql",
+		"migrations/00006_create_analysis_tables.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -74,6 +75,40 @@ func TestRunsResultsMigrationCreatesAppendOnlyTables(t *testing.T) {
 	} {
 		if !strings.Contains(sql, marker) {
 			t.Errorf("runs/results migration missing %q", marker)
+		}
+	}
+}
+
+func TestAnalysisMigrationCreatesDerivedTables(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00006_create_analysis_tables.sql")
+	if err != nil {
+		t.Fatalf("read analysis migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"CREATE TABLE result_analyses",
+		"prompt_result_id uuid PRIMARY KEY REFERENCES prompt_results(id) ON DELETE CASCADE",
+		"sentiment text CHECK (sentiment IS NULL OR sentiment IN ('positive', 'neutral', 'negative', 'mixed'))",
+		"excerpts jsonb NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(excerpts) = 'array')",
+		"extraction_version int NOT NULL",
+		"CREATE TABLE competitors",
+		"source text NOT NULL CHECK (source IN ('discovered', 'manual'))",
+		"status text NOT NULL CHECK (status IN ('discovered', 'tracked', 'dismissed'))",
+		"CONSTRAINT competitors_id_uuidv7 CHECK",
+		"CREATE INDEX competitors_business_id_idx ON competitors (business_id)",
+		"CREATE TABLE mentions",
+		"subject text NOT NULL CHECK (subject IN ('self', 'competitor'))",
+		"matched_by text NOT NULL CHECK (matched_by IN ('exact', 'llm'))",
+		"CONSTRAINT mentions_competitor_id_subject_check CHECK",
+		"CREATE INDEX mentions_prompt_result_id_idx ON mentions (prompt_result_id)",
+		"CREATE INDEX mentions_competitor_id_idx ON mentions (competitor_id)",
+		"CREATE TABLE citations",
+		"subject text NOT NULL CHECK (subject IN ('business', 'competitor', 'other', 'unknown'))",
+		"CREATE INDEX citations_prompt_result_id_idx ON citations (prompt_result_id)",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("analysis migration missing %q", marker)
 		}
 	}
 }

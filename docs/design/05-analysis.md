@@ -59,7 +59,7 @@ Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **
 Serial, so name-matching and competitor creation have no races and one dedupe pass covers the whole run.
 
 1. **Normalize** every verbatim name: lowercase, Unicode-fold, strip punctuation, collapse whitespace, drop legal suffixes (`pte ltd`, `private limited`, `llp`). Meaningful words like "clinic" are *not* stripped — "Atlas Clinic" and "Atlas Orthopaedics" are different businesses.
-2. **Match (exact pass)** against (a) the target business's aliases, then (b) all existing competitors' names + aliases, *regardless of status* — mentions of dismissed competitors still accrue (02: dismissal is a display filter). Exact-on-normalized only; no fuzzy string distance. The model's `is_target` flag is a hint, but a target match must also pass normalized alias matching — an unverified flag demotes to a normal entity (conservative: better to surface a false "competitor" the user can merge than silently inflate own visibility).
+2. **Match (exact pass)** against (a) the target business's name + aliases, then (b) all existing competitors' names + aliases, *regardless of status* — mentions of dismissed competitors still accrue (02: dismissal is a display filter). Exact-on-normalized only; no fuzzy string distance. The model's `is_target` flag is a hint, but a target match must also pass normalized alias matching — an unverified flag demotes to a normal entity (conservative: better to surface a false "competitor" the user can merge than silently inflate own visibility).
 3. **Match (LLM pass)** — one cheap-model call for the run's still-unmatched names, judged against the existing competitor list (names + aliases + any known websites). Bar is deliberately conservative: *"same real-world business, only if the evidence is strong; otherwise new"* — because a wrong split is visible and fixable, while a wrong merge silently pollutes a competitor's trend. On a match: write the mention with `matched_by='llm'` and record the variant in the competitor's `suggested_aliases` — **an alias becomes a permanent matching key only when the user approves it** (one click in the competitor detail, 06), which promotes it to `aliases` and hands future matching to the exact pass. Until approved, the variant is re-judged by the LLM pass each run. Exact-pass matches record `matched_by='exact'`.
 4. **Create** a `competitors` row (status `discovered`, source `discovered`, the verbatim name as first alias) for names unmatched by both passes, deduping within the run first.
 5. **Write** `mentions` for every entity occurrence: subject self/competitor, `matched_by`, `mention_order` = first-appearance rank from phase 1, excerpt.
@@ -75,7 +75,11 @@ Known limitation, accepted: despite the LLM pass, some real-world businesses wil
 - Per-result extraction failure after retries → that result simply has no `result_analyses` row and is excluded from visibility math entirely (commit step above); the UI badges it. `ReanalyzeRun` picks up stragglers.
 - `AnalyzeRun` failure does not fail the parent run (04): raw responses are already viewable.
 
+## Where the extraction prompt lives
+
+The extraction prompt text, its JSON schema, and its version live together in code (`internal/llm`), not in config. `ExtractionPromptVersion` is a Go `int` constant co-located with the prompt; a prompt or schema change and its version bump are one commit. Each analyzed row records that version as `result_analyses.extraction_version`, so a later pass can target "re-analyze everything below version N" after an extraction-prompt improvement.
+
 ## Open questions (owned by later increments)
 
 - **06**: how discovered competitors are presented for track/dismiss triage; unanalyzed-result display.
-- **07**: spend alerting shared with execution; where the extraction prompt lives (config vs code) and how prompt changes trigger re-analysis.
+- **07**: spend alerting shared with execution.

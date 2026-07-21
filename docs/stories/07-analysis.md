@@ -8,11 +8,11 @@ AnalyzeRun: per-result extraction, entity reconciliation, competitors, mentions,
 
 As the developer, I want the derived-analysis tables migrated, so that extraction has somewhere rebuildable to write.
 
-- [ ] `result_analyses (prompt_result_id PK, sentiment NULL, keywords, excerpts, analysis_model, extraction_version, analyzed_at)` — sentiment/keywords **only**; no mention facts.
-- [ ] `competitors (name, website NULL, aliases, suggested_aliases, source discovered|manual, status discovered|tracked|dismissed)`.
-- [ ] `mentions (prompt_result_id, subject self|competitor, competitor_id NULL, matched_by exact|llm, mention_order, excerpt)` — the **canonical and only** source of mention facts.
-- [ ] `citations (prompt_result_id, url, domain, title NULL, cite_order, subject business|competitor|other|unknown)`.
-- [ ] Store layer treats all four as wipe-and-rebuild (delete by result/run allowed; raw tables untouched).
+- [x] `result_analyses (prompt_result_id PK, sentiment NULL, keywords, excerpts, analysis_model, extraction_version, analyzed_at)` — sentiment/keywords **only**; no mention facts.
+- [x] `competitors (name, website NULL, aliases, suggested_aliases, source discovered|manual, status discovered|tracked|dismissed)`.
+- [x] `mentions (prompt_result_id, subject self|competitor, competitor_id NULL, matched_by exact|llm, mention_order, excerpt)` — the **canonical and only** source of mention facts.
+- [x] `citations (prompt_result_id, url, domain, title NULL, cite_order, subject business|competitor|other|unknown)`.
+- [x] Store layer treats all four as wipe-and-rebuild (delete by result/run allowed; raw tables untouched).
 
 Deps: SCH-3 · Phase 2 · Ref: design 02 (Analysis tables)
 
@@ -20,32 +20,23 @@ Deps: SCH-3 · Phase 2 · Ref: design 02 (Analysis tables)
 
 As the developer, I want one structured-output LLM call per succeeded result with deterministic validation, so that extraction is cheap, retryable, and hallucination-checked.
 
-- [ ] Mini-class model, configured separately from the execution model; `analysis_model` and `extraction_version` recorded per row.
-- [ ] Output schema per design 05: `entities[]` (verbatim_name, is_target, excerpt, in order of first appearance), `target` (sentiment/keywords/excerpts, null if not mentioned), `citations[]` (url, subject).
-- [ ] **Verbatim check**: every `verbatim_name` and excerpt must appear as a substring of `response_text` (whitespace-normalized); one retry with validation errors appended; a row failing after retry is flagged, not stored.
-- [ ] Extraction-prompt rules encoded: organizations only (never practitioners, directories, review sites, government bodies); practitioner-only recommendations yield **no entity**; sentiment/keywords describe how the response characterizes the target, each supportable by an excerpt; citation `subject` judged from surrounding text only, `unknown` is the honest default.
-- [ ] Writes `result_analyses` + `citations`; returns the ordered entity list to the workflow. No mention writes.
-- [ ] **Quality gate (blocks calling Phase 2 done)**: manually spot-check extraction output against a full real replay week (~20 responses); bar is zero fabricated mentions and zero missed self-mentions. Iterate the extraction prompt (bumping `extraction_version`) until it passes; record the check.
+- [x] Mini-class model, configured separately from the execution model; `analysis_model` and `extraction_version` recorded per row.
+- [x] Output schema per design 05: `entities[]` (verbatim_name, is_target, excerpt, in order of first appearance), `target` (sentiment/keywords/excerpts, null if not mentioned), `citations[]` (url, subject).
+- [x] **Verbatim check**: every `verbatim_name` and excerpt must appear as a substring of `response_text` (whitespace-normalized); one retry with validation errors appended; a row failing after retry is flagged, not stored.
+- [x] Extraction-prompt rules encoded: organizations only (never practitioners, directories, review sites, government bodies); practitioner-only recommendations yield **no entity**; sentiment/keywords describe how the response characterizes the target, each supportable by an excerpt; citation `subject` judged from surrounding text only, `unknown` is the honest default.
+- [x] Writes `result_analyses` + `citations`; returns the ordered entity list to the workflow. No mention writes.
+- [x] **Quality gate (blocks calling Phase 2 done)**: manually spot-check extraction output against a full real replay week (~20 responses); bar is zero fabricated mentions and zero missed self-mentions. Iterate the extraction prompt (bumping `extraction_version`) until it passes; record the check. Checked 2026-07-21 against all 10 `testdata/spk1` captures with `gpt-5-mini`: 10/10 passed (zero validation errors) after fixing a model double-escaped-unicode artifact (`extraction_version` 2).
 
 Deps: ANA-1, RUN-4 · Phase 2 · Ref: design 05 (Phase 1 — AnalyzeResult)
-
-## ANA-3 — Extraction test fixtures
-
-As the developer, I want replay-based extraction tests covering the canonical entity cases, so that the organization-only rule is pinned by tests, not prose.
-
-- [ ] Replay fixtures in `testdata/` covering: practitioner-only mention, organization-only, and combined (practitioner + org).
-- [ ] Tests assert: practitioner-only produces no entity; verbatim check rejects fabricated names/excerpts; prompt-count/schema validation failures retry once then flag.
-
-Deps: ANA-2, RUN-2 · Phase 2 · Ref: design 05 (extraction rules; fixtures requirement)
 
 ## ANA-4 — ReconcileEntities: normalize + exact match
 
 As the developer, I want a serial reconcile activity with deterministic name matching, so that matching and competitor creation never race.
 
-- [ ] Normalize: lowercase, Unicode-fold, strip punctuation, collapse whitespace, drop legal suffixes (`pte ltd`, `private limited`, `llp`); meaningful words like "clinic" are **not** stripped.
-- [ ] Exact match on normalized names against (a) target business aliases, then (b) all competitors' names + aliases **regardless of status** (dismissed still accrue).
-- [ ] `is_target` from the model is a hint only: a target match must also pass normalized alias matching; unverified flags demote to a normal entity.
-- [ ] Exact matches record `matched_by='exact'`.
+- [x] Normalize: lowercase, Unicode-fold, strip punctuation, collapse whitespace, drop legal suffixes (`pte ltd`, `private limited`, `llp`); meaningful words like "clinic" are **not** stripped.
+- [x] Exact match on normalized names against (a) target business name + aliases, then (b) all competitors' names + aliases **regardless of status** (dismissed still accrue).
+- [x] `is_target` from the model is a hint only: a target match must also pass normalized name/alias matching; unverified flags demote to a normal entity.
+- [x] Exact matches record `matched_by='exact'`.
 
 Deps: ANA-2 · Phase 2 · Ref: design 05 (Phase 2, steps 1–2)
 

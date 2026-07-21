@@ -41,9 +41,6 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.OpenAIAnalysisModel != defaultAnalysisModel {
 		t.Errorf("OpenAIAnalysisModel = %q, want %q", cfg.OpenAIAnalysisModel, defaultAnalysisModel)
 	}
-	if cfg.ExtractionVersion != defaultExtractionVersion {
-		t.Errorf("ExtractionVersion = %q, want %q", cfg.ExtractionVersion, defaultExtractionVersion)
-	}
 	if cfg.PromptRunnerMode != defaultPromptRunnerMode {
 		t.Errorf("PromptRunnerMode = %q, want %q", cfg.PromptRunnerMode, defaultPromptRunnerMode)
 	}
@@ -65,7 +62,6 @@ func TestLoadOverrides(t *testing.T) {
 		"OPENAI_API_KEY":         "sk-test",
 		"OPENAI_RESPONSES_MODEL": "gpt-5.6-luna",
 		"OPENAI_ANALYSIS_MODEL":  "gpt-5.6-luna",
-		"EXTRACTION_VERSION":     "v2",
 		"PROMPT_RUNNER_MODE":     "replay",
 		"DEV_PROMPT_LIMIT":       "2",
 		"PROMPT_CONCURRENCY":     "4",
@@ -109,9 +105,6 @@ func TestLoadOverrides(t *testing.T) {
 	}
 	if cfg.OpenAIAnalysisModel != "gpt-5.6-luna" {
 		t.Errorf("OpenAIAnalysisModel = %q", cfg.OpenAIAnalysisModel)
-	}
-	if cfg.ExtractionVersion != "v2" {
-		t.Errorf("ExtractionVersion = %q", cfg.ExtractionVersion)
 	}
 	if cfg.PromptRunnerMode != PromptRunnerReplay {
 		t.Errorf("PromptRunnerMode = %q", cfg.PromptRunnerMode)

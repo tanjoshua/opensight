@@ -22,6 +22,8 @@ type Activities struct {
 	Runs       *store.RunStore
 	Results    *store.ResultStore
 	Runner     llm.PromptRunner
+	Analysis   *store.AnalysisStore
+	Extractor  llm.ExtractionRunner
 }
 
 // NewActivities returns an Activities with all dependencies wired.
@@ -31,6 +33,8 @@ func NewActivities(
 	runs *store.RunStore,
 	results *store.ResultStore,
 	runner llm.PromptRunner,
+	analysis *store.AnalysisStore,
+	extractor llm.ExtractionRunner,
 ) *Activities {
 	return &Activities{
 		Businesses: businesses,
@@ -38,6 +42,8 @@ func NewActivities(
 		Runs:       runs,
 		Results:    results,
 		Runner:     runner,
+		Analysis:   analysis,
+		Extractor:  extractor,
 	}
 }
 

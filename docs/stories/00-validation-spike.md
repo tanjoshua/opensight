@@ -10,7 +10,7 @@ As the founder, I want a half-day throwaway script proving the OpenAI Responses 
 
 - [x] Standalone script (no repo scaffolding required): calls the Responses API with `web_search` enabled and SG `user_location` on ~10 realistic clinic-style prompts (mix of category/service/condition/location phrasings).
 - [x] Success bar: responses name **specific local clinics** with usable citations, consistently enough that weekly deltas would mean something. Explicit go/no-go recorded (a note in this file or `docs/`).
-- [x] Raw response payloads captured and checked into `testdata/` — these seed the replay fixtures (RUN-2, ANA-3).
+- [x] Raw response payloads captured and checked into `testdata/` — these seed the replay fixtures (RUN-2) and the ANA-2 quality gate.
 - [x] Script is throwaway; the real implementation lands in RUN-1.
 
 Deps: — · Phase 1 · Ref: design 01 (D1)

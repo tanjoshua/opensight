@@ -93,7 +93,6 @@ Runtime config is env-driven with development-safe defaults:
 - `PROMPT_RUNNER_MODE` defaults to `stub`; valid values are `stub`, `replay`, `openai`
 - `OPENAI_RESPONSES_MODEL` defaults to `chat-latest`
 - `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
-- `EXTRACTION_VERSION` defaults to `v1`
 - `DEV_PROMPT_LIMIT` defaults to `3` for real-call smoke tests
 - `PROMPT_CONCURRENCY` defaults to `2`
 - `ANALYSIS_CONCURRENCY` defaults to `2`

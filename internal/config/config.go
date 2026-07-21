@@ -26,7 +26,6 @@ const (
 	defaultTemporalTaskQueue  = "opensight"
 	defaultResponsesModel     = "chat-latest"
 	defaultAnalysisModel      = "gpt-5.6-luna"
-	defaultExtractionVersion  = "v1"
 	defaultPromptRunnerMode   = PromptRunnerStub
 	defaultDevPromptLimit     = 3
 	defaultPromptConcurrency  = 2
@@ -45,7 +44,6 @@ type Config struct {
 	OpenAIAPIKey         string
 	OpenAIResponsesModel string
 	OpenAIAnalysisModel  string
-	ExtractionVersion    string
 	PromptRunnerMode     PromptRunnerMode
 	DevPromptLimit       int
 	PromptConcurrency    int
@@ -99,7 +97,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		OpenAIAPIKey:         getenv("OPENAI_API_KEY"),
 		OpenAIResponsesModel: getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
 		OpenAIAnalysisModel:  getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
-		ExtractionVersion:    getenvString(getenv, "EXTRACTION_VERSION", defaultExtractionVersion),
 		PromptRunnerMode:     mode,
 		DevPromptLimit:       devPromptLimit,
 		PromptConcurrency:    promptConcurrency,

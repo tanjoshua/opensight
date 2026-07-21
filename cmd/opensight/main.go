@@ -453,6 +453,14 @@ func work(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("build prompt runner: %w", err)
 	}
 
+	extractor, err := llm.NewExtractionRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIAnalysisModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build extraction runner: %w", err)
+	}
+
 	dialCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -479,6 +487,8 @@ func work(ctx context.Context, cfg config.Config) error {
 		store.NewRunStore(db),
 		store.NewResultStore(db),
 		runner,
+		store.NewAnalysisStore(db),
+		extractor,
 	)
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
@@ -488,6 +498,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.LoadRunSpec)
 	w.RegisterActivity(activities.ExecutePrompt)
 	w.RegisterActivity(activities.FinalizeRun)
+	w.RegisterActivity(activities.AnalyzeResult)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)
