@@ -36,6 +36,7 @@ import (
 	"opensight/internal/config"
 	"opensight/internal/domain"
 	"opensight/internal/llm"
+	"opensight/internal/metrics"
 	"opensight/internal/store"
 	"opensight/internal/workflows"
 
@@ -407,8 +408,10 @@ func serve(ctx context.Context, cfg config.Config) error {
 	apiServer := api.New(
 		store.NewAuthStore(db),
 		store.NewBusinessStore(db),
+		store.NewPromptStore(db),
 		store.NewRunStore(db),
 		store.NewResultStore(db),
+		metrics.New(db),
 		cfg.Env != "dev",
 	)
 

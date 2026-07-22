@@ -1,0 +1,273 @@
+package metrics
+
+import (
+	"context"
+	"database/sql"
+	"os"
+	"testing"
+
+	"opensight/internal/domain"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+)
+
+// TestGatingRules is the one test suite the story asks for: it pins the metrics
+// base gate against a seeded run so no future query can quietly widen it. The
+// seed contains exactly the cases the gate must exclude — a succeeded-but-
+// unanalyzed result (no result_analyses row), a failed result, and a whole run
+// that is completed but not yet reconciled (analysis_completed_at NULL) — and
+// asserts each is excluded from numerator and denominator alike, for both self
+// visibility and competitor stats.
+func TestGatingRules(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run metrics integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	planID := mustNewID(t)
+	tenantID := mustNewID(t)
+	businessID := mustNewID(t)
+	rivalID := mustNewID(t)
+	p1, p2, p3, p4 := mustNewID(t), mustNewID(t), mustNewID(t), mustNewID(t)
+	runA, runB := mustNewID(t), mustNewID(t)
+	// Run A results.
+	a1 := mustNewID(t) // p1: analyzed, self + rival mention, positive, keyword+citation
+	a2 := mustNewID(t) // p2: analyzed, rival mention only (no self), NULL sentiment
+	a3 := mustNewID(t) // p3: succeeded but UNANALYZED (no result_analyses) — excluded
+	a4 := mustNewID(t) // p4: failed — excluded
+	// Run B result: run not reconciled (analysis_completed_at NULL) — excluded.
+	b1 := mustNewID(t) // p1: has result_analyses + mentions, but run gate excludes it
+	slug := "metrics-" + planID.String()
+
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
+	})
+
+	mustExec(t, db, ctx, `INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
+VALUES ($1, $2, 20, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
+	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Metrics Tenant', $2)`, tenantID, planID)
+	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
+	for _, p := range []domain.ID{p1, p2, p3, p4} {
+		mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'q', 'active')`, p, businessID)
+	}
+	mustExec(t, db, ctx, `INSERT INTO competitors (id, business_id, name, aliases, source, status)
+VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], 'discovered', 'discovered')`, rivalID, businessID)
+
+	// Run A: completed AND reconciled — the only run in the metrics base.
+	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-a', now(), now())`, runA, businessID)
+	// Run B: completed but analysis_completed_at NULL — must be excluded whole.
+	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
+VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-b', now())`, runB, businessID)
+
+	succeeded := func(id, runID, promptID domain.ID, at string) {
+		mustExec(t, db, ctx, `INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
+VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}'::jsonb, '{"id":"r"}'::jsonb, 'text', $4, $4)`, id, runID, promptID, at)
+	}
+	succeeded(a1, runA, p1, "2026-07-06T00:00:00Z")
+	succeeded(a2, runA, p2, "2026-07-06T00:00:00Z")
+	succeeded(a3, runA, p3, "2026-07-06T00:00:00Z")
+	mustExec(t, db, ctx, `INSERT INTO prompt_results (id, run_id, prompt_id, status, error, request, requested_at, completed_at)
+VALUES ($1, $2, $3, 'failed', 'boom', '{}'::jsonb, now(), now())`, a4, runA, p4)
+	succeeded(b1, runB, p1, "2026-07-13T00:00:00Z") // later week; excluded by run gate
+
+	// result_analyses rows: a1, a2 (in base), and b1 (present but its run is not
+	// reconciled, so the run gate must still drop it). a3 deliberately has none.
+	analysis := func(id domain.ID, sentiment, keyword string) {
+		var s any
+		if sentiment == "" {
+			s = nil
+		} else {
+			s = sentiment
+		}
+		mustExec(t, db, ctx, `INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
+VALUES ($1, $2, ARRAY[$3]::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, id, s, keyword)
+	}
+	analysis(a1, "positive", "friendly")
+	analysis(a2, "", "expensive")
+	analysis(b1, "positive", "excluded_kw")
+
+	// citations: a1 -> example.com, a2 -> other.com, b1 -> excluded.com (run gate).
+	citation := func(id, resultID domain.ID, domainName string) {
+		mustExec(t, db, ctx, `INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order)
+VALUES ($1, $2, 'https://x', $3, 'other', 0)`, mustNewID(t), resultID, domainName)
+	}
+	citation(mustNewID(t), a1, "example.com")
+	citation(mustNewID(t), a2, "other.com")
+	citation(mustNewID(t), b1, "excluded.com")
+
+	// mentions (canonical). a3 gets a self mention despite having no analysis row,
+	// to prove the result_analyses gate — not the mention presence — decides.
+	selfM := func(resultID domain.ID, order int) {
+		mustExec(t, db, ctx, `INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
+VALUES ($1, $2, 'self', 'exact', $3, 'ex')`, mustNewID(t), resultID, order)
+	}
+	rivalM := func(resultID domain.ID, order int) {
+		mustExec(t, db, ctx, `INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, rivalID, order)
+	}
+	selfM(a1, 0)
+	rivalM(a1, 1)
+	rivalM(a2, 0)
+	selfM(a3, 0)  // unanalyzed: must NOT count as a self mention
+	selfM(b1, 0)  // run not reconciled: must NOT count
+	rivalM(b1, 1) // ditto for the competitor
+
+	m := New(db)
+
+	// --- Visibility: one point (Run A), 1 self of 2 analyzed = 50%. ---
+	trend, err := m.VisibilityTrend(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("VisibilityTrend: %v", err)
+	}
+	if len(trend) != 1 {
+		t.Fatalf("visibility points = %d, want 1 (Run B excluded by run gate)", len(trend))
+	}
+	pt := trend[0]
+	if pt.RunID != runA {
+		t.Fatalf("visibility run = %v, want Run A", pt.RunID)
+	}
+	if pt.Analyzed != 2 || pt.Mentioned != 1 || pt.Percent != 50 {
+		t.Fatalf("visibility = %d/%d (%.0f%%), want 1/2 (50%%)", pt.Mentioned, pt.Analyzed, pt.Percent)
+	}
+	assertIDSet(t, "visibility result_ids", pt.ResultIDs, a1, a2)
+
+	// --- Competitor: Rival in both analyzed results = 100%, vs self +50. ---
+	comp, err := m.CompetitorStats(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("CompetitorStats: %v", err)
+	}
+	if comp.TotalAnalyzed != 2 || comp.SelfMentioned != 1 || comp.SelfPercent != 50 {
+		t.Fatalf("self base = %d/%d (%.0f%%), want 1/2 (50%%)", comp.SelfMentioned, comp.TotalAnalyzed, comp.SelfPercent)
+	}
+	if len(comp.Competitors) != 1 {
+		t.Fatalf("competitors = %d, want 1", len(comp.Competitors))
+	}
+	c := comp.Competitors[0]
+	if c.Mentioned != 2 || c.TotalMentions != 2 || c.MentionPercent != 100 {
+		t.Fatalf("rival = %d results / %d mentions / %.0f%%, want 2/2/100", c.Mentioned, c.TotalMentions, c.MentionPercent)
+	}
+	if c.AvgOrder != 0.5 {
+		t.Fatalf("rival avg order = %v, want 0.5", c.AvgOrder)
+	}
+	if c.VsSelf != 50 {
+		t.Fatalf("rival vs self = %v, want 50", c.VsSelf)
+	}
+	assertIDSet(t, "rival result_ids", c.ResultIDs, a1, a2)
+	if len(c.PerPrompt) != 2 {
+		t.Fatalf("rival per-prompt appearances = %d, want 2 (p1, p2)", len(c.PerPrompt))
+	}
+	if len(c.Trend) != 1 || c.Trend[0].RunID != runA || c.Trend[0].Percent != 100 {
+		t.Fatalf("rival trend = %+v, want one Run A point at 100%%", c.Trend)
+	}
+
+	// --- Aggregates: exclude unanalyzed (a3) and the un-reconciled run (b1). ---
+	keywords, err := m.KeywordStats(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("KeywordStats: %v", err)
+	}
+	kw := map[string][]domain.ID{}
+	for _, k := range keywords {
+		kw[k.Keyword] = k.ResultIDs
+	}
+	if _, leaked := kw["excluded_kw"]; leaked {
+		t.Fatal("excluded_kw present; b1's run should be gated out")
+	}
+	assertIDSet(t, "keyword friendly", kw["friendly"], a1)
+	assertIDSet(t, "keyword expensive", kw["expensive"], a2)
+
+	domains, err := m.CitationDomainStats(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("CitationDomainStats: %v", err)
+	}
+	dom := map[string][]domain.ID{}
+	for _, d := range domains {
+		dom[d.Domain] = d.ResultIDs
+	}
+	if _, leaked := dom["excluded.com"]; leaked {
+		t.Fatal("excluded.com present; b1's run should be gated out")
+	}
+	assertIDSet(t, "domain example.com", dom["example.com"], a1)
+
+	sentiments, err := m.SentimentStats(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("SentimentStats: %v", err)
+	}
+	if len(sentiments) != 1 || sentiments[0].Sentiment != "positive" {
+		t.Fatalf("sentiments = %+v, want one positive (a2 NULL, b1 gated)", sentiments)
+	}
+	assertIDSet(t, "sentiment positive", sentiments[0].ResultIDs, a1)
+
+	// --- Prompt presence: p1 (mentioned, order 0), p2 (absent mention);
+	// p3 has only an unanalyzed result and p4 only a failed one, so both are
+	// absent from the analyzed base entirely. p1's latest stays a1, not b1. ---
+	latest, err := m.PromptLatestStats(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("PromptLatestStats: %v", err)
+	}
+	byPrompt := map[domain.ID]PromptLatest{}
+	for _, l := range latest {
+		byPrompt[l.PromptID] = l
+	}
+	if len(latest) != 2 {
+		t.Fatalf("prompt latest = %d, want 2 (p1, p2)", len(latest))
+	}
+	if l := byPrompt[p1]; l.ResultID != a1 || !l.Mentioned || l.MentionOrder == nil || *l.MentionOrder != 0 {
+		t.Fatalf("p1 latest = %+v, want a1 mentioned at order 0", l)
+	}
+	if l := byPrompt[p2]; l.ResultID != a2 || l.Mentioned {
+		t.Fatalf("p2 latest = %+v, want a2 not mentioned", l)
+	}
+
+	// --- Prompt-set-change dates (MET-2 trend markers): the four prompts were
+	// created together and none retired, so the set changed on exactly one day.
+	// This is the real-DB check of the UNION/date_trunc query. ---
+	changeDates, err := m.PromptChangeDates(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("PromptChangeDates: %v", err)
+	}
+	if len(changeDates) != 1 {
+		t.Fatalf("prompt change dates = %v, want 1 distinct day", changeDates)
+	}
+}
+
+func assertIDSet(t *testing.T, label string, got []domain.ID, want ...domain.ID) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s = %v, want %v", label, got, want)
+	}
+	set := map[domain.ID]bool{}
+	for _, id := range got {
+		set[id] = true
+	}
+	for _, id := range want {
+		if !set[id] {
+			t.Fatalf("%s = %v, missing %v", label, got, id)
+		}
+	}
+}
+
+func mustNewID(t *testing.T) domain.ID {
+	t.Helper()
+	id, err := domain.NewID()
+	if err != nil {
+		t.Fatalf("new id: %v", err)
+	}
+	return id
+}
+
+func mustExec(t *testing.T, db *sql.DB, ctx context.Context, query string, args ...any) {
+	t.Helper()
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		t.Fatalf("exec %q: %v", query, err)
+	}
+}

@@ -8,10 +8,10 @@ One shared metrics package and the endpoints behind Overview, Prompts, and Compe
 
 As the developer, I want all metrics computed in one shared package, so that sections can never disagree on what visibility means.
 
-- [ ] `internal/metrics`: visibility % (self-mentions ÷ analyzed results in run), weekly trend by `scheduled_for`, mention order, sentiment/keyword aggregates, citation frequency by domain, competitor stats (mention %, totals, avg order, per-prompt appearances, trend, vs-self).
-- [ ] Mention facts read **only** from `mentions`; a result counts only when its run has `analysis_completed_at` **and** it has a `result_analyses` row.
-- [ ] Every aggregate carries the `result_ids` behind it (the "every number is a door" contract).
-- [ ] Unit tests against seeded replay data pin the gating rules (partial runs, unanalyzed results excluded from both sides).
+- [x] `internal/metrics`: visibility % (self-mentions ÷ analyzed results in run), weekly trend by `scheduled_for`, mention order, sentiment/keyword aggregates, citation frequency by domain, competitor stats (mention %, totals, avg order, per-prompt appearances, trend, vs-self).
+- [x] Mention facts read **only** from `mentions`; a result counts only when its run has `analysis_completed_at` **and** it has a `result_analyses` row.
+- [x] Every aggregate carries the `result_ids` behind it (the "every number is a door" contract).
+- [x] Unit tests against seeded replay data pin the gating rules (partial runs, unanalyzed results excluded from both sides).
 
 Deps: ANA-6 · Phase 2 · Ref: design 06 (API conventions), 02 (metrics mapping)
 
@@ -19,9 +19,9 @@ Deps: ANA-6 · Phase 2 · Ref: design 06 (API conventions), 02 (metrics mapping)
 
 As a clinic user, I want a single overview payload, so that the headline page loads in one request.
 
-- [ ] `GET /businesses/:id/overview`: current visibility %, delta vs previous run, top keywords, top cited domains, top competitors (tracked + top-3 discovered by coverage), latest run status.
-- [ ] Includes prompt-set-change dates (from prompt created/retired) for trend markers.
-- [ ] All aggregates carry `result_ids`.
+- [x] `GET /businesses/:id/overview`: current visibility %, delta vs previous run, top keywords, top cited domains, top competitors (tracked + top-3 discovered by coverage), latest run status.
+- [x] Includes prompt-set-change dates (from prompt created/retired) for trend markers.
+- [x] All aggregates carry `result_ids`.
 
 Deps: MET-1 · Phase 2 · Ref: design 06 (Overview), PRD §7
 
@@ -29,9 +29,9 @@ Deps: MET-1 · Phase 2 · Ref: design 06 (Overview), PRD §7
 
 As a clinic user, I want per-prompt performance and full history, so that I can see which prompts surface my business.
 
-- [ ] `GET /businesses/:id/prompts`: active prompts with latest-result summary (mentioned?, order, sentiment) + spark-trend series.
-- [ ] `GET /prompts/:id`: full result history and lineage links (`replaces_prompt_id` chain), including retired prompts.
-- [ ] Latest analyzed result per prompt drives presence/absence.
+- [x] `GET /businesses/:id/prompts`: active prompts with latest-result summary (mentioned?, order, sentiment) + spark-trend series.
+- [x] `GET /prompts/:id`: full result history and lineage links (`replaces_prompt_id` chain), including retired prompts.
+- [x] Latest analyzed result per prompt drives presence/absence.
 
 Deps: MET-1 · Phase 2 · Ref: design 06 (Prompts), 02 (Prompts)
 
@@ -39,9 +39,9 @@ Deps: MET-1 · Phase 2 · Ref: design 06 (Prompts), 02 (Prompts)
 
 As a clinic user, I want competitor stats compared to my own, so that I can see who ChatGPT recommends instead of me.
 
-- [ ] `GET /businesses/:id/competitors` with `?status` filter: each with mention %, total mentions, avg mention order, per-prompt appearances, weekly trend, vs-self comparison; discovered ranked by response coverage.
-- [ ] Dismissed competitors keep their history (display filter only).
-- [ ] Paginated; aggregates carry `result_ids`.
+- [x] `GET /businesses/:id/competitors` with `?status` filter: each with mention %, total mentions, avg mention order, per-prompt appearances, weekly trend, vs-self comparison; discovered ranked by response coverage.
+- [x] Dismissed competitors keep their history (display filter only).
+- [x] Paginated; aggregates carry `result_ids`.
 
 Deps: MET-1 · Phase 2 · Ref: design 06 (Competitors), PRD §6
 
@@ -49,9 +49,9 @@ Deps: MET-1 · Phase 2 · Ref: design 06 (Competitors), PRD §6
 
 As a clinic user, I want the response detail to include its analysis, so that the drawer can show evidence, not just raw text.
 
-- [ ] `GET /results/:id` now includes: mentions (with subject, order, matched_by, excerpts), sentiment + supporting excerpts, keywords, citations with subjects and annotation spans for inline markers.
-- [ ] `GET /businesses/:id/results` gains the `mentioned` filter; runs endpoint gains per-run visibility %.
-- [ ] Succeeded-but-unanalyzed results flagged in the payload (drives the UI badge).
+- [x] `GET /results/:id` now includes: mentions (with subject, order, matched_by, excerpts), sentiment + supporting excerpts, keywords, citations with subjects and annotation spans for inline markers.
+- [x] `GET /businesses/:id/results` gains the `mentioned` filter; runs endpoint gains per-run visibility %.
+- [x] Succeeded-but-unanalyzed results flagged in the payload (drives the UI badge).
 
 Deps: MET-1 · Phase 2 · Ref: design 06 (Responses, Runs endpoints)
 

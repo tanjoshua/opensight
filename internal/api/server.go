@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"opensight/internal/domain"
+	"opensight/internal/metrics"
 	"opensight/internal/store"
 
 	"github.com/go-chi/chi/v5"
@@ -34,17 +35,32 @@ type authStore interface {
 
 // businessStore is the consumer-side seam over *store.BusinessStore. /me lists
 // the tenant's businesses so the SPA can bootstrap section URLs (design 06:
-// URLs carry businessID; MVP has one business per tenant).
+// URLs carry businessID; MVP has one business per tenant). GetBusiness is the
+// tenant-ownership gate for business-scoped endpoints that have no other
+// natural gate (it returns ErrNotFound for a missing/cross-tenant business).
 type businessStore interface {
 	ListBusinesses(ctx context.Context, tenantID domain.ID) ([]store.Business, error)
+	GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (store.Business, error)
 }
 
 // Server holds the API dependencies and configuration.
 type Server struct {
 	auth       authStore
 	businesses businessStore
+	prompts    promptStore
 	runs       runStore
 	results    resultStore
+	metrics    overviewMetrics
+	// runMetrics is the metrics seam for the Runs endpoint's per-run visibility %
+	// (MET-5) — a second view over the same *metrics.Metrics as Overview.
+	runMetrics runsMetrics
+	// promptMetrics is a second seam over the same *metrics.Metrics: the Prompts
+	// section needs PromptLatestStats/PromptTrends, which the Overview seam does
+	// not expose. Splitting the seams keeps each handler's fake minimal.
+	promptMetrics promptsMetrics
+	// competitorMetrics is a third seam over the same *metrics.Metrics for the
+	// Competitors section (MET-4): just CompetitorStats, so its fake stays minimal.
+	competitorMetrics competitorsMetrics
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (FND-2 local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
@@ -54,14 +70,19 @@ type Server struct {
 
 // New builds a Server. secureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, businesses *store.BusinessStore, runs *store.RunStore, results *store.ResultStore, secureCookies bool) *Server {
+func New(auth *store.AuthStore, businesses *store.BusinessStore, prompts *store.PromptStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, secureCookies bool) *Server {
 	return &Server{
-		auth:          auth,
-		businesses:    businesses,
-		runs:          runs,
-		results:       results,
-		secureCookies: secureCookies,
-		sessionTTL:    defaultSessionTTL,
+		auth:              auth,
+		businesses:        businesses,
+		prompts:           prompts,
+		runs:              runs,
+		results:           results,
+		metrics:           metrics,
+		promptMetrics:     metrics,
+		competitorMetrics: metrics,
+		runMetrics:        metrics,
+		secureCookies:     secureCookies,
+		sessionTTL:        defaultSessionTTL,
 	}
 }
 
@@ -90,6 +111,10 @@ func (s *Server) Routes() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireSession)
 			r.Get("/me", s.handleMe)
+			r.Get("/businesses/{businessID}/overview", s.handleGetOverview)
+			r.Get("/businesses/{businessID}/prompts", s.handleListPrompts)
+			r.Get("/prompts/{promptID}", s.handleGetPrompt)
+			r.Get("/businesses/{businessID}/competitors", s.handleListCompetitors)
 			r.Get("/businesses/{businessID}/runs", s.handleListRuns)
 			r.Get("/businesses/{businessID}/results", s.handleListResults)
 			r.Get("/results/{resultID}", s.handleGetResult)

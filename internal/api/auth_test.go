@@ -71,12 +71,17 @@ func (f *fakeAuthStore) DeleteSession(_ context.Context, tokenHash []byte) error
 type fakeBusinessStore struct {
 	businesses []store.Business
 	err        error
+	getErr     error
 	gotTenant  domain.ID
 }
 
 func (f *fakeBusinessStore) ListBusinesses(_ context.Context, tenantID domain.ID) ([]store.Business, error) {
 	f.gotTenant = tenantID
 	return f.businesses, f.err
+}
+
+func (f *fakeBusinessStore) GetBusiness(_ context.Context, _, _ domain.ID) (store.Business, error) {
+	return store.Business{}, f.getErr
 }
 
 func newTestServer(f *fakeAuthStore) *Server {

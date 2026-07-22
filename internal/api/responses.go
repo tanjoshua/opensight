@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
 	"opensight/internal/domain"
+	"opensight/internal/llm"
+	"opensight/internal/metrics"
 	"opensight/internal/store"
 
 	"github.com/go-chi/chi/v5"
@@ -26,9 +29,17 @@ type runStore interface {
 	ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]store.Run, error)
 }
 
+// runsMetrics is the metrics seam for the Runs endpoint: per-run visibility %
+// comes from the same shared analyzed base as Overview (MET-1), so a run's
+// visibility can never disagree with the trend line.
+type runsMetrics interface {
+	VisibilityTrend(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.VisibilityPoint, error)
+}
+
 type resultStore interface {
 	ListResults(ctx context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.ResultListItem, error)
 	GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (store.ResultDetail, error)
+	GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (store.ResultAnalysis, error)
 }
 
 type runsResponse struct {
@@ -46,6 +57,10 @@ type runResponse struct {
 	StartedAt           string  `json:"started_at"`
 	CompletedAt         *string `json:"completed_at"`
 	AnalysisCompletedAt *string `json:"analysis_completed_at"`
+	// Visibility is the run's visibility % (self-mentions ÷ analyzed results). It
+	// is nil for a run with no analyzed results — an unanalyzed run has no
+	// visibility, distinct from 0%. Only the Runs list populates it.
+	Visibility *float64 `json:"visibility"`
 }
 
 type resultsResponse struct {
@@ -71,8 +86,12 @@ type resultResponse struct {
 	Error        *string         `json:"error"`
 	RequestedAt  string          `json:"requested_at"`
 	CompletedAt  string          `json:"completed_at"`
-	Prompt       *promptResponse `json:"prompt,omitempty"`
-	Run          *runResponse    `json:"run,omitempty"`
+	// Unanalyzed flags a succeeded result with no analysis row — the "not yet
+	// analyzed" badge (design 06); always false for failed results.
+	Unanalyzed bool                    `json:"unanalyzed"`
+	Prompt     *promptResponse         `json:"prompt,omitempty"`
+	Run        *runResponse            `json:"run,omitempty"`
+	Analysis   *resultAnalysisResponse `json:"analysis,omitempty"`
 }
 
 type promptResponse struct {
@@ -80,9 +99,47 @@ type promptResponse struct {
 	Text string `json:"text"`
 }
 
+// resultAnalysisResponse is the Response drawer's evidence payload (design 06,
+// MET-5): the analyzed result's mentions, sentiment + supporting excerpts,
+// keywords, and citations. Present only on GET /results/:id, and only when the
+// result was analyzed. Sentiment is nil when the business was not mentioned.
+type resultAnalysisResponse struct {
+	Sentiment *string            `json:"sentiment"`
+	Keywords  []string           `json:"keywords"`
+	Excerpts  []string           `json:"excerpts"`
+	Mentions  []mentionResponse  `json:"mentions"`
+	Citations []citationResponse `json:"citations"`
+}
+
+type mentionResponse struct {
+	Subject   string `json:"subject"`
+	Order     int    `json:"order"`
+	MatchedBy string `json:"matched_by"`
+	Excerpt   string `json:"excerpt"`
+}
+
+// citationResponse carries the cited source plus its annotation span — the
+// character range in response_text where the inline marker renders (design 06).
+// Span is nil when it cannot be resolved from raw_response (e.g. legacy rows).
+type citationResponse struct {
+	URL       string        `json:"url"`
+	Domain    string        `json:"domain"`
+	Title     *string       `json:"title"`
+	CiteOrder int           `json:"cite_order"`
+	Subject   string        `json:"subject"`
+	Span      *spanResponse `json:"span"`
+}
+
+// spanResponse is a [start, end) byte range into response_text, taken from the
+// response's url_citation annotation (design 06 "annotation spans").
+type spanResponse struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
+}
+
 func (s *Server) handleListRuns(w http.ResponseWriter, r *http.Request) {
-	if s.runs == nil {
-		s.writeInternalError(w, "list runs: store missing", errors.New("run store is required"))
+	if s.runs == nil || s.runMetrics == nil {
+		s.writeInternalError(w, "list runs: store missing", errors.New("run store and metrics are required"))
 		return
 	}
 
@@ -96,15 +153,32 @@ func (s *Server) handleListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runs, err := s.runs.ListRuns(r.Context(), su.TenantID, businessID)
+	ctx := r.Context()
+	runs, err := s.runs.ListRuns(ctx, su.TenantID, businessID)
 	if err != nil {
 		writeStoreError(w, err)
 		return
 	}
 
+	// Per-run visibility % from the same analyzed base as the trend line; runs
+	// with no analyzed results simply have no point, so their visibility stays nil.
+	points, err := s.runMetrics.VisibilityTrend(ctx, su.TenantID, businessID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	visibility := make(map[domain.ID]float64, len(points))
+	for _, p := range points {
+		visibility[p.RunID] = p.Percent
+	}
+
 	resp := runsResponse{Runs: make([]runResponse, 0, len(runs))}
 	for _, run := range runs {
-		resp.Runs = append(resp.Runs, runToResponse(run))
+		row := runToResponse(run)
+		if pct, ok := visibility[run.ID]; ok {
+			row.Visibility = &pct
+		}
+		resp.Runs = append(resp.Runs, row)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -141,6 +215,7 @@ func (s *Server) handleListResults(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, item := range results {
 		row := resultToResponse(item.PromptResult, false)
+		row.Unanalyzed = isUnanalyzed(item.Status, item.Analyzed)
 		row.Prompt = &promptResponse{ID: item.PromptID.String(), Text: item.PromptText}
 		resp.Results = append(resp.Results, row)
 	}
@@ -163,7 +238,13 @@ func (s *Server) handleGetResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	detail, err := s.results.GetResultDetail(r.Context(), su.TenantID, resultID)
+	ctx := r.Context()
+	detail, err := s.results.GetResultDetail(ctx, su.TenantID, resultID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	analysis, err := s.results.GetResultAnalysis(ctx, su.TenantID, resultID)
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -171,12 +252,16 @@ func (s *Server) handleGetResult(w http.ResponseWriter, r *http.Request) {
 
 	includeRaw := r.URL.Query().Get("include_raw") == "true"
 	resp := resultToResponse(detail.Result, includeRaw)
+	resp.Unanalyzed = isUnanalyzed(detail.Result.Status, analysis.Analyzed)
 	resp.Prompt = &promptResponse{
 		ID:   detail.Prompt.ID.String(),
 		Text: detail.Prompt.Text,
 	}
 	run := runToResponse(detail.Run)
 	resp.Run = &run
+	if analysis.Analyzed {
+		resp.Analysis = analysisToResponse(analysis, detail.Result.RawResponse)
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -217,6 +302,14 @@ func resultFilterFromRequest(w http.ResponseWriter, r *http.Request) (store.Resu
 			writeProblem(w, http.StatusBadRequest, "bad request", "status must be succeeded or failed")
 			return store.ResultFilter{}, 0, 0, false
 		}
+	}
+	if raw := q.Get("mentioned"); raw != "" {
+		mentioned, err := strconv.ParseBool(raw)
+		if err != nil {
+			writeProblem(w, http.StatusBadRequest, "bad request", "mentioned must be true or false")
+			return store.ResultFilter{}, 0, 0, false
+		}
+		filter.Mentioned = &mentioned
 	}
 
 	return filter, limit, offset, true
@@ -285,6 +378,70 @@ func resultToResponse(result store.PromptResult, includeRaw bool) resultResponse
 		resp.RawResponse = result.RawResponse
 	}
 	return resp
+}
+
+// isUnanalyzed is the "not yet analyzed" badge rule: a succeeded result with no
+// analysis row. Failed results are never flagged this way — they show an error.
+func isUnanalyzed(status store.ResultStatus, analyzed bool) bool {
+	return status == store.ResultStatusSucceeded && !analyzed
+}
+
+// analysisToResponse shapes the drawer evidence and reconstructs each citation's
+// annotation span from raw_response. buildCitationWrites (ANA-2) writes one
+// citation row per url_citation annotation in StartIndex order with cite_order =
+// that index, so the stored cite_order indexes straight back into the
+// StartIndex-sorted annotations — no URL matching needed. A raw_response that is
+// missing or shorter than expected simply leaves later spans nil.
+func analysisToResponse(a store.ResultAnalysis, rawResponse json.RawMessage) *resultAnalysisResponse {
+	resp := &resultAnalysisResponse{
+		Sentiment: a.Sentiment,
+		Keywords:  a.Keywords,
+		Excerpts:  a.Excerpts,
+		Mentions:  make([]mentionResponse, 0, len(a.Mentions)),
+		Citations: make([]citationResponse, 0, len(a.Citations)),
+	}
+	for _, m := range a.Mentions {
+		resp.Mentions = append(resp.Mentions, mentionResponse{
+			Subject:   m.Subject,
+			Order:     m.MentionOrder,
+			MatchedBy: m.MatchedBy,
+			Excerpt:   m.Excerpt,
+		})
+	}
+
+	spans := citationSpans(rawResponse)
+	for _, c := range a.Citations {
+		row := citationResponse{
+			URL:       c.URL,
+			Domain:    c.Domain,
+			Title:     c.Title,
+			CiteOrder: c.CiteOrder,
+			Subject:   c.Subject,
+		}
+		if c.CiteOrder >= 0 && c.CiteOrder < len(spans) {
+			row.Span = &spans[c.CiteOrder]
+		}
+		resp.Citations = append(resp.Citations, row)
+	}
+	return resp
+}
+
+// citationSpans returns the response's url_citation annotation spans in
+// first-appearance (StartIndex-ascending) order — the same order cite_order was
+// assigned in. A malformed or empty raw_response yields no spans.
+func citationSpans(rawResponse json.RawMessage) []spanResponse {
+	annotations, err := llm.ParseCitationAnnotations(rawResponse)
+	if err != nil || len(annotations) == 0 {
+		return nil
+	}
+	sort.SliceStable(annotations, func(i, j int) bool {
+		return annotations[i].StartIndex < annotations[j].StartIndex
+	})
+	spans := make([]spanResponse, len(annotations))
+	for i, a := range annotations {
+		spans[i] = spanResponse{Start: a.StartIndex, End: a.EndIndex}
+	}
+	return spans
 }
 
 func runToResponse(run store.Run) runResponse {

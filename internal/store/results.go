@@ -74,19 +74,61 @@ type CreateResultParams struct {
 
 // ResultListItem is one Responses-list row: the result joined to its prompt
 // text (design 06 Phase 1 — the list is unreadable without the question asked).
+// Analyzed is true when the result has a result_analyses row; a succeeded result
+// without one is the "not yet analyzed" badge state (design 06, MET-5).
 type ResultListItem struct {
 	PromptResult
 	PromptText string
+	Analyzed   bool
 }
 
 // ResultFilter narrows ListResults. All predicates are optional; Limit/Offset
-// apply as given when > 0 (the handler chooses defaults and caps).
+// apply as given when > 0 (the handler chooses defaults and caps). Mentioned,
+// when set, keeps only results whose analysis found (true) or did not find
+// (false) a self mention — the Responses "mentioned" filter (design 06, MET-5).
 type ResultFilter struct {
-	RunID    *domain.ID
-	PromptID *domain.ID
-	Status   *ResultStatus
-	Limit    int
-	Offset   int
+	RunID     *domain.ID
+	PromptID  *domain.ID
+	Status    *ResultStatus
+	Mentioned *bool
+	Limit     int
+	Offset    int
+}
+
+// ResultMention is one mention row for the Response drawer: the self/competitor
+// occurrence with its match method, first-appearance order, and evidence excerpt
+// (design 06, MET-5). Competitor identity is deliberately omitted — the drawer
+// highlights occurrences, it does not re-list competitors.
+type ResultMention struct {
+	Subject      string
+	MatchedBy    string
+	MentionOrder int
+	Excerpt      string
+}
+
+// ResultCitation is one citation row for the Response drawer: the cited source
+// with its inferred subject and first-appearance order (design 06, MET-5). The
+// inline-marker annotation span is reconstructed by the API layer from
+// raw_response, not stored here.
+type ResultCitation struct {
+	URL       string
+	Domain    string
+	Title     *string
+	CiteOrder int
+	Subject   string
+}
+
+// ResultAnalysis is the derived-analysis enrichment for one result's drawer
+// (design 06, MET-5). Analyzed is false for a succeeded-but-unanalyzed result —
+// no result_analyses row — in which case the other fields are empty. Sentiment
+// is nil when the business was not mentioned even though the result was analyzed.
+type ResultAnalysis struct {
+	Analyzed  bool
+	Sentiment *string
+	Keywords  []string
+	Excerpts  []string
+	Mentions  []ResultMention
+	Citations []ResultCitation
 }
 
 // ResultStore reads and writes prompt_results rows.
@@ -148,6 +190,37 @@ JOIN monitoring_runs r ON r.id = pr.run_id
 JOIN businesses b ON b.id = r.business_id
 JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = r.business_id
 WHERE pr.id = $1 AND b.tenant_id = $2`
+
+	// The three enrichment reads below are tenant-scoped through the same
+	// prompt_results -> monitoring_runs -> businesses join the deletes use, so a
+	// cross-tenant result id yields no rows rather than leaking another tenant's
+	// analysis. keywords (text[]) is read as JSON via to_jsonb (see stringSlice);
+	// excerpts is already jsonb.
+	getResultAnalysisRowSQL = `
+SELECT ra.sentiment, to_jsonb(ra.keywords) AS keywords, ra.excerpts
+FROM result_analyses ra
+JOIN prompt_results pr ON pr.id = ra.prompt_result_id
+JOIN monitoring_runs r ON r.id = pr.run_id
+JOIN businesses b ON b.id = r.business_id
+WHERE ra.prompt_result_id = $1 AND b.tenant_id = $2`
+
+	listResultMentionsSQL = `
+SELECT m.subject, m.matched_by, m.mention_order, m.excerpt
+FROM mentions m
+JOIN prompt_results pr ON pr.id = m.prompt_result_id
+JOIN monitoring_runs r ON r.id = pr.run_id
+JOIN businesses b ON b.id = r.business_id
+WHERE m.prompt_result_id = $1 AND b.tenant_id = $2
+ORDER BY m.mention_order, m.id`
+
+	listResultCitationsSQL = `
+SELECT c.url, c.domain, c.title, c.cite_order, c.subject
+FROM citations c
+JOIN prompt_results pr ON pr.id = c.prompt_result_id
+JOIN monitoring_runs r ON r.id = pr.run_id
+JOIN businesses b ON b.id = r.business_id
+WHERE c.prompt_result_id = $1 AND b.tenant_id = $2
+ORDER BY c.cite_order, c.id`
 )
 
 // CreateResult appends a prompt result, scoped by a tenant-predicated lookup of
@@ -301,6 +374,87 @@ func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID do
 	return detail, nil
 }
 
+// GetResultAnalysis loads the derived-analysis enrichment for one result — its
+// result_analyses row (if any), mentions, and citations — for the Response
+// drawer (design 06, MET-5). All reads are tenant-scoped, so a missing or
+// cross-tenant result returns an empty, unanalyzed ResultAnalysis rather than
+// leaking. Ownership and existence of the result itself are proven by the
+// caller's GetResultDetail; this method only fetches the child rows.
+func (s *ResultStore) GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (ResultAnalysis, error) {
+	if s == nil || s.db == nil {
+		return ResultAnalysis{}, errors.New("result store database is required")
+	}
+
+	var out ResultAnalysis
+	var keywords, excerpts stringSlice
+	err := s.db.QueryRowContext(ctx, getResultAnalysisRowSQL, resultID, tenantID).Scan(&out.Sentiment, &keywords, &excerpts)
+	switch {
+	case err == nil:
+		out.Analyzed = true
+		out.Keywords = emptyIfNil(keywords)
+		out.Excerpts = emptyIfNil(excerpts)
+	case errors.Is(err, sql.ErrNoRows):
+		// Succeeded-but-unanalyzed (or failed): no analysis row. Not an error.
+	default:
+		return ResultAnalysis{}, fmt.Errorf("get result analysis: %w", err)
+	}
+
+	mentions, err := s.listResultMentions(ctx, tenantID, resultID)
+	if err != nil {
+		return ResultAnalysis{}, err
+	}
+	out.Mentions = mentions
+
+	citations, err := s.listResultCitations(ctx, tenantID, resultID)
+	if err != nil {
+		return ResultAnalysis{}, err
+	}
+	out.Citations = citations
+	return out, nil
+}
+
+func (s *ResultStore) listResultMentions(ctx context.Context, tenantID, resultID domain.ID) ([]ResultMention, error) {
+	rows, err := s.db.QueryContext(ctx, listResultMentionsSQL, resultID, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("list result mentions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	mentions := []ResultMention{}
+	for rows.Next() {
+		var m ResultMention
+		if err := rows.Scan(&m.Subject, &m.MatchedBy, &m.MentionOrder, &m.Excerpt); err != nil {
+			return nil, fmt.Errorf("scan mention: %w", err)
+		}
+		mentions = append(mentions, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate mentions: %w", err)
+	}
+	return mentions, nil
+}
+
+func (s *ResultStore) listResultCitations(ctx context.Context, tenantID, resultID domain.ID) ([]ResultCitation, error) {
+	rows, err := s.db.QueryContext(ctx, listResultCitationsSQL, resultID, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("list result citations: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	citations := []ResultCitation{}
+	for rows.Next() {
+		var c ResultCitation
+		if err := rows.Scan(&c.URL, &c.Domain, &c.Title, &c.CiteOrder, &c.Subject); err != nil {
+			return nil, fmt.Errorf("scan citation: %w", err)
+		}
+		citations = append(citations, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate citations: %w", err)
+	}
+	return citations, nil
+}
+
 // ListResults returns a business's results with optional hard-coded predicates
 // (WEB-2). It enters through the tenant-checked business lookup, then joins
 // results up to the business so foreign run/prompt filters yield nothing rather
@@ -316,7 +470,8 @@ func (s *ResultStore) ListResults(ctx context.Context, tenantID, businessID doma
 	}
 
 	query := `
-SELECT ` + resultColumns + `, p.text
+SELECT ` + resultColumns + `, p.text,
+       EXISTS(SELECT 1 FROM result_analyses ra WHERE ra.prompt_result_id = pr.id) AS analyzed
 FROM prompt_results pr
 JOIN monitoring_runs r ON r.id = pr.run_id
 JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = r.business_id
@@ -324,9 +479,11 @@ WHERE r.business_id = $1
   AND ($2::uuid IS NULL OR pr.run_id = $2)
   AND ($3::uuid IS NULL OR pr.prompt_id = $3)
   AND ($4::text IS NULL OR pr.status = $4)
+  AND ($5::boolean IS NULL OR EXISTS(
+        SELECT 1 FROM mentions m WHERE m.prompt_result_id = pr.id AND m.subject = 'self') = $5)
 ORDER BY pr.requested_at DESC`
 
-	args := []any{businessID, filter.RunID, filter.PromptID, statusArg(filter.Status)}
+	args := []any{businessID, filter.RunID, filter.PromptID, statusArg(filter.Status), boolArg(filter.Mentioned)}
 	if filter.Limit > 0 {
 		args = append(args, filter.Limit)
 		query += " LIMIT $" + strconv.Itoa(len(args))
@@ -360,6 +517,7 @@ ORDER BY pr.requested_at DESC`
 			&item.RequestedAt,
 			&item.CompletedAt,
 			&item.PromptText,
+			&item.Analyzed,
 		); err != nil {
 			return nil, err
 		}
@@ -422,6 +580,22 @@ func statusArg(status *ResultStatus) any {
 		return nil
 	}
 	return string(*status)
+}
+
+func boolArg(b *bool) any {
+	if b == nil {
+		return nil
+	}
+	return *b
+}
+
+// emptyIfNil normalizes a nil slice to a non-nil empty one so the API encodes
+// [] rather than null for a present-but-empty analysis field.
+func emptyIfNil(s stringSlice) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 func nullableTime(t time.Time) any {
