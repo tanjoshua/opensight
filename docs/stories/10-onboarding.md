@@ -18,8 +18,8 @@ Deps: RUN-3 (worker infra) · Phase 3 · Ref: design 03 (GenerateProfileWorkflow
 
 As the developer, I want one web_search call on the business, so that aliases and practitioners the site omits get caught.
 
-- [ ] Single OpenAI `web_search` call via the existing `PromptRunner` plumbing, on business name + location hints.
-- [ ] Output targets: aliases (former/Chinese/colloquial names — **organization trading identities only**; a practitioner's name goes to `practitioners`, never `aliases`, unless genuinely part of the trading name), directory listings, unlisted practitioners.
+- [x] Single OpenAI `web_search` call via the existing `PromptRunner` plumbing, on business name + location hints.
+- [x] Output targets: aliases (former/Chinese/colloquial names — **organization trading identities only**; a practitioner's name goes to `practitioners`, never `aliases`, unless genuinely part of the trading name), directory listings, unlisted practitioners.
 
 Deps: RUN-1 · Phase 3 · Ref: design 03 (step 2)
 
