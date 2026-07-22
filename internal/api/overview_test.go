@@ -134,6 +134,10 @@ func TestOverviewEndpointShapesPayload(t *testing.T) {
 	if body.TopCompetitors[0].Status != "tracked" || body.TopCompetitors[0].VsSelf != -25 {
 		t.Fatalf("first competitor = %+v", body.TopCompetitors[0])
 	}
+	// The panel shows 3 discovered, but the backlog count is the true total (4).
+	if body.DiscoveredTotal != 4 {
+		t.Fatalf("discovered total = %d, want 4", body.DiscoveredTotal)
+	}
 
 	if len(body.PromptChangeDates) != 2 || body.PromptChangeDates[0] != "2026-06-01" {
 		t.Fatalf("prompt change dates = %v", body.PromptChangeDates)

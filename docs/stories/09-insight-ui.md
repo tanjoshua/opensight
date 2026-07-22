@@ -8,10 +8,10 @@ Overview, Prompts, and Competitors sections; the drawer becomes evidence-grade. 
 
 As a clinic user, I want one page answering "how visible am I and what changed", so that weekly check-ins take a minute.
 
-- [ ] Headline visibility stat + weekly trend line (shadcn `Chart`); clicking a week deep-links to Responses filtered to that run.
-- [ ] Three compact panels: common themes (keywords), top cited domains (rows open the citation sources drill-down, MET-6), leading competitors (tracked + top-3 discovered, with "N discovered → triage" link).
-- [ ] Partial-run banner ("18 of 20 prompts succeeded this week") linking to failed results.
-- [ ] Single data point renders as a labeled point, not a degenerate line; every stat opens the Response drawer via its `result_ids`.
+- [x] Headline visibility stat + weekly trend line (shadcn `Chart`); clicking a week deep-links to Responses filtered to that run.
+- [x] Three compact panels: common themes (keywords), top cited domains (rows open the citation sources drill-down, MET-6), leading competitors (tracked + top-3 discovered, with "N discovered → triage" link).
+- [x] Partial-run banner ("18 of 20 prompts succeeded this week") linking to failed results.
+- [x] Single data point renders as a labeled point, not a degenerate line; every stat opens the Response drawer via its `result_ids`.
 
 Deps: MET-2, WEB-4 · Phase 2 · Ref: design 06 (Overview, Degraded states), PRD §7
 

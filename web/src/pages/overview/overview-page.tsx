@@ -1,13 +1,596 @@
-import { LayoutDashboard } from "lucide-react"
+// Overview section (INS-1, design 06): one page answering "how visible am I and
+// what changed". Headline visibility stat + weekly trend line with prompt-set
+// change markers, then three compact panels (themes, cited domains, competitors).
+// Every number is a door — stats open the Response drawer via their result_ids,
+// and clicking a week on the trend deep-links to Responses filtered to that run.
+import { ArrowRight, LayoutDashboard, TriangleAlert } from "lucide-react"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router"
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts"
 
-import { SectionPlaceholder } from "@/components/section-placeholder"
+import { useMe } from "@/api/auth"
+import {
+  useOverview,
+  type CompetitorSummary,
+  type Overview,
+  type VisibilityPoint,
+} from "@/api/overview"
+import { ResponseDrawer } from "@/components/response-drawer"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  ChartContainer,
+  ChartTooltip,
+  type ChartConfig,
+} from "@/components/ui/chart"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { Skeleton } from "@/components/ui/skeleton"
+
+const chartConfig = {
+  percent: { label: "Visibility", color: "var(--primary)" },
+} satisfies ChartConfig
 
 export function OverviewPage() {
+  const me = useMe()
+  const business = me.data?.businesses[0]
+  const navigate = useNavigate()
+  const overview = useOverview(business?.id)
+  // Opening the drawer is the shared "every number is a door" action: a stat's
+  // result_ids are the responses behind it; we surface the first one.
+  const [selectedResultID, setSelectedResultID] = useState<string>()
+  const openResult = (ids: string[]) => {
+    if (ids.length > 0) setSelectedResultID(ids[0])
+  }
+
+  if (me.isError) {
+    return (
+      <SectionMessage
+        title="Something went wrong"
+        description="The overview could not be loaded. Try reloading the page."
+      />
+    )
+  }
+  if (!me.data) {
+    return <OverviewSkeleton />
+  }
+  if (!business) {
+    return (
+      <SectionMessage
+        title="No business yet"
+        description="Finish onboarding to start monitoring and collecting responses."
+      />
+    )
+  }
+  if (overview.isError) {
+    return (
+      <SectionMessage
+        title="Something went wrong"
+        description="The overview could not be loaded. Try reloading the page."
+      />
+    )
+  }
+  if (!overview.data) {
+    return <OverviewSkeleton />
+  }
+
+  const data = overview.data
+
+  // No analyzed history yet: either no run has happened, the first run is still
+  // in flight, or results are awaiting analysis (design 06 degraded states).
+  if (data.visibility.trend.length === 0) {
+    return <NoDataState overview={data} />
+  }
+
   return (
-    <SectionPlaceholder
-      title="Overview"
-      description="Visibility headline, trend, and top panels arrive in Phase 2."
-      icon={LayoutDashboard}
+    <div className="flex flex-col gap-4">
+      <h1 className="font-heading text-lg font-semibold">Overview</h1>
+
+      <PartialRunBanner overview={data} />
+
+      <VisibilityCard
+        overview={data}
+        onOpenResult={openResult}
+        onSelectRun={(runID) => navigate(`/responses?run=${runID}`)}
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <ThemesPanel overview={data} onOpenResult={openResult} />
+        <DomainsPanel overview={data} onOpenResult={openResult} />
+        <CompetitorsPanel overview={data} onOpenResult={openResult} />
+      </div>
+
+      <ResponseDrawer
+        resultId={selectedResultID}
+        onOpenChange={(open) => {
+          if (!open) setSelectedResultID(undefined)
+        }}
+      />
+    </div>
+  )
+}
+
+function VisibilityCard({
+  overview,
+  onOpenResult,
+  onSelectRun,
+}: {
+  overview: Overview
+  onOpenResult: (ids: string[]) => void
+  onSelectRun: (runID: string) => void
+}) {
+  const { current, delta, trend } = overview.visibility
+  const latestPoint = trend[trend.length - 1]
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>
+          Share of ChatGPT responses that mention you
+        </CardDescription>
+        <CardTitle className="flex items-baseline gap-3">
+          <button
+            type="button"
+            className="cursor-pointer text-4xl font-semibold tabular-nums hover:underline"
+            title="Open a response behind this number"
+            onClick={() => onOpenResult(latestPoint.result_ids)}
+          >
+            {current === null ? "—" : formatPercent(current)}
+          </button>
+          {delta !== null && <DeltaBadge delta={delta} />}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {trend.length === 1 ? (
+          <SinglePoint point={trend[0]} onSelectRun={onSelectRun} />
+        ) : (
+          <TrendChart
+            trend={trend}
+            promptChangeDates={overview.prompt_change_dates}
+            onSelectRun={onSelectRun}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function TrendChart({
+  trend,
+  promptChangeDates,
+  onSelectRun,
+}: {
+  trend: VisibilityPoint[]
+  promptChangeDates: string[]
+  onSelectRun: (runID: string) => void
+}) {
+  const data = trend.map((point) => ({ x: dateMs(point.scheduled_for), point }))
+  const minX = data[0].x
+  const maxX = data[data.length - 1].x
+  // Markers only make sense inside the plotted window; a prompt change before the
+  // first run or after the last has nothing to sit against.
+  const markers = promptChangeDates
+    .map(dateMs)
+    .filter((ms) => ms >= minX && ms <= maxX)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ChartContainer config={chartConfig} className="h-56 w-full">
+        <LineChart
+          accessibilityLayer
+          data={data}
+          margin={{ left: 4, right: 12, top: 8 }}
+          onClick={(state) => {
+            const point = (
+              state as unknown as {
+                activePayload?: { payload: { point: VisibilityPoint } }[]
+              }
+            ).activePayload?.[0]?.payload.point
+            if (point) onSelectRun(point.run_id)
+          }}
+        >
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="x"
+            type="number"
+            scale="time"
+            domain={["dataMin", "dataMax"]}
+            ticks={data.map((d) => d.x)}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tickFormatter={(ms: number) => shortDate(ms)}
+          />
+          <YAxis
+            domain={[0, 100]}
+            width={36}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => `${v}%`}
+          />
+          <ChartTooltip cursor content={<TrendTooltip />} />
+          {markers.map((ms) => (
+            <ReferenceLine
+              key={ms}
+              x={ms}
+              stroke="var(--muted-foreground)"
+              strokeDasharray="4 4"
+            />
+          ))}
+          <Line
+            dataKey="point.percent"
+            name="percent"
+            type="monotone"
+            stroke="var(--color-percent)"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ChartContainer>
+      <p className="text-xs text-muted-foreground">
+        Click a week to see the responses behind it.
+        {markers.length > 0 &&
+          " Dashed lines mark weeks where the prompt set changed."}
+      </p>
+    </div>
+  )
+}
+
+function TrendTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: { payload: { point: VisibilityPoint } }[]
+}) {
+  if (!active || !payload?.length) return null
+  const point = payload[0].payload.point
+  return (
+    <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
+      <div className="font-medium">{shortDate(dateMs(point.scheduled_for))}</div>
+      <div className="text-muted-foreground">
+        {formatPercent(point.percent)} · mentioned in {point.mentioned} of{" "}
+        {point.analyzed}
+      </div>
+    </div>
+  )
+}
+
+// A lone run is most users' week one — render it as a labeled point, never a
+// one-node "line" (design 06 degraded states).
+function SinglePoint({
+  point,
+  onSelectRun,
+}: {
+  point: VisibilityPoint
+  onSelectRun: (runID: string) => void
+}) {
+  return (
+    <button
+      type="button"
+      className="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-left hover:bg-muted/50"
+      onClick={() => onSelectRun(point.run_id)}
+    >
+      <span className="size-3 rounded-full bg-primary" />
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">
+          {shortDate(dateMs(point.scheduled_for))}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {formatPercent(point.percent)} · the trend line starts after your next
+          run
+        </span>
+      </div>
+    </button>
+  )
+}
+
+function DeltaBadge({ delta }: { delta: number }) {
+  const rounded = Math.round(delta * 10) / 10
+  const sign = rounded > 0 ? "+" : ""
+  return (
+    <Badge variant={rounded < 0 ? "destructive" : "secondary"}>
+      {sign}
+      {rounded.toFixed(1)} pts vs last run
+    </Badge>
+  )
+}
+
+function PartialRunBanner({ overview }: { overview: Overview }) {
+  const run = overview.latest_run
+  // The overview payload carries run status but not per-prompt success counts, so
+  // the banner names the condition and links to the failed responses rather than
+  // inventing an "N of M" figure (design 06 partial-run state).
+  if (!run || (run.status !== "partial" && run.status !== "failed")) return null
+  return (
+    <Alert variant="destructive">
+      <TriangleAlert />
+      <AlertTitle>
+        {run.status === "failed"
+          ? "The latest run failed"
+          : "Some prompts failed in the latest run"}
+      </AlertTitle>
+      <AlertDescription>
+        <Link
+          to={`/responses?run=${run.id}&status=failed`}
+          className="underline underline-offset-2"
+        >
+          Review the failed responses
+        </Link>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+function ThemesPanel({
+  overview,
+  onOpenResult,
+}: {
+  overview: Overview
+  onOpenResult: (ids: string[]) => void
+}) {
+  return (
+    <Panel title="Common themes" description="Keywords across your responses">
+      {overview.top_keywords.length === 0 ? (
+        <PanelEmpty>No keywords yet.</PanelEmpty>
+      ) : (
+        overview.top_keywords.map((keyword) => (
+          <StatRow
+            key={keyword.keyword}
+            label={keyword.keyword}
+            count={keyword.result_ids.length}
+            onClick={() => onOpenResult(keyword.result_ids)}
+          />
+        ))
+      )}
+    </Panel>
+  )
+}
+
+function DomainsPanel({
+  overview,
+  onOpenResult,
+}: {
+  overview: Overview
+  onOpenResult: (ids: string[]) => void
+}) {
+  return (
+    <Panel title="Top cited domains" description="Sources ChatGPT links to">
+      {overview.top_cited_domains.length === 0 ? (
+        <PanelEmpty>No citations yet.</PanelEmpty>
+      ) : (
+        overview.top_cited_domains.map((domain) => (
+          // MET-6 (citation-sources drill-down) isn't built yet; open the Response
+          // drawer directly. Swap to the drill-down page once MET-6 ships.
+          <StatRow
+            key={domain.domain}
+            label={domain.domain}
+            count={domain.result_ids.length}
+            onClick={() => onOpenResult(domain.result_ids)}
+          />
+        ))
+      )}
+    </Panel>
+  )
+}
+
+function CompetitorsPanel({
+  overview,
+  onOpenResult,
+}: {
+  overview: Overview
+  onOpenResult: (ids: string[]) => void
+}) {
+  // top_competitors is truncated to the top-3 discovered, so the backlog count
+  // comes from the server's untruncated discovered_total.
+  const discovered = overview.discovered_total
+  return (
+    <Panel
+      title="Leading competitors"
+      description="Who else the responses name"
+      footer={
+        discovered > 0 ? (
+          <Link
+            to="/competitors?status=discovered"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {discovered} discovered — triage
+            <ArrowRight className="size-3.5" />
+          </Link>
+        ) : undefined
+      }
+    >
+      {overview.top_competitors.length === 0 ? (
+        <PanelEmpty>No competitors yet.</PanelEmpty>
+      ) : (
+        overview.top_competitors.map((competitor) => (
+          <CompetitorRow
+            key={competitor.id}
+            competitor={competitor}
+            onClick={() => onOpenResult(competitor.result_ids)}
+          />
+        ))
+      )}
+    </Panel>
+  )
+}
+
+function CompetitorRow({
+  competitor,
+  onClick,
+}: {
+  competitor: CompetitorSummary
+  onClick: () => void
+}) {
+  const disabled = competitor.result_ids.length === 0
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:opacity-70"
+    >
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate">{competitor.name}</span>
+        {competitor.status === "discovered" && (
+          <Badge variant="outline">discovered</Badge>
+        )}
+      </span>
+      <span className="shrink-0 tabular-nums text-muted-foreground">
+        {formatPercent(competitor.mention_percent)}
+      </span>
+    </button>
+  )
+}
+
+function Panel({
+  title,
+  description,
+  footer,
+  children,
+}: {
+  title: string
+  description: string
+  footer?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <Card className="gap-3">
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-0.5">{children}</CardContent>
+      {footer && (
+        <div className="border-t px-6 pt-3">{footer}</div>
+      )}
+    </Card>
+  )
+}
+
+function StatRow({
+  label,
+  count,
+  onClick,
+}: {
+  label: string
+  count: number
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      disabled={count === 0}
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:opacity-70"
+    >
+      <span className="truncate">{label}</span>
+      <span className="shrink-0 tabular-nums text-muted-foreground">
+        {count}
+      </span>
+    </button>
+  )
+}
+
+function PanelEmpty({ children }: { children: React.ReactNode }) {
+  return <p className="px-2 py-1.5 text-sm text-muted-foreground">{children}</p>
+}
+
+// Trend is empty: no analyzed results exist yet. Distinguish "no run", "run in
+// progress", and "awaiting analysis" so the honest state shows (design 06).
+function NoDataState({ overview }: { overview: Overview }) {
+  const run = overview.latest_run
+  if (!run) {
+    return (
+      <SectionMessage
+        title="No runs yet"
+        description="Your visibility appears here after your first weekly monitoring run completes."
+      />
+    )
+  }
+  if (run.status === "running") {
+    return (
+      <SectionMessage
+        title="First run in progress"
+        description="Your monitoring run is collecting responses. This page will fill in automatically once it finishes."
+      />
+    )
+  }
+  return (
+    <SectionMessage
+      title="Analyzing responses"
+      description="Your run has finished and its responses are being analyzed. Your visibility appears here shortly."
     />
   )
+}
+
+function SectionMessage({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <LayoutDashboard />
+        </EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  )
+}
+
+function OverviewSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <Skeleton className="h-7 w-32" />
+      <Skeleton className="h-64 w-full" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    </div>
+  )
+}
+
+function formatPercent(value: number): string {
+  return `${(Math.round(value * 10) / 10).toFixed(1)}%`
+}
+
+// scheduled_for is a plain date (YYYY-MM-DD); parse as local midnight, matching
+// the Responses page, so trend ticks land on the intended day.
+function dateMs(scheduledFor: string): number {
+  return new Date(`${scheduledFor}T00:00:00`).getTime()
+}
+
+function shortDate(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })
 }

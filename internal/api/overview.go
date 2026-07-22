@@ -39,7 +39,11 @@ type overviewResponse struct {
 	TopKeywords       []keywordResponse           `json:"top_keywords"`
 	TopCitedDomains   []domainResponse            `json:"top_cited_domains"`
 	TopCompetitors    []competitorSummaryResponse `json:"top_competitors"`
-	LatestRun         *runResponse                `json:"latest_run"`
+	// DiscoveredTotal is the full count of discovered (untriaged) competitors,
+	// before TopCompetitors truncates to the top-3 by coverage — it drives the
+	// Overview "N discovered → triage" backlog count, which must not undercount.
+	DiscoveredTotal int          `json:"discovered_total"`
+	LatestRun       *runResponse `json:"latest_run"`
 }
 
 // overviewVisibility is the headline stat plus the weekly trend. Current is the
@@ -137,12 +141,14 @@ func (s *Server) handleGetOverview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	topCompetitors, discoveredTotal := topCompetitorsToResponse(competitors)
 	resp := overviewResponse{
 		Visibility:        visibilityToResponse(trend),
 		PromptChangeDates: datesToResponse(changeDates),
 		TopKeywords:       keywordsToResponse(keywords),
 		TopCitedDomains:   domainsToResponse(domains),
-		TopCompetitors:    topCompetitorsToResponse(competitors),
+		TopCompetitors:    topCompetitors,
+		DiscoveredTotal:   discoveredTotal,
 		LatestRun:         latestRunToResponse(runs),
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -193,18 +199,21 @@ func domainsToResponse(stats []metrics.DomainStat) []domainResponse {
 // topCompetitorsToResponse keeps every tracked competitor plus the top-3
 // discovered by coverage (MET-2 AC), dropping dismissed ones (design 05: a
 // display filter, the data is retained). CompetitorStats is coverage-desc, so
-// the discovered cap keeps the three with the widest coverage.
-func topCompetitorsToResponse(stats metrics.CompetitorStats) []competitorSummaryResponse {
+// the discovered cap keeps the three with the widest coverage. It also returns
+// the full discovered count (before the cap) so the "N discovered → triage"
+// backlog reflects the real number, not the truncated panel.
+func topCompetitorsToResponse(stats metrics.CompetitorStats) ([]competitorSummaryResponse, int) {
 	out := []competitorSummaryResponse{}
-	discovered := 0
+	shown, total := 0, 0
 	for _, c := range stats.Competitors {
 		switch c.Status {
 		case "tracked":
 		case "discovered":
-			if discovered >= overviewDiscoveredLimit {
+			total++
+			if shown >= overviewDiscoveredLimit {
 				continue
 			}
-			discovered++
+			shown++
 		default: // dismissed
 			continue
 		}
@@ -220,7 +229,7 @@ func topCompetitorsToResponse(stats metrics.CompetitorStats) []competitorSummary
 			ResultIDs:      idStrings(c.ResultIDs),
 		})
 	}
-	return out
+	return out, total
 }
 
 func datesToResponse(dates []time.Time) []string {
