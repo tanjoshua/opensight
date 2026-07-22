@@ -19,6 +19,9 @@ Onboarding endpoints are already defined in 03. The five product sections (PRD �
 GET  /businesses/:id/overview        current visibility %, delta vs previous run,
                                      top keywords, top cited domains, top competitors,
                                      latest run status
+GET  /businesses/:id/citations       ?domain, limit, offset; cited domains with
+                                     response frequency, cited pages, associated
+                                     prompts, subject splits, and result_ids
 
 # Prompts
 GET  /businesses/:id/prompts         active prompts + latest result summary + spark trend
@@ -28,7 +31,10 @@ GET  /prompts/:id                    prompt detail: full history of results, lin
 
 # Competitors
 GET  /businesses/:id/competitors     ?status filter; each with mention %, totals,
-                                     avg order, trend, vs-self comparison
+                                     avg order, per-prompt appearances
+                                     (prompt text + result_ids), trend
+                                     including zero-mention analyzed weeks,
+                                     vs-self comparison
 POST /businesses/:id/competitors     manual add {name, aliases?, website?}
 POST /competitors/:id/track          status → tracked
 POST /competitors/:id/dismiss        status → dismissed
@@ -59,7 +65,7 @@ PRD §6's "every metric links to the underlying response" is implemented as a si
 
 - **Overview** — headline visibility stat + weekly trend line, then three compact panels (themes, cited domains, competitors). Competitor panel shows tracked competitors plus top-3 discovered by coverage (the 05 display filter), with a "N discovered → triage" link into Competitors. The weekly trend renders **prompt-set-change markers** (derived from prompt created/retired dates) so a prompt change never reads as a visibility change. Overview also links a short **"How we measure" methodology page** stating plainly that results come from the OpenAI API as a proxy for consumer ChatGPT, with the caveats from 01-D1.
 - **Prompts** — table of 20 with per-prompt: mentioned? order? sentiment, sparkline across runs. **Replace flow (PRD §4)**: modal states exactly what happens — "history for the old prompt stays viewable; the new prompt starts a fresh trend" — and the API requires `confirmed: true`, so the warning is structurally unskippable. Retired prompts remain reachable from a prompt's lineage ("replaced X on date").
-- **Competitors** — triage-first: discovered list ranked by response coverage ("in 7 of 20 responses") with one-click track/dismiss; tracked list with the PRD comparison stats vs self. Dismissed collapsed but recoverable (data was never deleted, per 02). Competitor detail lists LLM-`suggested_aliases` for one-click approval or rejection (05) — approval is what makes a variant a permanent matching key.
+- **Competitors** — triage-first: discovered list ranked by response coverage ("in 7 of 20 responses") with one-click track/dismiss; tracked list with the PRD comparison stats vs self, prompt appearances, and weekly trend lines that include zero-mention analyzed weeks. Dismissed collapsed but recoverable (data was never deleted, per 02). Competitor detail lists LLM-`suggested_aliases` for one-click approval or rejection (05) — approval is what makes a variant a permanent matching key.
 - **Responses** — filterable list (by run, prompt, mention, status). Failed results show status + error; succeeded-but-unanalyzed show a "not yet analyzed" badge (05's soft-failure posture made visible instead of silently miscounted).
 - **Setup** — profile editor (PATCH), prompt management entry point, competitor aliases editing, plan display. No regenerate after activation (03).
 

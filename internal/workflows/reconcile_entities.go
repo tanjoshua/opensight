@@ -161,6 +161,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 			mw := store.MentionWrite{
 				PromptResultID: pr.resultID,
 				MentionOrder:   order,
+				VerbatimName:   m.Entity.VerbatimName,
 				Excerpt:        m.Entity.Excerpt,
 			}
 			switch m.Subject {

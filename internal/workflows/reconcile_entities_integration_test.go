@@ -137,10 +137,10 @@ VALUES ($1, $2, 'Bravo Clinic', ARRAY['bravo clinic']::text[], 'manual', 'tracke
 	}
 
 	// matched_by is correct per subject/pass.
-	assertMention(t, db, ctx, resultID, "self", 0, "exact")
-	assertMention(t, db, ctx, resultID, "competitor", 1, "exact") // Bravo Clinic exact
-	assertMention(t, db, ctx, resultID, "competitor", 2, "llm")   // Bravo Klinik llm
-	assertMention(t, db, ctx, resultID, "competitor", 3, "exact") // Charlie discovered, own alias exact
+	assertMention(t, db, ctx, resultID, "self", 0, "exact", "Atlas Dental")
+	assertMention(t, db, ctx, resultID, "competitor", 1, "exact", "Bravo Clinic")    // exact
+	assertMention(t, db, ctx, resultID, "competitor", 2, "llm", "Bravo Klinik")      // llm
+	assertMention(t, db, ctx, resultID, "competitor", 3, "exact", "Charlie Medical") // discovered, own alias exact
 
 	// The discovered competitor exists with the verbatim name as its sole alias.
 	var charlieStatus, charlieSource string
@@ -201,16 +201,19 @@ VALUES ($1, $2, 'Bravo Clinic', ARRAY['bravo clinic']::text[], 'manual', 'tracke
 	}
 }
 
-func assertMention(t *testing.T, db *sql.DB, ctx context.Context, resultID domain.ID, subject string, order int, wantMatchedBy string) {
+func assertMention(t *testing.T, db *sql.DB, ctx context.Context, resultID domain.ID, subject string, order int, wantMatchedBy, wantVerbatim string) {
 	t.Helper()
-	var matchedBy string
+	var matchedBy, verbatimName string
 	if err := db.QueryRowContext(ctx,
-		`SELECT matched_by FROM mentions WHERE prompt_result_id = $1 AND subject = $2 AND mention_order = $3`,
-		resultID, subject, order).Scan(&matchedBy); err != nil {
+		`SELECT matched_by, verbatim_name FROM mentions WHERE prompt_result_id = $1 AND subject = $2 AND mention_order = $3`,
+		resultID, subject, order).Scan(&matchedBy, &verbatimName); err != nil {
 		t.Fatalf("read mention (subject=%s order=%d): %v", subject, order, err)
 	}
 	if matchedBy != wantMatchedBy {
 		t.Errorf("mention (subject=%s order=%d) matched_by = %q, want %q", subject, order, matchedBy, wantMatchedBy)
+	}
+	if verbatimName != wantVerbatim {
+		t.Errorf("mention (subject=%s order=%d) verbatim_name = %q, want %q", subject, order, verbatimName, wantVerbatim)
 	}
 }
 

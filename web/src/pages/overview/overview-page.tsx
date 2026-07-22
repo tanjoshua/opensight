@@ -19,9 +19,11 @@ import { useMe } from "@/api/auth"
 import {
   useOverview,
   type CompetitorSummary,
+  type DomainStat,
   type Overview,
   type VisibilityPoint,
 } from "@/api/overview"
+import { CitationSourcesDrilldown } from "@/components/citation-sources-drilldown"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +60,7 @@ export function OverviewPage() {
   // Opening the drawer is the shared "every number is a door" action: a stat's
   // result_ids are the responses behind it; we surface the first one.
   const [selectedResultID, setSelectedResultID] = useState<string>()
+  const [selectedCitationDomain, setSelectedCitationDomain] = useState<string>()
   const openResult = (ids: string[]) => {
     if (ids.length > 0) setSelectedResultID(ids[0])
   }
@@ -115,10 +118,22 @@ export function OverviewPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <ThemesPanel overview={data} onOpenResult={openResult} />
-        <DomainsPanel overview={data} onOpenResult={openResult} />
+        <DomainsPanel
+          overview={data}
+          onOpenDomain={(domain) => setSelectedCitationDomain(domain.domain)}
+        />
         <CompetitorsPanel overview={data} onOpenResult={openResult} />
       </div>
 
+      <CitationSourcesDrilldown
+        businessId={business.id}
+        domain={selectedCitationDomain}
+        open={selectedCitationDomain !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setSelectedCitationDomain(undefined)
+        }}
+        onOpenResult={openResult}
+      />
       <ResponseDrawer
         resultId={selectedResultID}
         onOpenChange={(open) => {
@@ -369,10 +384,10 @@ function ThemesPanel({
 
 function DomainsPanel({
   overview,
-  onOpenResult,
+  onOpenDomain,
 }: {
   overview: Overview
-  onOpenResult: (ids: string[]) => void
+  onOpenDomain: (domain: DomainStat) => void
 }) {
   return (
     <Panel title="Top cited domains" description="Sources ChatGPT links to">
@@ -380,13 +395,11 @@ function DomainsPanel({
         <PanelEmpty>No citations yet.</PanelEmpty>
       ) : (
         overview.top_cited_domains.map((domain) => (
-          // MET-6 (citation-sources drill-down) isn't built yet; open the Response
-          // drawer directly. Swap to the drill-down page once MET-6 ships.
           <StatRow
             key={domain.domain}
             label={domain.domain}
             count={domain.result_ids.length}
-            onClick={() => onOpenResult(domain.result_ids)}
+            onClick={() => onOpenDomain(domain)}
           />
         ))
       )}

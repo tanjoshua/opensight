@@ -298,7 +298,7 @@ func TestGetResultEndpointIncludesAnalysisWithReconstructedSpans(t *testing.T) {
 			Keywords:  []string{"friendly", "affordable"},
 			Excerpts:  []string{"Clinic is a good option."},
 			Mentions: []store.ResultMention{
-				{Subject: "self", MatchedBy: "exact", MentionOrder: 0, Excerpt: "Clinic ... option."},
+				{Subject: "self", VerbatimName: "Clinic", MatchedBy: "exact", MentionOrder: 0, Excerpt: "Clinic ... option."},
 			},
 			// cite_order 0 belongs to the B annotation (start_index 10), 1 to A (40).
 			Citations: []store.ResultCitation{
@@ -329,7 +329,7 @@ func TestGetResultEndpointIncludesAnalysisWithReconstructedSpans(t *testing.T) {
 	if len(body.Analysis.Keywords) != 2 || body.Analysis.Keywords[0] != "friendly" {
 		t.Fatalf("keywords = %v, want [friendly affordable]", body.Analysis.Keywords)
 	}
-	if len(body.Analysis.Mentions) != 1 || body.Analysis.Mentions[0].Subject != "self" || body.Analysis.Mentions[0].Order != 0 {
+	if len(body.Analysis.Mentions) != 1 || body.Analysis.Mentions[0].Subject != "self" || body.Analysis.Mentions[0].VerbatimName != "Clinic" || body.Analysis.Mentions[0].Order != 0 {
 		t.Fatalf("mentions = %+v, want one self mention at order 0", body.Analysis.Mentions)
 	}
 	if len(body.Analysis.Citations) != 2 {

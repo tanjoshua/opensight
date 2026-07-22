@@ -143,8 +143,8 @@ WHERE id = $1 AND business_id = $2
   AND NOT ($3 = ANY(aliases))`
 
 	insertMentionSQL = `
-INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
-VALUES ($1, $2, $3, $4, $5, $6, $7)`
+INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, verbatim_name, excerpt)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	setAnalysisCompletedSQL = `
 UPDATE monitoring_runs SET analysis_completed_at = now()
@@ -436,6 +436,7 @@ type MentionWrite struct {
 	DiscoveredKey  string
 	MatchedBy      string // "exact" | "llm"
 	MentionOrder   int
+	VerbatimName   string
 	Excerpt        string
 }
 
@@ -526,7 +527,7 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 				competitorID = cid
 			}
 			if _, err := q.execContext(ctx, insertMentionSQL,
-				id, m.PromptResultID, m.Subject, competitorID, m.MatchedBy, m.MentionOrder, m.Excerpt,
+				id, m.PromptResultID, m.Subject, competitorID, m.MatchedBy, m.MentionOrder, m.VerbatimName, m.Excerpt,
 			); err != nil {
 				return fmt.Errorf("insert mention: %w", err)
 			}

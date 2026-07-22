@@ -112,10 +112,11 @@ type resultAnalysisResponse struct {
 }
 
 type mentionResponse struct {
-	Subject   string `json:"subject"`
-	Order     int    `json:"order"`
-	MatchedBy string `json:"matched_by"`
-	Excerpt   string `json:"excerpt"`
+	Subject      string `json:"subject"`
+	VerbatimName string `json:"verbatim_name"`
+	Order        int    `json:"order"`
+	MatchedBy    string `json:"matched_by"`
+	Excerpt      string `json:"excerpt"`
 }
 
 // citationResponse carries the cited source plus its annotation span — the
@@ -130,8 +131,8 @@ type citationResponse struct {
 	Span      *spanResponse `json:"span"`
 }
 
-// spanResponse is a [start, end) byte range into response_text, taken from the
-// response's url_citation annotation (design 06 "annotation spans").
+// spanResponse is a [start, end) text index range into response_text, taken from
+// the response's url_citation annotation (design 06 "annotation spans").
 type spanResponse struct {
 	Start int `json:"start"`
 	End   int `json:"end"`
@@ -402,10 +403,11 @@ func analysisToResponse(a store.ResultAnalysis, rawResponse json.RawMessage) *re
 	}
 	for _, m := range a.Mentions {
 		resp.Mentions = append(resp.Mentions, mentionResponse{
-			Subject:   m.Subject,
-			Order:     m.MentionOrder,
-			MatchedBy: m.MatchedBy,
-			Excerpt:   m.Excerpt,
+			Subject:      m.Subject,
+			VerbatimName: m.VerbatimName,
+			Order:        m.MentionOrder,
+			MatchedBy:    m.MatchedBy,
+			Excerpt:      m.Excerpt,
 		})
 	}
 

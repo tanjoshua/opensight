@@ -61,6 +61,8 @@ type Server struct {
 	// competitorMetrics is a third seam over the same *metrics.Metrics for the
 	// Competitors section (MET-4): just CompetitorStats, so its fake stays minimal.
 	competitorMetrics competitorsMetrics
+	// citationMetrics is a fourth seam for MET-6's citation-sources drill-down.
+	citationMetrics citationsMetrics
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (FND-2 local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
@@ -80,6 +82,7 @@ func New(auth *store.AuthStore, businesses *store.BusinessStore, prompts *store.
 		metrics:           metrics,
 		promptMetrics:     metrics,
 		competitorMetrics: metrics,
+		citationMetrics:   metrics,
 		runMetrics:        metrics,
 		secureCookies:     secureCookies,
 		sessionTTL:        defaultSessionTTL,
@@ -115,6 +118,7 @@ func (s *Server) Routes() http.Handler {
 			r.Get("/businesses/{businessID}/prompts", s.handleListPrompts)
 			r.Get("/prompts/{promptID}", s.handleGetPrompt)
 			r.Get("/businesses/{businessID}/competitors", s.handleListCompetitors)
+			r.Get("/businesses/{businessID}/citations", s.handleListCitations)
 			r.Get("/businesses/{businessID}/runs", s.handleListRuns)
 			r.Get("/businesses/{businessID}/results", s.handleListResults)
 			r.Get("/results/{resultID}", s.handleGetResult)

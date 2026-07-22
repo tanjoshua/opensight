@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -50,12 +51,13 @@ func seedCompetitorStats(t *testing.T) metrics.CompetitorStats {
 		TotalAnalyzed: 20,
 		SelfMentioned: 11,
 		SelfPercent:   55,
+		ResultIDs:     []domain.ID{resultID},
 		Competitors: []metrics.CompetitorStat{
 			{
 				CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000201"), Name: "Tracked Co", Status: "tracked",
 				Mentioned: 9, TotalMentions: 12, MentionPercent: 45, AvgOrder: 2.1, VsSelf: -10,
 				ResultIDs: []domain.ID{resultID},
-				PerPrompt: []metrics.PromptAppearance{{PromptID: promptID, ResultIDs: []domain.ID{resultID}}},
+				PerPrompt: []metrics.PromptAppearance{{PromptID: promptID, Text: "best clinic near me", ResultIDs: []domain.ID{resultID}}},
 				Trend:     []metrics.CompetitorTrendPoint{{RunID: runID, ScheduledFor: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC), Analyzed: 20, Mentioned: 9, Percent: 45, ResultIDs: []domain.ID{resultID}}},
 			},
 			{
@@ -69,7 +71,7 @@ func seedCompetitorStats(t *testing.T) metrics.CompetitorStats {
 				CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000203"), Name: "Dismissed Co", Status: "dismissed",
 				Mentioned: 5, TotalMentions: 6, MentionPercent: 25, AvgOrder: 4.0, VsSelf: -30,
 				ResultIDs: []domain.ID{resultID},
-				PerPrompt: []metrics.PromptAppearance{{PromptID: promptID, ResultIDs: []domain.ID{resultID}}},
+				PerPrompt: []metrics.PromptAppearance{{PromptID: promptID, Text: "best clinic near me", ResultIDs: []domain.ID{resultID}}},
 				Trend:     []metrics.CompetitorTrendPoint{{RunID: runID, ScheduledFor: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC), Analyzed: 20, Mentioned: 5, Percent: 25, ResultIDs: []domain.ID{resultID}}},
 			},
 		},
@@ -96,6 +98,9 @@ func TestCompetitorsEndpointShapesPayload(t *testing.T) {
 	if body.Self.TotalAnalyzed != 20 || body.Self.Mentioned != 11 || body.Self.Percent != 55 {
 		t.Fatalf("self = %+v", body.Self)
 	}
+	if len(body.Self.ResultIDs) != 1 {
+		t.Fatalf("self result_ids = %+v, want one id", body.Self.ResultIDs)
+	}
 	if len(body.Competitors) != 3 {
 		t.Fatalf("competitors = %d, want 3", len(body.Competitors))
 	}
@@ -107,7 +112,7 @@ func TestCompetitorsEndpointShapesPayload(t *testing.T) {
 	if first.MentionPercent != 45 || first.VsSelf != -10 || first.TotalMentions != 12 || first.AvgOrder != 2.1 {
 		t.Fatalf("first competitor stats = %+v", first)
 	}
-	if len(first.ResultIDs) != 1 || len(first.PerPrompt) != 1 || len(first.PerPrompt[0].ResultIDs) != 1 {
+	if len(first.ResultIDs) != 1 || len(first.PerPrompt) != 1 || len(first.PerPrompt[0].ResultIDs) != 1 || first.PerPrompt[0].PromptText == "" {
 		t.Fatalf("first per-prompt/result_ids = %+v", first)
 	}
 	if len(first.Trend) != 1 || first.Trend[0].Percent != 45 || len(first.Trend[0].ResultIDs) != 1 {
@@ -166,6 +171,24 @@ func TestCompetitorsEndpointPaginates(t *testing.T) {
 	}
 	if body.Paging.Limit != 1 || body.Paging.Offset != 1 || body.Paging.PageCount != 1 {
 		t.Fatalf("paging = %+v", body.Paging)
+	}
+}
+
+func TestCompetitorsEndpointLargeOffsetReturnsEmpty(t *testing.T) {
+	m := &fakeCompetitorsMetrics{stats: seedCompetitorStats(t)}
+	srv, cookie := newAuthedCompetitorsServer(t, &fakeBusinessStore{}, m)
+	maxInt := int(^uint(0) >> 1)
+
+	rec := doAuthedGET(t, srv, cookie, "/api/v1/businesses/"+businessIDForTest+"/competitors?offset="+strconv.Itoa(maxInt))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	var body competitorsListResponse
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(body.Competitors) != 0 || body.Paging.PageCount != 0 || body.Paging.Offset != maxInt {
+		t.Fatalf("large offset page = competitors %d paging %+v, want empty at offset %d", len(body.Competitors), body.Paging, maxInt)
 	}
 }
 

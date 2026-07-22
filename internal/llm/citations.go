@@ -8,7 +8,7 @@ import (
 )
 
 // CitationAnnotation is one url_citation annotation lifted from a Responses API
-// raw payload. StartIndex/EndIndex are byte offsets into the response text, so
+// raw payload. StartIndex/EndIndex are text indices into the response text, so
 // the objective first-appearance order of citations is StartIndex ascending.
 type CitationAnnotation struct {
 	URL        string

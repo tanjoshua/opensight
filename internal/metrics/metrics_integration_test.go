@@ -149,6 +149,7 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 	if comp.TotalAnalyzed != 2 || comp.SelfMentioned != 1 || comp.SelfPercent != 50 {
 		t.Fatalf("self base = %d/%d (%.0f%%), want 1/2 (50%%)", comp.SelfMentioned, comp.TotalAnalyzed, comp.SelfPercent)
 	}
+	assertIDSet(t, "self baseline result_ids", comp.ResultIDs, a1, a2)
 	if len(comp.Competitors) != 1 {
 		t.Fatalf("competitors = %d, want 1", len(comp.Competitors))
 	}
@@ -165,6 +166,11 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 	assertIDSet(t, "rival result_ids", c.ResultIDs, a1, a2)
 	if len(c.PerPrompt) != 2 {
 		t.Fatalf("rival per-prompt appearances = %d, want 2 (p1, p2)", len(c.PerPrompt))
+	}
+	for _, p := range c.PerPrompt {
+		if p.Text != "q" {
+			t.Fatalf("rival prompt text = %q, want q", p.Text)
+		}
 	}
 	if len(c.Trend) != 1 || c.Trend[0].RunID != runA || c.Trend[0].Percent != 100 {
 		t.Fatalf("rival trend = %+v, want one Run A point at 100%%", c.Trend)
@@ -237,6 +243,81 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 	}
 	if len(changeDates) != 1 {
 		t.Fatalf("prompt change dates = %v, want 1 distinct day", changeDates)
+	}
+}
+
+// TestCompetitorTrendIncludesZeroMentionRuns pins the chart contract for
+// competitors: a weekly trend includes analyzed weeks where a competitor was not
+// mentioned, so the UI can show a real drop to 0% instead of connecting only the
+// weeks where the competitor appeared.
+func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run metrics integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	planID := mustNewID(t)
+	tenantID := mustNewID(t)
+	businessID := mustNewID(t)
+	promptID := mustNewID(t)
+	competitorID := mustNewID(t)
+	runA, runB := mustNewID(t), mustNewID(t)
+	resultA, resultB := mustNewID(t), mustNewID(t)
+	slug := "competitor-zero-trend-" + planID.String()
+
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
+	})
+
+	mustExec(t, db, ctx, `INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
+VALUES ($1, $2, 20, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
+	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Competitor Trend Tenant', $2)`, tenantID, planID)
+	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
+	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')`, promptID, businessID)
+	mustExec(t, db, ctx, `INSERT INTO competitors (id, business_id, name, aliases, source, status)
+VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], 'manual', 'tracked')`, competitorID, businessID)
+	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-zero-a', now(), now())`, runA, businessID)
+	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-zero-b', now(), now())`, runB, businessID)
+
+	succeeded := func(id, runID domain.ID, at string) {
+		mustExec(t, db, ctx, `INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
+VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}'::jsonb, '{"id":"r"}'::jsonb, 'text', $4, $4)`, id, runID, promptID, at)
+		mustExec(t, db, ctx, `INSERT INTO result_analyses (prompt_result_id, keywords, excerpts, analysis_model, extraction_version)
+VALUES ($1, ARRAY['useful']::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, id)
+	}
+	succeeded(resultA, runA, "2026-07-06T00:00:00Z")
+	succeeded(resultB, runB, "2026-07-13T00:00:00Z")
+	mustExec(t, db, ctx, `INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+VALUES ($1, $2, 'competitor', $3, 'exact', 0, 'Rival Clinic appears.')`, mustNewID(t), resultA, competitorID)
+
+	stats, err := New(db).CompetitorStats(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("CompetitorStats: %v", err)
+	}
+	if len(stats.Competitors) != 1 {
+		t.Fatalf("competitors = %d, want 1", len(stats.Competitors))
+	}
+	trend := stats.Competitors[0].Trend
+	if len(trend) != 2 {
+		t.Fatalf("trend points = %d, want 2: %+v", len(trend), trend)
+	}
+	if trend[0].RunID != runA || trend[0].Mentioned != 1 || trend[0].Analyzed != 1 || trend[0].Percent != 100 {
+		t.Fatalf("first trend point = %+v, want Run A at 100%%", trend[0])
+	}
+	assertIDSet(t, "first trend result_ids", trend[0].ResultIDs, resultA)
+	if trend[1].RunID != runB || trend[1].Mentioned != 0 || trend[1].Analyzed != 1 || trend[1].Percent != 0 || len(trend[1].ResultIDs) != 0 {
+		t.Fatalf("second trend point = %+v, want Run B at 0%% with no result_ids", trend[1])
 	}
 }
 

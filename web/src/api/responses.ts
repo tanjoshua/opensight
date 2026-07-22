@@ -15,6 +15,7 @@ export interface Run {
   started_at: string
   completed_at: string | null
   analysis_completed_at: string | null
+  visibility?: number | null
 }
 
 export interface RunsResponse {
@@ -40,8 +41,40 @@ export interface PromptResult {
   error: string | null
   requested_at: string
   completed_at: string
+  unanalyzed: boolean
   prompt?: PromptSummary
   run?: Run
+  analysis?: ResultAnalysis
+}
+
+export interface ResultAnalysis {
+  sentiment: string | null
+  keywords: string[]
+  excerpts: string[]
+  mentions: ResultMention[]
+  citations: ResultCitation[]
+}
+
+export interface ResultMention {
+  subject: "self" | "competitor" | string
+  verbatim_name: string
+  order: number
+  matched_by: string
+  excerpt: string
+}
+
+export interface ResultCitation {
+  url: string
+  domain: string
+  title: string | null
+  cite_order: number
+  subject: "business" | "competitor" | "other" | "unknown" | string
+  span: ResultSpan | null
+}
+
+export interface ResultSpan {
+  start: number
+  end: number
 }
 
 export interface Paging {
@@ -59,6 +92,7 @@ export interface ResultFilter {
   run?: string
   prompt?: string
   status?: ResultStatus
+  mentioned?: boolean
   limit?: number
   offset?: number
 }
@@ -71,8 +105,10 @@ export function listResults(
   businessId: string,
   filter: ResultFilter = {}
 ): Promise<ResultsResponse> {
+  const { mentioned, ...rest } = filter
   return apiGet<ResultsResponse>(`/businesses/${businessId}/results`, {
-    ...filter,
+    ...rest,
+    mentioned: mentioned === undefined ? undefined : String(mentioned),
   })
 }
 

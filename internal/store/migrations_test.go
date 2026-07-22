@@ -21,6 +21,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00004_create_runs_results_tables.sql",
 		"migrations/00005_add_password_auth_sessions.sql",
 		"migrations/00006_create_analysis_tables.sql",
+		"migrations/00007_add_mention_verbatim_name.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -109,6 +110,25 @@ func TestAnalysisMigrationCreatesDerivedTables(t *testing.T) {
 	} {
 		if !strings.Contains(sql, marker) {
 			t.Errorf("analysis migration missing %q", marker)
+		}
+	}
+}
+
+func TestMentionVerbatimNameMigration(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00007_add_mention_verbatim_name.sql")
+	if err != nil {
+		t.Fatalf("read mention verbatim migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"ALTER TABLE mentions ADD COLUMN verbatim_name text",
+		"UPDATE mentions SET verbatim_name = excerpt",
+		"verbatim_name IS NULL OR btrim(verbatim_name) <> ''",
+		"DROP COLUMN IF EXISTS verbatim_name",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("mention verbatim migration missing %q", marker)
 		}
 	}
 }

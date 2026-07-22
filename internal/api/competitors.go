@@ -32,9 +32,10 @@ type competitorsListResponse struct {
 // competitorSelfResponse is the business's own coverage over the shared analyzed
 // base — the baseline each competitor's VsSelf is measured against.
 type competitorSelfResponse struct {
-	TotalAnalyzed int     `json:"total_analyzed"`
-	Mentioned     int     `json:"mentioned"`
-	Percent       float64 `json:"percent"`
+	TotalAnalyzed int      `json:"total_analyzed"`
+	Mentioned     int      `json:"mentioned"`
+	Percent       float64  `json:"percent"`
+	ResultIDs     []string `json:"result_ids"`
 }
 
 // competitorResponse is one competitor's full comparison stats (design 06/PRD §6):
@@ -57,8 +58,9 @@ type competitorResponse struct {
 // competitorPromptResponse is "in N of the responses to this prompt": the prompt
 // and the analyzed results in which the competitor appeared.
 type competitorPromptResponse struct {
-	PromptID  string   `json:"prompt_id"`
-	ResultIDs []string `json:"result_ids"`
+	PromptID   string   `json:"prompt_id"`
+	PromptText string   `json:"prompt_text"`
+	ResultIDs  []string `json:"result_ids"`
 }
 
 // competitorTrendResponse is a competitor's mention % for one analyzed run, over
@@ -130,13 +132,16 @@ func (s *Server) handleListCompetitors(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	page := filtered[min(offset, len(filtered)):min(offset+limit, len(filtered))]
+	start := min(offset, len(filtered))
+	end := start + min(limit, len(filtered)-start)
+	page := filtered[start:end]
 
 	resp := competitorsListResponse{
 		Self: competitorSelfResponse{
 			TotalAnalyzed: stats.TotalAnalyzed,
 			Mentioned:     stats.SelfMentioned,
 			Percent:       stats.SelfPercent,
+			ResultIDs:     idStrings(stats.ResultIDs),
 		},
 		Competitors: make([]competitorResponse, 0, len(page)),
 		Paging:      pagingResponse{Limit: limit, Offset: offset, PageCount: len(page)},
@@ -177,8 +182,9 @@ func competitorToResponse(c metrics.CompetitorStat) competitorResponse {
 	}
 	for _, p := range c.PerPrompt {
 		resp.PerPrompt = append(resp.PerPrompt, competitorPromptResponse{
-			PromptID:  p.PromptID.String(),
-			ResultIDs: idStrings(p.ResultIDs),
+			PromptID:   p.PromptID.String(),
+			PromptText: p.Text,
+			ResultIDs:  idStrings(p.ResultIDs),
 		})
 	}
 	for _, t := range c.Trend {

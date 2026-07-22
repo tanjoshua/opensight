@@ -96,11 +96,13 @@ type ResultFilter struct {
 }
 
 // ResultMention is one mention row for the Response drawer: the self/competitor
-// occurrence with its match method, first-appearance order, and evidence excerpt
-// (design 06, MET-5). Competitor identity is deliberately omitted — the drawer
-// highlights occurrences, it does not re-list competitors.
+// occurrence with its exact extracted name, match method, first-appearance
+// order, and evidence excerpt (design 06, MET-5). Competitor identity is
+// deliberately omitted — the drawer highlights occurrences, it does not re-list
+// competitors.
 type ResultMention struct {
 	Subject      string
+	VerbatimName string
 	MatchedBy    string
 	MentionOrder int
 	Excerpt      string
@@ -205,7 +207,7 @@ JOIN businesses b ON b.id = r.business_id
 WHERE ra.prompt_result_id = $1 AND b.tenant_id = $2`
 
 	listResultMentionsSQL = `
-SELECT m.subject, m.matched_by, m.mention_order, m.excerpt
+SELECT m.subject, COALESCE(m.verbatim_name, m.excerpt), m.matched_by, m.mention_order, m.excerpt
 FROM mentions m
 JOIN prompt_results pr ON pr.id = m.prompt_result_id
 JOIN monitoring_runs r ON r.id = pr.run_id
@@ -423,7 +425,7 @@ func (s *ResultStore) listResultMentions(ctx context.Context, tenantID, resultID
 	mentions := []ResultMention{}
 	for rows.Next() {
 		var m ResultMention
-		if err := rows.Scan(&m.Subject, &m.MatchedBy, &m.MentionOrder, &m.Excerpt); err != nil {
+		if err := rows.Scan(&m.Subject, &m.VerbatimName, &m.MatchedBy, &m.MentionOrder, &m.Excerpt); err != nil {
 			return nil, fmt.Errorf("scan mention: %w", err)
 		}
 		mentions = append(mentions, m)

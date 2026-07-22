@@ -110,11 +110,11 @@ VALUES ($1, $2, 'Rival Clinic', 'discovered', 'discovered')`, competitorID, fx.b
 		`INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
 VALUES ($1, 'positive', ARRAY['friendly','affordable']::text[], '["Clinic is a good option."]'::jsonb, 'gpt-5-mini', 1)`, analyzedID)
 	mustExec(t, db, ctx,
-		`INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
-VALUES ($1, $2, 'self', 'exact', 0, 'Clinic ... options.')`, selfMentionID, analyzedID)
+		`INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, verbatim_name, excerpt)
+VALUES ($1, $2, 'self', 'exact', 0, 'Atlas Clinic', 'Clinic ... options.')`, selfMentionID, analyzedID)
 	mustExec(t, db, ctx,
-		`INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
-VALUES ($1, $2, 'competitor', $3, 'llm', 1, 'Rival ... options.')`, competitorMentionID, analyzedID, competitorID)
+		`INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, verbatim_name, excerpt)
+VALUES ($1, $2, 'competitor', $3, 'llm', 1, 'Rival Clinic', 'Rival ... options.')`, competitorMentionID, analyzedID, competitorID)
 	mustExec(t, db, ctx,
 		`INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject)
 VALUES ($1, $2, 'https://example.com/x', 'example.com', 'Example', 0, 'business')`, citationID, analyzedID)
@@ -144,8 +144,14 @@ VALUES ($1, $2, 'https://example.com/x', 'example.com', 'Example', 0, 'business'
 	if got.Mentions[0].Subject != "self" || got.Mentions[0].MatchedBy != "exact" || got.Mentions[0].MentionOrder != 0 {
 		t.Fatalf("mention[0] = %+v, want self/exact/0", got.Mentions[0])
 	}
+	if got.Mentions[0].VerbatimName != "Atlas Clinic" {
+		t.Fatalf("mention[0] verbatim_name = %q, want Atlas Clinic", got.Mentions[0].VerbatimName)
+	}
 	if got.Mentions[1].Subject != "competitor" || got.Mentions[1].MentionOrder != 1 {
 		t.Fatalf("mention[1] = %+v, want competitor/1", got.Mentions[1])
+	}
+	if got.Mentions[1].VerbatimName != "Rival Clinic" {
+		t.Fatalf("mention[1] verbatim_name = %q, want Rival Clinic", got.Mentions[1].VerbatimName)
 	}
 	if len(got.Citations) != 1 || got.Citations[0].URL != "https://example.com/x" || got.Citations[0].Subject != "business" || got.Citations[0].CiteOrder != 0 {
 		t.Fatalf("citations = %+v, want one business citation", got.Citations)

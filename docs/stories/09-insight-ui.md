@@ -29,9 +29,9 @@ Deps: MET-3, WEB-4 · Phase 2 · Ref: design 06 (Prompts), PRD §6 Visibility
 
 As a clinic user, I want discovered and tracked competitors with comparisons against me, so that I know who wins the prompts I lose.
 
-- [ ] Discovered list ranked by response coverage ("in 7 of 20 responses"); tracked list with PRD comparison stats vs self; dismissed collapsed but recoverable.
-- [ ] Weekly trend per tracked competitor; all stats open the Response drawer.
-- [ ] (Track/dismiss/add/alias-approval actions are POL-3/POL-4 — this story is read-only comparison.)
+- [x] Discovered list ranked by response coverage ("in 7 of 20 responses"); tracked list with PRD comparison stats vs self; dismissed collapsed but recoverable.
+- [x] Weekly trend per tracked competitor; all stats open the Response drawer.
+- [x] (Track/dismiss/add/alias-approval actions are POL-3/POL-4 — this story is read-only comparison.)
 
 Deps: MET-4, WEB-4 · Phase 2 · Ref: design 06 (Competitors), PRD §6
 
@@ -39,8 +39,8 @@ Deps: MET-4, WEB-4 · Phase 2 · Ref: design 06 (Competitors), PRD §6
 
 As a clinic user, I want the response drawer to show highlighted evidence, so that every claim traces to the text.
 
-- [ ] Answer text with self/competitor mentions highlighted and **inline citation markers at their annotation spans**.
-- [ ] Sentiment + supporting excerpts, keyword chips, citation list with subjects; raw JSON toggle retained.
-- [ ] Succeeded-but-unanalyzed results show a "not yet analyzed" badge (here and in the Responses list).
+- [x] Answer text with self/competitor mentions highlighted and **inline citation markers at their annotation spans**.
+- [x] Sentiment + supporting excerpts, keyword chips, citation list with subjects; raw JSON toggle retained.
+- [x] Succeeded-but-unanalyzed results show a "not yet analyzed" badge (here and in the Responses list).
 
 Deps: MET-5, WEB-4 · Phase 2 · Ref: design 06 (The one UI contract, Responses)

@@ -10,7 +10,7 @@ As the developer, I want the derived-analysis tables migrated, so that extractio
 
 - [x] `result_analyses (prompt_result_id PK, sentiment NULL, keywords, excerpts, analysis_model, extraction_version, analyzed_at)` — sentiment/keywords **only**; no mention facts.
 - [x] `competitors (name, website NULL, aliases, suggested_aliases, source discovered|manual, status discovered|tracked|dismissed)`.
-- [x] `mentions (prompt_result_id, subject self|competitor, competitor_id NULL, matched_by exact|llm, mention_order, excerpt)` — the **canonical and only** source of mention facts.
+- [x] `mentions (prompt_result_id, subject self|competitor, competitor_id NULL, matched_by exact|llm, mention_order, verbatim_name, excerpt)` — the **canonical and only** source of mention facts.
 - [x] `citations (prompt_result_id, url, domain, title NULL, cite_order, subject business|competitor|other|unknown)`.
 - [x] Store layer treats all four as wipe-and-rebuild (delete by result/run allowed; raw tables untouched).
 

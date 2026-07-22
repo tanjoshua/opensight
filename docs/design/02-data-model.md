@@ -154,7 +154,9 @@ mentions (
   subject text,                -- 'self' | 'competitor'
   competitor_id uuid FK NULL,  -- required iff subject = 'competitor'
   matched_by text,             -- 'exact' | 'llm' — how the name matched (see 05)
-  mention_order int, excerpt text
+  mention_order int,
+  verbatim_name text,          -- exact organization text extracted from the response
+  excerpt text
 )
 
 citations (

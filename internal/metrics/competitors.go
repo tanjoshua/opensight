@@ -17,6 +17,7 @@ type CompetitorStats struct {
 	TotalAnalyzed int
 	SelfMentioned int
 	SelfPercent   float64
+	ResultIDs     []domain.ID
 	Competitors   []CompetitorStat
 }
 
@@ -43,6 +44,7 @@ type CompetitorStat struct {
 // appeared — "in N of the responses to this prompt". Coverage is len(ResultIDs).
 type PromptAppearance struct {
 	PromptID  domain.ID
+	Text      string
 	ResultIDs []domain.ID
 }
 
@@ -79,12 +81,13 @@ GROUP BY m.competitor_id, r.id, r.scheduled_for
 ORDER BY r.scheduled_for`
 
 const competitorPerPromptSQL = `
-SELECT m.competitor_id, pr.prompt_id,
+SELECT m.competitor_id, pr.prompt_id, p.text,
        to_jsonb(array_agg(DISTINCT pr.id)) AS result_ids` +
 	analyzedJoin + `
-JOIN mentions m ON m.prompt_result_id = pr.id AND m.subject = 'competitor'` + analyzedWhere + `
-GROUP BY m.competitor_id, pr.prompt_id
-ORDER BY count(DISTINCT pr.id) DESC`
+JOIN mentions m ON m.prompt_result_id = pr.id AND m.subject = 'competitor'
+JOIN prompts p ON p.id = pr.prompt_id` + analyzedWhere + `
+GROUP BY m.competitor_id, pr.prompt_id, p.text
+ORDER BY count(DISTINCT pr.id) DESC, p.text`
 
 // CompetitorStats computes every competitor's comparison stats over the analyzed
 // base. It reuses VisibilityTrend for the per-run and overall denominators so a
@@ -103,11 +106,10 @@ func (m *Metrics) CompetitorStats(ctx context.Context, tenantID, businessID doma
 		return CompetitorStats{}, err
 	}
 	result := CompetitorStats{Competitors: []CompetitorStat{}}
-	runAnalyzed := make(map[domain.ID]VisibilityPoint, len(trend))
 	for _, p := range trend {
 		result.TotalAnalyzed += p.Analyzed
 		result.SelfMentioned += p.Mentioned
-		runAnalyzed[p.RunID] = p
+		result.ResultIDs = append(result.ResultIDs, p.ResultIDs...)
 	}
 	result.SelfPercent = percent(result.SelfMentioned, result.TotalAnalyzed)
 
@@ -115,7 +117,7 @@ func (m *Metrics) CompetitorStats(ctx context.Context, tenantID, businessID doma
 	if err != nil {
 		return CompetitorStats{}, err
 	}
-	if err := m.competitorTrends(ctx, tenantID, businessID, stats, runAnalyzed); err != nil {
+	if err := m.competitorTrends(ctx, tenantID, businessID, stats, trend); err != nil {
 		return CompetitorStats{}, err
 	}
 	if err := m.competitorPerPrompt(ctx, tenantID, businessID, stats); err != nil {
@@ -159,15 +161,16 @@ func (m *Metrics) competitorOverall(ctx context.Context, tenantID, businessID do
 	return stats, order, nil
 }
 
-// competitorTrends attaches each competitor's weekly mention % using the shared
-// per-run denominators.
-func (m *Metrics) competitorTrends(ctx context.Context, tenantID, businessID domain.ID, stats map[domain.ID]*CompetitorStat, runAnalyzed map[domain.ID]VisibilityPoint) error {
+// competitorTrends attaches each competitor's weekly mention %, including
+// analyzed runs where that competitor was absent.
+func (m *Metrics) competitorTrends(ctx context.Context, tenantID, businessID domain.ID, stats map[domain.ID]*CompetitorStat, visibility []VisibilityPoint) error {
 	rows, err := m.db.QueryContext(ctx, competitorTrendSQL, businessID, tenantID)
 	if err != nil {
 		return fmt.Errorf("competitor trend: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
+	mentionedByRun := map[domain.ID]map[domain.ID]CompetitorTrendPoint{}
 	for rows.Next() {
 		var competitorID domain.ID
 		var point CompetitorTrendPoint
@@ -175,17 +178,32 @@ func (m *Metrics) competitorTrends(ctx context.Context, tenantID, businessID dom
 		if err := rows.Scan(&competitorID, &point.RunID, &point.ScheduledFor, &point.Mentioned, &ids); err != nil {
 			return fmt.Errorf("scan competitor trend: %w", err)
 		}
-		s, ok := stats[competitorID]
-		if !ok {
+		if _, ok := stats[competitorID]; !ok {
 			continue
 		}
+		if _, ok := mentionedByRun[competitorID]; !ok {
+			mentionedByRun[competitorID] = map[domain.ID]CompetitorTrendPoint{}
+		}
 		point.ResultIDs = ids
-		point.Analyzed = runAnalyzed[point.RunID].Analyzed
-		point.Percent = percent(point.Mentioned, point.Analyzed)
-		s.Trend = append(s.Trend, point)
+		mentionedByRun[competitorID][point.RunID] = point
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("iterate competitor trend: %w", err)
+	}
+	for competitorID, s := range stats {
+		for _, base := range visibility {
+			point, ok := mentionedByRun[competitorID][base.RunID]
+			if !ok {
+				point = CompetitorTrendPoint{
+					RunID:        base.RunID,
+					ScheduledFor: base.ScheduledFor,
+					ResultIDs:    []domain.ID{},
+				}
+			}
+			point.Analyzed = base.Analyzed
+			point.Percent = percent(point.Mentioned, point.Analyzed)
+			s.Trend = append(s.Trend, point)
+		}
 	}
 	return nil
 }
@@ -202,7 +220,7 @@ func (m *Metrics) competitorPerPrompt(ctx context.Context, tenantID, businessID 
 		var competitorID domain.ID
 		var appearance PromptAppearance
 		var ids resultIDs
-		if err := rows.Scan(&competitorID, &appearance.PromptID, &ids); err != nil {
+		if err := rows.Scan(&competitorID, &appearance.PromptID, &appearance.Text, &ids); err != nil {
 			return fmt.Errorf("scan competitor per-prompt: %w", err)
 		}
 		s, ok := stats[competitorID]

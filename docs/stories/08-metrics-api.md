@@ -49,7 +49,7 @@ Deps: MET-1 · Phase 2 · Ref: design 06 (Competitors), PRD §6
 
 As a clinic user, I want the response detail to include its analysis, so that the drawer can show evidence, not just raw text.
 
-- [x] `GET /results/:id` now includes: mentions (with subject, order, matched_by, excerpts), sentiment + supporting excerpts, keywords, citations with subjects and annotation spans for inline markers.
+- [x] `GET /results/:id` now includes: mentions (with subject, verbatim_name, order, matched_by, excerpts), sentiment + supporting excerpts, keywords, citations with subjects and annotation spans for inline markers.
 - [x] `GET /businesses/:id/results` gains the `mentioned` filter; runs endpoint gains per-run visibility %.
 - [x] Succeeded-but-unanalyzed results flagged in the payload (drives the UI badge).
 
@@ -59,8 +59,8 @@ Deps: MET-1 · Phase 2 · Ref: design 06 (Responses, Runs endpoints)
 
 As a clinic user, I want to drill from a cited domain into its pages and the prompts that cite it, so that I know which sources to get listed on (the PRD's per-source promise, fully delivered).
 
-- [ ] `GET /businesses/:id/citations` (or equivalent): per domain — citation frequency, cited pages (url + title), associated prompts, per-source business/competitor/other subject split; aggregates carry `result_ids`.
-- [ ] Overview's top-cited-domains panel rows (INS-1) open this drill-down; rows within it open the Response drawer.
-- [ ] ~1 day: the aggregation already exists in MET-1; this story is the endpoint + a drill-down view.
+- [x] `GET /businesses/:id/citations` (or equivalent): per domain — citation frequency, cited pages (url + title), associated prompts, per-source business/competitor/other subject split; aggregates carry `result_ids`.
+- [x] Overview's top-cited-domains panel rows (INS-1) open this drill-down; rows within it open the Response drawer.
+- [x] ~1 day: the aggregation already exists in MET-1; this story is the endpoint + a drill-down view.
 
 Deps: MET-1, INS-1 · Phase 2 · Ref: PRD §6 (Citation Sources), design 06 (Overview)

@@ -297,7 +297,12 @@ function ResultRow({
         )}
       </TableCell>
       <TableCell>
-        <ResultStatusBadge status={result.status} />
+        <span className="flex flex-wrap items-center gap-1.5">
+          <ResultStatusBadge status={result.status} />
+          {result.unanalyzed && (
+            <Badge variant="outline">not yet analyzed</Badge>
+          )}
+        </span>
       </TableCell>
       <TableCell>
         {run ? (
