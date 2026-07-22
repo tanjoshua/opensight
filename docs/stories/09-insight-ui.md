@@ -19,9 +19,9 @@ Deps: MET-2, WEB-4 · Phase 2 · Ref: design 06 (Overview, Degraded states), PRD
 
 As a clinic user, I want the 20 prompts with their latest results and trends, so that I can see where I appear and where I'm absent.
 
-- [ ] Table of active prompts: mentioned?, mention order, sentiment, sparkline across runs.
-- [ ] Row click → prompt detail with full history; retired prompts reachable via lineage ("replaced X on date").
-- [ ] Presence/absence and all numbers open the Response drawer.
+- [x] Table of active prompts: mentioned?, mention order, sentiment, sparkline across runs.
+- [x] Row click → prompt detail with full history; retired prompts reachable via lineage ("replaced X on date").
+- [x] Presence/absence and all numbers open the Response drawer.
 
 Deps: MET-3, WEB-4 · Phase 2 · Ref: design 06 (Prompts), PRD §6 Visibility
 
