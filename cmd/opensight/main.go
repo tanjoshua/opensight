@@ -530,6 +530,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.LoadRunSpec)
 	w.RegisterActivity(activities.ExecutePrompt)
 	w.RegisterActivity(activities.FinalizeRun)
+	w.RegisterActivity(activities.FetchSite)
 	w.RegisterActivity(activities.AnalyzeResult)
 	w.RegisterActivity(activities.LoadAnalyzeRunSpec)
 	w.RegisterActivity(activities.ReconcileEntities)

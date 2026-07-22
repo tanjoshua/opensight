@@ -8,9 +8,9 @@ Name + website → generated profile + 20 prompts → review → apply → first
 
 As the developer, I want a safe site fetcher, so that onboarding can read a clinic's website without being an SSRF vector.
 
-- [ ] Fetches homepage + high-value paths (`/about`, `/services`, `/team`, `/doctors`, `/contact`, homepage-nav links, sitemap.xml if present); HTML stripped to text, capped ~50KB total.
-- [ ] SSRF guards: http(s) only; DNS resolved with private/link-local/metadata ranges refused; redirects capped and re-validated per hop; response size and time capped. No headless browser.
-- [ ] Tests cover: private-IP refusal, redirect-to-private refusal, size cap.
+- [x] Fetches homepage + high-value paths (`/about`, `/services`, `/team`, `/doctors`, `/contact`, homepage-nav links, sitemap.xml if present); HTML stripped to text, capped ~50KB total.
+- [x] SSRF guards: http(s) only; DNS resolved with private/link-local/metadata ranges refused; redirects capped and re-validated per hop; response size and time capped. No headless browser.
+- [x] Tests cover: private-IP refusal, redirect-to-private refusal, size cap.
 
 Deps: RUN-3 (worker infra) · Phase 3 · Ref: design 03 (GenerateProfileWorkflow step 1)
 
