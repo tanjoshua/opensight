@@ -70,8 +70,11 @@ func (f *fakeAuthStore) DeleteSession(_ context.Context, tokenHash []byte) error
 // fakeBusinessStore is an in-memory businessStore for handler tests.
 type fakeBusinessStore struct {
 	businesses []store.Business
+	business   store.Business // returned by GetBusiness/CreateBusiness when no error
 	err        error
 	getErr     error
+	createErr  error
+	created    []store.CreateBusinessParams
 	gotTenant  domain.ID
 }
 
@@ -81,7 +84,26 @@ func (f *fakeBusinessStore) ListBusinesses(_ context.Context, tenantID domain.ID
 }
 
 func (f *fakeBusinessStore) GetBusiness(_ context.Context, _, _ domain.ID) (store.Business, error) {
-	return store.Business{}, f.getErr
+	if f.getErr != nil {
+		return store.Business{}, f.getErr
+	}
+	return f.business, nil
+}
+
+func (f *fakeBusinessStore) CreateBusiness(_ context.Context, params store.CreateBusinessParams) (store.Business, error) {
+	f.created = append(f.created, params)
+	if f.createErr != nil {
+		return store.Business{}, f.createErr
+	}
+	b := f.business
+	if params.ID != uuid.Nil {
+		b.ID = params.ID
+	}
+	b.TenantID = params.TenantID
+	b.Status = params.Status
+	b.Name = params.Name
+	b.Website = params.Website
+	return b, nil
 }
 
 func newTestServer(f *fakeAuthStore) *Server {

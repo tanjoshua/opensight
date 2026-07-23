@@ -111,7 +111,7 @@ VALUES ($1, $2, 'Bravo Clinic', ARRAY['bravo clinic']::text[], 'manual', 'tracke
 	businesses := store.NewBusinessStore(db)
 	analysis := store.NewAnalysisStore(db)
 	matcher := &fakeMatcher{matchNameToCompetitor: map[string]string{"Bravo Klinik": "Bravo Clinic"}}
-	acts := NewActivities(businesses, nil, nil, nil, nil, analysis, nil, matcher, nil)
+	acts := NewActivities(businesses, nil, nil, nil, nil, analysis, nil, matcher, nil, nil)
 
 	in := ReconcileEntitiesInput{
 		TenantID:   tenantID,

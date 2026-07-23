@@ -24,7 +24,7 @@ sequenceDiagram
     API->>T: create weekly Schedule + trigger first run now
 ```
 
-Target end-to-end generation time: under ~90 seconds, with the UI polling proposal status and showing progress.
+Generation is chained LLM work (web_search + a structured-output call, each with a validation retry), so end-to-end runtime is on the order of a few minutes, not seconds. GenerateProfileWorkflow runs to completion with no fixed deadline; the UI polls proposal status and shows progress rather than assuming a fixed budget.
 
 ## GenerateProfileWorkflow
 

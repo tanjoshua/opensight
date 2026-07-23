@@ -403,15 +403,27 @@ func serve(ctx context.Context, cfg config.Config) error {
 		_ = db.Close()
 	}()
 
+	// serve starts GenerateProfileWorkflow on the same task queue the worker
+	// consumes (ONB-4), so it needs a Temporal client too.
+	temporalClient, err := dialTemporal(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer temporalClient.Close()
+
 	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
 	// behind Caddy TLS, where Secure must be set.
 	apiServer := api.New(
 		store.NewAuthStore(db),
 		store.NewBusinessStore(db),
+		store.NewAdminStore(db),
+		store.NewProfileProposalStore(db),
 		store.NewPromptStore(db),
 		store.NewRunStore(db),
 		store.NewResultStore(db),
 		metrics.New(db),
+		temporalClient,
+		cfg.TemporalTaskQueue,
 		cfg.Env != "dev",
 	)
 
@@ -529,6 +541,7 @@ func work(ctx context.Context, cfg config.Config) error {
 		extractor,
 		matcher,
 		proposer,
+		store.NewProfileProposalStore(db),
 	)
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
@@ -536,6 +549,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	})
 	w.RegisterWorkflow(workflows.RunWorkflow)
 	w.RegisterWorkflow(workflows.AnalyzeRun)
+	w.RegisterWorkflow(workflows.GenerateProfileWorkflow)
 	w.RegisterActivity(activities.LoadRunSpec)
 	w.RegisterActivity(activities.ExecutePrompt)
 	w.RegisterActivity(activities.FinalizeRun)
@@ -545,6 +559,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.ReconcileEntities)
 	w.RegisterActivity(activities.ResearchBusiness)
 	w.RegisterActivity(activities.ProposeProfile)
+	w.RegisterActivity(activities.PersistProposal)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)

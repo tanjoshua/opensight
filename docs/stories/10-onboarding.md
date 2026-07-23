@@ -37,10 +37,10 @@ Deps: ONB-2 · Phase 3 · Ref: design 03 (step 3, Prompt generation rules)
 
 As a clinic user, I want to submit my name and website and get a proposal, so that setup takes minutes, not a form.
 
-- [ ] `POST /api/businesses` inserts business (status `draft`) and starts the workflow; target end-to-end under ~90s.
-- [ ] Failure posture: FetchSite fails → proceed research-only with `low_confidence: true`; both sources fail → workflow fails and UI offers manual setup (same review screen, empty).
-- [ ] Proposal written to `profile_proposals` (status `pending`) — generation **never** writes `businesses` columns.
-- [ ] `GET /businesses/:id/proposal` (status + payload), `POST /businesses/:id/proposal/regen` (draft only: discard + regenerate).
+- [x] `POST /api/businesses` inserts business (status `draft`) and starts the workflow; the UI polls proposal status while generation runs.
+- [x] Failure posture: FetchSite fails → proceed research-only with `low_confidence: true`; both sources fail → workflow fails and UI offers manual setup (same review screen, empty).
+- [x] Proposal written to `profile_proposals` (status `pending`) — generation **never** writes `businesses` columns.
+- [x] `GET /businesses/:id/proposal` (status + payload), `POST /businesses/:id/proposal/regen` (draft only: discard + regenerate).
 
 Deps: ONB-1, ONB-3 · Phase 3 · Ref: design 03 (Flow, Failure posture, API surface)
 

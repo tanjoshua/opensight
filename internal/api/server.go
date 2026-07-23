@@ -16,6 +16,8 @@ import (
 	"opensight/internal/store"
 
 	"github.com/go-chi/chi/v5"
+	"go.temporal.io/api/workflowservice/v1"
+	"go.temporal.io/sdk/client"
 )
 
 // defaultSessionTTL is the absolute session lifetime (design 07 auth plan:
@@ -41,6 +43,27 @@ type authStore interface {
 type businessStore interface {
 	ListBusinesses(ctx context.Context, tenantID domain.ID) ([]store.Business, error)
 	GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (store.Business, error)
+	CreateBusiness(ctx context.Context, params store.CreateBusinessParams) (store.Business, error)
+}
+
+// planStore is the seam over *store.AdminStore's plan lookup. Onboarding sizes
+// the generated prompt count from plan.prompt_limit (never hardcoded — design 03).
+type planStore interface {
+	GetTenantPlan(ctx context.Context, tenantID domain.ID) (store.Plan, error)
+}
+
+// proposalStore is the seam over *store.ProfileProposalStore for the proposal
+// endpoints: read the pending proposal, and discard it on regenerate.
+type proposalStore interface {
+	GetPending(ctx context.Context, tenantID, businessID domain.ID) (store.ProfileProposal, error)
+	DiscardPending(ctx context.Context, tenantID, businessID domain.ID) error
+}
+
+// temporalClient is the narrow slice of client.Client the API server needs:
+// start GenerateProfileWorkflow and describe it to report generation status.
+type temporalClient interface {
+	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
+	DescribeWorkflowExecution(ctx context.Context, workflowID, runID string) (*workflowservice.DescribeWorkflowExecutionResponse, error)
 }
 
 // Server holds the API dependencies and configuration.
@@ -63,6 +86,14 @@ type Server struct {
 	competitorMetrics competitorsMetrics
 	// citationMetrics is a fourth seam for MET-6's citation-sources drill-down.
 	citationMetrics citationsMetrics
+	// plans, proposals, temporal, and temporalTaskQueue drive onboarding (ONB-4):
+	// create a draft business and start GenerateProfileWorkflow, poll its status,
+	// and regenerate. temporal is nil in handler unit tests that don't exercise
+	// these endpoints.
+	plans             planStore
+	proposals         proposalStore
+	temporal          temporalClient
+	temporalTaskQueue string
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (FND-2 local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
@@ -72,10 +103,12 @@ type Server struct {
 
 // New builds a Server. secureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, businesses *store.BusinessStore, prompts *store.PromptStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, secureCookies bool) *Server {
+func New(auth *store.AuthStore, businesses *store.BusinessStore, plans *store.AdminStore, proposals *store.ProfileProposalStore, prompts *store.PromptStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, temporal client.Client, temporalTaskQueue string, secureCookies bool) *Server {
 	return &Server{
 		auth:              auth,
 		businesses:        businesses,
+		plans:             plans,
+		proposals:         proposals,
 		prompts:           prompts,
 		runs:              runs,
 		results:           results,
@@ -84,6 +117,8 @@ func New(auth *store.AuthStore, businesses *store.BusinessStore, prompts *store.
 		competitorMetrics: metrics,
 		citationMetrics:   metrics,
 		runMetrics:        metrics,
+		temporal:          temporal,
+		temporalTaskQueue: temporalTaskQueue,
 		secureCookies:     secureCookies,
 		sessionTTL:        defaultSessionTTL,
 	}
@@ -114,6 +149,9 @@ func (s *Server) Routes() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireSession)
 			r.Get("/me", s.handleMe)
+			r.Post("/businesses", s.handleCreateBusiness)
+			r.Get("/businesses/{businessID}/proposal", s.handleGetProposal)
+			r.Post("/businesses/{businessID}/proposal/regen", s.handleRegenProposal)
 			r.Get("/businesses/{businessID}/overview", s.handleGetOverview)
 			r.Get("/businesses/{businessID}/prompts", s.handleListPrompts)
 			r.Get("/prompts/{promptID}", s.handleGetPrompt)

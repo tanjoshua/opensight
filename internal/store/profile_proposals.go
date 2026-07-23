@@ -65,6 +65,11 @@ RETURNING created_at`
 SELECT ` + proposalColumns + `
 FROM profile_proposals
 WHERE business_id = $1 AND status = 'pending'`
+
+	discardPendingProposalSQL = `
+UPDATE profile_proposals
+SET status = 'discarded', resolved_at = now()
+WHERE business_id = $1 AND status = 'pending'`
 )
 
 // CreatePending inserts a pending proposal for the business, entering through
@@ -142,6 +147,26 @@ func (s *ProfileProposalStore) GetPending(ctx context.Context, tenantID, busines
 		return ProfileProposal{}, fmt.Errorf("get pending proposal: %w", err)
 	}
 	return proposal, nil
+}
+
+// DiscardPending marks the business's pending proposal (if any) discarded. It is
+// the discard half of regenerate (ONB-4): a safe no-op when there is no pending
+// row, so the caller can always call it before starting a fresh generation. It
+// enters through the tenant-checked business lookup in the same transaction as
+// the update; a missing or cross-tenant business returns ErrNotFound.
+func (s *ProfileProposalStore) DiscardPending(ctx context.Context, tenantID, businessID domain.ID) error {
+	if s == nil || s.db == nil {
+		return errors.New("profile proposal store database is required")
+	}
+	return withTx(ctx, s.db, func(q querier) error {
+		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+			return err
+		}
+		if _, err := q.execContext(ctx, discardPendingProposalSQL, businessID); err != nil {
+			return fmt.Errorf("discard pending proposal: %w", err)
+		}
+		return nil
+	})
 }
 
 func isConstraintViolation(err error, constraint string) bool {

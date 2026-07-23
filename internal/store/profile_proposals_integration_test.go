@@ -1,0 +1,102 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"os"
+	"testing"
+
+	"opensight/internal/domain"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+)
+
+// seedProposalBusiness inserts a plan, tenant, and draft business for proposal
+// tests and registers cleanup. It returns the tenant and business ids.
+func seedProposalBusiness(t *testing.T, ctx context.Context, db *sql.DB) (domain.ID, domain.ID) {
+	t.Helper()
+	planID := mustNewID(t)
+	tenantID := mustNewID(t)
+	businessID := mustNewID(t)
+
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
+	})
+
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
+VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
+		planID, "proposal-"+planID.String()); err != nil {
+		t.Fatalf("insert plan: %v", err)
+	}
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Proposal Tenant', $2)`,
+		tenantID, planID); err != nil {
+		t.Fatalf("insert tenant: %v", err)
+	}
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Proposal Clinic')`,
+		businessID, tenantID); err != nil {
+		t.Fatalf("insert business: %v", err)
+	}
+	return tenantID, businessID
+}
+
+// TestProfileProposalStoreDiscardPending covers the regenerate discard half
+// (ONB-4): an existing pending row is marked discarded and stops being pending,
+// discarding with no pending row is a safe no-op, and a cross-tenant discard is
+// refused as ErrNotFound.
+func TestProfileProposalStoreDiscardPending(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	tenantID, businessID := seedProposalBusiness(t, ctx, db)
+	proposals := NewProfileProposalStore(db)
+	payload := json.RawMessage(`{"low_confidence":false}`)
+
+	// Discard with no pending row is a no-op (returns nil, does not error).
+	if err := proposals.DiscardPending(ctx, tenantID, businessID); err != nil {
+		t.Fatalf("discard with no pending row: %v", err)
+	}
+
+	if _, err := proposals.CreatePending(ctx, tenantID, businessID, payload); err != nil {
+		t.Fatalf("create pending: %v", err)
+	}
+
+	// Cross-tenant discard must not touch the row and must report ErrNotFound.
+	otherTenant := mustNewID(t)
+	if err := proposals.DiscardPending(ctx, otherTenant, businessID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-tenant discard error = %v, want ErrNotFound", err)
+	}
+	if _, err := proposals.GetPending(ctx, tenantID, businessID); err != nil {
+		t.Fatalf("pending row should survive cross-tenant discard: %v", err)
+	}
+
+	// Owning-tenant discard clears the pending row.
+	if err := proposals.DiscardPending(ctx, tenantID, businessID); err != nil {
+		t.Fatalf("discard pending: %v", err)
+	}
+	if _, err := proposals.GetPending(ctx, tenantID, businessID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("get pending after discard = %v, want ErrNotFound", err)
+	}
+
+	// A fresh pending proposal can be created again (the partial unique index no
+	// longer sees a pending row).
+	if _, err := proposals.CreatePending(ctx, tenantID, businessID, payload); err != nil {
+		t.Fatalf("create pending after discard: %v", err)
+	}
+}

@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -26,6 +27,7 @@ type Activities struct {
 	Extractor  llm.ExtractionRunner
 	Matcher    llm.MatchRunner
 	Proposer   llm.ProposeProfileRunner
+	Proposals  *store.ProfileProposalStore
 }
 
 // NewActivities returns an Activities with all dependencies wired.
@@ -39,6 +41,7 @@ func NewActivities(
 	extractor llm.ExtractionRunner,
 	matcher llm.MatchRunner,
 	proposer llm.ProposeProfileRunner,
+	proposals *store.ProfileProposalStore,
 ) *Activities {
 	return &Activities{
 		Businesses: businesses,
@@ -50,6 +53,7 @@ func NewActivities(
 		Extractor:  extractor,
 		Matcher:    matcher,
 		Proposer:   proposer,
+		Proposals:  proposals,
 	}
 }
 
@@ -159,4 +163,52 @@ type FinalizeRunInput struct {
 // against ExpectedResults. It is a pure recomputation, safe to retry.
 func (a *Activities) FinalizeRun(ctx context.Context, in FinalizeRunInput) (store.Run, error) {
 	return a.Runs.FinalizeRun(ctx, in.TenantID, in.RunID, in.ExpectedResults)
+}
+
+// PersistProposalInput carries the generated proposal to persist as the
+// business's pending proposal.
+type PersistProposalInput struct {
+	TenantID   domain.ID
+	BusinessID domain.ID
+	Payload    llm.ProposalPayload
+}
+
+// PersistProposalOutput reports the persisted (or pre-existing) proposal id.
+type PersistProposalOutput struct {
+	ProposalID domain.ID
+}
+
+// PersistProposal writes GenerateProfileWorkflow's output as the business's
+// pending proposal. This is the only write in the generation path, and it never
+// touches businesses columns (design 02/03 invariant: only apply writes profile
+// values to businesses).
+//
+// It is idempotent against Temporal's at-least-once activity execution: if a
+// prior attempt's insert committed but its ack was lost, the retry hits the
+// partial-unique-index violation (ErrPendingProposalExists) and reuses that row
+// instead of erroring. A missing/cross-tenant business or an empty payload is
+// bad input and non-retryable.
+func (a *Activities) PersistProposal(ctx context.Context, in PersistProposalInput) (PersistProposalOutput, error) {
+	raw, err := json.Marshal(in.Payload)
+	if err != nil {
+		return PersistProposalOutput{}, temporal.NewNonRetryableApplicationError(
+			"marshal proposal payload", "BadPayload", err)
+	}
+
+	proposal, err := a.Proposals.CreatePending(ctx, in.TenantID, in.BusinessID, raw)
+	if err != nil {
+		if errors.Is(err, store.ErrPendingProposalExists) {
+			existing, getErr := a.Proposals.GetPending(ctx, in.TenantID, in.BusinessID)
+			if getErr != nil {
+				return PersistProposalOutput{}, getErr
+			}
+			return PersistProposalOutput{ProposalID: existing.ID}, nil
+		}
+		if errors.Is(err, store.ErrNotFound) {
+			return PersistProposalOutput{}, temporal.NewNonRetryableApplicationError(
+				"persist proposal for business", "BadBusinessData", err)
+		}
+		return PersistProposalOutput{}, err
+	}
+	return PersistProposalOutput{ProposalID: proposal.ID}, nil
 }
