@@ -48,9 +48,9 @@ Deps: ONB-1, ONB-3 · Phase 3 · Ref: design 03 (Flow, Failure posture, API surf
 
 As a clinic user, I want to review and edit everything before monitoring begins, so that confirmed values are mine, not the machine's.
 
-- [ ] `/onboarding` flow: create form → progress state polling proposal status → review screen with **every** proposed value editable (profile fields, aliases, practitioners, services, location, each prompt); `low_confidence` nudges harder review.
-- [ ] Client submits the final edited payload; server takes it verbatim (no merge).
-- [ ] Regenerate available while draft; manual-setup path when generation failed.
+- [x] `/onboarding` flow: create form → progress state polling proposal status → review screen with **every** proposed value editable (profile fields, aliases, practitioners, services, location, each prompt); `low_confidence` nudges harder review.
+- [x] Client submits the final edited payload; server takes it verbatim (no merge).
+- [x] Regenerate available while draft; manual-setup path when generation failed.
 
 Deps: ONB-4, WEB-1 · Phase 3 · Ref: design 03 (Review and apply), PRD §3, §8
 

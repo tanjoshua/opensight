@@ -27,6 +27,7 @@ export interface UserTenant {
 // business-scoped API URLs (design 06: MVP is one business per tenant).
 export interface Me extends UserTenant {
   businesses: BusinessSummary[]
+  prompt_limit: number
 }
 
 export interface LoginRequest {

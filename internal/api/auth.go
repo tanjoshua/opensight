@@ -165,11 +165,11 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// handleMe returns the current session's user, tenant, and the tenant's
-// businesses, or 401 if there is no live session. It does not extend expiry.
+// handleMe returns the current session's user, tenant, businesses, and plan
+// prompt limit, or 401 if there is no live session. It does not extend expiry.
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
-	if s.businesses == nil {
-		s.writeInternalError(w, "me: store missing", errors.New("business store is required"))
+	if s.businesses == nil || s.plans == nil {
+		s.writeInternalError(w, "me: store missing", errors.New("business and plan stores are required"))
 		return
 	}
 	su, ok := sessionUserFromContext(r.Context())
@@ -183,13 +183,19 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		s.writeInternalError(w, "me: list businesses", err)
 		return
 	}
+	plan, err := s.plans.GetTenantPlan(r.Context(), su.TenantID)
+	if err != nil {
+		s.writeInternalError(w, "me: get tenant plan", err)
+		return
+	}
 
 	resp := meResponse{
 		userTenantResponse: userTenantResponse{
 			User:   userResponse{ID: su.UserID.String(), Email: su.Email},
 			Tenant: tenantResponse{ID: su.TenantID.String(), Name: su.TenantName},
 		},
-		Businesses: make([]businessResponse, 0, len(businesses)),
+		Businesses:  make([]businessResponse, 0, len(businesses)),
+		PromptLimit: plan.PromptLimit,
 	}
 	for _, b := range businesses {
 		resp.Businesses = append(resp.Businesses, businessResponse{

@@ -183,12 +183,13 @@ type userTenantResponse struct {
 	Tenant tenantResponse `json:"tenant"`
 }
 
-// meResponse is /me's body: the login shape plus the tenant's businesses, so
-// the SPA can resolve the business-scoped section URLs without a further
-// round trip (MVP: one business per tenant).
+// meResponse is /me's body: the login shape plus the tenant's businesses and
+// prompt entitlement, so the SPA can resolve business-scoped URLs and validate
+// onboarding's final prompt count without hardcoding a plan limit.
 type meResponse struct {
 	userTenantResponse
-	Businesses []businessResponse `json:"businesses"`
+	Businesses  []businessResponse `json:"businesses"`
+	PromptLimit int                `json:"prompt_limit"`
 }
 
 type businessResponse struct {

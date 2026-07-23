@@ -107,7 +107,13 @@ func (f *fakeBusinessStore) CreateBusiness(_ context.Context, params store.Creat
 }
 
 func newTestServer(f *fakeAuthStore) *Server {
-	return &Server{auth: f, businesses: &fakeBusinessStore{}, secureCookies: false, sessionTTL: time.Hour}
+	return &Server{
+		auth:          f,
+		businesses:    &fakeBusinessStore{},
+		plans:         &fakePlanStore{plan: store.Plan{PromptLimit: 20}},
+		secureCookies: false,
+		sessionTTL:    time.Hour,
+	}
 }
 
 func mustHashV7(t *testing.T, raw string) domain.ID {
@@ -466,9 +472,30 @@ func TestMeSuccess(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("me status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
-	want := `{"user":{"id":"` + userID + `","email":"user@example.com"},"tenant":{"id":"` + tenantID + `","name":"Acme Clinic"},"businesses":[{"id":"` + businessIDForTest + `","name":"Acme Clinic","status":"active"}]}` + "\n"
+	want := `{"user":{"id":"` + userID + `","email":"user@example.com"},"tenant":{"id":"` + tenantID + `","name":"Acme Clinic"},"businesses":[{"id":"` + businessIDForTest + `","name":"Acme Clinic","status":"active"}],"prompt_limit":20}` + "\n"
 	if rec.Body.String() != want {
 		t.Fatalf("me body = %q, want %q", rec.Body.String(), want)
+	}
+}
+
+func TestMePlanErrorIsInternal(t *testing.T) {
+	f := loginFixture(t, "pw")
+	srv := newTestServer(f)
+	srv.plans = &fakePlanStore{err: errors.New("db down")}
+
+	login := doJSON(t, srv, http.MethodPost, "/api/v1/login",
+		`{"email":"user@example.com","password":"pw"}`, nil)
+	cookie := findCookie(login.Result(), sessionCookieName)
+	if cookie == nil {
+		t.Fatal("login did not set a cookie")
+	}
+	su := f.sessions[string(hashSessionToken(cookie.Value))]
+	su.TenantID = mustHashV7(t, tenantID)
+	f.sessions[string(hashSessionToken(cookie.Value))] = su
+
+	rec := doJSON(t, srv, http.MethodGet, "/api/v1/me", "", cookie)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("me status = %d, want 500; body=%s", rec.Code, rec.Body.String())
 	}
 }
 

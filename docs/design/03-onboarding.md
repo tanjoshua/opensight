@@ -20,7 +20,7 @@ sequenceDiagram
     U->>API: GET /businesses/:id/proposal (poll until ready)
     U->>U: review + edit everything
     U->>API: POST /businesses/:id/apply {final payload}
-    API->>API: write businesses, insert 20 prompts, proposal→applied, status=active
+    API->>API: write businesses, insert plan.prompt_limit prompts, proposal→applied, status=active
     API->>T: create weekly Schedule + trigger first run now
 ```
 
@@ -65,6 +65,7 @@ The 20 prompts are the product's measurement instrument, so generation is opinio
 ## Review and apply
 
 - The review screen presents every proposed value as editable; nothing is committed until the user applies. The client sends back the **final edited payload** — the server does not merge, it takes the submitted values verbatim (they've been reviewed by definition).
+- `GET /me` exposes the tenant plan's `prompt_limit`. Before apply, the client validates the final edited payload's required profile fields, country code, non-empty list entries, prompt kinds/text, and exact plan prompt count. Validation gates submission but does not normalize or rewrite it: the accepted payload is still sent verbatim.
 - **Apply is the only path that writes profile values to `businesses`** (the 02 invariant). It runs in one transaction: update business columns, insert prompts (all `active`), mark proposal `applied`, set business `active`. Then: create the Temporal weekly Schedule and **trigger the first run immediately** — PRD success criterion 4 ("view the first ChatGPT results") shouldn't wait a week.
 - **Regenerate** is allowed while the business is `draft`: discard the pending proposal, re-run the workflow. After activation there is no regenerate — profile changes are manual edits in Setup (PRD: confirmed values are never auto-overwritten), and prompt changes go through the replace flow (02).
 
