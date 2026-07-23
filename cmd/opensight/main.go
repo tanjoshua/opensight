@@ -497,6 +497,14 @@ func work(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("build match runner: %w", err)
 	}
 
+	proposer, err := llm.NewProposeProfileRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIAnalysisModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build propose profile runner: %w", err)
+	}
+
 	temporalClient, err := dialTemporal(ctx, cfg)
 	if err != nil {
 		return err
@@ -520,6 +528,7 @@ func work(ctx context.Context, cfg config.Config) error {
 		store.NewAnalysisStore(db),
 		extractor,
 		matcher,
+		proposer,
 	)
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
@@ -534,6 +543,8 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.AnalyzeResult)
 	w.RegisterActivity(activities.LoadAnalyzeRunSpec)
 	w.RegisterActivity(activities.ReconcileEntities)
+	w.RegisterActivity(activities.ResearchBusiness)
+	w.RegisterActivity(activities.ProposeProfile)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)

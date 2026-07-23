@@ -27,9 +27,9 @@ Deps: RUN-1 · Phase 3 · Ref: design 03 (step 2)
 
 As the developer, I want a structured-output proposal call with validation, so that generated profiles are well-formed before a user sees them.
 
-- [ ] Single LLM call producing the design-03 payload: `low_confidence`, profile (name, aliases, category, practitioners, services, location with **country required**), prompts with `kind` (category|service|condition|location).
-- [ ] Prompt rules enforced by validation: **prompts never contain the business name**; count = `plan.prompt_limit` (not hardcoded 20); mixed kinds; phrased as real consumer questions.
-- [ ] Validation failure (wrong count, empty fields, name leakage) → one retry with errors appended.
+- [x] Single LLM call producing the design-03 payload: `low_confidence`, profile (name, aliases, category, practitioners, services, location with **country required**), prompts with `kind` (category|service|condition|location).
+- [x] Prompt rules enforced by validation: **prompts never contain the business name**; count = `plan.prompt_limit` (not hardcoded 20); mixed kinds; phrased as real consumer questions.
+- [x] Validation failure (wrong count, empty fields, name leakage) → one retry with errors appended.
 
 Deps: ONB-2 · Phase 3 · Ref: design 03 (step 3, Prompt generation rules)
 

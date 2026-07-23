@@ -100,7 +100,7 @@ VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city"
 		if err != nil {
 			t.Fatalf("stub runner: %v", err)
 		}
-		acts := NewActivities(businesses, prompts, runs, results, stub, nil, nil, nil)
+		acts := NewActivities(businesses, prompts, runs, results, stub, nil, nil, nil, nil)
 		date := time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC)
 
 		first, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -138,7 +138,7 @@ VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city"
 			t.Fatalf("stub runner: %v", err)
 		}
 		runner := &countingRunner{inner: stub}
-		acts := NewActivities(businesses, prompts, runs, results, runner, nil, nil, nil)
+		acts := NewActivities(businesses, prompts, runs, results, runner, nil, nil, nil, nil)
 		date := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -172,7 +172,7 @@ VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city"
 	})
 
 	t.Run("ExecutePrompt records terminal failure and returns nil", func(t *testing.T) {
-		acts := NewActivities(businesses, prompts, runs, results, nonRetryableRunner{}, nil, nil, nil)
+		acts := NewActivities(businesses, prompts, runs, results, nonRetryableRunner{}, nil, nil, nil, nil)
 		date := time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -218,7 +218,7 @@ VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city"
 		if err != nil {
 			t.Fatalf("stub runner: %v", err)
 		}
-		acts := NewActivities(businesses, prompts, runs, results, stub, nil, nil, nil)
+		acts := NewActivities(businesses, prompts, runs, results, stub, nil, nil, nil, nil)
 		date := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
