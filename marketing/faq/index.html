@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" class="motion-safe:scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FAQ — OpenSight</title>
+  <meta name="description" content="Straight answers about how OpenSight measures your business's visibility in ChatGPT: what we query, what we store, and what you can change.">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://opensight.app/faq/">
+  <meta property="og:title" content="FAQ — OpenSight">
+  <meta property="og:description" content="Straight answers about how OpenSight measures your business's visibility in ChatGPT.">
+  <meta property="og:url" content="https://opensight.app/faq/">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="text-[1.0625rem] leading-relaxed">
+
+<header class="border-line bg-paper/90 sticky top-0 z-50 border-b backdrop-blur">
+  <div class="mx-auto flex max-w-[1080px] items-center justify-between gap-4 px-6 py-3.5">
+    <a href="/" aria-label="OpenSight home" class="font-display text-xl font-extrabold tracking-tight no-underline">Open<span class="hl">Sight</span></a>
+    <nav class="hidden items-center gap-7 text-[0.95rem] font-medium md:flex" aria-label="Main">
+      <a href="/#how" class="text-moss hover:text-ink no-underline">How it works</a>
+      <a href="/pricing/" class="text-moss hover:text-ink no-underline">Pricing</a>
+      <a href="/faq/" class="hl-under no-underline" aria-current="page">FAQ</a>
+      <span class="bg-line h-4 w-px" aria-hidden="true"></span>
+      <a href="https://app.opensight.app" class="text-moss hover:text-ink no-underline">Sign in</a>
+      <a href="https://app.opensight.app/signup" class="bg-pine hover:bg-pinedeep rounded-lg px-4 py-2 text-[0.9rem] font-semibold text-white no-underline transition">Check my AI visibility</a>
+    </nav>
+    <button id="nav-toggle" type="button" class="text-ink -mr-2 rounded-lg p-2 md:hidden" aria-expanded="false" aria-controls="nav-menu" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+  <nav id="nav-menu" hidden class="border-line border-t px-6 pt-2 pb-5 md:hidden" aria-label="Main menu">
+    <a href="/#how" class="block py-2.5 font-medium no-underline">How it works</a>
+    <a href="/pricing/" class="block py-2.5 font-medium no-underline">Pricing</a>
+    <a href="/faq/" class="hl-under block py-2.5 font-medium no-underline" aria-current="page">FAQ</a>
+    <a href="https://app.opensight.app" class="text-moss block py-2.5 font-medium no-underline">Sign in</a>
+    <a href="https://app.opensight.app/signup" class="bg-pine mt-3 block rounded-lg px-4 py-2.5 text-center font-semibold text-white no-underline">Check my AI visibility</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="mx-auto max-w-[44rem] px-6 pt-14 pb-20">
+    <p class="font-mono text-pine mb-4 text-[0.78rem] tracking-[0.14em] uppercase">FAQ</p>
+    <h1 class="font-display mb-5 text-[clamp(2rem,4.5vw,3rem)] leading-[1.1] font-extrabold tracking-tight">Fair questions</h1>
+    <p class="text-moss mb-10 max-w-[36rem] text-lg">Straight answers about what OpenSight does — and doesn't.</p>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">Is this exactly what a customer sees in their ChatGPT app?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">Very close, and honest about the difference: we query ChatGPT's models through OpenAI's official API with web search enabled — the same engine, without any one user's personal chat history influencing the result. That makes it a fair, repeatable measure of how ChatGPT treats your business. We record the exact model with every single run, so when models change, your trends stay interpretable.</p>
+    </details>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">Which AI platforms do you monitor?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">ChatGPT. It's where the overwhelming share of customer AI questions happen today, so that's what OpenSight measures — properly, with full raw responses stored.</p>
+    </details>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">Does OpenSight help me improve, or just measure?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">Both — measurement is what makes improvement possible. The dashboard shows which questions you're missing from, which sources ChatGPT trusts for your market, how it describes you, and who wins the questions you lose. That's a concrete to-do list: where to earn a listing or review, what to fix in your website's story, which competitor to study. Act on it, and next week's run measures whether it moved the needle. What OpenSight won't do is hand you generic advice — every insight comes from your actual answers.</p>
+    </details>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">Do I need to install anything or change my website?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">No. OpenSight works entirely from the outside, the same way a customer does. Setup is your business name and website address.</p>
+    </details>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">Can I change the 20 questions?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">Yes — edit or replace any of them whenever you like. When you replace a question, its old history is kept and the new one starts a fresh trend, so your data stays honest. We'll warn you before anything is discarded — nothing ever is silently.</p>
+    </details>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">How fast do I see something useful?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">Same day. Your first monitoring run starts the moment you approve your questions — you don't wait for next week's cycle to see your first results.</p>
+    </details>
+
+    <details class="group border-line max-w-[44rem] border-b py-4">
+      <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden after:font-mono after:text-pine after:text-xl after:content-['+'] group-open:after:content-['–']">What kinds of businesses does this work for?</summary>
+      <p class="text-moss mt-3 text-[0.97rem]">Any local or specialist service business that customers find by asking for a recommendation — clinics, home services, studios, professional practices. Your 20 questions are generated from <em>your</em> website for <em>your</em> trade.</p>
+    </details>
+
+    <p class="text-moss mt-10 text-[0.97rem]">Something else on your mind? Email <a href="mailto:hello@opensight.app" class="text-pine underline">hello@opensight.app</a>.</p>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="bg-pinedeep px-6 py-20 text-center text-white">
+    <h2 class="font-display mx-auto mb-8 max-w-[24ch] text-[clamp(1.7rem,3.4vw,2.4rem)] leading-[1.12] font-bold tracking-tight">It takes 2 minutes to find out what ChatGPT tells customers about your business.</h2>
+    <a href="https://app.opensight.app/signup" class="text-pinedeep hover:bg-marker hover:text-ink inline-block rounded-lg bg-white px-6 py-3.5 font-semibold no-underline transition">Check my AI visibility</a>
+  </section>
+
+</main>
+
+<footer class="text-moss mx-auto flex max-w-[1080px] flex-wrap items-center justify-between gap-4 px-6 py-10 text-[0.88rem]">
+  <span class="font-display text-ink font-extrabold tracking-tight">Open<span class="hl">Sight</span></span>
+  <span><a href="/pricing/" class="hover:text-ink">Pricing</a> · <a href="/faq/" class="hover:text-ink">FAQ</a> · <a href="mailto:hello@opensight.app" class="hover:text-ink">hello@opensight.app</a></span>
+  <span>© 2026 OpenSight · Made in Singapore</span>
+</footer>
+
+<script src="/assets/site.js"></script>
+</body>
+</html>

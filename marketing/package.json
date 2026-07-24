@@ -1,0 +1,16 @@
+{
+  "name": "opensight-www",
+  "private": true,
+  "description": "Marketing site for opensight.app",
+  "scripts": {
+    "build": "tailwindcss -i src/app.css -o assets/style.css --minify",
+    "watch": "tailwindcss -i src/app.css -o assets/style.css --watch",
+    "dev": "concurrently -k -n css,serve -c yellow,cyan \"npm:watch\" \"live-server --port=8081 --no-browser\""
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "concurrently": "^10.0.3",
+    "live-server": "^1.2.2",
+    "tailwindcss": "^4.1.0"
+  }
+}
