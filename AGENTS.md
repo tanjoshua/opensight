@@ -3,6 +3,7 @@
 - Docs contain only the finalized plan. Do not store decision history, change logs, or review records — apply changes in place and delete superseded material.
 - Doc map: `docs/prd.md` (product truth) · `docs/design/` (technical design, 01–07) · `docs/stories/` (backlog). Consult the relevant design doc before implementing a story.
 - The docs are guides, not gospel: if implementation reveals a more optimal solution, adapt — and update the affected doc so it stays the finalized plan.
+- Repo layout: the Go app (`cmd/`, `internal/`) with its embedded UI in `web/` (Vite/TS); the public marketing site in `marketing/` (static HTML + Tailwind v4, deployed separately to opensight.app — see `marketing/README.md`).
 
 ## Development process
 
