@@ -27,7 +27,7 @@ Depends on: all previous designs; closes their open questions.
 - `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/api`.
 - `docker compose -f compose.dev.yml up`: still available for infrastructure-only debugging.
 - **`PromptRunner` stub mode** (env-selected): development and tests must not spend OpenAI money or wait on real searches. Two flavors: `stub` (canned, deterministic fixtures — a fake clinic-recommendation response with citations) and `replay` (recorded real `raw_response` payloads checked into `testdata/`). The analysis pipeline (05) develops almost entirely against replay data — real responses, zero cost, deterministic tests.
-- Seed command: `opensight seed dev` creates a tenant, user, an applied business modeled on our design-partner clinic (e.g. Roots! Advanced Endodontics), prompts, and two runs of replay results, so every section of the UI has data on first boot.
+- Seed command: `opensight seed dev` creates only a tenant and login account. The developer completes the normal onboarding flow to create the business profile and initial prompts, keeping the end-to-end onboarding path exercised during local development.
 
 ## Deployment
 

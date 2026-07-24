@@ -2,7 +2,7 @@ BIN := ./bin/opensight
 # Use golangci-lint from PATH if present, otherwise the locally installed binary.
 GOLANGCI ?= $(shell command -v golangci-lint 2>/dev/null || echo ./bin/golangci-lint)
 
-.PHONY: build test lint up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work
+.PHONY: build test lint up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev
 
 build:
 	go build -o $(BIN) ./cmd/opensight
@@ -33,3 +33,6 @@ dev-serve:
 
 dev-work:
 	go tool air -c .air.work.toml
+
+seed-dev:
+	go run ./cmd/opensight seed dev

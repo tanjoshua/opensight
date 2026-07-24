@@ -7,7 +7,7 @@
 //	opensight tenant create # create an invite-only tenant (AUTH-2)
 //	opensight user create   # create an invite-only user (AUTH-2)
 //	opensight business create # seed an active business from a spec file (RUN-5)
-//	opensight seed dev      # seed a dev tenant with replay results (RUN-2)
+//	opensight seed dev      # seed a dev tenant and login account
 //
 // The same image runs serve and work via a command override in deployment
 // (07 "Deployment"). Foundation stories wire the first health server, Temporal

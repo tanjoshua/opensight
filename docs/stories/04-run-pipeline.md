@@ -22,7 +22,7 @@ As the developer, I want env-selected `stub` and `replay` PromptRunner modes plu
 
 - [x] `stub`: canned deterministic fixture (fake clinic-recommendation response with citation annotations).
 - [x] `replay`: recorded real `raw_response` payloads from `testdata/`.
-- [x] `opensight seed dev`: tenant, user, active business, prompts, and two runs of replay results — every UI section has data on first boot.
+- [x] `opensight seed dev`: tenant and login account only, leaving business creation and prompt generation to the normal onboarding flow.
 - [x] Replay fixtures start from the SPK-1 spike captures.
 - [ ] Refreshed with at least one response recorded through RUN-1 once it works (blocked on RUN-1's project-scoped key/budget cap — no live call has been made yet).
 

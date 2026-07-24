@@ -16,6 +16,16 @@ command also starts the Vite dev server on `http://127.0.0.1:5173` and prints
 its link if `web/package.json` exists. Press `Ctrl+C` to stop the native dev
 processes; Docker infrastructure stays up.
 
+Seed the local login account after the database is running and migrated:
+
+```sh
+make seed-dev
+```
+
+Log in with `dev@opensight.local` and password `opensight-dev`, then complete
+the normal onboarding flow. The command is idempotent and does not create a
+business, prompts, or monitoring results.
+
 Start Postgres, Temporal, and Temporal UI:
 
 ```sh
