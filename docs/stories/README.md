@@ -10,7 +10,7 @@ There are **no users until the full MVP is complete** — phase milestones are i
 |---|------|-----|---------|-------|
 | 00 | [Validation spike](00-validation-spike.md) | SPK | 1 | 1 |
 | 01 | [Foundation & infra](01-foundation.md) | FND | 6 | 1 |
-| 02 | [Core schema & store](02-schema.md) | SCH | 4 | 1 |
+| 02 | [Core schema & store](02-schema.md) | SCH | 5 | 1 |
 | 03 | [Auth & accounts](03-auth.md) | AUTH | 4 | 1 |
 | 04 | [Run pipeline](04-run-pipeline.md) | RUN | 6 | 1 |
 | 05 | [App shell & Responses UI](05-responses-ui.md) | WEB | 5 | 1 |
@@ -21,7 +21,7 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 10 | [Onboarding automation](10-onboarding.md) | ONB | 6 | 3 |
 | 11 | [Self-serve polish](11-selfserve-polish.md) | POL | 7 | 3 |
 
-**59 stories: Phase 1 = 29, Phase 2 = 17, Phase 3 = 13.**
+**60 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 13.**
 
 ## Phases and milestones
 

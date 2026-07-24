@@ -44,3 +44,13 @@ As the developer, I want all data access to go through repositories that enter v
 - [x] Tests: cross-tenant access attempts return not-found.
 
 Deps: SCH-3 · Phase 1 · Ref: design 01 (D4 multi-tenancy), 06 (API conventions)
+
+## SCH-5 — Fix broken store integration test fixtures
+
+As the developer, I want the opt-in `internal/store` integration tests to actually pass against a real Postgres, so that the tenant-scoping and constraint guarantees they claim to verify are still checked rather than silently rotted.
+
+- [ ] `TestRepositoriesEnforceTenantScoping` fails on a JSONB-formatting mismatch, not a real bug: Postgres round-trips a `services` array as `["screening", "consultation"]` (space after the comma), but the test compares against a hand-written no-space literal. Fix the assertion to compare parsed/normalized values, not a literal string.
+- [ ] `TestCompetitorStoreTenantScopingAndHistoryPreservation` fails because its fixture inserts an `active`-status business with no `category`/`location`, violating the `businesses_active_profile_check` constraint (migration 00003: active businesses require a non-empty category and country). Give the fixture a valid category/location.
+- [ ] `OPENSIGHT_STORE_TEST_DATABASE_URL=<dsn> go test ./internal/store/...` passes clean against a freshly migrated database (all migrations applied, no skipped/failing tests).
+
+Deps: SCH-2 (active-profile constraint), SCH-4 (tenant-scoping test) · Phase 1 (backfill) · Ref: design 02 (Businesses and profile — active-profile invariant), 01 (D4 multi-tenancy). Regression discovered 2026-07-24 while reviewing unrelated onboarding stories; reproduces identically on a clean `main` checkout, so it predates any specific story and is pure test-fixture drift against migration 00003's constraint.
