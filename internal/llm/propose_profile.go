@@ -8,15 +8,17 @@ import (
 )
 
 // ProposeProfileInput is one ProposeProfile request: the user-entered
-// name/website plus the two evidence sources (FetchSite text, ResearchBusiness
-// summary) the model turns into a structured profile proposal, and the number
-// of monitoring prompts to generate (plan.prompt_limit — never hardcoded).
+// name/website plus the FetchSite text (primary evidence, "" when FetchSite
+// failed) the model researches and turns into a structured profile proposal, and
+// the number of monitoring prompts to generate (plan.prompt_limit — never
+// hardcoded). The model does its own web_search over the name/website; there is
+// no separate research step.
 type ProposeProfileInput struct {
-	Name            string
-	Website         string
-	SiteText        string
-	ResearchSummary string
-	PromptLimit     int
+	Name        string
+	Website     string
+	SiteText    string
+	Location    Location // web_search user_location hint (SG for the MVP market)
+	PromptLimit int
 
 	// Set only on the one allowed validation retry: the model's prior output and
 	// the deterministic validation failures to correct.
@@ -26,10 +28,24 @@ type ProposeProfileInput struct {
 
 // ProposeProfileRunResult is the raw output of one proposal call. The model's
 // JSON text is left unmarshalled for ProposeWithRetry to decode and validate —
-// the same runner/decoder split as extraction and match.
+// the same runner/decoder split as extraction and match. RawResponse is the full
+// response body, kept so the caller can derive Sources and detect the model's
+// web-search actions (SourcesFromWebSearch / ParseWebSearchActions).
 type ProposeProfileRunResult struct {
-	RawJSON json.RawMessage
-	Model   string
+	RawJSON     json.RawMessage
+	RawResponse json.RawMessage
+	Model       string
+}
+
+// ProposalSource is one source link surfaced to the user in the review screen:
+// a page the model opened while researching. URL is the cleaned link, Domain the
+// bare host to label it by. These are computed server-side from the response's
+// web-search actions, not asked of the model, so they are never part of the
+// strict output schema.
+type ProposalSource struct {
+	URL    string `json:"url"`
+	Title  string `json:"title"`
+	Domain string `json:"domain"`
 }
 
 // ProposedLocation is the business location. country is an ISO 3166-1 alpha-2
@@ -50,11 +66,9 @@ type ProposedProfile struct {
 	Location ProposedLocation `json:"location"`
 }
 
-// ProposedPrompt is one generated monitoring prompt. Kind is one of
-// category|service|condition|location.
+// ProposedPrompt is one generated monitoring prompt.
 type ProposedPrompt struct {
 	Text string `json:"text"`
-	Kind string `json:"kind"`
 }
 
 // ProposalPayload is the decoded proposal (design 03, "Proposal payload"). It is
@@ -64,6 +78,9 @@ type ProposalPayload struct {
 	LowConfidence bool             `json:"low_confidence"`
 	Profile       ProposedProfile  `json:"profile"`
 	Prompts       []ProposedPrompt `json:"prompts"`
+	// Sources is server-populated from the model's web-search actions (not part of
+	// the model's own JSON schema); the review screen renders it read-only.
+	Sources []ProposalSource `json:"sources,omitempty"`
 }
 
 // ProposeProfileRunner runs one structured-output proposal call per onboarding
@@ -98,13 +115,13 @@ func NewStubProposeProfileRunner() (*StubProposeProfileRunner, error) {
 	return &StubProposeProfileRunner{}, nil
 }
 
-// stubProposalPrompts are name-free consumer questions the stub cycles through,
-// one per prompt kind, to satisfy validation offline.
+// stubProposalPrompts are varied, name-free consumer questions the stub cycles
+// through to satisfy validation offline.
 var stubProposalPrompts = []ProposedPrompt{
-	{Text: "best orthopaedic clinic in Singapore", Kind: "category"},
-	{Text: "where can I get ACL reconstruction in Singapore", Kind: "service"},
-	{Text: "knee pain that won't go away, who should I see in Singapore", Kind: "condition"},
-	{Text: "orthopaedic specialist near Novena", Kind: "location"},
+	{Text: "best orthopaedic clinic in Singapore"},
+	{Text: "where can I get ACL reconstruction in Singapore"},
+	{Text: "knee pain that won't go away, who should I see in Singapore"},
+	{Text: "orthopaedic specialist near Novena"},
 }
 
 // RunProposeProfile returns a canned proposal shaped by the input. LowConfidence

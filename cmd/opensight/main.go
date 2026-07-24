@@ -513,7 +513,7 @@ func work(ctx context.Context, cfg config.Config) error {
 
 	proposer, err := llm.NewProposeProfileRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
 		APIKey: cfg.OpenAIAPIKey,
-		Model:  cfg.OpenAIAnalysisModel,
+		Model:  cfg.OpenAIOnboardingModel,
 	})
 	if err != nil {
 		return fmt.Errorf("build propose profile runner: %w", err)
@@ -559,7 +559,6 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.AnalyzeResult)
 	w.RegisterActivity(activities.LoadAnalyzeRunSpec)
 	w.RegisterActivity(activities.ReconcileEntities)
-	w.RegisterActivity(activities.ResearchBusiness)
 	w.RegisterActivity(activities.ProposeProfile)
 	w.RegisterActivity(activities.PersistProposal)
 

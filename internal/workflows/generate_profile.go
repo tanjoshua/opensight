@@ -14,9 +14,8 @@ import (
 const (
 	// Temporal-level activity retry budgets. These are distinct from
 	// llm.MaxProposeProfileAttempts, which is the in-activity validation retry.
-	maxFetchSiteActivityAttempts        = 2
-	maxResearchBusinessActivityAttempts = 2
-	maxProposeProfileActivityAttempts   = 2
+	maxFetchSiteActivityAttempts      = 2
+	maxProposeProfileActivityAttempts = 2
 )
 
 // GenerationStageQuery is the Temporal query name for GenerateProfileWorkflow's
@@ -27,16 +26,16 @@ const GenerationStageQuery = "generation-stage"
 
 const (
 	GenerationStageFetchingSite = "fetching_site"
-	GenerationStageResearching  = "researching"
 	GenerationStageDrafting     = "drafting"
 )
 
 // onboardingResearchLocationHint is a search-context hint ONLY (never
-// persisted) for ResearchBusiness's web_search call, which requires a country
-// to validate. At business-creation time no location is known yet — discovering
-// it is this workflow's job — so we seed the search with the PRD's Singapore-only
-// MVP market. This is not the persisted businesses.location (that has no market
-// default and is set only at apply time from the reviewed proposal).
+// persisted) for the ResearchAndPropose call's web_search, which requires a
+// country to validate. At business-creation time no location is known yet —
+// discovering it is this workflow's job — so we seed the search with the PRD's
+// Singapore-only MVP market. This is not the persisted businesses.location (that
+// has no market default and is set only at apply time from the reviewed
+// proposal).
 var onboardingResearchLocationHint = llm.Location{Country: "SG"}
 
 // GenerateProfileWorkflowID is the deterministic workflow id per business
@@ -58,12 +57,15 @@ type GenerateProfileWorkflowInput struct {
 	PromptLimit int
 }
 
-// GenerateProfileWorkflow chains FetchSite -> ResearchBusiness -> ProposeProfile
-// -> PersistProposal (design 03). Failure posture: either evidence source alone
-// is enough to proceed; FetchSite failing specifically forces low_confidence on
-// the eventual proposal so the UI nudges harder review. Only if both sources
-// fail, or ProposeProfile still fails validation, does the workflow fail — the
-// UI then offers manual setup.
+// GenerateProfileWorkflow chains FetchSite -> ProposeProfile -> PersistProposal
+// (design 03). ProposeProfile is the combined research+draft call: it does its
+// own web_search (opening pages, including the site itself). FetchSite is the
+// free, deterministic primary evidence source and no longer gates success on its
+// own — its text feeds the combined call and, on failure, the model still has
+// web research. Failure posture: FetchSite failing forces low_confidence UNLESS
+// the model read the site itself (an open_page on its own domain), in which case
+// its own low_confidence judgement stands. Only if ProposeProfile fails outright
+// or never validates does the workflow fail — the UI then offers manual setup.
 func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflowInput) error {
 	stage := GenerationStageFetchingSite
 	if err := workflow.SetQueryHandler(ctx, GenerationStageQuery, func() (string, error) {
@@ -92,35 +94,12 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 		siteText = fetchOut.Text
 	}
 
-	stage = GenerationStageResearching
-	researchCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: 3 * time.Minute,
-		RetryPolicy: &temporal.RetryPolicy{
-			InitialInterval: 10 * time.Second,
-			MaximumAttempts: maxResearchBusinessActivityAttempts,
-		},
-	})
-	var researchOut ResearchBusinessOutput
-	researchErr := workflow.ExecuteActivity(researchCtx, acts.ResearchBusiness, ResearchBusinessInput{
-		Name:     input.Name,
-		Location: onboardingResearchLocationHint,
-	}).Get(ctx, &researchOut)
-	researchSummary := ""
-	if researchErr != nil {
-		workflow.GetLogger(ctx).Warn("research business failed; proceeding site-only",
-			"business_id", input.BusinessID.String(), "error", researchErr.Error())
-	} else {
-		researchSummary = researchOut.Summary
-	}
-
-	if fetchFailed && researchErr != nil {
-		return temporal.NewApplicationError(
-			"both site fetch and business research failed", "GenerationFailed")
-	}
-
 	stage = GenerationStageDrafting
+	// ~10 min: the combined call does multiple search/open_page actions plus
+	// reasoning plus a possible in-activity validation retry — longer than the old
+	// pure structured-output call.
 	proposeCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: 4 * time.Minute,
+		StartToCloseTimeout: 10 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval: 10 * time.Second,
 			MaximumAttempts: maxProposeProfileActivityAttempts,
@@ -128,11 +107,11 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 	})
 	var proposeOut ProposeProfileOutput
 	if err := workflow.ExecuteActivity(proposeCtx, acts.ProposeProfile, ProposeProfileInput{
-		Name:            input.Name,
-		Website:         input.Website,
-		SiteText:        siteText,
-		ResearchSummary: researchSummary,
-		PromptLimit:     input.PromptLimit,
+		Name:        input.Name,
+		Website:     input.Website,
+		SiteText:    siteText,
+		Location:    onboardingResearchLocationHint,
+		PromptLimit: input.PromptLimit,
 	}).Get(ctx, &proposeOut); err != nil {
 		return err
 	}
@@ -142,7 +121,9 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 	}
 
 	payload := proposeOut.Payload
-	if fetchFailed {
+	// FetchSite failing forces low_confidence, unless the model read the site
+	// itself (open_page on its own domain) — then trust its own judgement.
+	if fetchFailed && !proposeOut.OpenedOwnSite {
 		payload.LowConfidence = true
 	}
 

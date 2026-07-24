@@ -7,15 +7,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiGet, apiPost } from "./client"
 
-// Prompt kinds are a closed set (design 03, prompt generation rules).
-export const PROMPT_KINDS = [
-  "category",
-  "service",
-  "condition",
-  "location",
-] as const
-export type PromptKind = (typeof PROMPT_KINDS)[number]
-
 export interface ProposedLocation {
   address: string
   area: string
@@ -33,13 +24,21 @@ export interface ProposedProfile {
 
 export interface ProposedPrompt {
   text: string
-  kind: string
+}
+
+export interface ProposalSource {
+  url: string
+  title: string
+  domain: string
 }
 
 export interface ProposalPayload {
   low_confidence: boolean
   profile: ProposedProfile
   prompts: ProposedPrompt[]
+  // Server-populated from the model's web-search actions; shown read-only in
+  // review. Absent when the model opened no pages.
+  sources?: ProposalSource[]
 }
 
 // Generation status from GET .../proposal (internal/api/businesses.go): payload
@@ -49,7 +48,7 @@ export type ProposalStatus = "generating" | "ready" | "failed"
 // Current generation stage, present only while generating and only when the
 // workflow's stage query answers (internal/workflows/generate_profile.go). An
 // absent stage means "just started / unknown" — the UI treats it as step 1.
-export type GenerationStage = "fetching_site" | "researching" | "drafting"
+export type GenerationStage = "fetching_site" | "drafting"
 
 export interface ProposalStatusResponse {
   status: ProposalStatus

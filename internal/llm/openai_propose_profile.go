@@ -14,13 +14,17 @@ import (
 const openAIProposeProfileSchemaName = "profile_proposal"
 
 // proposeProfileInstructions is the developer-role prompt encoding the design 03
-// step-3 rules and "Prompt generation rules". Prompt count is never hardcoded —
-// it is passed as prompt_count in the user content.
-const proposeProfileInstructions = `You build a structured business profile proposal for a clinic/practice, to be reviewed and edited by the business owner before anything is saved — nothing here is written until they approve it. Use ONLY the evidence given (site_text, research_summary); do not invent facts beyond what a careful, honest reading of that evidence supports. Return only the JSON object required by the schema.
+// combined research+draft rules and "Prompt generation rules". Prompt count is
+// never hardcoded — it is passed as prompt_count in the user content. This call
+// has the web_search tool attached (tool_choice: required), so the model gathers
+// its own evidence rather than being handed a separate research summary.
+const proposeProfileInstructions = `You build a structured business profile proposal for a clinic/practice, to be reviewed and edited by the business owner before anything is saved — nothing here is written until they approve it. You have a web_search tool with agentic browsing (you can open and read pages). Use it to gather evidence, then output ONLY the JSON object required by the schema. Do not invent facts beyond what site_text and your web research honestly support.
 
-EVIDENCE
-- site_text and research_summary may each be empty, thin, or partially contradictory. research_summary is a free-text narrative report of a web search, not a list — read it as prose and extract whatever facts it actually states.
-- Set low_confidence to true whenever you had to guess a value with weak or no supporting evidence (most commonly: location.country, category, aliases). For category specifically: if none of site_text, research_summary, or the business name itself states what this business does, any category you output is a guess — set low_confidence true. Set it false only when the evidence clearly supports the whole profile.
+RESEARCH (do this before drafting)
+- site_text is the primary evidence: the business's own website, pre-fetched for you. It may be empty or thin (some sites render nothing without JavaScript, which the fetcher cannot run).
+- The business website URL is given as "website". If site_text is empty or thin, OPEN that URL directly and read it yourself — this is the single most reliable source. When there is no site evidence at all, web search (including opening the site and directory pages) is your only evidence, so search thoroughly.
+- Search the web to (1) confirm what the business is and its specialty/category, (2) find organization-only aliases (former, foreign-language e.g. Chinese, or colloquial/abbreviated TRADING names — never a practitioner's personal name unless it is genuinely part of the trading name), and (3) find directory/profile listings (Google, health directories, professional registries, review sites).
+- Set low_confidence to true whenever you had to guess a value with weak or no supporting evidence (most commonly: location.country, category, aliases). For category specifically: if neither site_text, your research, nor the business name itself states what this business does, any category you output is a guess — set low_confidence true. Set it false only when the evidence clearly supports the whole profile.
 
 PROFILE
 - name: the business's primary trading name.
@@ -32,12 +36,7 @@ PROFILE
 PROMPTS (this is the product's core measurement instrument)
 - Generate EXACTLY prompt_count prompts (given in the input; never hardcode a number).
 - A prompt's text must NEVER contain the business name or any alias, in any form. Prompts simulate a prospective patient who does not know this business exists yet.
-- Each prompt has a kind: category | service | condition | location.
-  - category: "best <category> in <city>"-style.
-  - service: asks about a specific service/procedure.
-  - condition: describes a symptom/problem, not a diagnosis or service name.
-  - location: anchored to a specific area/neighbourhood/landmark.
-- Mix kinds across the full set: when prompt_count allows it, use all four kinds at least once, roughly evenly. Never fill a batch with a single kind.
+- Vary the set across broad category searches ("best <category> in <city>"), specific services/procedures, symptom or problem descriptions, and searches anchored to an area/neighbourhood/landmark.
 - Phrase every prompt the way a real person types a question or problem to a chatbot — natural questions or problem statements, never a bare keyword string.
 
 RETRY
@@ -80,10 +79,9 @@ const proposeProfileJSONSchema = `{
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["text", "kind"],
+        "required": ["text"],
         "properties": {
-          "text": {"type": "string"},
-          "kind": {"type": "string", "enum": ["category", "service", "condition", "location"]}
+          "text": {"type": "string"}
         }
       }
     }
@@ -127,11 +125,13 @@ func NewOpenAIProposeProfileRunner(cfg OpenAIConfig) (*OpenAIProposeProfileRunne
 	}, nil
 }
 
-// RunProposeProfile sends one structured-output proposal call and returns the
-// model's JSON text (decoded by the caller) plus the reported model id. This is
-// pure structured-output reasoning over evidence already gathered by
-// FetchSite/ResearchBusiness — no web_search tool. Provider failures reuse the
-// same transient/non-retryable RunnerError classification as extraction.
+// RunProposeProfile sends one combined research+draft call: the web_search tool
+// is attached (tool_choice: required) so the model gathers its own evidence, and
+// the strict JSON schema forces schema-conforming output. It returns the model's
+// JSON text (decoded by the caller), the full raw response body (for Sources and
+// web-search-action detection), and the reported model id. Provider failures
+// reuse the same transient/non-retryable RunnerError classification as
+// extraction.
 func (r *OpenAIProposeProfileRunner) RunProposeProfile(ctx context.Context, in ProposeProfileInput) (ProposeProfileRunResult, error) {
 	if r == nil {
 		return ProposeProfileRunResult{}, errors.New("openai propose profile runner is nil")
@@ -196,8 +196,9 @@ func (r *OpenAIProposeProfileRunner) RunProposeProfile(ctx context.Context, in P
 	}
 
 	return ProposeProfileRunResult{
-		RawJSON: json.RawMessage(parsed.Text),
-		Model:   strings.TrimSpace(parsed.Model),
+		RawJSON:     json.RawMessage(parsed.Text),
+		RawResponse: append(json.RawMessage(nil), body...),
+		Model:       strings.TrimSpace(parsed.Model),
 	}, nil
 }
 
@@ -218,10 +219,25 @@ func (r *OpenAIProposeProfileRunner) requestJSON(in ProposeProfileInput) (json.R
 		)
 	}
 
-	payload := openAIExtractionRequest{
+	payload := openAIProposeProfileRequest{
 		Model: r.model,
 		Input: input,
 		Store: false,
+		Tools: []openAIWebSearchTool{{
+			Type:              openAIWebSearchToolType,
+			SearchContextSize: openAISearchContextSize,
+			UserLocation: openAIUserLocation{
+				Type:     openAIApproximateLocationType,
+				Country:  in.Location.Country,
+				City:     in.Location.City,
+				Region:   in.Location.Region,
+				Timezone: in.Location.Timezone,
+			},
+		}},
+		// The spike showed tool_choice "required" drives one or two search/open_page
+		// actions per run with no loops or errors, so we force at least one search
+		// rather than relying on the model's discretion.
+		ToolChoice: "required",
 		Text: openAIResponseTextFormat{
 			Format: openAIJSONSchemaFormat{
 				Type:   "json_schema",
@@ -238,21 +254,31 @@ func (r *OpenAIProposeProfileRunner) requestJSON(in ProposeProfileInput) (json.R
 	return raw, nil
 }
 
+// openAIProposeProfileRequest is the combined research+draft request: the
+// extraction-style message input and strict JSON schema, plus the web_search
+// tool and a forced tool_choice so the model always gathers evidence.
+type openAIProposeProfileRequest struct {
+	Model      string                    `json:"model"`
+	Input      []openAIExtractionMessage `json:"input"`
+	Store      bool                      `json:"store"`
+	Tools      []openAIWebSearchTool     `json:"tools"`
+	ToolChoice string                    `json:"tool_choice"`
+	Text       openAIResponseTextFormat  `json:"text"`
+}
+
 // marshalProposeProfileUserContent serialises the evidence the model reads.
 // prompt_count is in.PromptLimit (plan.prompt_limit — never hardcoded).
 func marshalProposeProfileUserContent(in ProposeProfileInput) (string, error) {
 	payload := struct {
-		BusinessName    string `json:"business_name"`
-		Website         string `json:"website"`
-		SiteText        string `json:"site_text"`
-		ResearchSummary string `json:"research_summary"`
-		PromptCount     int    `json:"prompt_count"`
+		BusinessName string `json:"business_name"`
+		Website      string `json:"website"`
+		SiteText     string `json:"site_text"`
+		PromptCount  int    `json:"prompt_count"`
 	}{
-		BusinessName:    in.Name,
-		Website:         in.Website,
-		SiteText:        in.SiteText,
-		ResearchSummary: in.ResearchSummary,
-		PromptCount:     in.PromptLimit,
+		BusinessName: in.Name,
+		Website:      in.Website,
+		SiteText:     in.SiteText,
+		PromptCount:  in.PromptLimit,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

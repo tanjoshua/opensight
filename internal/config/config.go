@@ -26,26 +26,28 @@ const (
 	defaultTemporalTaskQueue = "opensight"
 	defaultResponsesModel    = "chat-latest"
 	defaultAnalysisModel     = "gpt-5.6-luna"
+	defaultOnboardingModel   = "gpt-5.6-luna"
 	defaultPromptRunnerMode  = PromptRunnerStub
 	defaultDevPromptLimit    = 3
 	defaultPromptConcurrency = 2
 )
 
 type Config struct {
-	Env                  string
-	HTTPAddr             string
-	DatabaseURL          string
-	DBMaxOpenConns       int
-	DBMaxIdleConns       int
-	TemporalAddress      string
-	TemporalNamespace    string
-	TemporalTaskQueue    string
-	OpenAIAPIKey         string
-	OpenAIResponsesModel string
-	OpenAIAnalysisModel  string
-	PromptRunnerMode     PromptRunnerMode
-	DevPromptLimit       int
-	PromptConcurrency    int
+	Env                   string
+	HTTPAddr              string
+	DatabaseURL           string
+	DBMaxOpenConns        int
+	DBMaxIdleConns        int
+	TemporalAddress       string
+	TemporalNamespace     string
+	TemporalTaskQueue     string
+	OpenAIAPIKey          string
+	OpenAIResponsesModel  string
+	OpenAIAnalysisModel   string
+	OpenAIOnboardingModel string
+	PromptRunnerMode      PromptRunnerMode
+	DevPromptLimit        int
+	PromptConcurrency     int
 }
 
 func Load() (Config, error) {
@@ -79,20 +81,21 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 	}
 
 	return Config{
-		Env:                  getenvString(getenv, "OPENSIGHT_ENV", defaultEnv),
-		HTTPAddr:             getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
-		DatabaseURL:          getenvString(getenv, "DATABASE_URL", defaultDatabaseURL),
-		DBMaxOpenConns:       dbMaxOpenConns,
-		DBMaxIdleConns:       dbMaxIdleConns,
-		TemporalAddress:      getenvString(getenv, "TEMPORAL_ADDRESS", defaultTemporalAddress),
-		TemporalNamespace:    getenvString(getenv, "TEMPORAL_NAMESPACE", defaultTemporalNamespace),
-		TemporalTaskQueue:    getenvString(getenv, "TEMPORAL_TASK_QUEUE", defaultTemporalTaskQueue),
-		OpenAIAPIKey:         getenv("OPENAI_API_KEY"),
-		OpenAIResponsesModel: getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
-		OpenAIAnalysisModel:  getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
-		PromptRunnerMode:     mode,
-		DevPromptLimit:       devPromptLimit,
-		PromptConcurrency:    promptConcurrency,
+		Env:                   getenvString(getenv, "OPENSIGHT_ENV", defaultEnv),
+		HTTPAddr:              getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
+		DatabaseURL:           getenvString(getenv, "DATABASE_URL", defaultDatabaseURL),
+		DBMaxOpenConns:        dbMaxOpenConns,
+		DBMaxIdleConns:        dbMaxIdleConns,
+		TemporalAddress:       getenvString(getenv, "TEMPORAL_ADDRESS", defaultTemporalAddress),
+		TemporalNamespace:     getenvString(getenv, "TEMPORAL_NAMESPACE", defaultTemporalNamespace),
+		TemporalTaskQueue:     getenvString(getenv, "TEMPORAL_TASK_QUEUE", defaultTemporalTaskQueue),
+		OpenAIAPIKey:          getenv("OPENAI_API_KEY"),
+		OpenAIResponsesModel:  getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
+		OpenAIAnalysisModel:   getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
+		OpenAIOnboardingModel: getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
+		PromptRunnerMode:      mode,
+		DevPromptLimit:        devPromptLimit,
+		PromptConcurrency:     promptConcurrency,
 	}, nil
 }
 

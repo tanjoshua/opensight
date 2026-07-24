@@ -42,6 +42,7 @@ func TestOpenAIProposeProfileBuildsStructuredRequest(t *testing.T) {
 	res, err := runner.RunProposeProfile(context.Background(), ProposeProfileInput{
 		Name:        "Clinic",
 		SiteText:    "some site text",
+		Location:    Location{Country: "SG"},
 		PromptLimit: 12,
 	})
 	if err != nil {
@@ -54,12 +55,25 @@ func TestOpenAIProposeProfileBuildsStructuredRequest(t *testing.T) {
 		t.Errorf("RawJSON = %q", res.RawJSON)
 	}
 
-	// Pure structured-output call: no web_search tool, store disabled.
-	if _, ok := gotRequest["tools"]; ok {
-		t.Error("propose request unexpectedly included a tools field")
-	}
 	if gotRequest["store"] != false {
 		t.Errorf("store = %v, want false", gotRequest["store"])
+	}
+
+	// The combined research+draft call attaches the web_search tool with a forced
+	// tool_choice AND the strict JSON schema — the spike confirmed these coexist.
+	tools, ok := gotRequest["tools"].([]any)
+	if !ok || len(tools) != 1 {
+		t.Fatalf("tools = %#v, want one web_search tool", gotRequest["tools"])
+	}
+	tool := tools[0].(map[string]any)
+	if tool["type"] != openAIWebSearchToolType {
+		t.Errorf("tool type = %v, want %q", tool["type"], openAIWebSearchToolType)
+	}
+	if loc := tool["user_location"].(map[string]any); loc["country"] != "SG" {
+		t.Errorf("user_location.country = %v, want SG", loc["country"])
+	}
+	if gotRequest["tool_choice"] != "required" {
+		t.Errorf("tool_choice = %v, want required", gotRequest["tool_choice"])
 	}
 
 	format := gotRequest["text"].(map[string]any)["format"].(map[string]any)

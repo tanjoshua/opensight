@@ -266,8 +266,7 @@ function ProposalFlow({
 // swaps this screen for the review screen.
 const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
   { stage: "fetching_site", label: "Reading your website" },
-  { stage: "researching", label: "Researching your business" },
-  { stage: "drafting", label: "Drafting your profile and prompts" },
+  { stage: "drafting", label: "Researching and drafting your profile" },
 ]
 
 // GenerationProgress renders the live, stage-driven step list while the

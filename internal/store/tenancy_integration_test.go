@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -111,7 +112,14 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	if err != nil {
 		t.Fatalf("disjoint UpdateActiveProfile: %v", err)
 	}
-	if disjoint.Name != "Updated Clinic" || string(disjoint.Services) != string(secondServices) ||
+	var gotServices, wantServices []string
+	if err := json.Unmarshal(disjoint.Services, &gotServices); err != nil {
+		t.Fatalf("decode updated services: %v", err)
+	}
+	if err := json.Unmarshal(secondServices, &wantServices); err != nil {
+		t.Fatalf("decode expected services: %v", err)
+	}
+	if disjoint.Name != "Updated Clinic" || !slices.Equal(gotServices, wantServices) ||
 		len(disjoint.Aliases) != 1 || disjoint.Aliases[0] != "Updated" {
 		t.Fatalf("disjoint update restored omitted fields: %+v", disjoint)
 	}

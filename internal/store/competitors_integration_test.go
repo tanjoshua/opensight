@@ -42,8 +42,9 @@ func TestCompetitorStoreTenantScopingAndHistoryPreservation(t *testing.T) {
 VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`, planID, slug)
 	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id)
 VALUES ($1, 'Owner', $3), ($2, 'Other', $3)`, tenantID, otherTenantID, planID)
-	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name)
-VALUES ($1, $2, 'active', 'Owner Clinic')`, businessID, tenantID)
+	mustExec(t, db, ctx, `INSERT INTO businesses
+(id, tenant_id, status, name, category, location, activated_at)
+VALUES ($1, $2, 'active', 'Owner Clinic', 'clinic', '{"country":"SG"}', now())`, businessID, tenantID)
 
 	competitors := NewCompetitorStore(db)
 	created, err := competitors.CreateManual(ctx, CreateManualCompetitorParams{

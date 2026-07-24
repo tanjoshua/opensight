@@ -34,10 +34,10 @@ func validProposalJSON(t *testing.T) json.RawMessage {
 			Location: llm.ProposedLocation{Country: "SG"},
 		},
 		Prompts: []llm.ProposedPrompt{
-			{Text: "best orthopaedic clinic in Singapore", Kind: "category"},
-			{Text: "where to get ACL reconstruction", Kind: "service"},
-			{Text: "knee pain who to see", Kind: "condition"},
-			{Text: "orthopaedic specialist near Novena", Kind: "location"},
+			{Text: "best orthopaedic clinic in Singapore"},
+			{Text: "where to get ACL reconstruction"},
+			{Text: "knee pain who to see"},
+			{Text: "orthopaedic specialist near Novena"},
 		},
 	})
 	if err != nil {

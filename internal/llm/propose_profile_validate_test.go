@@ -7,8 +7,9 @@ import (
 	"testing"
 )
 
-// validProposal is a well-formed 4-prompt proposal (one prompt of each kind,
-// none naming the business) used as the baseline the negative cases mutate.
+// validProposal is a well-formed 4-prompt proposal with varied consumer
+// questions, none naming the business, used as the baseline negative cases
+// mutate.
 func validProposal() ProposalPayload {
 	return ProposalPayload{
 		LowConfidence: false,
@@ -20,10 +21,10 @@ func validProposal() ProposalPayload {
 			Location: ProposedLocation{City: "Singapore", Country: "SG"},
 		},
 		Prompts: []ProposedPrompt{
-			{Text: "best orthopaedic clinic in Singapore", Kind: "category"},
-			{Text: "where can I get ACL reconstruction in Singapore", Kind: "service"},
-			{Text: "knee pain that won't go away, who should I see", Kind: "condition"},
-			{Text: "orthopaedic specialist near Novena MRT", Kind: "location"},
+			{Text: "best orthopaedic clinic in Singapore"},
+			{Text: "where can I get ACL reconstruction in Singapore"},
+			{Text: "knee pain that won't go away, who should I see"},
+			{Text: "orthopaedic specialist near Novena MRT"},
 		},
 	}
 }
@@ -45,7 +46,6 @@ func TestValidateProposal(t *testing.T) {
 		{name: "malformed country", mutate: func(p *ProposalPayload) { p.Profile.Location.Country = "Singapore" }, wantErr: "two-letter ISO"},
 		{name: "empty service entry", mutate: func(p *ProposalPayload) { p.Profile.Services = []string{""} }, wantErr: "services[0] is empty"},
 		{name: "empty prompt text", mutate: func(p *ProposalPayload) { p.Prompts[0].Text = " " }, wantErr: "prompts[0].text is empty"},
-		{name: "unknown kind", mutate: func(p *ProposalPayload) { p.Prompts[0].Kind = "branded" }, wantErr: `"branded" is not one of`},
 		{
 			name:    "alias leaks into prompt (case-insensitive)",
 			mutate:  func(p *ProposalPayload) { p.Prompts[0].Text = "is NOVENA ORTHO any good" },
@@ -57,11 +57,6 @@ func TestValidateProposal(t *testing.T) {
 			mutate:  func(p *ProposalPayload) { p.Prompts[2].Text = "reviews of novena orthopaedic clinic" },
 			wantErr: "contains the business name/alias",
 		},
-		{name: "all one kind", mutate: func(p *ProposalPayload) {
-			for i := range p.Prompts {
-				p.Prompts[i].Kind = "category"
-			}
-		}, wantErr: "distinct kinds"},
 	}
 
 	for _, tt := range tests {
@@ -79,6 +74,30 @@ func TestValidateProposal(t *testing.T) {
 				t.Fatalf("want an error containing %q, got %v", tt.wantErr, errs)
 			}
 		})
+	}
+}
+
+func TestDecodeProposalPayloadIgnoresLegacyPromptKind(t *testing.T) {
+	payload, err := DecodeProposalPayload(json.RawMessage(`{
+		"low_confidence": false,
+		"profile": {
+			"name": "Clinic",
+			"aliases": [],
+			"category": "clinic",
+			"services": [],
+			"location": {"address": "", "area": "", "city": "", "country": "SG"}
+		},
+		"prompts": [{"text": "best clinic near me", "kind": "location"}]
+	}`))
+	if err != nil {
+		t.Fatalf("DecodeProposalPayload: %v", err)
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal decoded payload: %v", err)
+	}
+	if strings.Contains(string(raw), `"kind"`) {
+		t.Fatalf("decoded legacy payload still exposes prompt kind: %s", raw)
 	}
 }
 

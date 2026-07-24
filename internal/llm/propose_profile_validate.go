@@ -17,15 +17,11 @@ const MaxProposeProfileAttempts = 2
 // false-positive against ordinary words that happen to contain that letter.
 const minNameLeakLength = 3
 
-// promptKindEnum is the allowed set of prompt kinds. Checked here as defense in
-// depth alongside the strict JSON-schema enum, mirroring extraction's
-// sentiment/citation-subject double-check.
-var promptKindEnum = map[string]bool{"category": true, "service": true, "condition": true, "location": true}
-
 // DecodeProposalPayload repairs the known double-escaped-unicode model artifact
 // (RepairDoubleEscapedUnicode — the same artifact can occur here) and unmarshals
-// the result. Callers must use this rather than json.Unmarshal directly on a
-// runner's RawJSON.
+// the result. Unknown fields are intentionally ignored so proposals persisted
+// before prompt metadata was removed remain readable. Callers must use this
+// rather than json.Unmarshal directly on a runner's RawJSON.
 func DecodeProposalPayload(raw json.RawMessage) (ProposalPayload, error) {
 	var out ProposalPayload
 	err := json.Unmarshal(RepairDoubleEscapedUnicode(raw), &out)
@@ -35,9 +31,9 @@ func DecodeProposalPayload(raw json.RawMessage) (ProposalPayload, error) {
 // ValidateProposal runs every deterministic check on a decoded proposal before
 // a user sees it (design 03 step 3 and the "Prompt generation rules"): required
 // profile fields, a two-letter ISO country, no empty array entries, the exact
-// plan.prompt_limit prompt count, valid prompt kinds, no business-name leakage
-// into any prompt, and a mix of prompt kinds. It returns one human-readable
-// message per violation; an empty result means valid. It is pure.
+// plan.prompt_limit prompt count, and no business-name leakage into any prompt.
+// It returns one human-readable message per violation; an empty result means
+// valid. It is pure.
 func ValidateProposal(payload ProposalPayload, in ProposeProfileInput) []string {
 	errs := ValidateProfile(payload.Profile)
 	if len(payload.Prompts) != in.PromptLimit {
@@ -47,13 +43,9 @@ func ValidateProposal(payload ProposalPayload, in ProposeProfileInput) []string 
 		if strings.TrimSpace(pr.Text) == "" {
 			errs = append(errs, fmt.Sprintf("prompts[%d].text is empty", i))
 		}
-		if !promptKindEnum[pr.Kind] {
-			errs = append(errs, fmt.Sprintf("prompts[%d].kind %q is not one of category, service, condition, location", i, pr.Kind))
-		}
 	}
 
 	errs = append(errs, validatePromptNameLeakage(payload, in)...)
-	errs = append(errs, validatePromptKindMix(payload, in)...)
 
 	return errs
 }
@@ -116,32 +108,13 @@ func validatePromptNameLeakage(payload ProposalPayload, in ProposeProfileInput) 
 	return errs
 }
 
-// validatePromptKindMix enforces the "mix across kinds" rule deterministically:
-// when the prompt count allows it, all four kinds must each appear at least
-// once (wantKinds = min(4, prompt_limit)).
-func validatePromptKindMix(payload ProposalPayload, in ProposeProfileInput) []string {
-	wantKinds := 4
-	if in.PromptLimit < wantKinds {
-		wantKinds = in.PromptLimit
-	}
-	distinct := map[string]bool{}
-	for _, pr := range payload.Prompts {
-		if promptKindEnum[pr.Kind] {
-			distinct[pr.Kind] = true
-		}
-	}
-	if len(distinct) < wantKinds {
-		return []string{fmt.Sprintf("prompts use only %d distinct kinds, want at least %d different kinds mixed across the set", len(distinct), wantKinds)}
-	}
-	return nil
-}
-
 // ProposeProfileAttemptResult is the outcome of ProposeWithRetry.
 type ProposeProfileAttemptResult struct {
 	Payload        ProposalPayload
 	Model          string
-	Proposed       bool     // false if validation failed after MaxProposeProfileAttempts
-	ValidationErrs []string // the final attempt's errors, always populated when !Proposed
+	RawResponse    json.RawMessage // full body of the successful attempt (for Sources / web-search actions)
+	Proposed       bool            // false if validation failed after MaxProposeProfileAttempts
+	ValidationErrs []string        // the final attempt's errors, always populated when !Proposed
 }
 
 // ProposeWithRetry runs the proposal call, decodes and validates the output, and
@@ -166,7 +139,7 @@ func ProposeWithRetry(ctx context.Context, runner ProposeProfileRunner, in Propo
 		}
 
 		if len(validationErrs) == 0 {
-			return ProposeProfileAttemptResult{Payload: parsed, Model: res.Model, Proposed: true}, nil
+			return ProposeProfileAttemptResult{Payload: parsed, Model: res.Model, RawResponse: res.RawResponse, Proposed: true}, nil
 		}
 		in.PriorOutputJSON = res.RawJSON
 		in.RetryValidationErrors = validationErrs

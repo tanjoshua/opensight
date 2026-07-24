@@ -56,9 +56,9 @@ type patchBusinessRequest struct {
 // Stage is the workflow's current generation stage, present only while
 // generating (omitted when the stage query fails or degrades).
 type proposalStatusResponse struct {
-	Status  string          `json:"status"`
-	Stage   string          `json:"stage,omitempty"`
-	Payload json.RawMessage `json:"payload,omitempty"`
+	Status  string               `json:"status"`
+	Stage   string               `json:"stage,omitempty"`
+	Payload *llm.ProposalPayload `json:"payload,omitempty"`
 }
 
 const (
@@ -295,9 +295,14 @@ func (s *Server) handleGetProposal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	proposal, err := s.proposals.GetPending(ctx, su.TenantID, businessID)
 	if err == nil {
+		payload, err := llm.DecodeProposalPayload(proposal.Payload)
+		if err != nil {
+			s.writeInternalError(w, "get proposal: decode pending payload", err)
+			return
+		}
 		writeJSON(w, http.StatusOK, proposalStatusResponse{
 			Status:  proposalStatusReady,
-			Payload: proposal.Payload,
+			Payload: &payload,
 		})
 		return
 	}
@@ -426,21 +431,20 @@ func (s *Server) handleApplyBusiness(w http.ResponseWriter, r *http.Request) {
 
 	promptTexts := make([]string, 0, len(payload.Prompts))
 	for _, p := range payload.Prompts {
-		// prompt kind is UI-only; prompts has no kind column, so drop it.
 		promptTexts = append(promptTexts, p.Text)
 	}
 
 	now := nowUTC()
 	result, err := s.apply.Apply(ctx, store.ApplyProposalParams{
-		TenantID:      su.TenantID,
-		BusinessID:    businessID,
-		Name:          payload.Profile.Name,
-		Aliases:       payload.Profile.Aliases,
-		Category:      payload.Profile.Category,
-		Services:      services,
-		Location:      location,
-		PromptTexts:   promptTexts,
-		ActivatedAt:   now,
+		TenantID:    su.TenantID,
+		BusinessID:  businessID,
+		Name:        payload.Profile.Name,
+		Aliases:     payload.Profile.Aliases,
+		Category:    payload.Profile.Category,
+		Services:    services,
+		Location:    location,
+		PromptTexts: promptTexts,
+		ActivatedAt: now,
 	})
 	if err != nil {
 		switch {

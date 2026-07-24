@@ -5,6 +5,7 @@
 import { useState, type ReactNode } from "react"
 import {
   ArrowRight,
+  ExternalLink,
   Plus,
   RefreshCw,
   Trash2,
@@ -13,7 +14,6 @@ import {
 
 import { ApiError } from "@/api/client"
 import {
-  PROMPT_KINDS,
   type ProposalPayload,
   type ProposedPrompt,
   useApplyProposal,
@@ -22,14 +22,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 export function ReviewScreen({
   businessId,
@@ -217,7 +209,7 @@ export function ReviewScreen({
             onClick={() =>
               setDraft((d) => ({
                 ...d,
-                prompts: [...d.prompts, { text: "", kind: PROMPT_KINDS[0] }],
+                prompts: [...d.prompts, { text: "" }],
               }))
             }
           >
@@ -251,6 +243,29 @@ export function ReviewScreen({
           </div>
         )}
       </Section>
+
+      {payload.sources && payload.sources.length > 0 && (
+        <Section
+          title="Sources"
+          subtitle="Pages we read while researching this business."
+        >
+          <ul className="flex flex-col gap-2">
+            {payload.sources.map((source, i) => (
+              <li key={i}>
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline"
+                >
+                  {source.domain}
+                  <ExternalLink className="size-3.5 shrink-0" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
       <div className="sticky bottom-0 -mx-6 flex flex-col gap-2 border-t bg-background/95 px-6 py-4 backdrop-blur">
         {applyError && (
@@ -296,13 +311,6 @@ function validateFinalPayload(
     return `Add exactly ${promptLimit} prompts to continue.`
   if (payload.prompts.some((prompt) => prompt.text.trim() === ""))
     return "Complete or remove every prompt to continue."
-  if (
-    payload.prompts.some(
-      (prompt) =>
-        !PROMPT_KINDS.includes(prompt.kind as (typeof PROMPT_KINDS)[number])
-    )
-  )
-    return "Choose a valid kind for every prompt to continue."
   return undefined
 }
 
@@ -430,14 +438,10 @@ function PromptRow({
         {index + 1}
       </Badge>
       <Input
-        className="flex-[3]"
+        className="flex-1"
         value={value.text}
         placeholder="e.g. best orthopaedic clinic in Singapore"
         onChange={(e) => onChange({ ...value, text: e.currentTarget.value })}
-      />
-      <KindSelect
-        value={value.kind}
-        onChange={(kind) => onChange({ ...value, kind })}
       />
       <Button
         type="button"
@@ -449,37 +453,6 @@ function PromptRow({
         <Trash2 />
       </Button>
     </div>
-  )
-}
-
-function KindSelect({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  // A generated kind outside the closed set still needs to render; show it as-is.
-  const items = PROMPT_KINDS.map((k) => ({ label: k, value: k }))
-  return (
-    <Select
-      items={items}
-      value={value}
-      onValueChange={(v) => onChange(String(v))}
-    >
-      <SelectTrigger size="sm" className="shrink-0" aria-label="Prompt kind">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
   )
 }
 

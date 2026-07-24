@@ -48,8 +48,9 @@ func proposedOK() ProposeProfileOutput {
 	}
 }
 
-// TestGenerateProfileWorkflowHappyPath: both evidence sources succeed, the
-// proposal validates, and it is persisted verbatim (low_confidence unchanged).
+// TestGenerateProfileWorkflowHappyPath: FetchSite succeeds, the combined
+// ResearchAndPropose call validates, and the proposal is persisted verbatim
+// (low_confidence unchanged).
 func TestGenerateProfileWorkflowHappyPath(t *testing.T) {
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
@@ -57,10 +58,9 @@ func TestGenerateProfileWorkflowHappyPath(t *testing.T) {
 
 	env.OnActivity(a.FetchSite, mock.Anything, mock.Anything).
 		Return(FetchSiteOutput{Text: "site text"}, nil).Once()
-	env.OnActivity(a.ResearchBusiness, mock.Anything, mock.Anything).
-		Return(ResearchBusinessOutput{Summary: "research"}, nil).Once()
-	env.OnActivity(a.ProposeProfile, mock.Anything, mock.Anything).
-		Return(proposedOK(), nil).Once()
+	env.OnActivity(a.ProposeProfile, mock.Anything, mock.MatchedBy(func(in ProposeProfileInput) bool {
+		return in.SiteText == "site text" && in.Location.Country == "SG"
+	})).Return(proposedOK(), nil).Once()
 	env.OnActivity(a.PersistProposal, mock.Anything, mock.MatchedBy(func(in PersistProposalInput) bool {
 		return !in.Payload.LowConfidence
 	})).Return(PersistProposalOutput{ProposalID: mustID(t)}, nil).Once()
@@ -78,8 +78,9 @@ func TestGenerateProfileWorkflowHappyPath(t *testing.T) {
 }
 
 // TestGenerateProfileWorkflowFetchFailsForcesLowConfidence: FetchSite failing
-// proceeds research-only and stamps low_confidence on the persisted proposal,
-// even though ProposeProfile returned low_confidence false.
+// proceeds with empty site text and, because the model did not read the site
+// itself, stamps low_confidence on the persisted proposal even though the model
+// returned low_confidence false.
 func TestGenerateProfileWorkflowFetchFailsForcesLowConfidence(t *testing.T) {
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
@@ -87,11 +88,13 @@ func TestGenerateProfileWorkflowFetchFailsForcesLowConfidence(t *testing.T) {
 
 	env.OnActivity(a.FetchSite, mock.Anything, mock.Anything).
 		Return(FetchSiteOutput{}, errors.New("site unreachable"))
-	env.OnActivity(a.ResearchBusiness, mock.Anything, mock.Anything).
-		Return(ResearchBusinessOutput{Summary: "research"}, nil).Once()
 	env.OnActivity(a.ProposeProfile, mock.Anything, mock.MatchedBy(func(in ProposeProfileInput) bool {
 		return in.SiteText == ""
-	})).Return(proposedOK(), nil).Once()
+	})).Return(ProposeProfileOutput{
+		Payload:       llm.ProposalPayload{LowConfidence: false},
+		Proposed:      true,
+		OpenedOwnSite: false,
+	}, nil).Once()
 	persisted := false
 	env.OnActivity(a.PersistProposal, mock.Anything, mock.MatchedBy(func(in PersistProposalInput) bool {
 		persisted = in.Payload.LowConfidence
@@ -111,21 +114,22 @@ func TestGenerateProfileWorkflowFetchFailsForcesLowConfidence(t *testing.T) {
 	env.AssertExpectations(t)
 }
 
-// TestGenerateProfileWorkflowResearchFailsStillSucceeds: research failing is
-// survivable as long as FetchSite gave usable evidence; low_confidence is not
-// forced (the fetch succeeded).
-func TestGenerateProfileWorkflowResearchFailsStillSucceeds(t *testing.T) {
+// TestGenerateProfileWorkflowFetchFailsButModelReadSite: FetchSite failing does
+// NOT force low_confidence when the model opened the site itself
+// (OpenedOwnSite), so the model's own low_confidence=false judgement stands.
+func TestGenerateProfileWorkflowFetchFailsButModelReadSite(t *testing.T) {
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
 	var a *Activities
 
 	env.OnActivity(a.FetchSite, mock.Anything, mock.Anything).
-		Return(FetchSiteOutput{Text: "site text"}, nil).Once()
-	env.OnActivity(a.ResearchBusiness, mock.Anything, mock.Anything).
-		Return(ResearchBusinessOutput{}, errors.New("web search down"))
-	env.OnActivity(a.ProposeProfile, mock.Anything, mock.MatchedBy(func(in ProposeProfileInput) bool {
-		return in.ResearchSummary == "" && in.SiteText == "site text"
-	})).Return(proposedOK(), nil).Once()
+		Return(FetchSiteOutput{}, errors.New("site unreachable"))
+	env.OnActivity(a.ProposeProfile, mock.Anything, mock.Anything).
+		Return(ProposeProfileOutput{
+			Payload:       llm.ProposalPayload{LowConfidence: false},
+			Proposed:      true,
+			OpenedOwnSite: true,
+		}, nil).Once()
 	env.OnActivity(a.PersistProposal, mock.Anything, mock.MatchedBy(func(in PersistProposalInput) bool {
 		return !in.Payload.LowConfidence
 	})).Return(PersistProposalOutput{ProposalID: mustID(t)}, nil).Once()
@@ -138,25 +142,22 @@ func TestGenerateProfileWorkflowResearchFailsStillSucceeds(t *testing.T) {
 	env.AssertExpectations(t)
 }
 
-// TestGenerateProfileWorkflowBothSourcesFail: with neither evidence source, the
-// workflow fails before ever calling ProposeProfile/PersistProposal.
-func TestGenerateProfileWorkflowBothSourcesFail(t *testing.T) {
+// TestGenerateProfileWorkflowProposeFailsWorkflowFails: the combined call
+// erroring after Temporal retries fails the workflow — no proposal is persisted.
+func TestGenerateProfileWorkflowProposeFailsWorkflowFails(t *testing.T) {
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
 	var a *Activities
 
 	env.OnActivity(a.FetchSite, mock.Anything, mock.Anything).
-		Return(FetchSiteOutput{}, errors.New("site unreachable"))
-	env.OnActivity(a.ResearchBusiness, mock.Anything, mock.Anything).
-		Return(ResearchBusinessOutput{}, errors.New("web search down"))
+		Return(FetchSiteOutput{Text: "site text"}, nil).Once()
+	env.OnActivity(a.ProposeProfile, mock.Anything, mock.Anything).
+		Return(ProposeProfileOutput{}, errors.New("openai unavailable"))
 
 	env.ExecuteWorkflow(GenerateProfileWorkflow, genInput(t))
 
-	if !env.IsWorkflowCompleted() {
-		t.Fatal("workflow did not complete")
-	}
 	if err := env.GetWorkflowError(); err == nil {
-		t.Fatal("expected workflow error when both sources fail")
+		t.Fatal("expected workflow error when the propose call fails")
 	}
 	env.AssertExpectations(t)
 }
@@ -170,8 +171,6 @@ func TestGenerateProfileWorkflowProposalInvalid(t *testing.T) {
 
 	env.OnActivity(a.FetchSite, mock.Anything, mock.Anything).
 		Return(FetchSiteOutput{Text: "site text"}, nil).Once()
-	env.OnActivity(a.ResearchBusiness, mock.Anything, mock.Anything).
-		Return(ResearchBusinessOutput{Summary: "research"}, nil).Once()
 	env.OnActivity(a.ProposeProfile, mock.Anything, mock.Anything).
 		Return(ProposeProfileOutput{Proposed: false}, nil).Once()
 

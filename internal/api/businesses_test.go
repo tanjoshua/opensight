@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -311,7 +312,17 @@ func TestCreateBusinessPlanLookupFails(t *testing.T) {
 }
 
 func TestGetProposalReady(t *testing.T) {
-	payload := json.RawMessage(`{"low_confidence":true}`)
+	payload := json.RawMessage(`{
+		"low_confidence": true,
+		"profile": {
+			"name": "Acme Clinic",
+			"aliases": [],
+			"category": "clinic",
+			"services": [],
+			"location": {"address": "", "area": "", "city": "", "country": "SG"}
+		},
+		"prompts": [{"text": "best clinic near me", "kind": "location"}]
+	}`)
 	proposals := &fakeProposalStore{proposal: store.ProfileProposal{Payload: payload}}
 	srv, cookie := newAuthedOnboardingServer(t, &fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, &fakeTemporalClient{})
 
@@ -326,8 +337,12 @@ func TestGetProposalReady(t *testing.T) {
 	if resp.Status != proposalStatusReady {
 		t.Fatalf("status = %q, want ready", resp.Status)
 	}
-	if string(resp.Payload) != string(payload) {
-		t.Fatalf("payload = %s, want %s", resp.Payload, payload)
+	if resp.Payload == nil || len(resp.Payload.Prompts) != 1 ||
+		resp.Payload.Prompts[0].Text != "best clinic near me" {
+		t.Fatalf("payload = %+v, want decoded proposal", resp.Payload)
+	}
+	if strings.Contains(rec.Body.String(), `"kind"`) {
+		t.Fatalf("response exposes legacy prompt kind: %s", rec.Body.String())
 	}
 }
 
@@ -335,7 +350,7 @@ func TestGetProposalGenerating(t *testing.T) {
 	proposals := &fakeProposalStore{getErr: store.ErrNotFound}
 	temporal := &fakeTemporalClient{
 		describeStatus: enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING,
-		queryStage:     workflows.GenerationStageResearching,
+		queryStage:     workflows.GenerationStageDrafting,
 	}
 	srv, cookie := newAuthedOnboardingServer(t, &fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
 
@@ -348,8 +363,8 @@ func TestGetProposalGenerating(t *testing.T) {
 	if resp.Status != proposalStatusGenerating {
 		t.Fatalf("status = %q, want generating", resp.Status)
 	}
-	if resp.Stage != workflows.GenerationStageResearching {
-		t.Fatalf("stage = %q, want researching", resp.Stage)
+	if resp.Stage != workflows.GenerationStageDrafting {
+		t.Fatalf("stage = %q, want drafting", resp.Stage)
 	}
 }
 
@@ -451,8 +466,8 @@ func TestRegenProposalAlreadyRunning(t *testing.T) {
 }
 
 // validApplyPayload is a final review payload that passes ValidateProposal at
-// plan.prompt_limit == 4: required profile fields, a two-letter country, four
-// prompts covering all four kinds, none naming the business.
+// plan.prompt_limit == 4: required profile fields, a two-letter country, and
+// four varied prompts, none naming the business.
 const validApplyPayload = `{
   "low_confidence": false,
   "profile": {
@@ -463,10 +478,10 @@ const validApplyPayload = `{
     "location": {"address": "", "area": "Novena", "city": "Singapore", "country": "SG"}
   },
   "prompts": [
-    {"text": "best orthopaedic clinic in Singapore", "kind": "category"},
-    {"text": "where can I get ACL reconstruction in Singapore", "kind": "service"},
-    {"text": "knee pain that won't go away, who should I see in Singapore", "kind": "condition"},
-    {"text": "orthopaedic specialist near Novena", "kind": "location"}
+    {"text": "best orthopaedic clinic in Singapore"},
+    {"text": "where can I get ACL reconstruction in Singapore"},
+    {"text": "knee pain that won't go away, who should I see in Singapore"},
+    {"text": "orthopaedic specialist near Novena"}
   ]
 }`
 
@@ -499,7 +514,7 @@ func TestApplyBusinessHappyPath(t *testing.T) {
 		t.Fatalf("apply category = %q", call.Category)
 	}
 	if len(call.PromptTexts) != 4 {
-		t.Fatalf("apply prompt texts = %d, want 4 (kind dropped)", len(call.PromptTexts))
+		t.Fatalf("apply prompt texts = %d, want 4", len(call.PromptTexts))
 	}
 	if temporal.schedule == nil || temporal.schedule.creates != 1 {
 		t.Fatalf("schedule creates = %v, want 1", temporal.schedule)

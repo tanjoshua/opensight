@@ -67,7 +67,7 @@ businesses (
 
 profile_proposals (
   id UUID PK, business_id FK,
-  payload jsonb,            -- full proposed profile + 20 proposed prompts
+  payload jsonb,            -- full proposed profile + proposed prompts (+ optional informational sources)
   status text,              -- 'pending' | 'applied' | 'discarded'
   created_at, resolved_at
 )
