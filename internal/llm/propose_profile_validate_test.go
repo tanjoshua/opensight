@@ -13,12 +13,11 @@ func validProposal() ProposalPayload {
 	return ProposalPayload{
 		LowConfidence: false,
 		Profile: ProposedProfile{
-			Name:          "Novena Orthopaedic Clinic",
-			Aliases:       []string{"Novena Ortho"},
-			Category:      "orthopaedic clinic",
-			Practitioners: []ProposedPractitioner{{Name: "Dr Tan", Role: ""}},
-			Services:      []string{"ACL reconstruction"},
-			Location:      ProposedLocation{City: "Singapore", Country: "SG"},
+			Name:     "Novena Orthopaedic Clinic",
+			Aliases:  []string{"Novena Ortho"},
+			Category: "orthopaedic clinic",
+			Services: []string{"ACL reconstruction"},
+			Location: ProposedLocation{City: "Singapore", Country: "SG"},
 		},
 		Prompts: []ProposedPrompt{
 			{Text: "best orthopaedic clinic in Singapore", Kind: "category"},
@@ -91,9 +90,8 @@ func TestValidateProfileSharedSetupRules(t *testing.T) {
 	}
 	profile.Aliases = []string{" "}
 	profile.Services = []string{""}
-	profile.Practitioners = []ProposedPractitioner{{Role: "dentist"}}
 	errs := ValidateProfile(profile)
-	for _, want := range []string{"aliases[0]", "services[0]", "practitioners[0].name"} {
+	for _, want := range []string{"aliases[0]", "services[0]"} {
 		if !containsSubstr(errs, want) {
 			t.Fatalf("want %q in %v", want, errs)
 		}

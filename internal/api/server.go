@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/converter"
 )
 
 // defaultSessionTTL is the absolute session lifetime (design 07 auth plan:
@@ -61,11 +62,13 @@ type proposalStore interface {
 }
 
 // temporalClient is the narrow slice of client.Client the API server needs:
-// start GenerateProfileWorkflow/RunWorkflow, describe generation status, and
-// (via ScheduleClient) create the monitoring Schedule on apply.
+// start GenerateProfileWorkflow/RunWorkflow, describe generation status, query
+// the current generation stage, and (via ScheduleClient) create the monitoring
+// Schedule on apply.
 type temporalClient interface {
 	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
 	DescribeWorkflowExecution(ctx context.Context, workflowID, runID string) (*workflowservice.DescribeWorkflowExecutionResponse, error)
+	QueryWorkflow(ctx context.Context, workflowID, runID, queryType string, args ...interface{}) (converter.EncodedValue, error)
 	ScheduleClient() client.ScheduleClient
 }
 

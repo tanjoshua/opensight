@@ -52,7 +52,7 @@ Kept deliberately minimal for MVP:
 
 ## Data protection (light-touch, noted not lawyered)
 
-The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, password verifier and session records; business profile and public practitioner data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration.
+The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, password verifier and session records; business profile data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration.
 
 **Hard usage boundary: users must never enter patient-identifiable data.** Prompts are generic consumer queries rather than patient cases; generation rules and review copy reinforce this boundary. The product does not claim automatic detection or prevention of every prohibited entry.
 

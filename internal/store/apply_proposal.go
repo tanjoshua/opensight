@@ -30,8 +30,8 @@ const (
 	activateBusinessSQL = `
 UPDATE businesses
 SET name = $2, aliases = $3, category = $4,
-    practitioners = $5::jsonb, services = $6::jsonb, location = $7::jsonb,
-    status = 'active', activated_at = $8
+    services = $5::jsonb, location = $6::jsonb,
+    status = 'active', activated_at = $7
 WHERE id = $1
 RETURNING ` + businessColumns
 
@@ -44,19 +44,18 @@ WHERE business_id = $1 AND status = 'pending'`
 )
 
 // ApplyProposalParams are the reviewed, user-edited values written when a draft
-// business is activated (design 03, "Review and apply"). Nil Practitioners /
-// Services default to an empty JSON array, mirroring CreateBusinessParams.
+// business is activated (design 03, "Review and apply"). Nil Services default to
+// an empty JSON array, mirroring CreateBusinessParams.
 type ApplyProposalParams struct {
-	TenantID      domain.ID
-	BusinessID    domain.ID
-	Name          string
-	Aliases       []string
-	Category      string
-	Practitioners json.RawMessage // jsonb array
-	Services      json.RawMessage // jsonb array
-	Location      json.RawMessage // jsonb object
-	PromptTexts   []string
-	ActivatedAt   time.Time
+	TenantID    domain.ID
+	BusinessID  domain.ID
+	Name        string
+	Aliases     []string
+	Category    string
+	Services    json.RawMessage // jsonb array
+	Location    json.RawMessage // jsonb object
+	PromptTexts []string
+	ActivatedAt time.Time
 }
 
 // ApplyProposalResult is the activated business and its inserted active prompts.
@@ -128,7 +127,6 @@ func applyProposalInTx(ctx context.Context, q querier, params ApplyProposalParam
 		params.Name,
 		params.Aliases,
 		params.Category,
-		string(params.Practitioners),
 		string(params.Services),
 		jsonbArg(params.Location),
 		params.ActivatedAt,
@@ -175,9 +173,6 @@ func normalizeApplyProposalParams(params ApplyProposalParams) (ApplyProposalPara
 	}
 	if params.Aliases == nil {
 		params.Aliases = []string{}
-	}
-	if len(params.Practitioners) == 0 {
-		params.Practitioners = json.RawMessage("[]")
 	}
 	if len(params.Services) == 0 {
 		params.Services = json.RawMessage("[]")

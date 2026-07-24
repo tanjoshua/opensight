@@ -53,6 +53,13 @@ func TestResearchBusinessPromptCarriesNameAndLocation(t *testing.T) {
 			t.Fatalf("prompt missing %q:\n%s", want, runner.req.Prompt)
 		}
 	}
+	// The prompt asks for the business's specialty/category, not just aliases
+	// and directory listings — this is the only category evidence
+	// ProposeProfile gets when FetchSite fails, and its absence previously let
+	// the model default to an unrelated example category.
+	if !strings.Contains(runner.req.Prompt, "specialty") {
+		t.Fatalf("prompt missing specialty ask:\n%s", runner.req.Prompt)
+	}
 }
 
 func TestResearchBusinessEmptyNameNonRetryable(t *testing.T) {

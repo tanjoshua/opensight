@@ -31,28 +31,26 @@ type businessCreateOptions struct {
 // businessSpec is a business profile plus its prompts, ready for the store: the
 // jsonb columns are already marshalled to raw JSON.
 type businessSpec struct {
-	Name          string
-	Website       *string
-	Category      *string
-	Aliases       []string
-	Practitioners json.RawMessage
-	Services      json.RawMessage
-	Location      json.RawMessage
-	Prompts       []string
+	Name     string
+	Website  *string
+	Category *string
+	Aliases  []string
+	Services json.RawMessage
+	Location json.RawMessage
+	Prompts  []string
 }
 
 // businessSpecFile is the on-disk YAML/JSON shape (JSON is valid YAML, so one
-// decoder covers both). location/practitioners/services are held as generic
-// values and re-marshalled to jsonb.
+// decoder covers both). location/services are held as generic values and
+// re-marshalled to jsonb.
 type businessSpecFile struct {
-	Name          string           `yaml:"name"`
-	Website       string           `yaml:"website"`
-	Category      string           `yaml:"category"`
-	Aliases       []string         `yaml:"aliases"`
-	Location      map[string]any   `yaml:"location"`
-	Practitioners []map[string]any `yaml:"practitioners"`
-	Services      []map[string]any `yaml:"services"`
-	Prompts       []string         `yaml:"prompts"`
+	Name     string           `yaml:"name"`
+	Website  string           `yaml:"website"`
+	Category string           `yaml:"category"`
+	Aliases  []string         `yaml:"aliases"`
+	Location map[string]any   `yaml:"location"`
+	Services []map[string]any `yaml:"services"`
+	Prompts  []string         `yaml:"prompts"`
 }
 
 func parseBusinessCreateArgs(args []string) (businessCreateOptions, error) {
@@ -119,9 +117,6 @@ func loadBusinessSpec(path string) (businessSpec, error) {
 	}
 
 	if spec.Location, err = marshalJSONField("location", file.Location); err != nil {
-		return businessSpec{}, err
-	}
-	if spec.Practitioners, err = marshalJSONSlice("practitioners", file.Practitioners); err != nil {
 		return businessSpec{}, err
 	}
 	if spec.Services, err = marshalJSONSlice("services", file.Services); err != nil {
@@ -196,16 +191,15 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 
 	activatedAt := time.Now().UTC()
 	business, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
-		TenantID:      opts.TenantID,
-		Status:        store.BusinessStatusActive,
-		Name:          opts.Spec.Name,
-		Website:       opts.Spec.Website,
-		Aliases:       opts.Spec.Aliases,
-		Category:      opts.Spec.Category,
-		Practitioners: opts.Spec.Practitioners,
-		Services:      opts.Spec.Services,
-		Location:      opts.Spec.Location,
-		ActivatedAt:   &activatedAt,
+		TenantID:    opts.TenantID,
+		Status:      store.BusinessStatusActive,
+		Name:        opts.Spec.Name,
+		Website:     opts.Spec.Website,
+		Aliases:     opts.Spec.Aliases,
+		Category:    opts.Spec.Category,
+		Services:    opts.Spec.Services,
+		Location:    opts.Spec.Location,
+		ActivatedAt: &activatedAt,
 	})
 	if err != nil {
 		return fmt.Errorf("create business: %w", err)

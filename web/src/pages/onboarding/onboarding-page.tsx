@@ -5,7 +5,13 @@
 // restarting.
 import { type FormEvent, type ReactNode, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Building2, LoaderCircle, Sparkles, TriangleAlert } from "lucide-react"
+import {
+  Building2,
+  Check,
+  LoaderCircle,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react"
 import { Navigate, useNavigate } from "react-router"
 
 import { useMe } from "@/api/auth"
@@ -14,6 +20,7 @@ import {
   createBusiness,
   useProposal,
   useRegenProposal,
+  type GenerationStage,
   type ProposalPayload,
 } from "@/api/onboarding"
 import { ReviewScreen } from "@/pages/onboarding/review-screen"
@@ -27,7 +34,6 @@ const EMPTY_PAYLOAD: ProposalPayload = {
     name: "",
     aliases: [],
     category: "",
-    practitioners: [],
     services: [],
     location: { address: "", area: "", city: "", country: "" },
   },
@@ -214,13 +220,7 @@ function ProposalFlow({
         : undefined
 
   if (status === "generating" || regen.isPending) {
-    return (
-      <ProgressState
-        icon={<LoaderCircle className="animate-spin text-muted-foreground" />}
-        title="Building your setup"
-        description="We're reading your website and researching your business, then drafting a profile and prompts. This usually takes a few minutes — you can leave this page and come back."
-      />
-    )
+    return <GenerationProgress stage={proposal.data?.stage} />
   }
 
   if (status === "failed") {
@@ -257,6 +257,78 @@ function ProposalFlow({
       canRegenerate
       onApplied={onApplied}
     />
+  )
+}
+
+// GENERATION_STEPS mirrors GenerateProfileWorkflow's stage order
+// (internal/workflows/generate_profile.go). PersistProposal is folded into
+// "drafting"; there is no terminal step because a ready proposal immediately
+// swaps this screen for the review screen.
+const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
+  { stage: "fetching_site", label: "Reading your website" },
+  { stage: "researching", label: "Researching your business" },
+  { stage: "drafting", label: "Drafting your profile and prompts" },
+]
+
+// GenerationProgress renders the live, stage-driven step list while the
+// workflow generates. The current step comes from the polled stage; an absent
+// stage (just-started run, pre-deploy workflow, or a degraded stage query)
+// falls back to step 1. The only motion tied to progress is the real polled
+// stage — completed steps get a checkmark that transitions in as the workflow
+// advances.
+function GenerationProgress({ stage }: { stage?: GenerationStage }) {
+  const current = Math.max(
+    0,
+    GENERATION_STEPS.findIndex((s) => s.stage === stage)
+  )
+  return (
+    <div className="flex flex-col items-center gap-6 rounded-3xl border border-dashed p-12 text-center">
+      <div className="flex max-w-md flex-col gap-2">
+        <h1 className="font-heading text-lg font-medium">Building your setup</h1>
+        <p className="text-sm/relaxed text-muted-foreground">
+          This usually takes a few minutes — you can leave this page and come
+          back.
+        </p>
+      </div>
+      <ol className="flex w-full max-w-xs flex-col gap-4 text-left">
+        {GENERATION_STEPS.map((step, index) => {
+          const done = index < current
+          const active = index === current
+          return (
+            <li key={step.stage} className="flex items-center gap-3">
+              <span
+                className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:size-3.5 ${
+                  done
+                    ? "bg-primary text-primary-foreground"
+                    : active
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {done ? (
+                  <Check strokeWidth={3} />
+                ) : active ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <span className="size-2 rounded-full bg-current opacity-40" />
+                )}
+              </span>
+              <span
+                className={`text-sm transition-colors ${
+                  active
+                    ? "font-medium text-foreground"
+                    : done
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {step.label}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
   )
 }
 

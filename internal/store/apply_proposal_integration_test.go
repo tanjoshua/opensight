@@ -63,7 +63,6 @@ VALUES ($1, $2, '{"low_confidence":false}'::jsonb, 'pending')`, proposalID, busi
 		Name:          "Draft Clinic",
 		Aliases:       []string{"DC Ortho"},
 		Category:      "orthopaedic clinic",
-		Practitioners: json.RawMessage(`[{"name":"Dr Tan","role":"surgeon"}]`),
 		Services:      json.RawMessage(`["ACL reconstruction"]`),
 		Location:      json.RawMessage(`{"city":"Singapore","country":"SG"}`),
 		PromptTexts:   []string{"best orthopaedic clinic in Singapore", "who fixes knees near Novena"},

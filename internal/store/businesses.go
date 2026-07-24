@@ -27,49 +27,46 @@ const (
 // Business is a persisted business row (migration 00003). tenant_id is the
 // tenancy anchor every deeper table scopes through.
 type Business struct {
-	ID            domain.ID
-	TenantID      domain.ID
-	Status        BusinessStatus
-	Name          string
-	Website       *string
-	Aliases       []string
-	Category      *string
-	Practitioners json.RawMessage
-	Services      json.RawMessage
-	Location      json.RawMessage
-	CreatedAt     time.Time
-	ActivatedAt   *time.Time
+	ID          domain.ID
+	TenantID    domain.ID
+	Status      BusinessStatus
+	Name        string
+	Website     *string
+	Aliases     []string
+	Category    *string
+	Services    json.RawMessage
+	Location    json.RawMessage
+	CreatedAt   time.Time
+	ActivatedAt *time.Time
 }
 
 // CreateBusinessParams are the inputs for creating a business. TenantID is
 // required (tenant existence is enforced by the FK). If ID is uuid.Nil a UUIDv7
-// is generated. Nil Practitioners/Services default to an empty JSON array; nil
-// Aliases default to an empty array; Location stays NULL when nil.
+// is generated. Nil Services default to an empty JSON array; nil Aliases default
+// to an empty array; Location stays NULL when nil.
 type CreateBusinessParams struct {
-	ID            domain.ID
-	TenantID      domain.ID
-	Status        BusinessStatus
-	Name          string
-	Website       *string
-	Aliases       []string
-	Category      *string
-	Practitioners json.RawMessage
-	Services      json.RawMessage
-	Location      json.RawMessage
-	ActivatedAt   *time.Time
+	ID          domain.ID
+	TenantID    domain.ID
+	Status      BusinessStatus
+	Name        string
+	Website     *string
+	Aliases     []string
+	Category    *string
+	Services    json.RawMessage
+	Location    json.RawMessage
+	ActivatedAt *time.Time
 }
 
 type UpdateBusinessProfileParams struct {
-	TenantID      domain.ID
-	BusinessID    domain.ID
-	Name          *string
-	WebsiteSet    bool
-	Website       *string
-	Aliases       *[]string
-	Category      *string
-	Practitioners *json.RawMessage
-	Services      *json.RawMessage
-	Location      *json.RawMessage
+	TenantID   domain.ID
+	BusinessID domain.ID
+	Name       *string
+	WebsiteSet bool
+	Website    *string
+	Aliases    *[]string
+	Category   *string
+	Services   *json.RawMessage
+	Location   *json.RawMessage
 }
 
 // BusinessStore reads and writes business rows. It is the tenant-checked entry
@@ -87,9 +84,9 @@ const (
 	insertBusinessSQL = `
 INSERT INTO businesses (
   id, tenant_id, status, name, website, aliases, category,
-  practitioners, services, location, activated_at
+  services, location, activated_at
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11
+  $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10
 )
 RETURNING created_at`
 
@@ -97,7 +94,7 @@ RETURNING created_at`
 	// insert but will not decode text[] back into []string, so it is read as
 	// JSON and unmarshalled (see stringSlice).
 	businessColumns = `id, tenant_id, status, name, website, to_jsonb(aliases) AS aliases, category,
-       practitioners, services, location, created_at, activated_at`
+       services, location, created_at, activated_at`
 
 	getBusinessSQL = `
 SELECT ` + businessColumns + `
@@ -118,9 +115,8 @@ SET name = CASE WHEN $3 THEN $4 ELSE name END,
     website = CASE WHEN $5 THEN $6 ELSE website END,
     aliases = CASE WHEN $7 THEN $8 ELSE aliases END,
     category = CASE WHEN $9 THEN $10 ELSE category END,
-    practitioners = CASE WHEN $11 THEN $12::jsonb ELSE practitioners END,
-    services = CASE WHEN $13 THEN $14::jsonb ELSE services END,
-    location = CASE WHEN $15 THEN $16::jsonb ELSE location END
+    services = CASE WHEN $11 THEN $12::jsonb ELSE services END,
+    location = CASE WHEN $13 THEN $14::jsonb ELSE location END
 WHERE id = $1 AND tenant_id = $2 AND status = 'active'
 RETURNING ` + businessColumns
 )
@@ -138,17 +134,16 @@ func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusines
 	}
 
 	business := Business{
-		ID:            params.ID,
-		TenantID:      params.TenantID,
-		Status:        params.Status,
-		Name:          params.Name,
-		Website:       params.Website,
-		Aliases:       params.Aliases,
-		Category:      params.Category,
-		Practitioners: params.Practitioners,
-		Services:      params.Services,
-		Location:      params.Location,
-		ActivatedAt:   params.ActivatedAt,
+		ID:          params.ID,
+		TenantID:    params.TenantID,
+		Status:      params.Status,
+		Name:        params.Name,
+		Website:     params.Website,
+		Aliases:     params.Aliases,
+		Category:    params.Category,
+		Services:    params.Services,
+		Location:    params.Location,
+		ActivatedAt: params.ActivatedAt,
 	}
 	if err := s.db.QueryRowContext(
 		ctx,
@@ -160,7 +155,6 @@ func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusines
 		params.Website,
 		params.Aliases,
 		params.Category,
-		string(params.Practitioners),
 		string(params.Services),
 		jsonbArg(params.Location),
 		params.ActivatedAt,
@@ -228,8 +222,6 @@ func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBu
 		aliases,
 		params.Category != nil,
 		params.Category,
-		params.Practitioners != nil,
-		jsonText(params.Practitioners),
 		params.Services != nil,
 		jsonText(params.Services),
 		params.Location != nil,
@@ -305,7 +297,6 @@ func scanBusiness(row rowScanner) (Business, error) {
 		&business.Website,
 		&aliases,
 		&business.Category,
-		&business.Practitioners,
 		&business.Services,
 		nullableJSON{&business.Location},
 		&business.CreatedAt,
@@ -378,9 +369,6 @@ func normalizeCreateBusinessParams(params CreateBusinessParams) (CreateBusinessP
 	}
 	if params.Aliases == nil {
 		params.Aliases = []string{}
-	}
-	if len(params.Practitioners) == 0 {
-		params.Practitioners = json.RawMessage("[]")
 	}
 	if len(params.Services) == 0 {
 		params.Services = json.RawMessage("[]")

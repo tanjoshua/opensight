@@ -22,6 +22,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00005_add_password_auth_sessions.sql",
 		"migrations/00006_create_analysis_tables.sql",
 		"migrations/00007_add_mention_verbatim_name.sql",
+		"migrations/00008_drop_business_practitioners.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -167,7 +168,6 @@ func TestBusinessProfilePromptMigrationCreatesTables(t *testing.T) {
 		"tenant_id uuid NOT NULL REFERENCES tenants(id)",
 		"status text NOT NULL CHECK (status IN ('draft', 'active'))",
 		"aliases text[] NOT NULL DEFAULT ARRAY[]::text[]",
-		"practitioners jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(practitioners) = 'array')",
 		"services jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(services) = 'array')",
 		"location jsonb",
 		"activated_at timestamptz",

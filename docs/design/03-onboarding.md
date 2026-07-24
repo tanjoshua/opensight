@@ -24,15 +24,17 @@ sequenceDiagram
     API->>T: create weekly Schedule + trigger first run now
 ```
 
-Generation is chained LLM work (web_search + a structured-output call, each with a validation retry), so end-to-end runtime is on the order of a few minutes, not seconds. GenerateProfileWorkflow runs to completion with no fixed deadline; the UI polls proposal status and shows progress rather than assuming a fixed budget.
+Generation is chained LLM work (web_search + a structured-output call, each with a validation retry), so end-to-end runtime is on the order of a few minutes, not seconds. GenerateProfileWorkflow runs to completion with no fixed deadline; the UI polls proposal status and, while generating, shows a stage-driven step list (reading the website → researching → drafting) rather than assuming a fixed budget.
 
 ## GenerateProfileWorkflow
 
 Three activities, each independently retryable:
 
 1. **FetchSite** — plain HTTP GET of the homepage plus obvious high-value paths (`/about`, `/services`, `/team`, `/doctors`, `/contact`, and anything linked from the homepage nav; sitemap.xml if present). HTML stripped to text, capped (~50KB total). **No headless browser in MVP** — clinic sites that render nothing without JS fall back to step 2 alone. Fetching is SSRF-guarded: http(s) only, DNS resolved with private/link-local/metadata ranges refused, redirects capped and re-validated per hop, response size and time capped.
-2. **ResearchBusiness** — one OpenAI `web_search` call on the business name + location hints. Purpose: catch aliases (former names, Chinese names, colloquial names — common for Singapore clinics), directory listings, and practitioners the site doesn't list. Aliases are **organization trading identities only** — a practitioner's name belongs in `practitioners`, never in `aliases`, unless it is genuinely part of the trading name ("Dr Tan's Orthopaedic Practice"); mention matching operates on organizations, not people (05). This is the same `PromptRunner` plumbing the monitoring pipeline uses.
-3. **ProposeProfile** — single LLM call with a structured-output schema producing the proposal payload (below). Inputs: user-entered name/website, site text, research summary. If output fails validation (wrong prompt count, empty fields), retry once with the validation errors appended.
+2. **ResearchBusiness** — one OpenAI `web_search` call on the business name + location hints. Purpose: establish what the business is (its specialty/category and headline services — the only category evidence ProposeProfile gets when FetchSite fails) and catch aliases (former names, Chinese names, colloquial names — common for Singapore clinics) and directory listings. Aliases are **organization trading identities only** — never a person's name unless it is genuinely part of the trading name ("Dr Tan's Orthopaedic Practice"); mention matching operates on organizations, not people (05). This is the same `PromptRunner` plumbing the monitoring pipeline uses.
+3. **ProposeProfile** — single LLM call with a structured-output schema producing the proposal payload (below). Inputs: user-entered name/website, site text, research summary. If output fails validation (wrong prompt count, empty fields), retry once with the validation errors appended. The instructions require `category` to be derived from evidence about this business (the business name itself counts as strong evidence when it contains a specialty term, e.g. "… Endodontics"), give varied cross-specialty examples rather than a single anchor, and force `low_confidence: true` when no evidence states the specialty.
+
+The workflow exposes its current stage (`fetching_site` | `researching` | `drafting`) via a Temporal query (`generation-stage`), advanced between activities so a retry never regresses it. `GET /businesses/:id/proposal` includes `stage` while status is `generating`, degrading to omission if the query fails (e.g. worker briefly unavailable, a pre-deploy run without the handler); the poll never fails on a stage-query error.
 
 Failure posture: if FetchSite fails entirely, proceed with research only and mark the proposal `low_confidence: true` so the UI nudges the user to review harder. Only if both sources fail does the workflow fail — the UI then offers manual setup (same review screen, empty).
 
@@ -45,7 +47,6 @@ Failure posture: if FetchSite fails entirely, proceed with research only and mar
     "name": "…",
     "aliases": ["…"],
     "category": "…",            // e.g. "orthopaedic clinic"
-    "practitioners": [{ "name": "…", "role": "…" }],
     "services": ["…"],
     "location": { "address": "…", "area": "…", "city": "Singapore", "country": "SG" }
   },

@@ -7,7 +7,6 @@ import {
   usePatchBusiness,
   type BusinessProfile,
   type BusinessProfilePatch,
-  type Practitioner,
 } from "@/api/businesses"
 import { ApiError } from "@/api/client"
 import {
@@ -138,11 +137,6 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
     markTouched(field)
     setForm((current) => ({ ...current, [field]: items }))
   }
-  const setPractitioners = (practitioners: PractitionerItem[]) => {
-    setSaved(false)
-    markTouched("practitioners")
-    setForm((current) => ({ ...current, practitioners }))
-  }
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (error) return
@@ -191,10 +185,6 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
               label="Services"
               items={form.services}
               onChange={(items) => setList("services", items)}
-            />
-            <PractitionerFields
-              items={form.practitioners}
-              onChange={setPractitioners}
             />
             <TextField
               label="Address"
@@ -291,56 +281,6 @@ function RepeatableTextFields({
         onClick={() => onChange([...items, listItem("")])}
       >
         Add {label.toLowerCase().replace(/s$/, "")}
-      </Button>
-    </FieldSet>
-  )
-}
-
-function PractitionerFields({
-  items,
-  onChange,
-}: {
-  items: PractitionerItem[]
-  onChange: (items: PractitionerItem[]) => void
-}) {
-  const update = (key: string, patch: Partial<Practitioner>) =>
-    onChange(items.map((item) => (item.key === key ? { ...item, ...patch } : item)))
-  return (
-    <FieldSet>
-      <FieldLegend variant="label">Practitioners</FieldLegend>
-      <div className="flex flex-col gap-3">
-        {items.map((item, index) => (
-          <div key={item.key} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-            <Input
-              aria-label={`Practitioner ${index + 1} name`}
-              placeholder="Name"
-              value={item.name}
-              onChange={(event) => update(item.key, { name: event.currentTarget.value })}
-            />
-            <Input
-              aria-label={`Practitioner ${index + 1} role`}
-              placeholder="Role (optional)"
-              value={item.role}
-              onChange={(event) => update(item.key, { role: event.currentTarget.value })}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              aria-label={`Remove practitioner ${index + 1}`}
-              onClick={() => onChange(items.filter((current) => current.key !== item.key))}
-            >
-              Remove
-            </Button>
-          </div>
-        ))}
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-fit"
-        onClick={() => onChange([...items, practitionerItem({ name: "", role: "" })])}
-      >
-        Add practitioner
       </Button>
     </FieldSet>
   )
@@ -497,12 +437,8 @@ interface ListItem {
   value: string
 }
 
-interface PractitionerItem extends Practitioner {
-  key: string
-}
-
 type ProfileForm = ReturnType<typeof profileForm>
-type ProfileScalar = Exclude<keyof ProfileForm, "aliases" | "services" | "practitioners">
+type ProfileScalar = Exclude<keyof ProfileForm, "aliases" | "services">
 type ProfilePatchField = keyof BusinessProfilePatch
 
 let fieldKey = 0
@@ -515,10 +451,6 @@ function listItem(value: string): ListItem {
   return { key: nextKey(), value }
 }
 
-function practitionerItem(value: Practitioner): PractitionerItem {
-  return { key: nextKey(), ...value }
-}
-
 function profileForm(business: BusinessProfile) {
   return {
     name: business.name,
@@ -526,7 +458,6 @@ function profileForm(business: BusinessProfile) {
     category: business.category ?? "",
     aliases: business.aliases.map(listItem),
     services: business.services.map(listItem),
-    practitioners: business.practitioners.map(practitionerItem),
     address: business.location.address,
     area: business.location.area,
     city: business.location.city,
@@ -556,13 +487,6 @@ function profilePatch(
   if (touched.has("services") && JSON.stringify(services) !== JSON.stringify(business.services)) {
     patch.services = services
   }
-  const practitioners = form.practitioners.map(({ name, role }) => ({ name, role }))
-  if (
-    touched.has("practitioners") &&
-    JSON.stringify(practitioners) !== JSON.stringify(business.practitioners)
-  ) {
-    patch.practitioners = practitioners
-  }
   const location = {
     address: form.address,
     area: form.area,
@@ -586,9 +510,6 @@ function validateProfileForm(form: ProfileForm) {
   }
   if (form.services.some((item) => item.value.trim() === "")) {
     return "Services cannot be blank."
-  }
-  if (form.practitioners.some((item) => item.name.trim() === "")) {
-    return "Every practitioner needs a name."
   }
 }
 

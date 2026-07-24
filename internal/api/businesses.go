@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"opensight/internal/domain"
 	"opensight/internal/llm"
@@ -30,32 +31,33 @@ type planResponse struct {
 }
 
 type businessDetailResponse struct {
-	ID            string                     `json:"id"`
-	Status        string                     `json:"status"`
-	Name          string                     `json:"name"`
-	Website       *string                    `json:"website"`
-	Aliases       []string                   `json:"aliases"`
-	Category      *string                    `json:"category"`
-	Practitioners []llm.ProposedPractitioner `json:"practitioners"`
-	Services      []string                   `json:"services"`
-	Location      llm.ProposedLocation       `json:"location"`
-	Plan          planResponse               `json:"plan"`
+	ID       string               `json:"id"`
+	Status   string               `json:"status"`
+	Name     string               `json:"name"`
+	Website  *string              `json:"website"`
+	Aliases  []string             `json:"aliases"`
+	Category *string              `json:"category"`
+	Services []string             `json:"services"`
+	Location llm.ProposedLocation `json:"location"`
+	Plan     planResponse         `json:"plan"`
 }
 
 type patchBusinessRequest struct {
-	Name          *string                     `json:"name"`
-	Website       *string                     `json:"website"`
-	Aliases       *[]string                   `json:"aliases"`
-	Category      *string                     `json:"category"`
-	Practitioners *[]llm.ProposedPractitioner `json:"practitioners"`
-	Services      *[]string                   `json:"services"`
-	Location      *llm.ProposedLocation       `json:"location"`
+	Name     *string               `json:"name"`
+	Website  *string               `json:"website"`
+	Aliases  *[]string             `json:"aliases"`
+	Category *string               `json:"category"`
+	Services *[]string             `json:"services"`
+	Location *llm.ProposedLocation `json:"location"`
 }
 
 // proposalStatusResponse is the GET/regen proposal body. Status is one of
 // "generating", "ready", or "failed"; Payload is present only when ready.
+// Stage is the workflow's current generation stage, present only while
+// generating (omitted when the stage query fails or degrades).
 type proposalStatusResponse struct {
 	Status  string          `json:"status"`
+	Stage   string          `json:"stage,omitempty"`
 	Payload json.RawMessage `json:"payload,omitempty"`
 }
 
@@ -142,9 +144,6 @@ func (s *Server) handlePatchBusiness(w http.ResponseWriter, r *http.Request) {
 	if req.Category != nil {
 		profile.Category = *req.Category
 	}
-	if req.Practitioners != nil {
-		profile.Practitioners = *req.Practitioners
-	}
 	if req.Services != nil {
 		profile.Services = *req.Services
 	}
@@ -155,12 +154,7 @@ func (s *Server) handlePatchBusiness(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusBadRequest, "bad request", strings.Join(errs, "; "))
 		return
 	}
-	var practitioners, services, location *json.RawMessage
-	if req.Practitioners != nil {
-		value, _ := json.Marshal(profile.Practitioners)
-		raw := json.RawMessage(value)
-		practitioners = &raw
-	}
+	var services, location *json.RawMessage
 	if req.Services != nil {
 		value, _ := json.Marshal(profile.Services)
 		raw := json.RawMessage(value)
@@ -174,7 +168,7 @@ func (s *Server) handlePatchBusiness(w http.ResponseWriter, r *http.Request) {
 	updated, err := s.businesses.UpdateActiveProfile(r.Context(), store.UpdateBusinessProfileParams{
 		TenantID: su.TenantID, BusinessID: businessID, Name: req.Name,
 		WebsiteSet: req.Website != nil, Website: website, Aliases: req.Aliases, Category: req.Category,
-		Practitioners: practitioners, Services: services, Location: location,
+		Services: services, Location: location,
 	})
 	if err != nil {
 		writeStoreError(w, err)
@@ -194,14 +188,9 @@ func (s *Server) handlePatchBusiness(w http.ResponseWriter, r *http.Request) {
 }
 
 func businessToProfile(b store.Business) (llm.ProposedProfile, error) {
-	profile := llm.ProposedProfile{Name: b.Name, Aliases: b.Aliases, Practitioners: []llm.ProposedPractitioner{}, Services: []string{}}
+	profile := llm.ProposedProfile{Name: b.Name, Aliases: b.Aliases, Services: []string{}}
 	if b.Category != nil {
 		profile.Category = *b.Category
-	}
-	if len(b.Practitioners) > 0 && string(b.Practitioners) != "null" {
-		if err := json.Unmarshal(b.Practitioners, &profile.Practitioners); err != nil {
-			return llm.ProposedProfile{}, err
-		}
 	}
 	if len(b.Services) > 0 && string(b.Services) != "null" {
 		if err := json.Unmarshal(b.Services, &profile.Services); err != nil {
@@ -224,7 +213,7 @@ func businessDetailToResponse(b store.Business, plan store.Plan) (businessDetail
 	return businessDetailResponse{
 		ID: b.ID.String(), Status: string(b.Status), Name: profile.Name,
 		Website: b.Website, Aliases: profile.Aliases, Category: b.Category,
-		Practitioners: profile.Practitioners, Services: profile.Services, Location: profile.Location,
+		Services: profile.Services, Location: profile.Location,
 		Plan: planResponse{Slug: plan.Slug, PromptLimit: plan.PromptLimit, RunInterval: plan.RunInterval, Platforms: plan.Platforms},
 	}, nil
 }
@@ -325,12 +314,12 @@ func (s *Server) handleGetProposal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, err := s.generationStatus(ctx, businessID)
+	status, stage, err := s.generationStatus(ctx, businessID)
 	if err != nil {
 		s.writeInternalError(w, "get proposal: describe generation", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, proposalStatusResponse{Status: status})
+	writeJSON(w, http.StatusOK, proposalStatusResponse{Status: status, Stage: stage})
 }
 
 // handleRegenProposal discards the pending proposal and re-runs generation
@@ -424,11 +413,6 @@ func (s *Server) handleApplyBusiness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	practitioners, err := json.Marshal(payload.Profile.Practitioners)
-	if err != nil {
-		s.writeInternalError(w, "apply business: marshal practitioners", err)
-		return
-	}
 	services, err := json.Marshal(payload.Profile.Services)
 	if err != nil {
 		s.writeInternalError(w, "apply business: marshal services", err)
@@ -453,7 +437,6 @@ func (s *Server) handleApplyBusiness(w http.ResponseWriter, r *http.Request) {
 		Name:          payload.Profile.Name,
 		Aliases:       payload.Profile.Aliases,
 		Category:      payload.Profile.Category,
-		Practitioners: practitioners,
 		Services:      services,
 		Location:      location,
 		PromptTexts:   promptTexts,
@@ -528,20 +511,42 @@ func (s *Server) startGeneration(ctx context.Context, tenantID, businessID domai
 // generationStatus maps the business's GenerateProfileWorkflow execution state
 // to a proposal status when there is no pending proposal row. A not-found
 // workflow (never started or history expired) and any terminal state both mean
-// failed; only a running workflow means generating.
-func (s *Server) generationStatus(ctx context.Context, businessID domain.ID) (string, error) {
-	desc, err := s.temporal.DescribeWorkflowExecution(ctx, workflows.GenerateProfileWorkflowID(businessID), "")
+// failed; only a running workflow means generating. For a running workflow it
+// also queries the workflow's current stage; any query error degrades to an
+// empty stage (still generating) rather than failing the poll — a briefly
+// unavailable worker, a pre-deploy run without the handler, or a Describe/Query
+// race on a just-closed workflow must not break status reporting.
+func (s *Server) generationStatus(ctx context.Context, businessID domain.ID) (status, stage string, err error) {
+	workflowID := workflows.GenerateProfileWorkflowID(businessID)
+	desc, err := s.temporal.DescribeWorkflowExecution(ctx, workflowID, "")
 	if err != nil {
 		var notFound *serviceerror.NotFound
 		if errors.As(err, &notFound) {
-			return proposalStatusFailed, nil
+			return proposalStatusFailed, "", nil
 		}
-		return "", err
+		return "", "", err
 	}
-	if desc.GetWorkflowExecutionInfo().GetStatus() == enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING {
-		return proposalStatusGenerating, nil
+	if desc.GetWorkflowExecutionInfo().GetStatus() != enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING {
+		return proposalStatusFailed, "", nil
 	}
-	return proposalStatusFailed, nil
+	return proposalStatusGenerating, s.generationStage(ctx, workflowID), nil
+}
+
+// generationStage queries the running workflow for its current stage, returning
+// an empty string on any error (see generationStatus). The query is given a
+// short deadline so a slow or unreachable worker cannot stall the poll.
+func (s *Server) generationStage(ctx context.Context, workflowID string) string {
+	qctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	resp, err := s.temporal.QueryWorkflow(qctx, workflowID, "", workflows.GenerationStageQuery)
+	if err != nil {
+		return ""
+	}
+	var stage string
+	if err := resp.Get(&stage); err != nil {
+		return ""
+	}
+	return stage
 }
 
 func websiteOrEmpty(website *string) string {

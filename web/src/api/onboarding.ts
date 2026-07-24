@@ -16,11 +16,6 @@ export const PROMPT_KINDS = [
 ] as const
 export type PromptKind = (typeof PROMPT_KINDS)[number]
 
-export interface ProposedPractitioner {
-  name: string
-  role: string
-}
-
 export interface ProposedLocation {
   address: string
   area: string
@@ -32,7 +27,6 @@ export interface ProposedProfile {
   name: string
   aliases: string[]
   category: string
-  practitioners: ProposedPractitioner[]
   services: string[]
   location: ProposedLocation
 }
@@ -52,8 +46,14 @@ export interface ProposalPayload {
 // is present only when ready.
 export type ProposalStatus = "generating" | "ready" | "failed"
 
+// Current generation stage, present only while generating and only when the
+// workflow's stage query answers (internal/workflows/generate_profile.go). An
+// absent stage means "just started / unknown" — the UI treats it as step 1.
+export type GenerationStage = "fetching_site" | "researching" | "drafting"
+
 export interface ProposalStatusResponse {
   status: ProposalStatus
+  stage?: GenerationStage
   payload?: ProposalPayload
 }
 

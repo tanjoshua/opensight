@@ -24,7 +24,6 @@ The system proposes:
 
 * Business name and aliases
 * Specialist category
-* Practitioners
 * Services
 * Location
 * 20 relevant prompts

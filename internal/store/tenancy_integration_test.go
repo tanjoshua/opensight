@@ -90,13 +90,12 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	}
 	updatedName, updatedCategory := "Updated Clinic", "clinic"
 	updatedAliases := []string{"Updated"}
-	updatedPractitioners := json.RawMessage(`[]`)
 	updatedServices := json.RawMessage(`["screening"]`)
 	updatedLocation := json.RawMessage(`{"country":"SG"}`)
 	updated, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
 		TenantID: tenantA, BusinessID: businessA, Name: &updatedName,
 		Aliases: &updatedAliases, Category: &updatedCategory,
-		Practitioners: &updatedPractitioners, Services: &updatedServices,
+		Services: &updatedServices,
 		Location: &updatedLocation,
 	})
 	if err != nil {

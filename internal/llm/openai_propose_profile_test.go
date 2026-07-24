@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const proposalResponseText = `{"low_confidence":false,"profile":{"name":"Clinic","aliases":[],"category":"clinic","practitioners":[],"services":[],"location":{"address":"","area":"","city":"","country":"SG"}},"prompts":[]}`
+const proposalResponseText = `{"low_confidence":false,"profile":{"name":"Clinic","aliases":[],"category":"clinic","services":[],"location":{"address":"","area":"","city":"","country":"SG"}},"prompts":[]}`
 
 func proposalCompletedBody(t *testing.T) string {
 	t.Helper()

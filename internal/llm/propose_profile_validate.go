@@ -84,11 +84,6 @@ func ValidateProfile(p ProposedProfile) []string {
 			errs = append(errs, fmt.Sprintf("profile.services[%d] is empty", i))
 		}
 	}
-	for i, pr := range p.Practitioners {
-		if strings.TrimSpace(pr.Name) == "" {
-			errs = append(errs, fmt.Sprintf("profile.practitioners[%d].name is empty", i))
-		}
-	}
 	return errs
 }
 

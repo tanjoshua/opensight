@@ -92,7 +92,6 @@ func activeBusinessRow(businessID, tenantID interface{ String() string }) fakeAp
 		(*string)(nil),             // website
 		[]byte(`[]`),               // aliases (to_jsonb)
 		(*string)(nil),             // category
-		json.RawMessage(`[]`),      // practitioners
 		json.RawMessage(`[]`),      // services
 		[]byte(`{"country":"SG"}`), // location
 		time.Date(2026, 7, 24, 0, 0, 0, 0, time.UTC), // created_at

@@ -15,7 +15,6 @@ import { ApiError } from "@/api/client"
 import {
   PROMPT_KINDS,
   type ProposalPayload,
-  type ProposedPractitioner,
   type ProposedPrompt,
   useApplyProposal,
 } from "@/api/onboarding"
@@ -196,55 +195,6 @@ export function ReviewScreen({
         </div>
       </Section>
 
-      <Section
-        title="Practitioners"
-        action={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setDraft((d) => ({
-                ...d,
-                profile: {
-                  ...d.profile,
-                  practitioners: [
-                    ...d.profile.practitioners,
-                    { name: "", role: "" },
-                  ],
-                },
-              }))
-            }
-          >
-            <Plus data-icon="inline-start" />
-            Add practitioner
-          </Button>
-        }
-      >
-        {profile.practitioners.length === 0 ? (
-          <EmptyRow>No practitioners yet.</EmptyRow>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {profile.practitioners.map((p, i) => (
-              <PractitionerRow
-                key={i}
-                value={p}
-                onChange={(next) =>
-                  setProfile({
-                    practitioners: replaceAt(profile.practitioners, i, next),
-                  })
-                }
-                onRemove={() =>
-                  setProfile({
-                    practitioners: removeAt(profile.practitioners, i),
-                  })
-                }
-              />
-            ))}
-          </div>
-        )}
-      </Section>
-
       <Section title="Services">
         <StringList
           values={profile.services}
@@ -342,12 +292,6 @@ function validateFinalPayload(
     return "Complete or remove every alias to continue."
   if (profile.services.some((service) => service.trim() === ""))
     return "Complete or remove every service to continue."
-  if (
-    profile.practitioners.some(
-      (practitioner) => practitioner.name.trim() === ""
-    )
-  )
-    return "Add a name for every practitioner, or remove the row."
   if (payload.prompts.length !== promptLimit)
     return `Add exactly ${promptLimit} prompts to continue.`
   if (payload.prompts.some((prompt) => prompt.text.trim() === ""))
@@ -465,42 +409,6 @@ function StringList({
           {addLabel}
         </Button>
       </div>
-    </div>
-  )
-}
-
-function PractitionerRow({
-  value,
-  onChange,
-  onRemove,
-}: {
-  value: ProposedPractitioner
-  onChange: (value: ProposedPractitioner) => void
-  onRemove: () => void
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-      <Input
-        className="sm:flex-[2]"
-        value={value.name}
-        placeholder="Name"
-        onChange={(e) => onChange({ ...value, name: e.currentTarget.value })}
-      />
-      <Input
-        className="sm:flex-[1]"
-        value={value.role}
-        placeholder="Role"
-        onChange={(e) => onChange({ ...value, role: e.currentTarget.value })}
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Remove practitioner"
-        onClick={onRemove}
-      >
-        <Trash2 />
-      </Button>
     </div>
   )
 }

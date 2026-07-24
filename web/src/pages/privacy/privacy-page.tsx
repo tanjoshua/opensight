@@ -20,7 +20,7 @@ export function PrivacyPage() {
           </li>
           <li>
             Business profiles, including names, websites, aliases, category,
-            services, location, and public practitioner names and roles.
+            services, and location.
           </li>
           <li>Monitoring prompts and their replacement history.</li>
           <li>

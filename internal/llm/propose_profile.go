@@ -32,12 +32,6 @@ type ProposeProfileRunResult struct {
 	Model   string
 }
 
-// ProposedPractitioner is one person associated with the business.
-type ProposedPractitioner struct {
-	Name string `json:"name"`
-	Role string `json:"role"`
-}
-
 // ProposedLocation is the business location. country is an ISO 3166-1 alpha-2
 // code and is always required (design 03).
 type ProposedLocation struct {
@@ -49,12 +43,11 @@ type ProposedLocation struct {
 
 // ProposedProfile is the structured business profile the user reviews.
 type ProposedProfile struct {
-	Name          string                 `json:"name"`
-	Aliases       []string               `json:"aliases"`
-	Category      string                 `json:"category"`
-	Practitioners []ProposedPractitioner `json:"practitioners"`
-	Services      []string               `json:"services"`
-	Location      ProposedLocation       `json:"location"`
+	Name     string           `json:"name"`
+	Aliases  []string         `json:"aliases"`
+	Category string           `json:"category"`
+	Services []string         `json:"services"`
+	Location ProposedLocation `json:"location"`
 }
 
 // ProposedPrompt is one generated monitoring prompt. Kind is one of
@@ -132,12 +125,11 @@ func (r *StubProposeProfileRunner) RunProposeProfile(_ context.Context, in Propo
 	payload := ProposalPayload{
 		LowConfidence: true,
 		Profile: ProposedProfile{
-			Name:          name,
-			Aliases:       []string{},
-			Category:      "orthopaedic clinic",
-			Practitioners: []ProposedPractitioner{},
-			Services:      []string{"consultation"},
-			Location:      ProposedLocation{City: "Singapore", Country: "SG"},
+			Name:     name,
+			Aliases:  []string{},
+			Category: "orthopaedic clinic",
+			Services: []string{"consultation"},
+			Location: ProposedLocation{City: "Singapore", Country: "SG"},
 		},
 		Prompts: prompts,
 	}

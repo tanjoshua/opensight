@@ -126,9 +126,6 @@ func (f *fakeBusinessStore) UpdateActiveProfile(_ context.Context, params store.
 	if params.Category != nil {
 		b.Category = params.Category
 	}
-	if params.Practitioners != nil {
-		b.Practitioners = *params.Practitioners
-	}
 	if params.Services != nil {
 		b.Services = *params.Services
 	}

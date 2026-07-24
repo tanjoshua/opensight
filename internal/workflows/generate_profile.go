@@ -19,6 +19,18 @@ const (
 	maxProposeProfileActivityAttempts   = 2
 )
 
+// GenerationStageQuery is the Temporal query name for GenerateProfileWorkflow's
+// current stage. The API polls it while a run is still generating to drive the
+// onboarding progress step list; the stage only advances between activity
+// futures, so a retried activity never regresses or flickers it.
+const GenerationStageQuery = "generation-stage"
+
+const (
+	GenerationStageFetchingSite = "fetching_site"
+	GenerationStageResearching  = "researching"
+	GenerationStageDrafting     = "drafting"
+)
+
 // onboardingResearchLocationHint is a search-context hint ONLY (never
 // persisted) for ResearchBusiness's web_search call, which requires a country
 // to validate. At business-creation time no location is known yet — discovering
@@ -53,6 +65,13 @@ type GenerateProfileWorkflowInput struct {
 // fail, or ProposeProfile still fails validation, does the workflow fail — the
 // UI then offers manual setup.
 func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflowInput) error {
+	stage := GenerationStageFetchingSite
+	if err := workflow.SetQueryHandler(ctx, GenerationStageQuery, func() (string, error) {
+		return stage, nil
+	}); err != nil {
+		return err
+	}
+
 	fetchCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 45 * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
@@ -73,6 +92,7 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 		siteText = fetchOut.Text
 	}
 
+	stage = GenerationStageResearching
 	researchCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 3 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
@@ -98,6 +118,7 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 			"both site fetch and business research failed", "GenerationFailed")
 	}
 
+	stage = GenerationStageDrafting
 	proposeCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 4 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{

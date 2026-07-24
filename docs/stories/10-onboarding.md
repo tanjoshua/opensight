@@ -16,10 +16,10 @@ Deps: RUN-3 (worker infra) · Phase 3 · Ref: design 03 (GenerateProfileWorkflow
 
 ## ONB-2 — ResearchBusiness activity
 
-As the developer, I want one web_search call on the business, so that aliases and practitioners the site omits get caught.
+As the developer, I want one web_search call on the business, so that aliases the site omits get caught.
 
 - [x] Single OpenAI `web_search` call via the existing `PromptRunner` plumbing, on business name + location hints.
-- [x] Output targets: aliases (former/Chinese/colloquial names — **organization trading identities only**; a practitioner's name goes to `practitioners`, never `aliases`, unless genuinely part of the trading name), directory listings, unlisted practitioners.
+- [x] Output targets: aliases (former/Chinese/colloquial names — **organization trading identities only**; never a person's name unless genuinely part of the trading name) and directory listings.
 
 Deps: RUN-1 · Phase 3 · Ref: design 03 (step 2)
 
@@ -27,7 +27,7 @@ Deps: RUN-1 · Phase 3 · Ref: design 03 (step 2)
 
 As the developer, I want a structured-output proposal call with validation, so that generated profiles are well-formed before a user sees them.
 
-- [x] Single LLM call producing the design-03 payload: `low_confidence`, profile (name, aliases, category, practitioners, services, location with **country required**), prompts with `kind` (category|service|condition|location).
+- [x] Single LLM call producing the design-03 payload: `low_confidence`, profile (name, aliases, category, services, location with **country required**), prompts with `kind` (category|service|condition|location).
 - [x] Prompt rules enforced by validation: **prompts never contain the business name**; count = `plan.prompt_limit` (not hardcoded 20); mixed kinds; phrased as real consumer questions.
 - [x] Validation failure (wrong count, empty fields, name leakage) → one retry with errors appended.
 
@@ -48,7 +48,7 @@ Deps: ONB-1, ONB-3 · Phase 3 · Ref: design 03 (Flow, Failure posture, API surf
 
 As a clinic user, I want to review and edit everything before monitoring begins, so that confirmed values are mine, not the machine's.
 
-- [x] `/onboarding` flow: create form → progress state polling proposal status → review screen with **every** proposed value editable (profile fields, aliases, practitioners, services, location, each prompt); `low_confidence` nudges harder review.
+- [x] `/onboarding` flow: create form → progress state polling proposal status → review screen with **every** proposed value editable (profile fields, aliases, services, location, each prompt); `low_confidence` nudges harder review.
 - [x] Client submits the final edited payload; server takes it verbatim (no merge).
 - [x] Regenerate available while draft; manual-setup path when generation failed.
 

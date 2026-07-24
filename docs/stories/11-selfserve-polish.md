@@ -64,7 +64,7 @@ Deps: INS-1 · Phase 3 · Ref: design 06 (Overview), 01 (D1 honest limitation)
 
 As a clinic user, I want a plain-language privacy page, so that a medical business can trust where its data sits before paying.
 
-- [x] Static page (~0.5 day), PDPA-aware plain-language copy: what we store (user emails, business profiles, public practitioner names), the hard rule that **no patient-identifiable data ever enters the system**, hosting region, retention.
+- [x] Static page (~0.5 day), PDPA-aware plain-language copy: what we store (user emails, business profiles), the hard rule that **no patient-identifiable data ever enters the system**, hosting region, retention.
 - [x] Linked from the app footer/shell and from the methodology page (POL-6) — same genre of trust page.
 - [x] Ships with the MVP: "before first paying customer" (design 07) coincides with MVP completion, so converting a customer never waits on writing a webpage.
 

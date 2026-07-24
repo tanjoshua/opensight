@@ -9,12 +9,14 @@ import (
 
 	"opensight/internal/domain"
 	"opensight/internal/store"
+	"opensight/internal/workflows"
 
 	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	workflowpb "go.temporal.io/api/workflow/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/converter"
 )
 
 type fakePlanStore struct {
@@ -47,6 +49,8 @@ type fakeTemporalClient struct {
 	started        []client.StartWorkflowOptions
 	describeStatus enumspb.WorkflowExecutionStatus
 	describeErr    error
+	queryStage     string
+	queryErr       error
 	schedule       *fakeScheduleClient
 }
 
@@ -62,6 +66,27 @@ func (f *fakeTemporalClient) DescribeWorkflowExecution(context.Context, string, 
 	return &workflowservice.DescribeWorkflowExecutionResponse{
 		WorkflowExecutionInfo: &workflowpb.WorkflowExecutionInfo{Status: f.describeStatus},
 	}, nil
+}
+
+func (f *fakeTemporalClient) QueryWorkflow(context.Context, string, string, string, ...interface{}) (converter.EncodedValue, error) {
+	if f.queryErr != nil {
+		return nil, f.queryErr
+	}
+	return stageValue(f.queryStage), nil
+}
+
+// stageValue adapts a plain string into the converter.EncodedValue that
+// client.QueryWorkflow returns, so tests can inject a stage without the real
+// Temporal payload machinery.
+type stageValue string
+
+func (v stageValue) HasValue() bool { return v != "" }
+
+func (v stageValue) Get(valuePtr interface{}) error {
+	if p, ok := valuePtr.(*string); ok {
+		*p = string(v)
+	}
+	return nil
 }
 
 func (f *fakeTemporalClient) ScheduleClient() client.ScheduleClient {
@@ -137,9 +162,8 @@ func setupBusinessFixture(t *testing.T, status store.BusinessStatus) store.Busin
 		ID: mustHashV7(t, testBusinessID), TenantID: mustHashV7(t, tenantID),
 		Status: status, Name: "Old Clinic", Website: &website,
 		Aliases: []string{"Old"}, Category: &category,
-		Practitioners: json.RawMessage(`[{"name":"Dr Tan","role":"dentist"}]`),
-		Services:      json.RawMessage(`["checkups"]`),
-		Location:      json.RawMessage(`{"address":"1 Road","area":"Central","city":"Singapore","country":"SG"}`),
+		Services: json.RawMessage(`["checkups"]`),
+		Location: json.RawMessage(`{"address":"1 Road","area":"Central","city":"Singapore","country":"SG"}`),
 	}
 }
 
@@ -158,7 +182,7 @@ func TestGetBusinessProfileAndPlan(t *testing.T) {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Name != "Old Clinic" || body.Location.Country != "SG" || body.Plan.Slug != "starter" ||
-		body.Plan.PromptLimit != 20 || len(body.Practitioners) != 1 {
+		body.Plan.PromptLimit != 20 {
 		t.Fatalf("body = %+v", body)
 	}
 }
@@ -179,7 +203,6 @@ func TestPatchBusinessMergesAndClearsWebsite(t *testing.T) {
 	if got.Name == nil || *got.Name != "New Clinic" || !got.WebsiteSet || got.Website != nil ||
 		got.Category != nil || got.Services != nil || got.Aliases == nil ||
 		len(*got.Aliases) != 1 || (*got.Aliases)[0] != "Clinic, Incorporated" ||
-		got.Practitioners != nil ||
 		got.Location == nil {
 		t.Fatalf("partial params = %+v", got)
 	}
@@ -310,7 +333,10 @@ func TestGetProposalReady(t *testing.T) {
 
 func TestGetProposalGenerating(t *testing.T) {
 	proposals := &fakeProposalStore{getErr: store.ErrNotFound}
-	temporal := &fakeTemporalClient{describeStatus: enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING}
+	temporal := &fakeTemporalClient{
+		describeStatus: enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING,
+		queryStage:     workflows.GenerationStageResearching,
+	}
 	srv, cookie := newAuthedOnboardingServer(t, &fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
 
 	rec := doJSON(t, srv, http.MethodGet, "/api/v1/businesses/"+testBusinessID+"/proposal", "", cookie)
@@ -321,6 +347,30 @@ func TestGetProposalGenerating(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
 	if resp.Status != proposalStatusGenerating {
 		t.Fatalf("status = %q, want generating", resp.Status)
+	}
+	if resp.Stage != workflows.GenerationStageResearching {
+		t.Fatalf("stage = %q, want researching", resp.Stage)
+	}
+}
+
+// TestGetProposalGeneratingDegradesOnQueryError: a failing stage query must not
+// break the poll — status stays generating with the stage omitted.
+func TestGetProposalGeneratingDegradesOnQueryError(t *testing.T) {
+	proposals := &fakeProposalStore{getErr: store.ErrNotFound}
+	temporal := &fakeTemporalClient{
+		describeStatus: enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING,
+		queryErr:       serviceerror.NewUnavailable("worker gone"),
+	}
+	srv, cookie := newAuthedOnboardingServer(t, &fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
+
+	rec := doJSON(t, srv, http.MethodGet, "/api/v1/businesses/"+testBusinessID+"/proposal", "", cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	var resp proposalStatusResponse
+	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+	if resp.Status != proposalStatusGenerating || resp.Stage != "" {
+		t.Fatalf("got status=%q stage=%q, want generating with empty stage", resp.Status, resp.Stage)
 	}
 }
 
@@ -409,7 +459,6 @@ const validApplyPayload = `{
     "name": "Acme Clinic",
     "aliases": [],
     "category": "orthopaedic clinic",
-    "practitioners": [{"name": "Dr Tan", "role": "surgeon"}],
     "services": ["consultation"],
     "location": {"address": "", "area": "Novena", "city": "Singapore", "country": "SG"}
   },

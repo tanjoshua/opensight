@@ -59,7 +59,6 @@ businesses (
   aliases text[],     -- organization trading names ONLY; never a person's name unless
                       -- it is genuinely part of the trading identity
   category text,
-  practitioners jsonb,  -- profile metadata only — never used for mention matching
   services jsonb,
   location jsonb,     -- { address, area, city, country } — country is required;
                       -- monitoring derives web_search user_location from this (04)

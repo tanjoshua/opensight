@@ -2,11 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiGet, apiPatch } from "./client"
 
-export interface Practitioner {
-  name: string
-  role: string
-}
-
 export interface Location {
   address: string
   area: string
@@ -28,7 +23,6 @@ export interface BusinessProfile {
   website: string | null
   aliases: string[]
   category: string | null
-  practitioners: Practitioner[]
   services: string[]
   location: Location
   plan: BusinessPlan
@@ -37,13 +31,7 @@ export interface BusinessProfile {
 export type BusinessProfilePatch = Partial<
   Pick<
     BusinessProfile,
-    | "name"
-    | "website"
-    | "aliases"
-    | "category"
-    | "practitioners"
-    | "services"
-    | "location"
+    "name" | "website" | "aliases" | "category" | "services" | "location"
   >
 >
 

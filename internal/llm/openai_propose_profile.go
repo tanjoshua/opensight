@@ -20,13 +20,12 @@ const proposeProfileInstructions = `You build a structured business profile prop
 
 EVIDENCE
 - site_text and research_summary may each be empty, thin, or partially contradictory. research_summary is a free-text narrative report of a web search, not a list — read it as prose and extract whatever facts it actually states.
-- Set low_confidence to true whenever you had to guess a value with weak or no supporting evidence (most commonly: location.country, category, aliases). Set it false only when the evidence clearly supports the whole profile.
+- Set low_confidence to true whenever you had to guess a value with weak or no supporting evidence (most commonly: location.country, category, aliases). For category specifically: if none of site_text, research_summary, or the business name itself states what this business does, any category you output is a guess — set low_confidence true. Set it false only when the evidence clearly supports the whole profile.
 
 PROFILE
 - name: the business's primary trading name.
-- aliases: OTHER organization trading identities only — former names, foreign-language names, colloquial/abbreviated names, directory-listing names. NEVER a practitioner's personal name, unless it is genuinely part of the trading name itself (e.g. "Dr Tan's Orthopaedic Practice"). Empty array if none found.
-- category: the specialist category a patient would search for (e.g. "orthopaedic clinic").
-- practitioners: doctors/specialists/staff, with role where known (empty string if unknown role). Empty array if none found.
+- aliases: OTHER organization trading identities only — former names, foreign-language names, colloquial/abbreviated names, directory-listing names. NEVER a practitioner's personal name, unless it is genuinely part of the trading name itself (e.g. "Dr Lim's Family Clinic"). Empty array if none found.
+- category: the specialist category a prospective patient would search for (examples across specialties: "endodontic clinic", "orthopaedic clinic", "aesthetic skin clinic"). It MUST be derived from evidence about THIS business — never copy an example and never default to a common category when evidence is thin. The business name itself is strong evidence when it contains a medical/dental specialty term: a name containing "Endodontics" means an endodontic (root canal) dental clinic, "Dermatology" a dermatology clinic, and so on.
 - services: services/procedures offered, as short phrases. Empty array if none found.
 - location: address/area/city as best known (empty string for any unknown part); country is ALWAYS a two-letter ISO 3166-1 alpha-2 code (e.g. "SG", "US") — never a full country name, never blank. If the evidence gives no explicit country, infer your best guess from address format, phone country code, domain TLD, currency, or language, and set low_confidence true.
 
@@ -57,20 +56,11 @@ const proposeProfileJSONSchema = `{
     "profile": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "aliases", "category", "practitioners", "services", "location"],
+      "required": ["name", "aliases", "category", "services", "location"],
       "properties": {
         "name": {"type": "string"},
         "aliases": {"type": "array", "items": {"type": "string"}},
         "category": {"type": "string"},
-        "practitioners": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["name", "role"],
-            "properties": {"name": {"type": "string"}, "role": {"type": "string"}}
-          }
-        },
         "services": {"type": "array", "items": {"type": "string"}},
         "location": {
           "type": "object",

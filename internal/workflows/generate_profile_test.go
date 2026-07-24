@@ -21,6 +21,26 @@ func genInput(t *testing.T) GenerateProfileWorkflowInput {
 	}
 }
 
+// assertFinalStage queries the completed workflow's stage handler and checks it
+// reached want. It proves the handler registers under the right name and that
+// the stage advances to its terminal value (never regressing on the tolerated
+// failure paths). Mid-run assertions aren't attempted: this workflow has no
+// timers, so the test env's mock clock offers no reliable intermediate point.
+func assertFinalStage(t *testing.T, env *testsuite.TestWorkflowEnvironment, want string) {
+	t.Helper()
+	val, err := env.QueryWorkflow(GenerationStageQuery)
+	if err != nil {
+		t.Fatalf("query stage: %v", err)
+	}
+	var got string
+	if err := val.Get(&got); err != nil {
+		t.Fatalf("decode stage: %v", err)
+	}
+	if got != want {
+		t.Fatalf("final stage = %q, want %q", got, want)
+	}
+}
+
 func proposedOK() ProposeProfileOutput {
 	return ProposeProfileOutput{
 		Payload:  llm.ProposalPayload{LowConfidence: false},
@@ -53,6 +73,7 @@ func TestGenerateProfileWorkflowHappyPath(t *testing.T) {
 	if err := env.GetWorkflowError(); err != nil {
 		t.Fatalf("workflow error: %v", err)
 	}
+	assertFinalStage(t, env, GenerationStageDrafting)
 	env.AssertExpectations(t)
 }
 
@@ -85,6 +106,8 @@ func TestGenerateProfileWorkflowFetchFailsForcesLowConfidence(t *testing.T) {
 	if !persisted {
 		t.Fatal("expected low_confidence true on persisted payload")
 	}
+	// The tolerated FetchSite-failure path still advances the stage to the end.
+	assertFinalStage(t, env, GenerationStageDrafting)
 	env.AssertExpectations(t)
 }
 

@@ -18,7 +18,7 @@ Deps: FND-3 · Phase 1 · Ref: design 02 (Plans and tenancy), 01 (billing-ready 
 
 As the developer, I want `businesses`, `profile_proposals`, and `prompts` migrated, so that profiles and the prompt-replacement lineage exist in the schema.
 
-- [x] `businesses` per design 02: status `draft|active`, `aliases text[]` (org trading names only), `category`, `practitioners jsonb`, `services jsonb`, `location jsonb` with **country required** (app-validated), `activated_at`.
+- [x] `businesses` per design 02: status `draft|active`, `aliases text[]` (org trading names only), `category`, `services jsonb`, `location jsonb` with **country required** (app-validated), `activated_at`.
 - [x] `profile_proposals (payload jsonb, status pending|applied|discarded, resolved_at)`.
 - [x] `prompts`: `text` immutable after insert (no update path in the store layer), `status active|retired`, `replaces_prompt_id` FK, `retired_at`.
 - [x] App-enforced invariant: `count(active prompts) <= plan.prompt_limit`.

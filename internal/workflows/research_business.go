@@ -19,7 +19,7 @@ type ResearchBusinessInput struct {
 
 // ResearchBusinessOutput is the free-text research summary ONB-3 (ProposeProfile)
 // feeds into its structured-output call, plus the reporting model for debugging.
-// The activity deliberately does not parse the summary into aliases/practitioners
+// The activity deliberately does not parse the summary into aliases
 // — that structuring is ONB-3's job.
 type ResearchBusinessOutput struct {
 	Summary string `json:"summary"`
@@ -27,9 +27,12 @@ type ResearchBusinessOutput struct {
 }
 
 // ResearchBusiness runs a single OpenAI web_search over the business name and
-// location hints (ONB-2, design 03 step 2). Purpose: catch aliases (former,
-// Chinese, colloquial trading names), directory listings, and practitioners the
-// site omits. It reuses the monitoring pipeline's PromptRunner plumbing.
+// location hints (ONB-2, design 03 step 2). Purpose: establish what the
+// business is (specialty/category, headline services) and catch aliases
+// (former, Chinese, colloquial trading names) and directory listings. The
+// specialty ask matters most when FetchSite
+// fails and the research summary is the only category evidence ProposeProfile
+// gets. It reuses the monitoring pipeline's PromptRunner plumbing.
 //
 // A missing name is bad input and non-retryable. Provider errors the runner
 // marks non-retryable (400-class, content-policy refusals) won't fix on retry,
@@ -77,9 +80,9 @@ func buildResearchPrompt(name string, location llm.Location) string {
 	}
 	b.WriteString(`
 Report these, and only these:
-1. Alternative names for the *organization* — former names, Chinese names, colloquial or commonly-used names, and abbreviations it trades under. These are trading identities of the business itself, not the names of individual people. Include a person's name only if it is genuinely part of the trading name (e.g. "Dr Tan's Orthopaedic Practice").
-2. Online directory and profile listings (Google, health directories, professional registries, review sites).
-3. Practitioners associated with the business — doctors, specialists, or staff — especially any not obviously listed on the business's own website, with their roles where known.
+1. What the business is and does — its category or medical/dental specialty (e.g. a general practice vs a specialist practice such as endodontics, dermatology, or fertility), and the main services it advertises or is listed under. State the specialty explicitly if any source names it.
+2. Alternative names for the *organization* — former names, Chinese names, colloquial or commonly-used names, and abbreviations it trades under. These are trading identities of the business itself, not the names of individual people. Include a person's name only if it is genuinely part of the trading name (e.g. "Dr Lim's Family Clinic").
+3. Online directory and profile listings (Google, health directories, professional registries, review sites).
 
 If you find nothing for a section, say so. Be concise and factual, and cite the sources you relied on.`)
 	return b.String()
