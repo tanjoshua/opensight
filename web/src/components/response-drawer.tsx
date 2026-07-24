@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react"
 import { ExternalLink, FileJson } from "lucide-react"
+import { Link } from "react-router"
 
 import {
   useResult,
@@ -102,7 +103,15 @@ export function ResponseDrawer({
                   <dt className="text-muted-foreground">Status</dt>
                   <dd>{detail.data.status}</dd>
                   <dt className="text-muted-foreground">Model</dt>
-                  <dd>{detail.data.model ?? "Not recorded"}</dd>
+                  <dd>
+                    {detail.data.model ?? "Not recorded"}{" "}
+                    <Link
+                      className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                      to="/methodology"
+                    >
+                      How measured
+                    </Link>
+                  </dd>
                   <dt className="text-muted-foreground">Requested</dt>
                   <dd>{formatDateTime(detail.data.requested_at)}</dd>
                   <dt className="text-muted-foreground">Completed</dt>

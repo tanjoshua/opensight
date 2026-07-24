@@ -44,6 +44,7 @@ type businessStore interface {
 	ListBusinesses(ctx context.Context, tenantID domain.ID) ([]store.Business, error)
 	GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (store.Business, error)
 	CreateBusiness(ctx context.Context, params store.CreateBusinessParams) (store.Business, error)
+	UpdateActiveProfile(ctx context.Context, params store.UpdateBusinessProfileParams) (store.Business, error)
 }
 
 // planStore is the seam over *store.AdminStore's plan lookup. Onboarding sizes
@@ -60,20 +61,29 @@ type proposalStore interface {
 }
 
 // temporalClient is the narrow slice of client.Client the API server needs:
-// start GenerateProfileWorkflow and describe it to report generation status.
+// start GenerateProfileWorkflow/RunWorkflow, describe generation status, and
+// (via ScheduleClient) create the monitoring Schedule on apply.
 type temporalClient interface {
 	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
 	DescribeWorkflowExecution(ctx context.Context, workflowID, runID string) (*workflowservice.DescribeWorkflowExecutionResponse, error)
+	ScheduleClient() client.ScheduleClient
+}
+
+// applyStore is the seam over *store.ApplyProposalStore: the transactional
+// activate-business-and-insert-prompts operation ONB-6 runs on apply.
+type applyStore interface {
+	Apply(ctx context.Context, params store.ApplyProposalParams) (store.ApplyProposalResult, error)
 }
 
 // Server holds the API dependencies and configuration.
 type Server struct {
-	auth       authStore
-	businesses businessStore
-	prompts    promptStore
-	runs       runStore
-	results    resultStore
-	metrics    overviewMetrics
+	auth        authStore
+	businesses  businessStore
+	prompts     promptStore
+	competitors competitorStore
+	runs        runStore
+	results     resultStore
+	metrics     overviewMetrics
 	// runMetrics is the metrics seam for the Runs endpoint's per-run visibility %
 	// (MET-5) — a second view over the same *metrics.Metrics as Overview.
 	runMetrics runsMetrics
@@ -92,6 +102,7 @@ type Server struct {
 	// these endpoints.
 	plans             planStore
 	proposals         proposalStore
+	apply             applyStore
 	temporal          temporalClient
 	temporalTaskQueue string
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
@@ -103,13 +114,15 @@ type Server struct {
 
 // New builds a Server. secureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, businesses *store.BusinessStore, plans *store.AdminStore, proposals *store.ProfileProposalStore, prompts *store.PromptStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, temporal client.Client, temporalTaskQueue string, secureCookies bool) *Server {
+func New(auth *store.AuthStore, businesses *store.BusinessStore, plans *store.AdminStore, proposals *store.ProfileProposalStore, apply *store.ApplyProposalStore, prompts *store.PromptStore, competitors *store.CompetitorStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, temporal client.Client, temporalTaskQueue string, secureCookies bool) *Server {
 	return &Server{
 		auth:              auth,
 		businesses:        businesses,
 		plans:             plans,
 		proposals:         proposals,
+		apply:             apply,
 		prompts:           prompts,
+		competitors:       competitors,
 		runs:              runs,
 		results:           results,
 		metrics:           metrics,
@@ -150,12 +163,23 @@ func (s *Server) Routes() http.Handler {
 			r.Use(s.requireSession)
 			r.Get("/me", s.handleMe)
 			r.Post("/businesses", s.handleCreateBusiness)
+			r.Get("/businesses/{businessID}", s.handleGetBusiness)
+			r.Patch("/businesses/{businessID}", s.handlePatchBusiness)
 			r.Get("/businesses/{businessID}/proposal", s.handleGetProposal)
 			r.Post("/businesses/{businessID}/proposal/regen", s.handleRegenProposal)
+			r.Post("/businesses/{businessID}/apply", s.handleApplyBusiness)
 			r.Get("/businesses/{businessID}/overview", s.handleGetOverview)
 			r.Get("/businesses/{businessID}/prompts", s.handleListPrompts)
+			r.Post("/businesses/{businessID}/prompts", s.handleAddPrompt)
 			r.Get("/prompts/{promptID}", s.handleGetPrompt)
+			r.Post("/prompts/{promptID}/replace", s.handleReplacePrompt)
 			r.Get("/businesses/{businessID}/competitors", s.handleListCompetitors)
+			r.Post("/businesses/{businessID}/competitors", s.handleAddCompetitor)
+			r.Post("/competitors/{competitorID}/track", s.handleTrackCompetitor)
+			r.Post("/competitors/{competitorID}/dismiss", s.handleDismissCompetitor)
+			r.Post("/competitors/{competitorID}/suggested-aliases/approve", s.handleApproveSuggestedAlias)
+			r.Post("/competitors/{competitorID}/suggested-aliases/reject", s.handleRejectSuggestedAlias)
+			r.Patch("/competitors/{competitorID}", s.handlePatchCompetitorAliases)
 			r.Get("/businesses/{businessID}/citations", s.handleListCitations)
 			r.Get("/businesses/{businessID}/runs", s.handleListRuns)
 			r.Get("/businesses/{businessID}/results", s.handleListResults)

@@ -59,6 +59,19 @@ type CreateBusinessParams struct {
 	ActivatedAt   *time.Time
 }
 
+type UpdateBusinessProfileParams struct {
+	TenantID      domain.ID
+	BusinessID    domain.ID
+	Name          *string
+	WebsiteSet    bool
+	Website       *string
+	Aliases       *[]string
+	Category      *string
+	Practitioners *json.RawMessage
+	Services      *json.RawMessage
+	Location      *json.RawMessage
+}
+
 // BusinessStore reads and writes business rows. It is the tenant-checked entry
 // point every deeper repository call funnels through.
 type BusinessStore struct {
@@ -98,6 +111,18 @@ WHERE tenant_id = $1
 ORDER BY created_at`
 
 	resolveTenantIDSQL = `SELECT tenant_id FROM businesses WHERE id = $1`
+
+	updateActiveBusinessProfileSQL = `
+UPDATE businesses
+SET name = CASE WHEN $3 THEN $4 ELSE name END,
+    website = CASE WHEN $5 THEN $6 ELSE website END,
+    aliases = CASE WHEN $7 THEN $8 ELSE aliases END,
+    category = CASE WHEN $9 THEN $10 ELSE category END,
+    practitioners = CASE WHEN $11 THEN $12::jsonb ELSE practitioners END,
+    services = CASE WHEN $13 THEN $14::jsonb ELSE services END,
+    location = CASE WHEN $15 THEN $16::jsonb ELSE location END
+WHERE id = $1 AND tenant_id = $2 AND status = 'active'
+RETURNING ` + businessColumns
 )
 
 // CreateBusiness inserts a business owned by params.TenantID (RUN-5 CLI
@@ -158,6 +183,63 @@ func (s *BusinessStore) GetBusiness(ctx context.Context, tenantID, businessID do
 			return Business{}, ErrNotFound
 		}
 		return Business{}, fmt.Errorf("get business: %w", err)
+	}
+	return business, nil
+}
+
+func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBusinessProfileParams) (Business, error) {
+	if s == nil || s.db == nil {
+		return Business{}, errors.New("business store database is required")
+	}
+	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+		return Business{}, err
+	}
+	if err := validateUUIDv7("business id", params.BusinessID); err != nil {
+		return Business{}, err
+	}
+	if params.WebsiteSet && params.Website != nil {
+		value := strings.TrimSpace(*params.Website)
+		if value == "" {
+			params.Website = nil
+		} else {
+			params.Website = &value
+		}
+	}
+	var aliases []string
+	if params.Aliases != nil {
+		aliases = *params.Aliases
+	}
+	jsonText := func(value *json.RawMessage) string {
+		if value == nil {
+			return "null"
+		}
+		return string(*value)
+	}
+	business, err := scanBusiness(s.db.QueryRowContext(
+		ctx,
+		updateActiveBusinessProfileSQL,
+		params.BusinessID,
+		params.TenantID,
+		params.Name != nil,
+		params.Name,
+		params.WebsiteSet,
+		params.Website,
+		params.Aliases != nil,
+		aliases,
+		params.Category != nil,
+		params.Category,
+		params.Practitioners != nil,
+		jsonText(params.Practitioners),
+		params.Services != nil,
+		jsonText(params.Services),
+		params.Location != nil,
+		jsonText(params.Location),
+	))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Business{}, ErrNotFound
+		}
+		return Business{}, fmt.Errorf("update active business profile: %w", err)
 	}
 	return business, nil
 }

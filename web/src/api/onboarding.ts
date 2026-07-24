@@ -88,9 +88,9 @@ export function regenProposal(
   )
 }
 
-// applyProposal posts the final edited payload to the apply endpoint. That
-// route lands in ONB-6 (apply transaction + first run); until then this call
-// 404s honestly rather than pretending apply is done.
+// applyProposal posts the final edited payload to the apply endpoint (ONB-6):
+// the server takes it verbatim, activates the business, inserts its prompts, and
+// triggers the first monitoring run.
 export function applyProposal(
   businessId: string,
   payload: ProposalPayload

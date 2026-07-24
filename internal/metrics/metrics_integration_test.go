@@ -35,6 +35,7 @@ func TestGatingRules(t *testing.T) {
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	rivalID := mustNewID(t)
+	manualRivalID := mustNewID(t)
 	p1, p2, p3, p4 := mustNewID(t), mustNewID(t), mustNewID(t), mustNewID(t)
 	runA, runB := mustNewID(t), mustNewID(t)
 	// Run A results.
@@ -57,10 +58,12 @@ VALUES ($1, $2, 20, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
 	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Metrics Tenant', $2)`, tenantID, planID)
 	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
 	for _, p := range []domain.ID{p1, p2, p3, p4} {
-		mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'q', 'active')`, p, businessID)
+		mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status, created_at) VALUES ($1, $2, 'q', 'active', '2026-07-06T00:00:00Z')`, p, businessID)
 	}
-	mustExec(t, db, ctx, `INSERT INTO competitors (id, business_id, name, aliases, source, status)
-VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], 'discovered', 'discovered')`, rivalID, businessID)
+	mustExec(t, db, ctx, `INSERT INTO competitors (id, business_id, name, aliases, suggested_aliases, source, status)
+VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], ARRAY['Rival Medical']::text[], 'discovered', 'discovered')`, rivalID, businessID)
+	mustExec(t, db, ctx, `INSERT INTO competitors (id, business_id, name, source, status)
+VALUES ($1, $2, 'Manual Rival', 'manual', 'tracked')`, manualRivalID, businessID)
 
 	// Run A: completed AND reconciled — the only run in the metrics base.
 	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
@@ -150,8 +153,8 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 		t.Fatalf("self base = %d/%d (%.0f%%), want 1/2 (50%%)", comp.SelfMentioned, comp.TotalAnalyzed, comp.SelfPercent)
 	}
 	assertIDSet(t, "self baseline result_ids", comp.ResultIDs, a1, a2)
-	if len(comp.Competitors) != 1 {
-		t.Fatalf("competitors = %d, want 1", len(comp.Competitors))
+	if len(comp.Competitors) != 2 {
+		t.Fatalf("competitors = %d, want 2", len(comp.Competitors))
 	}
 	c := comp.Competitors[0]
 	if c.Mentioned != 2 || c.TotalMentions != 2 || c.MentionPercent != 100 {
@@ -159,6 +162,10 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 	}
 	if c.AvgOrder != 0.5 {
 		t.Fatalf("rival avg order = %v, want 0.5", c.AvgOrder)
+	}
+	if len(c.Aliases) != 1 || c.Aliases[0] != "rival clinic" ||
+		len(c.SuggestedAliases) != 1 || c.SuggestedAliases[0] != "Rival Medical" {
+		t.Fatalf("rival aliases = %#v suggested = %#v", c.Aliases, c.SuggestedAliases)
 	}
 	if c.VsSelf != 50 {
 		t.Fatalf("rival vs self = %v, want 50", c.VsSelf)
@@ -174,6 +181,16 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 	}
 	if len(c.Trend) != 1 || c.Trend[0].RunID != runA || c.Trend[0].Percent != 100 {
 		t.Fatalf("rival trend = %+v, want one Run A point at 100%%", c.Trend)
+	}
+	manual := comp.Competitors[1]
+	if manual.CompetitorID != manualRivalID || manual.Mentioned != 0 || manual.TotalMentions != 0 ||
+		manual.MentionPercent != 0 || manual.AvgOrder != 0 || len(manual.ResultIDs) != 0 ||
+		len(manual.PerPrompt) != 0 {
+		t.Fatalf("zero-history manual competitor = %+v", manual)
+	}
+	if len(manual.Trend) != 1 || manual.Trend[0].RunID != runA ||
+		manual.Trend[0].Analyzed != 2 || manual.Trend[0].Mentioned != 0 || manual.Trend[0].Percent != 0 {
+		t.Fatalf("manual competitor zero trend = %+v", manual.Trend)
 	}
 
 	// --- Aggregates: exclude unanalyzed (a3) and the un-reconciled run (b1). ---
@@ -234,15 +251,32 @@ VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, r
 		t.Fatalf("p2 latest = %+v, want a2 not mentioned", l)
 	}
 
-	// --- Prompt-set-change dates (MET-2 trend markers): the four prompts were
-	// created together and none retired, so the set changed on exactly one day.
-	// This is the real-DB check of the UNION/date_trunc query. ---
-	changeDates, err := m.PromptChangeDates(ctx, tenantID, businessID)
+	// --- Prompt-set-change classification (POL-2 trend markers): the four prompts
+	// were created together (an add on their creation day). Then, on a later day,
+	// replace p2 (retire p2 + insert p5 as its successor) and add a fresh p6 with
+	// no predecessor. That later day must classify as 1 replaced + 1 added, with
+	// p2's retirement absorbed into the replace, not double-counted as an outright
+	// retire. This is the real-DB check of the per-day (added, retired, replaced)
+	// query. ---
+	p5, p6 := mustNewID(t), mustNewID(t)
+	mustExec(t, db, ctx, `UPDATE prompts SET status = 'retired', retired_at = '2026-07-20T10:00:00Z' WHERE id = $1`, p2)
+	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status, replaces_prompt_id, created_at)
+VALUES ($1, $2, 'q2', 'active', $3, '2026-07-20T10:00:00Z')`, p5, businessID, p2)
+	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status, created_at)
+VALUES ($1, $2, 'q3', 'active', '2026-07-20T10:00:00Z')`, p6, businessID)
+
+	changes, err := m.PromptChanges(ctx, tenantID, businessID)
 	if err != nil {
-		t.Fatalf("PromptChangeDates: %v", err)
+		t.Fatalf("PromptChanges: %v", err)
 	}
-	if len(changeDates) != 1 {
-		t.Fatalf("prompt change dates = %v, want 1 distinct day", changeDates)
+	if len(changes) != 2 {
+		t.Fatalf("prompt changes = %+v, want 2 distinct days", changes)
+	}
+	if c := changes[0]; c.Added != 4 || c.Retired != 0 || c.Replaced != 0 {
+		t.Fatalf("day 1 change = %+v, want 4 added", c)
+	}
+	if c := changes[1]; c.Added != 1 || c.Retired != 0 || c.Replaced != 1 {
+		t.Fatalf("day 2 change = %+v, want 1 added + 1 replaced (p2 retire absorbed)", c)
 	}
 }
 

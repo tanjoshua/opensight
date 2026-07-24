@@ -44,7 +44,9 @@ export function CitationSourcesDrilldown({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-3xl">
         <SheetHeader>
-          <SheetTitle>{source?.domain ?? domain ?? "Citation source"}</SheetTitle>
+          <SheetTitle>
+            {source?.domain ?? domain ?? "Citation source"}
+          </SheetTitle>
           <SheetDescription>
             {source
               ? `${source.frequency} ${plural(source.frequency, "response")}`

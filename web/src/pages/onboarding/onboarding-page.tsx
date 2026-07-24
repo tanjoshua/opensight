@@ -206,6 +206,13 @@ function ProposalFlow({
 
   const status = proposal.data.status
 
+  const regenError =
+    regen.error instanceof ApiError
+      ? regen.error.message
+      : regen.isError
+        ? "Couldn't regenerate. Try again."
+        : undefined
+
   if (status === "generating" || regen.isPending) {
     return (
       <ProgressState
@@ -230,6 +237,7 @@ function ProposalFlow({
           promptLimit={promptLimit}
           onRegenerate={() => regen.mutate()}
           regenerating={regen.isPending}
+          regenError={regenError}
           canRegenerate
           onApplied={onApplied}
         />
@@ -245,6 +253,7 @@ function ProposalFlow({
       promptLimit={promptLimit}
       onRegenerate={() => regen.mutate()}
       regenerating={regen.isPending}
+      regenError={regenError}
       canRegenerate
       onApplied={onApplied}
     />

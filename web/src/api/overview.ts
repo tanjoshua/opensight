@@ -46,9 +46,18 @@ export interface CompetitorSummary {
   result_ids: string[]
 }
 
+// PromptChange is one day the prompt set changed and what changed on it, so the
+// trend marker at that date can name the change (design 06).
+export interface PromptChange {
+  date: string // YYYY-MM-DD
+  added: number
+  retired: number
+  replaced: number
+}
+
 export interface Overview {
   visibility: OverviewVisibility
-  prompt_change_dates: string[] // YYYY-MM-DD
+  prompt_changes: PromptChange[]
   top_keywords: KeywordStat[]
   top_cited_domains: DomainStat[]
   top_competitors: CompetitorSummary[] // truncated to top-3 discovered

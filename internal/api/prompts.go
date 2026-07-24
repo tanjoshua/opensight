@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"opensight/internal/domain"
@@ -19,6 +21,8 @@ import (
 type promptStore interface {
 	ListActivePrompts(ctx context.Context, tenantID, businessID domain.ID) ([]store.Prompt, error)
 	GetPrompt(ctx context.Context, tenantID, promptID domain.ID) (store.Prompt, error)
+	CreateActivePrompt(ctx context.Context, params store.CreateActivePromptParams) (store.Prompt, error)
+	ReplacePrompt(ctx context.Context, params store.ReplacePromptParams) (store.Prompt, error)
 }
 
 // promptsMetrics is the metrics seam for the Prompts section. Both methods are
@@ -218,6 +222,120 @@ func (s *Server) promptLineage(ctx context.Context, tenantID domain.ID, prompt s
 		cur = ancestor.ReplacesPromptID
 	}
 	return lineage, nil
+}
+
+type addPromptRequest struct {
+	Text string `json:"text"`
+}
+
+type replacePromptRequest struct {
+	Text      string `json:"text"`
+	Confirmed bool   `json:"confirmed"`
+}
+
+// promptWriteResponse is the body of a successful add or replace: the new prompt
+// as a lineage node (replaces_prompt_id links a replacement back to its
+// predecessor), so the SPA can route to the new prompt's detail page.
+type promptWriteResponse struct {
+	Prompt promptLineageNode `json:"prompt"`
+}
+
+// handleAddPrompt serves POST /businesses/:id/prompts: add a new active prompt.
+// The plan prompt limit is a live resource-limit conflict, so hitting it is 409
+// (distinct from ONB-6's 400 for a bad generated payload count).
+func (s *Server) handleAddPrompt(w http.ResponseWriter, r *http.Request) {
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "add prompt: missing session context", errors.New("missing session context"))
+		return
+	}
+	businessID, ok := pathID(w, r, "businessID")
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	var req addPromptRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblem(w, http.StatusBadRequest, "bad request", "request body must be valid JSON")
+		return
+	}
+	if strings.TrimSpace(req.Text) == "" {
+		writeProblem(w, http.StatusBadRequest, "bad request", "text is required")
+		return
+	}
+
+	prompt, err := s.prompts.CreateActivePrompt(r.Context(), store.CreateActivePromptParams{
+		TenantID:   su.TenantID,
+		BusinessID: businessID,
+		Text:       req.Text,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			writeStoreError(w, err)
+		case errors.Is(err, store.ErrPromptLimitExceeded):
+			writeProblem(w, http.StatusConflict, "conflict", "active prompt limit reached for your plan")
+		default:
+			s.writeInternalError(w, "add prompt: create active prompt", err)
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, promptWriteResponse{Prompt: promptToLineageNode(prompt)})
+}
+
+// handleReplacePrompt serves POST /prompts/:id/replace: retire the old prompt and
+// insert a new active prompt recording replaces_prompt_id. confirmed:true is
+// checked first and independently — this is the server-side enforcement of the
+// unskippable warning (design 06), so a client that skips the modal can never
+// succeed. The response describes the new prompt.
+func (s *Server) handleReplacePrompt(w http.ResponseWriter, r *http.Request) {
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "replace prompt: missing session context", errors.New("missing session context"))
+		return
+	}
+	promptID, ok := pathID(w, r, "promptID")
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	var req replacePromptRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblem(w, http.StatusBadRequest, "bad request", "request body must be valid JSON")
+		return
+	}
+	if !req.Confirmed {
+		writeProblem(w, http.StatusBadRequest, "bad request", "confirmed must be true")
+		return
+	}
+	if strings.TrimSpace(req.Text) == "" {
+		writeProblem(w, http.StatusBadRequest, "bad request", "text is required")
+		return
+	}
+
+	prompt, err := s.prompts.ReplacePrompt(r.Context(), store.ReplacePromptParams{
+		TenantID:    su.TenantID,
+		OldPromptID: promptID,
+		Text:        req.Text,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			writeStoreError(w, err)
+		case errors.Is(err, store.ErrPromptNotActive):
+			writeProblem(w, http.StatusConflict, "conflict", "prompt is not active")
+		case errors.Is(err, store.ErrPromptLimitExceeded):
+			writeProblem(w, http.StatusConflict, "conflict", "active prompt limit reached for your plan")
+		default:
+			s.writeInternalError(w, "replace prompt: replace prompt", err)
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, promptWriteResponse{Prompt: promptToLineageNode(prompt)})
 }
 
 func trendToResponse(points []metrics.PromptTrendPoint) []promptTrendResponse {

@@ -38,6 +38,7 @@ export function ReviewScreen({
   promptLimit,
   onRegenerate,
   regenerating,
+  regenError,
   canRegenerate,
   onApplied,
 }: {
@@ -46,6 +47,7 @@ export function ReviewScreen({
   promptLimit: number
   onRegenerate: () => void
   regenerating: boolean
+  regenError?: string
   canRegenerate: boolean
   onApplied: () => void
 }) {
@@ -61,9 +63,7 @@ export function ReviewScreen({
 
   const applyError =
     apply.error instanceof ApiError
-      ? apply.error.status === 404
-        ? "Applying isn't wired up yet (arrives in the next step). Your edits are ready to submit."
-        : apply.error.message
+      ? apply.error.message
       : apply.isError
         ? "Could not apply. Try again."
         : undefined
@@ -91,6 +91,11 @@ export function ReviewScreen({
             <RefreshCw data-icon="inline-start" />
             {regenerating ? "Regenerating" : "Regenerate"}
           </Button>
+        )}
+        {regenError && (
+          <p className="w-full text-sm text-destructive" role="alert">
+            {regenError}
+          </p>
         )}
       </div>
 

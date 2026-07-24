@@ -5,6 +5,8 @@ import { CompetitorsPage } from "@/pages/competitors/competitors-page"
 import { LoginPage } from "@/pages/login/login-page"
 import { OnboardingPage } from "@/pages/onboarding/onboarding-page"
 import { OverviewPage } from "@/pages/overview/overview-page"
+import { MethodologyPage } from "@/pages/methodology/methodology-page"
+import { PrivacyPage } from "@/pages/privacy/privacy-page"
 import { PromptDetailPage } from "@/pages/prompts/prompt-detail-page"
 import { PromptsPage } from "@/pages/prompts/prompts-page"
 import { ResponsesPage } from "@/pages/responses/responses-page"
@@ -23,6 +25,8 @@ export function App() {
         <Route path="/competitors" element={<CompetitorsPage />} />
         <Route path="/responses" element={<ResponsesPage />} />
         <Route path="/setup" element={<SetupPage />} />
+        <Route path="/methodology" element={<MethodologyPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="*" element={<Navigate to="/responses" replace />} />
       </Route>
     </Routes>

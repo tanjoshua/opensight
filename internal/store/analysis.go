@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"opensight/internal/domain"
 )
@@ -418,7 +419,8 @@ type DiscoveredCompetitor struct {
 // SuggestedAliasWrite records an LLM-proposed variant on an existing competitor
 // (design 05 step 3): appended to suggested_aliases, never promoted to aliases
 // (user approval in POL-4 promotes it). Idempotent — a variant already present
-// as a suggestion or an approved alias is skipped.
+// as a suggestion or an approved alias is skipped. CommitReconcile trims the
+// variant before persistence so the stored value is the exact review key.
 type SuggestedAliasWrite struct {
 	CompetitorID domain.ID
 	Variant      string
@@ -500,7 +502,11 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 		}
 
 		for _, sa := range params.SuggestedAliases {
-			if _, err := q.execContext(ctx, appendSuggestedAliasSQL, sa.CompetitorID, businessID, sa.Variant); err != nil {
+			variant := strings.TrimSpace(sa.Variant)
+			if variant == "" {
+				continue
+			}
+			if _, err := q.execContext(ctx, appendSuggestedAliasSQL, sa.CompetitorID, businessID, variant); err != nil {
 				return fmt.Errorf("append suggested alias: %w", err)
 			}
 		}

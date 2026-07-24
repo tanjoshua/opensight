@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router"
+import { Link, Navigate, Outlet, useLocation } from "react-router"
 
 import { ApiError } from "@/api/client"
 import { useMe } from "@/api/auth"
@@ -45,9 +45,17 @@ export function AppLayout() {
           <span className="font-heading text-sm font-medium">OpenSight</span>
           {business && <RunProgressBadge businessId={business.id} />}
         </header>
-        <div className="flex flex-1 flex-col p-6">
+        <main className="flex flex-1 flex-col p-6">
           <Outlet />
-        </div>
+        </main>
+        <footer className="flex flex-wrap gap-x-4 gap-y-2 border-t px-6 py-4 text-xs text-muted-foreground">
+          <Link className="hover:text-foreground hover:underline" to="/methodology">
+            How we measure
+          </Link>
+          <Link className="hover:text-foreground hover:underline" to="/privacy">
+            Privacy
+          </Link>
+        </footer>
       </SidebarInset>
     </SidebarProvider>
   )

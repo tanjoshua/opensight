@@ -80,6 +80,5 @@ POST /api/businesses/:id/apply            → apply final payload, activate, sch
 
 ## Open questions (owned by later increments)
 
-- **04**: first-run mechanics are the same WeeklyRunWorkflow — how "triggered now" coexists with the schedule's `(business, platform, scheduled_for)` uniqueness.
 - **05**: whether `aliases` collected here are sufficient for mention matching, or matching needs its own enrichment loop.
 - **06**: review-screen UX details (per-field confidence display, prompt kind badges).

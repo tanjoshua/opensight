@@ -13,6 +13,7 @@ import (
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
+	"opensight/internal/workflows"
 
 	"github.com/google/uuid"
 )
@@ -135,8 +136,8 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 		trigger      store.RunTrigger
 		failPromptID domain.ID
 	}{
-		{seedRunID1, truncateToDay(activatedAt.AddDate(0, 0, -7)), store.RunTriggerInitial, uuid.Nil},
-		{seedRunID2, truncateToDay(activatedAt), store.RunTriggerScheduled, seedPromptID2},
+		{seedRunID1, workflows.TruncateToDay(activatedAt.AddDate(0, 0, -7)), store.RunTriggerInitial, uuid.Nil},
+		{seedRunID2, workflows.TruncateToDay(activatedAt), store.RunTriggerScheduled, seedPromptID2},
 	}
 
 	resultCount := 0
@@ -194,10 +195,4 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 		tenant.ID, seedEmail, seedPassword, seedBusinessID, len(promptDefs), len(runDefs), resultCount,
 	)
 	return err
-}
-
-// truncateToDay drops the time-of-day so scheduled_for lands cleanly on a date
-// (the column is a DATE).
-func truncateToDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }

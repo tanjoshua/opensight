@@ -2,18 +2,22 @@
 // mention order, sentiment, and a spark-trend across runs. Every stat opens the
 // Response drawer via its result_id (every number is a door); a row click drills
 // into the prompt's detail and lineage.
-import { MessageSquareText } from "lucide-react"
+import { MessageSquareText, Plus } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router"
 
 import { useMe } from "@/api/auth"
+import { ApiError } from "@/api/client"
 import {
+  useAddPrompt,
   usePrompts,
   type PromptSummary,
   type PromptTrendPoint,
 } from "@/api/prompts"
+import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Empty,
   EmptyDescription,
@@ -37,6 +41,8 @@ export function PromptsPage() {
   const navigate = useNavigate()
   const promptsQuery = usePrompts(business?.id)
   const [selectedResultID, setSelectedResultID] = useState<string>()
+  const [addOpen, setAddOpen] = useState(false)
+  const addPrompt = useAddPrompt(business?.id)
 
   if (me.isError || promptsQuery.isError) {
     return (
@@ -63,9 +69,38 @@ export function PromptsPage() {
 
   const prompts = promptsQuery.data.prompts
 
+  const addError =
+    addPrompt.error instanceof ApiError
+      ? addPrompt.error.message
+      : addPrompt.isError
+        ? "Could not add prompt. Try again."
+        : undefined
+
+  const openAdd = (open: boolean) => {
+    setAddOpen(open)
+    if (!open) addPrompt.reset()
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-heading text-lg font-semibold">Prompts</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="font-heading text-lg font-semibold">Prompts</h1>
+        <Button onClick={() => openAdd(true)}>
+          <Plus data-icon="inline-start" />
+          Add prompt
+        </Button>
+      </div>
+
+      <PromptConfirmDialog
+        mode="add"
+        open={addOpen}
+        onOpenChange={openAdd}
+        submitting={addPrompt.isPending}
+        errorMessage={addError}
+        onSubmit={(text) =>
+          addPrompt.mutate(text, { onSuccess: () => setAddOpen(false) })
+        }
+      />
 
       <div className="overflow-x-auto rounded-lg border">
         <Table>

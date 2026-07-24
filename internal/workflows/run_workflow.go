@@ -18,6 +18,12 @@ import (
 // worker (see cmd/opensight work).
 var acts *Activities
 
+// TruncateToDay drops the time-of-day so a moment lands cleanly on the DATE
+// scheduled_for represents.
+func TruncateToDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 // RunWorkflowID is the deterministic workflow id (design 04): schedule fires,
 // the onboarding first run, and any future manual run all converge on the same
 // id per business/platform/date, so duplicate triggers are no-ops.

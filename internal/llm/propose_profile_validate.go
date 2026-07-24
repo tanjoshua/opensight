@@ -39,38 +39,7 @@ func DecodeProposalPayload(raw json.RawMessage) (ProposalPayload, error) {
 // into any prompt, and a mix of prompt kinds. It returns one human-readable
 // message per violation; an empty result means valid. It is pure.
 func ValidateProposal(payload ProposalPayload, in ProposeProfileInput) []string {
-	var errs []string
-
-	p := payload.Profile
-	if strings.TrimSpace(p.Name) == "" {
-		errs = append(errs, "profile.name is empty")
-	}
-	if strings.TrimSpace(p.Category) == "" {
-		errs = append(errs, "profile.category is empty")
-	}
-	country := strings.TrimSpace(p.Location.Country)
-	if country == "" {
-		errs = append(errs, "profile.location.country is empty (a two-letter ISO country code is always required)")
-	} else if !isTwoLetterCountry(country) {
-		errs = append(errs, fmt.Sprintf("profile.location.country %q must be a two-letter ISO code", country))
-	}
-
-	for i, a := range p.Aliases {
-		if strings.TrimSpace(a) == "" {
-			errs = append(errs, fmt.Sprintf("profile.aliases[%d] is empty", i))
-		}
-	}
-	for i, s := range p.Services {
-		if strings.TrimSpace(s) == "" {
-			errs = append(errs, fmt.Sprintf("profile.services[%d] is empty", i))
-		}
-	}
-	for i, pr := range p.Practitioners {
-		if strings.TrimSpace(pr.Name) == "" {
-			errs = append(errs, fmt.Sprintf("profile.practitioners[%d].name is empty", i))
-		}
-	}
-
+	errs := ValidateProfile(payload.Profile)
 	if len(payload.Prompts) != in.PromptLimit {
 		errs = append(errs, fmt.Sprintf("prompts has %d entries, want exactly %d (plan.prompt_limit)", len(payload.Prompts), in.PromptLimit))
 	}
@@ -86,6 +55,40 @@ func ValidateProposal(payload ProposalPayload, in ProposeProfileInput) []string 
 	errs = append(errs, validatePromptNameLeakage(payload, in)...)
 	errs = append(errs, validatePromptKindMix(payload, in)...)
 
+	return errs
+}
+
+// ValidateProfile applies the profile invariants shared by onboarding and
+// post-activation Setup edits.
+func ValidateProfile(p ProposedProfile) []string {
+	var errs []string
+	if strings.TrimSpace(p.Name) == "" {
+		errs = append(errs, "profile.name is empty")
+	}
+	if strings.TrimSpace(p.Category) == "" {
+		errs = append(errs, "profile.category is empty")
+	}
+	country := strings.TrimSpace(p.Location.Country)
+	if country == "" {
+		errs = append(errs, "profile.location.country is empty (a two-letter ISO country code is always required)")
+	} else if !isTwoLetterCountry(country) {
+		errs = append(errs, fmt.Sprintf("profile.location.country %q must be a two-letter ISO code", country))
+	}
+	for i, a := range p.Aliases {
+		if strings.TrimSpace(a) == "" {
+			errs = append(errs, fmt.Sprintf("profile.aliases[%d] is empty", i))
+		}
+	}
+	for i, s := range p.Services {
+		if strings.TrimSpace(s) == "" {
+			errs = append(errs, fmt.Sprintf("profile.services[%d] is empty", i))
+		}
+	}
+	for i, pr := range p.Practitioners {
+		if strings.TrimSpace(pr.Name) == "" {
+			errs = append(errs, fmt.Sprintf("profile.practitioners[%d].name is empty", i))
+		}
+	}
 	return errs
 }
 

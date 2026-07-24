@@ -2,15 +2,19 @@
 // its replacement lineage. Reached by drilling in from the Prompts table or by
 // walking a lineage link — GetPrompt reaches retired prompts too, so a retired
 // predecessor renders here correctly. Every result row opens the Response drawer.
-import { ArrowLeft, MessageSquareText } from "lucide-react"
+import { ArrowLeft, MessageSquareText, Replace } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 
+import { useMe } from "@/api/auth"
+import { ApiError } from "@/api/client"
 import {
   usePrompt,
+  useReplacePrompt,
   type PromptDetailResult,
   type PromptLineageNode,
 } from "@/api/prompts"
+import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,8 +39,12 @@ import {
 export function PromptDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const me = useMe()
+  const businessId = me.data?.businesses[0]?.id
   const promptQuery = usePrompt(id)
   const [selectedResultID, setSelectedResultID] = useState<string>()
+  const [replaceOpen, setReplaceOpen] = useState(false)
+  const replacePrompt = useReplacePrompt(businessId)
 
   if (promptQuery.isError) {
     return (
@@ -52,6 +60,18 @@ export function PromptDetailPage() {
 
   const { prompt, lineage, results } = promptQuery.data
   const replacements = buildReplacements(prompt, lineage)
+
+  const replaceError =
+    replacePrompt.error instanceof ApiError
+      ? replacePrompt.error.message
+      : replacePrompt.isError
+        ? "Could not replace prompt. Try again."
+        : undefined
+
+  const openReplace = (open: boolean) => {
+    setReplaceOpen(open)
+    if (!open) replacePrompt.reset()
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -71,7 +91,37 @@ export function PromptDetailPage() {
         >
           {prompt.status}
         </Badge>
+        {prompt.status === "active" && (
+          <Button
+            variant="outline"
+            className="ms-auto"
+            onClick={() => openReplace(true)}
+          >
+            <Replace data-icon="inline-start" />
+            Replace
+          </Button>
+        )}
       </div>
+
+      <PromptConfirmDialog
+        mode="replace"
+        open={replaceOpen}
+        onOpenChange={openReplace}
+        initialText={prompt.text}
+        submitting={replacePrompt.isPending}
+        errorMessage={replaceError}
+        onSubmit={(text) =>
+          replacePrompt.mutate(
+            { promptId: prompt.id, text },
+            {
+              onSuccess: (data) => {
+                setReplaceOpen(false)
+                navigate(`/prompts/${data.prompt.id}`)
+              },
+            }
+          )
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -166,7 +216,9 @@ function ResultRow({
         )}
       </TableCell>
       <TableCell className="space-x-1.5 whitespace-nowrap">
-        <Badge variant={result.status === "failed" ? "destructive" : "secondary"}>
+        <Badge
+          variant={result.status === "failed" ? "destructive" : "secondary"}
+        >
           {result.status}
         </Badge>
         {result.unanalyzed && <Badge variant="outline">not yet analyzed</Badge>}

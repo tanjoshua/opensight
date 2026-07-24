@@ -23,21 +23,22 @@ type CompetitorStats struct {
 
 // CompetitorStat is one competitor's stats over the analyzed base (design 06/
 // PRD §6: mention %, totals, avg order, per-prompt appearances, trend, vs-self).
-// Only competitors with at least one mention in an analyzed result appear.
 // Mentioned counts distinct analyzed results mentioning the competitor;
 // TotalMentions counts mention rows. ResultIDs are those results — the door.
 type CompetitorStat struct {
-	CompetitorID   domain.ID
-	Name           string
-	Status         string // discovered|tracked|dismissed (display filter is the caller's)
-	Mentioned      int
-	TotalMentions  int
-	MentionPercent float64
-	AvgOrder       float64
-	VsSelf         float64 // MentionPercent - SelfPercent
-	ResultIDs      []domain.ID
-	PerPrompt      []PromptAppearance
-	Trend          []CompetitorTrendPoint
+	CompetitorID     domain.ID
+	Name             string
+	Status           string // discovered|tracked|dismissed (display filter is the caller's)
+	Aliases          []string
+	SuggestedAliases []string
+	Mentioned        int
+	TotalMentions    int
+	MentionPercent   float64
+	AvgOrder         float64
+	VsSelf           float64 // MentionPercent - SelfPercent
+	ResultIDs        []domain.ID
+	PerPrompt        []PromptAppearance
+	Trend            []CompetitorTrendPoint
 }
 
 // PromptAppearance is the analyzed results of one prompt in which a competitor
@@ -61,15 +62,24 @@ type CompetitorTrendPoint struct {
 
 const competitorOverallSQL = `
 SELECT co.id, co.name, co.status,
-       count(DISTINCT pr.id) AS mentioned,
-       count(m.id) AS total_mentions,
-       avg(m.mention_order)::float8 AS avg_order,
-       to_jsonb(array_agg(DISTINCT pr.id)) AS result_ids` +
+       to_jsonb(co.aliases), to_jsonb(co.suggested_aliases),
+       count(DISTINCT am.result_id) AS mentioned,
+       count(am.mention_id) AS total_mentions,
+       coalesce(avg(am.mention_order), 0)::float8 AS avg_order,
+       coalesce(
+         to_jsonb(array_agg(DISTINCT am.result_id) FILTER (WHERE am.result_id IS NOT NULL)),
+         '[]'::jsonb
+       ) AS result_ids
+FROM competitors co
+JOIN businesses owner ON owner.id = co.business_id
+LEFT JOIN (
+  SELECT m.competitor_id, m.id AS mention_id, m.mention_order, pr.id AS result_id` +
 	analyzedJoin + `
-JOIN mentions m ON m.prompt_result_id = pr.id AND m.subject = 'competitor'
-JOIN competitors co ON co.id = m.competitor_id` + analyzedWhere + `
-GROUP BY co.id, co.name, co.status
-ORDER BY count(DISTINCT pr.id) DESC, co.name`
+  JOIN mentions m ON m.prompt_result_id = pr.id AND m.subject = 'competitor'` + analyzedWhere + `
+) am ON am.competitor_id = co.id
+WHERE co.business_id = $1 AND owner.tenant_id = $2
+GROUP BY co.id, co.name, co.status, co.aliases, co.suggested_aliases
+ORDER BY count(DISTINCT am.result_id) DESC, co.name`
 
 const competitorTrendSQL = `
 SELECT m.competitor_id, r.id, r.scheduled_for,
@@ -144,9 +154,22 @@ func (m *Metrics) competitorOverall(ctx context.Context, tenantID, businessID do
 	for rows.Next() {
 		var s CompetitorStat
 		var ids resultIDs
-		if err := rows.Scan(&s.CompetitorID, &s.Name, &s.Status, &s.Mentioned, &s.TotalMentions, &s.AvgOrder, &ids); err != nil {
+		var aliases, suggestedAliases stringValues
+		if err := rows.Scan(
+			&s.CompetitorID,
+			&s.Name,
+			&s.Status,
+			&aliases,
+			&suggestedAliases,
+			&s.Mentioned,
+			&s.TotalMentions,
+			&s.AvgOrder,
+			&ids,
+		); err != nil {
 			return nil, nil, fmt.Errorf("scan competitor stat: %w", err)
 		}
+		s.Aliases = aliases
+		s.SuggestedAliases = suggestedAliases
 		s.ResultIDs = ids
 		s.MentionPercent = percent(s.Mentioned, totalAnalyzed)
 		s.VsSelf = s.MentionPercent - selfPercent

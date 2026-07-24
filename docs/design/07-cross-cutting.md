@@ -52,7 +52,13 @@ Kept deliberately minimal for MVP:
 
 ## Data protection (light-touch, noted not lawyered)
 
-PII stored: user emails and business profiles (public-figure practitioner names). **Hard product rule: no patient-identifiable data ever enters the system** — prompts are generic consumer queries, never real patient cases; the prompt-generation rules (03) and review-screen copy enforce it. This keeps the PDPA surface minimal by construction. Singapore PDPA applies to clinic customer data; hosting region (Hetzner SG vs EU) is a one-line compose choice — pick SG for data-locality optics with clinic customers. Add a plain-language privacy page before first paying customer.
+The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, password verifier and session records; business profile and public practitioner data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration.
+
+**Hard usage boundary: users must never enter patient-identifiable data.** Prompts are generic consumer queries rather than patient cases; generation rules and review copy reinforce this boundary. The product does not claim automatic detection or prevention of every prohibited entry.
+
+Monitoring prompts and relevant business context are sent to the OpenAI API and may use web search. Public copy qualifies that OpenAI handling depends on the applicable service agreement and deployed account settings; it does not invent promises about external retention or training.
+
+The service is pre-production. Singapore hosting is planned before production, but the product must not claim a production region until FND-5 deploys and verifies it. Monitoring results are retained indefinitely to preserve trends and evidence unless later terms or policy specify otherwise; legal, security, or dispute-preservation needs can override ordinary deletion. Account and profile data is retained as needed to operate the service and customer relationship, with specific deletion or post-account terms confirmed through the customer's account representative rather than invented here.
 
 ## Open items deliberately left post-MVP
 

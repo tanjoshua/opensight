@@ -2,12 +2,15 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"opensight/internal/domain"
 	"opensight/internal/metrics"
+	"opensight/internal/store"
 )
 
 const (
@@ -21,6 +24,14 @@ const (
 // always measured against the identical result set.
 type competitorsMetrics interface {
 	CompetitorStats(ctx context.Context, tenantID, businessID domain.ID) (metrics.CompetitorStats, error)
+}
+
+type competitorStore interface {
+	CreateManual(ctx context.Context, params store.CreateManualCompetitorParams) (store.CompetitorRecord, error)
+	SetStatus(ctx context.Context, params store.SetCompetitorStatusParams) (store.CompetitorRecord, error)
+	ApproveSuggestedAlias(ctx context.Context, params store.SuggestedAliasParams) (store.CompetitorRecord, error)
+	RejectSuggestedAlias(ctx context.Context, params store.SuggestedAliasParams) (store.CompetitorRecord, error)
+	UpdateAliases(ctx context.Context, params store.UpdateCompetitorAliasesParams) (store.CompetitorRecord, error)
 }
 
 type competitorsListResponse struct {
@@ -42,17 +53,43 @@ type competitorSelfResponse struct {
 // mention %, totals, avg order, per-prompt appearances, weekly trend, vs-self.
 // ResultIDs (and every nested ResultIDs) is the door behind the number.
 type competitorResponse struct {
-	ID             string                     `json:"id"`
-	Name           string                     `json:"name"`
-	Status         string                     `json:"status"`
-	Mentioned      int                        `json:"mentioned"`
-	TotalMentions  int                        `json:"total_mentions"`
-	MentionPercent float64                    `json:"mention_percent"`
-	AvgOrder       float64                    `json:"avg_order"`
-	VsSelf         float64                    `json:"vs_self"`
-	ResultIDs      []string                   `json:"result_ids"`
-	PerPrompt      []competitorPromptResponse `json:"per_prompt"`
-	Trend          []competitorTrendResponse  `json:"trend"`
+	ID               string                     `json:"id"`
+	Name             string                     `json:"name"`
+	Status           string                     `json:"status"`
+	Aliases          []string                   `json:"aliases"`
+	SuggestedAliases []string                   `json:"suggested_aliases"`
+	Mentioned        int                        `json:"mentioned"`
+	TotalMentions    int                        `json:"total_mentions"`
+	MentionPercent   float64                    `json:"mention_percent"`
+	AvgOrder         float64                    `json:"avg_order"`
+	VsSelf           float64                    `json:"vs_self"`
+	ResultIDs        []string                   `json:"result_ids"`
+	PerPrompt        []competitorPromptResponse `json:"per_prompt"`
+	Trend            []competitorTrendResponse  `json:"trend"`
+}
+
+type competitorWriteResponse struct {
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Website          *string  `json:"website"`
+	Aliases          []string `json:"aliases"`
+	SuggestedAliases []string `json:"suggested_aliases"`
+	Source           string   `json:"source"`
+	Status           string   `json:"status"`
+}
+
+type addCompetitorRequest struct {
+	Name    string   `json:"name"`
+	Aliases []string `json:"aliases"`
+	Website string   `json:"website"`
+}
+
+type suggestedAliasRequest struct {
+	Alias string `json:"alias"`
+}
+
+type patchCompetitorRequest struct {
+	Aliases *[]string `json:"aliases"`
 }
 
 // competitorPromptResponse is "in N of the responses to this prompt": the prompt
@@ -152,6 +189,189 @@ func (s *Server) handleListCompetitors(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (s *Server) handleAddCompetitor(w http.ResponseWriter, r *http.Request) {
+	if s.competitors == nil {
+		s.writeInternalError(w, "add competitor: store missing", errors.New("competitor store is required"))
+		return
+	}
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "add competitor: missing session context", errors.New("missing session context"))
+		return
+	}
+	businessID, ok := pathID(w, r, "businessID")
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	var req addCompetitorRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblem(w, http.StatusBadRequest, "bad request", "request body must be valid JSON")
+		return
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		writeProblem(w, http.StatusBadRequest, "bad request", "name is required")
+		return
+	}
+	var website *string
+	if value := strings.TrimSpace(req.Website); value != "" {
+		website = &value
+	}
+	competitor, err := s.competitors.CreateManual(r.Context(), store.CreateManualCompetitorParams{
+		TenantID:   su.TenantID,
+		BusinessID: businessID,
+		Name:       req.Name,
+		Aliases:    req.Aliases,
+		Website:    website,
+	})
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeStoreError(w, err)
+		} else {
+			s.writeInternalError(w, "add competitor: create manual competitor", err)
+		}
+		return
+	}
+	writeJSON(w, http.StatusCreated, competitorRecordToResponse(competitor))
+}
+
+func (s *Server) handleTrackCompetitor(w http.ResponseWriter, r *http.Request) {
+	s.handleSetCompetitorStatus(w, r, store.CompetitorStatusTracked)
+}
+
+func (s *Server) handleDismissCompetitor(w http.ResponseWriter, r *http.Request) {
+	s.handleSetCompetitorStatus(w, r, store.CompetitorStatusDismissed)
+}
+
+func (s *Server) handleSetCompetitorStatus(w http.ResponseWriter, r *http.Request, status store.CompetitorStatus) {
+	if s.competitors == nil {
+		s.writeInternalError(w, "set competitor status: store missing", errors.New("competitor store is required"))
+		return
+	}
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "set competitor status: missing session context", errors.New("missing session context"))
+		return
+	}
+	competitorID, ok := pathID(w, r, "competitorID")
+	if !ok {
+		return
+	}
+	competitor, err := s.competitors.SetStatus(r.Context(), store.SetCompetitorStatusParams{
+		TenantID:     su.TenantID,
+		CompetitorID: competitorID,
+		Status:       status,
+	})
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, competitorRecordToResponse(competitor))
+}
+
+func (s *Server) handleApproveSuggestedAlias(w http.ResponseWriter, r *http.Request) {
+	s.handleSuggestedAlias(w, r, true)
+}
+
+func (s *Server) handleRejectSuggestedAlias(w http.ResponseWriter, r *http.Request) {
+	s.handleSuggestedAlias(w, r, false)
+}
+
+func (s *Server) handleSuggestedAlias(w http.ResponseWriter, r *http.Request, approve bool) {
+	if s.competitors == nil {
+		s.writeInternalError(w, "review suggested alias: store missing", errors.New("competitor store is required"))
+		return
+	}
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "review suggested alias: missing session context", errors.New("missing session context"))
+		return
+	}
+	competitorID, ok := pathID(w, r, "competitorID")
+	if !ok {
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	var req suggestedAliasRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblem(w, http.StatusBadRequest, "bad request", "request body must be valid JSON")
+		return
+	}
+	alias := strings.TrimSpace(req.Alias)
+	if alias == "" {
+		writeProblem(w, http.StatusBadRequest, "bad request", "alias is required")
+		return
+	}
+	params := store.SuggestedAliasParams{
+		TenantID: su.TenantID, CompetitorID: competitorID, Alias: alias,
+	}
+	var competitor store.CompetitorRecord
+	var err error
+	if approve {
+		competitor, err = s.competitors.ApproveSuggestedAlias(r.Context(), params)
+	} else {
+		competitor, err = s.competitors.RejectSuggestedAlias(r.Context(), params)
+	}
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, competitorRecordToResponse(competitor))
+}
+
+func (s *Server) handlePatchCompetitorAliases(w http.ResponseWriter, r *http.Request) {
+	if s.competitors == nil {
+		s.writeInternalError(w, "patch competitor aliases: store missing", errors.New("competitor store is required"))
+		return
+	}
+	su, ok := sessionUserFromContext(r.Context())
+	if !ok {
+		s.writeInternalError(w, "patch competitor aliases: missing session context", errors.New("missing session context"))
+		return
+	}
+	competitorID, ok := pathID(w, r, "competitorID")
+	if !ok {
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	var req patchCompetitorRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeProblem(w, http.StatusBadRequest, "bad request", "request body must be valid JSON")
+		return
+	}
+	if req.Aliases == nil {
+		writeProblem(w, http.StatusBadRequest, "bad request", "aliases is required")
+		return
+	}
+	for _, alias := range *req.Aliases {
+		if strings.TrimSpace(alias) == "" {
+			writeProblem(w, http.StatusBadRequest, "bad request", "aliases must not contain blank values")
+			return
+		}
+	}
+	record, err := s.competitors.UpdateAliases(r.Context(), store.UpdateCompetitorAliasesParams{
+		TenantID: su.TenantID, CompetitorID: competitorID, Aliases: *req.Aliases,
+	})
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, competitorRecordToResponse(record))
+}
+
+func competitorRecordToResponse(record store.CompetitorRecord) competitorWriteResponse {
+	return competitorWriteResponse{
+		ID:               record.ID.String(),
+		Name:             record.Name,
+		Website:          record.Website,
+		Aliases:          record.Aliases,
+		SuggestedAliases: record.SuggestedAliases,
+		Source:           record.Source,
+		Status:           string(record.Status),
+	}
+}
+
 // competitorStatusParam reads and validates the optional ?status display filter.
 // An empty value means "all statuses"; anything else must be a real status
 // (design 02: discovered|tracked|dismissed).
@@ -168,17 +388,19 @@ func competitorStatusParam(w http.ResponseWriter, r *http.Request) (string, bool
 
 func competitorToResponse(c metrics.CompetitorStat) competitorResponse {
 	resp := competitorResponse{
-		ID:             c.CompetitorID.String(),
-		Name:           c.Name,
-		Status:         c.Status,
-		Mentioned:      c.Mentioned,
-		TotalMentions:  c.TotalMentions,
-		MentionPercent: c.MentionPercent,
-		AvgOrder:       c.AvgOrder,
-		VsSelf:         c.VsSelf,
-		ResultIDs:      idStrings(c.ResultIDs),
-		PerPrompt:      make([]competitorPromptResponse, 0, len(c.PerPrompt)),
-		Trend:          make([]competitorTrendResponse, 0, len(c.Trend)),
+		ID:               c.CompetitorID.String(),
+		Name:             c.Name,
+		Status:           c.Status,
+		Aliases:          c.Aliases,
+		SuggestedAliases: c.SuggestedAliases,
+		Mentioned:        c.Mentioned,
+		TotalMentions:    c.TotalMentions,
+		MentionPercent:   c.MentionPercent,
+		AvgOrder:         c.AvgOrder,
+		VsSelf:           c.VsSelf,
+		ResultIDs:        idStrings(c.ResultIDs),
+		PerPrompt:        make([]competitorPromptResponse, 0, len(c.PerPrompt)),
+		Trend:            make([]competitorTrendResponse, 0, len(c.Trend)),
 	}
 	for _, p := range c.PerPrompt {
 		resp.PerPrompt = append(resp.PerPrompt, competitorPromptResponse{

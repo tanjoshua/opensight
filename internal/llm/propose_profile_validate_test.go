@@ -83,6 +83,23 @@ func TestValidateProposal(t *testing.T) {
 	}
 }
 
+func TestValidateProfileSharedSetupRules(t *testing.T) {
+	profile := validProposal().Profile
+	profile.Location.Country = "sg"
+	if errs := ValidateProfile(profile); len(errs) != 0 {
+		t.Fatalf("valid lowercase country errors = %v", errs)
+	}
+	profile.Aliases = []string{" "}
+	profile.Services = []string{""}
+	profile.Practitioners = []ProposedPractitioner{{Role: "dentist"}}
+	errs := ValidateProfile(profile)
+	for _, want := range []string{"aliases[0]", "services[0]", "practitioners[0].name"} {
+		if !containsSubstr(errs, want) {
+			t.Fatalf("want %q in %v", want, errs)
+		}
+	}
+}
+
 // TestValidateProposalShortNameNoFalsePositive guards the minNameLeakLength
 // rule: a one-letter business name must not flag ordinary words in prompts.
 func TestValidateProposalShortNameNoFalsePositive(t *testing.T) {

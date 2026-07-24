@@ -36,8 +36,16 @@ GET  /businesses/:id/competitors     ?status filter; each with mention %, totals
                                      including zero-mention analyzed weeks,
                                      vs-self comparison
 POST /businesses/:id/competitors     manual add {name, aliases?, website?}
+                                     (source manual, initially tracked; visible
+                                     with zero history before its first mention)
 POST /competitors/:id/track          status → tracked
 POST /competitors/:id/dismiss        status → dismissed
+POST /competitors/:id/suggested-aliases/approve
+                                     body {alias}; remove exact suggestion and
+                                     append once to approved aliases
+POST /competitors/:id/suggested-aliases/reject
+                                     body {alias}; remove suggestion only
+PATCH /competitors/:id               body {aliases}; approved aliases only
 
 # Responses
 GET  /businesses/:id/results         filters: run, prompt, mentioned, status; paginated
@@ -48,8 +56,10 @@ GET  /results/:id                    full record: response text, analysis, menti
 GET  /businesses/:id/runs            run list: scheduled_for, status, visibility %
 
 # Setup
-GET  /businesses/:id                 profile + plan (read-only plan info)
-PATCH /businesses/:id                manual profile edits (the only post-activation path)
+GET  /businesses/:id                 full profile + read-only plan entitlements
+PATCH /businesses/:id                partial profile merge; active-only (409 draft),
+                                     complete merged profile remains valid and
+                                     country remains a two-letter ISO code
 ```
 
 In Phase 1, before analysis tables exist, the Responses endpoints expose runs,
@@ -63,11 +73,13 @@ PRD §6's "every metric links to the underlying response" is implemented as a si
 
 ## Section notes
 
-- **Overview** — headline visibility stat + weekly trend line, then three compact panels (themes, cited domains, competitors). Competitor panel shows tracked competitors plus top-3 discovered by coverage (the 05 display filter), with a "N discovered → triage" link into Competitors. The weekly trend renders **prompt-set-change markers** (derived from prompt created/retired dates) so a prompt change never reads as a visibility change. Overview also links a short **"How we measure" methodology page** stating plainly that results come from the OpenAI API as a proxy for consumer ChatGPT, with the caveats from 01-D1.
+- **Overview** — headline visibility stat + weekly trend line, then three compact panels (themes, cited domains, competitors). Competitor panel shows tracked competitors plus top-3 discovered by coverage (the 05 display filter), with a "N discovered → triage" link into Competitors. The weekly trend renders **prompt-set-change markers** (derived from prompt created/retired dates) so a prompt change never reads as a visibility change. Its header always links to **How we measure**, including before any analyzed data exists.
 - **Prompts** — table of 20 with per-prompt: mentioned? order? sentiment, sparkline across runs. **Replace flow (PRD §4)**: modal states exactly what happens — "history for the old prompt stays viewable; the new prompt starts a fresh trend" — and the API requires `confirmed: true`, so the warning is structurally unskippable. Retired prompts remain reachable from a prompt's lineage ("replaced X on date").
-- **Competitors** — triage-first: discovered list ranked by response coverage ("in 7 of 20 responses") with one-click track/dismiss; tracked list with the PRD comparison stats vs self, prompt appearances, and weekly trend lines that include zero-mention analyzed weeks. Dismissed collapsed but recoverable (data was never deleted, per 02). Competitor detail lists LLM-`suggested_aliases` for one-click approval or rejection (05) — approval is what makes a variant a permanent matching key.
+- **Competitors** — triage-first: discovered list ranked by response coverage ("in 7 of 20 responses") with one-click track/dismiss; tracked list with the PRD comparison stats vs self, prompt appearances, and weekly trend lines that include zero-mention analyzed weeks. A manual add starts tracked and remains visible with zero metrics and an empty prompt history until it is mentioned; its trend still carries zero points for analyzed runs. Dismissed collapsed but recoverable (data was never deleted, per 02). Every competitor status exposes pending LLM-`suggested_aliases` for one-click approval or rejection (05). Approval promotes that exact value to `aliases`; rejection removes the suggestion without creating a deny-list.
 - **Responses** — filterable list (by run, prompt, mention, status). Failed results show status + error; succeeded-but-unanalyzed show a "not yet analyzed" badge (05's soft-failure posture made visible instead of silently miscounted).
-- **Setup** — profile editor (PATCH), prompt management entry point, competitor aliases editing, plan display. No regenerate after activation (03).
+- **Setup** — active-business profile editor with dirty/save feedback, repeatable structured controls for aliases, services, and practitioner name/role pairs, a prompt-management entry point, approved competitor-alias editing across every status, and read-only plan display. Each alias occupies its own control, so punctuation such as commas remains part of the value. Draft businesses redirect to onboarding; there is no regenerate action after activation (03). The client sends only changed profile fields. Profile PATCH merges omitted fields against the current tenant-owned row for validation, treats omitted or `null` website as unchanged and an empty website as clear, then atomically updates only the supplied columns so a concurrent disjoint edit cannot restore stale values. Competitor alias edits are trim-normalized and case-insensitively deduplicated; they never mutate suggestions or history.
+- **How we measure** — authenticated trust page explaining that OpenSight uses the OpenAI Responses API with web search and business-location context as a proxy, not a capture of chatgpt.com. API requests have no history, memory, or personalization and routing can differ; the API-reported model is stored per response. Visibility is mentions divided by analyzed valid responses, excluding failures and not-yet-analyzed responses. The page emphasizes traceability and that results are neither accuracy nor future-performance guarantees. It is linked from the Overview header, response-drawer model line, app footer, and Privacy.
+- **Privacy** — authenticated plain-language summary of actual stored account, profile, prompt, raw response, derived analysis, and operational configuration data; the patient-data usage boundary; qualified OpenAI processing; verified-vs-planned hosting; and retention. It is linked from the app footer and How we measure.
 
 ## Frontend stack and structure
 

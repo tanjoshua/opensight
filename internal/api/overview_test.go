@@ -17,7 +17,7 @@ type fakeOverviewMetrics struct {
 	keywords    []metrics.KeywordStat
 	domains     []metrics.DomainStat
 	competitors metrics.CompetitorStats
-	changeDates []time.Time
+	changes     []metrics.PromptChange
 	err         error
 }
 
@@ -33,8 +33,8 @@ func (f *fakeOverviewMetrics) CitationDomainStats(context.Context, domain.ID, do
 func (f *fakeOverviewMetrics) CompetitorStats(context.Context, domain.ID, domain.ID) (metrics.CompetitorStats, error) {
 	return f.competitors, f.err
 }
-func (f *fakeOverviewMetrics) PromptChangeDates(context.Context, domain.ID, domain.ID) ([]time.Time, error) {
-	return f.changeDates, f.err
+func (f *fakeOverviewMetrics) PromptChanges(context.Context, domain.ID, domain.ID) ([]metrics.PromptChange, error) {
+	return f.changes, f.err
 }
 
 func newAuthedOverviewServer(t *testing.T, runs runStore, m overviewMetrics) (*Server, *http.Cookie) {
@@ -87,7 +87,10 @@ func TestOverviewEndpointShapesPayload(t *testing.T) {
 				{CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000106"), Name: "Dismissed Co", Status: "dismissed", MentionPercent: 50, ResultIDs: []domain.ID{resultID}},
 			},
 		},
-		changeDates: []time.Time{time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)},
+		changes: []metrics.PromptChange{
+			{Date: time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC), Added: 2},
+			{Date: time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), Replaced: 1},
+		},
 	}
 	runs := &fakeRunStore{runs: []store.Run{{
 		ID: runID, BusinessID: businessID, Platform: "chatgpt", Trigger: store.RunTriggerScheduled,
@@ -139,8 +142,14 @@ func TestOverviewEndpointShapesPayload(t *testing.T) {
 		t.Fatalf("discovered total = %d, want 4", body.DiscoveredTotal)
 	}
 
-	if len(body.PromptChangeDates) != 2 || body.PromptChangeDates[0] != "2026-06-01" {
-		t.Fatalf("prompt change dates = %v", body.PromptChangeDates)
+	if len(body.PromptChanges) != 2 {
+		t.Fatalf("prompt changes = %v", body.PromptChanges)
+	}
+	if c := body.PromptChanges[0]; c.Date != "2026-06-01" || c.Added != 2 {
+		t.Fatalf("prompt change[0] = %+v, want 2026-06-01 added 2", c)
+	}
+	if c := body.PromptChanges[1]; c.Date != "2026-07-01" || c.Replaced != 1 {
+		t.Fatalf("prompt change[1] = %+v, want 2026-07-01 replaced 1", c)
 	}
 	if body.LatestRun == nil || body.LatestRun.Status != "completed" || body.LatestRun.ScheduledFor != "2026-07-13" {
 		t.Fatalf("latest run = %+v", body.LatestRun)

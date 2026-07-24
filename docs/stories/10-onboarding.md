@@ -58,8 +58,8 @@ Deps: ONB-4, WEB-1 · Phase 3 · Ref: design 03 (Review and apply), PRD §3, §8
 
 As a clinic user, I want approval to start monitoring immediately, so that I see first results without waiting a week.
 
-- [ ] `POST /businesses/:id/apply` in one transaction: update business columns, insert prompts (all `active`), proposal → `applied`, business → `active` — the **only** path that writes profile values to `businesses`.
-- [ ] Then: create the weekly Temporal Schedule and trigger the first run now (`trigger=initial`); first-run-midweek + scheduled-run coexist via distinct `scheduled_for` dates.
-- [ ] No regenerate after activation; post-activation profile changes only via Setup PATCH.
+- [x] `POST /businesses/:id/apply` in one transaction: update business columns, insert prompts (all `active`), proposal → `applied`, business → `active` — the **only** path that writes profile values to `businesses`.
+- [x] Then: create the weekly Temporal Schedule and trigger the first run now (`trigger=initial`); first-run-midweek + scheduled-run coexist via distinct `scheduled_for` dates.
+- [x] No regenerate after activation; post-activation profile changes only via Setup PATCH.
 
 Deps: ONB-5, RUN-5 · Phase 3 · Ref: design 03 (Review and apply), 04 (RunWorkflow idempotency)

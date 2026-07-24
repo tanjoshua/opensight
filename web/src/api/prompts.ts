@@ -2,9 +2,9 @@
 // each prompt's latest-result summary and spark-trend, and the per-prompt detail
 // (full result history + replacement lineage). Every summary carries the
 // result_ids behind it so every number is a door (design 06).
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { apiGet } from "./client"
+import { apiGet, apiPost } from "./client"
 import type { PromptResult } from "./responses"
 
 export type PromptStatus = "active" | "retired"
@@ -79,5 +79,55 @@ export function usePrompt(promptId: string | undefined) {
     queryKey: ["prompt", promptId],
     queryFn: () => getPrompt(promptId!),
     enabled: promptId !== undefined,
+  })
+}
+
+// The add/replace response: the new prompt as a lineage node (a replacement
+// carries replaces_prompt_id), so the caller can route to its detail page.
+export interface PromptWriteResponse {
+  prompt: PromptLineageNode
+}
+
+export function addPrompt(
+  businessId: string,
+  text: string
+): Promise<PromptWriteResponse> {
+  return apiPost<PromptWriteResponse>(`/businesses/${businessId}/prompts`, {
+    text,
+  })
+}
+
+// replacePrompt always sends confirmed: true — the unskippable warning lives in
+// the modal, and the server independently rejects a missing confirmation, so this
+// call is only ever reached once the user has confirmed.
+export function replacePrompt(
+  promptId: string,
+  text: string
+): Promise<PromptWriteResponse> {
+  return apiPost<PromptWriteResponse>(`/prompts/${promptId}/replace`, {
+    text,
+    confirmed: true,
+  })
+}
+
+export function useAddPrompt(businessId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) => addPrompt(businessId!, text),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prompts", businessId] })
+    },
+  })
+}
+
+export function useReplacePrompt(businessId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ promptId, text }: { promptId: string; text: string }) =>
+      replacePrompt(promptId, text),
+    onSuccess: (_data, { promptId }) => {
+      queryClient.invalidateQueries({ queryKey: ["prompts", businessId] })
+      queryClient.invalidateQueries({ queryKey: ["prompt", promptId] })
+    },
   })
 }

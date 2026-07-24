@@ -115,50 +115,75 @@ func (m *Metrics) PromptTrends(ctx context.Context, tenantID, businessID domain.
 	return trends, nil
 }
 
-// promptChangeDatesSQL is the distinct set of days on which the business's active
-// prompt set changed: every prompt's created_at plus every retired prompt's
-// retired_at (a replace both retires and creates at the same instant, so it
-// collapses to one date). Tenant-scoped via the businesses join.
-const promptChangeDatesSQL = `
-SELECT DISTINCT d FROM (
-  SELECT date_trunc('day', p.created_at) AS d
+// PromptChange is what happened to the business's prompt set on one day: how many
+// prompts were added (created with no predecessor), retired outright (retired with
+// no same-day replacement), and replaced (created as a successor). A replace both
+// retires the old prompt and inserts its successor at the same instant, so it is
+// counted once — as a replace on the successor's creation day — and the old
+// prompt's retirement is not double-counted as an outright retire.
+type PromptChange struct {
+	Date     time.Time
+	Added    int
+	Retired  int
+	Replaced int
+}
+
+// promptChangesSQL classifies every prompt-lifecycle event into a per-day
+// (added, retired, replaced) tally. Creations split on replaces_prompt_id: NULL is
+// an add, non-NULL is a replace. Retirements count only when no same-day insert
+// names the retired prompt as its predecessor — that would be the replace already
+// counted on the creation side. Tenant-scoped via the businesses join.
+const promptChangesSQL = `
+SELECT d, sum(added)::int, sum(retired)::int, sum(replaced)::int
+FROM (
+  SELECT date_trunc('day', p.created_at) AS d,
+         CASE WHEN p.replaces_prompt_id IS NULL THEN 1 ELSE 0 END AS added,
+         0 AS retired,
+         CASE WHEN p.replaces_prompt_id IS NOT NULL THEN 1 ELSE 0 END AS replaced
   FROM prompts p
   JOIN businesses b ON b.id = p.business_id
   WHERE b.id = $1 AND b.tenant_id = $2
-  UNION
-  SELECT date_trunc('day', p.retired_at) AS d
+  UNION ALL
+  SELECT date_trunc('day', p.retired_at) AS d, 0 AS added, 1 AS retired, 0 AS replaced
   FROM prompts p
   JOIN businesses b ON b.id = p.business_id
   WHERE b.id = $1 AND b.tenant_id = $2 AND p.retired_at IS NOT NULL
-) x
+    AND NOT EXISTS (
+      SELECT 1 FROM prompts r
+      WHERE r.replaces_prompt_id = p.id
+        AND date_trunc('day', r.created_at) = date_trunc('day', p.retired_at)
+    )
+) e
+GROUP BY d
 ORDER BY d`
 
-// PromptChangeDates returns the days on which the business's prompt set changed
-// (a prompt created or retired), oldest first. These annotate the visibility
-// trend as prompt-set-change markers (design 06) so a prompt change never reads
-// as a visibility change. They are prompt-lifecycle dates, not an aggregate over
-// results, so they carry no result_ids.
-func (m *Metrics) PromptChangeDates(ctx context.Context, tenantID, businessID domain.ID) ([]time.Time, error) {
+// PromptChanges returns, per day the business's prompt set changed, how many
+// prompts were added, retired, and replaced — oldest day first. These annotate the
+// visibility trend as prompt-set-change markers (design 06) so a prompt change
+// never reads as a visibility change, and the counts let the marker name what
+// happened. They are prompt-lifecycle events, not an aggregate over results, so
+// they carry no result_ids.
+func (m *Metrics) PromptChanges(ctx context.Context, tenantID, businessID domain.ID) ([]PromptChange, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
 
-	rows, err := m.db.QueryContext(ctx, promptChangeDatesSQL, businessID, tenantID)
+	rows, err := m.db.QueryContext(ctx, promptChangesSQL, businessID, tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("prompt change dates: %w", err)
+		return nil, fmt.Errorf("prompt changes: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	dates := []time.Time{}
+	changes := []PromptChange{}
 	for rows.Next() {
-		var d time.Time
-		if err := rows.Scan(&d); err != nil {
-			return nil, fmt.Errorf("scan prompt change date: %w", err)
+		var c PromptChange
+		if err := rows.Scan(&c.Date, &c.Added, &c.Retired, &c.Replaced); err != nil {
+			return nil, fmt.Errorf("scan prompt change: %w", err)
 		}
-		dates = append(dates, d)
+		changes = append(changes, c)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate prompt change dates: %w", err)
+		return nil, fmt.Errorf("iterate prompt changes: %w", err)
 	}
-	return dates, nil
+	return changes, nil
 }

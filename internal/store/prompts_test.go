@@ -137,10 +137,102 @@ func TestNormalizeCreateActivePromptParamsRejectsSelfReplacement(t *testing.T) {
 	}
 }
 
+// TestReplacePromptInTxRetiresThenInserts pins the replace sequence: lock the old
+// active prompt, retire it, then insert the new active prompt recording it as
+// predecessor — all in the order the transaction depends on.
+func TestReplacePromptInTxRetiresThenInserts(t *testing.T) {
+	oldID := mustUUIDV7(t, "01950000-0000-7000-8000-000000002001")
+	businessID := mustUUIDV7(t, "01950000-0000-7000-8000-000000002002")
+	tenantID := mustUUIDV7(t, "01950000-0000-7000-8000-000000002003")
+	createdAt := time.Date(2026, 7, 20, 9, 0, 0, 0, time.UTC)
+
+	tx := &fakePromptTx{
+		rows: []rowScanner{
+			// lock old prompt: id, business_id, text, status, replaces_prompt_id, created_at
+			fakeRow{values: []any{oldID, businessID, "old text", PromptStatusActive, (*domain.ID)(nil), createdAt}},
+			// createActivePromptInTx: prompt limit lock, active count, insert created_at
+			fakeRow{values: []any{5}},
+			fakeRow{values: []any{0}},
+			fakeRow{values: []any{createdAt}},
+		},
+	}
+
+	prompt, err := replacePromptInTx(context.Background(), tx, ReplacePromptParams{
+		TenantID:    tenantID,
+		OldPromptID: oldID,
+		Text:        "new text",
+	})
+	if err != nil {
+		t.Fatalf("replace prompt: %v", err)
+	}
+	if prompt.ReplacesPromptID == nil || *prompt.ReplacesPromptID != oldID {
+		t.Fatalf("replaces prompt id = %v, want %s", prompt.ReplacesPromptID, oldID)
+	}
+	if prompt.Text != "new text" || prompt.Status != PromptStatusActive {
+		t.Fatalf("new prompt = %+v", prompt)
+	}
+	if len(tx.queries) != 4 {
+		t.Fatalf("query count = %d, want 4", len(tx.queries))
+	}
+	if tx.queries[0] != lockPromptForReplaceSQL {
+		t.Fatalf("first query = %q, want lock-for-replace", tx.queries[0])
+	}
+	if tx.execs != 1 || tx.execQueries[0] != retirePromptSQL {
+		t.Fatalf("exec queries = %v, want one retire before insert", tx.execQueries)
+	}
+	if tx.queries[3] != insertActivePromptSQL {
+		t.Fatalf("last query = %q, want insert", tx.queries[3])
+	}
+}
+
+// TestReplacePromptInTxRejectsRetiredPrompt confirms a replace targeting an
+// already-retired prompt is rejected before any write — this is also what a
+// second racing replace sees after the first commits.
+func TestReplacePromptInTxRejectsRetiredPrompt(t *testing.T) {
+	oldID := mustUUIDV7(t, "01950000-0000-7000-8000-000000002101")
+	businessID := mustUUIDV7(t, "01950000-0000-7000-8000-000000002102")
+	createdAt := time.Date(2026, 7, 20, 9, 0, 0, 0, time.UTC)
+
+	tx := &fakePromptTx{
+		rows: []rowScanner{
+			fakeRow{values: []any{oldID, businessID, "old text", PromptStatusRetired, (*domain.ID)(nil), createdAt}},
+		},
+	}
+
+	_, err := replacePromptInTx(context.Background(), tx, ReplacePromptParams{
+		TenantID:    mustUUIDV7(t, "01950000-0000-7000-8000-000000002103"),
+		OldPromptID: oldID,
+		Text:        "new text",
+	})
+	if !errors.Is(err, ErrPromptNotActive) {
+		t.Fatalf("error = %v, want ErrPromptNotActive", err)
+	}
+	if tx.execs != 0 {
+		t.Fatalf("exec count = %d, want 0 (no retire on rejected replace)", tx.execs)
+	}
+}
+
+// TestReplacePromptInTxReturnsNotFoundForMissingPrompt confirms a missing or
+// cross-tenant prompt (no locked row) is ErrNotFound.
+func TestReplacePromptInTxReturnsNotFoundForMissingPrompt(t *testing.T) {
+	tx := &fakePromptTx{rows: []rowScanner{fakeRow{err: sql.ErrNoRows}}}
+
+	_, err := replacePromptInTx(context.Background(), tx, ReplacePromptParams{
+		TenantID:    mustUUIDV7(t, "01950000-0000-7000-8000-000000002203"),
+		OldPromptID: mustUUIDV7(t, "01950000-0000-7000-8000-000000002201"),
+		Text:        "new text",
+	})
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("error = %v, want ErrNotFound", err)
+	}
+}
+
 type fakePromptTx struct {
-	rows    []rowScanner
-	queries []string
-	args    [][]any
+	rows        []rowScanner
+	queries     []string
+	args        [][]any
+	execs       int
+	execQueries []string
 }
 
 func (tx *fakePromptTx) queryRowContext(_ context.Context, query string, args ...any) rowScanner {
@@ -159,8 +251,15 @@ func (tx *fakePromptTx) queryContext(_ context.Context, query string, _ ...any) 
 }
 
 func (tx *fakePromptTx) execContext(_ context.Context, query string, _ ...any) (sql.Result, error) {
-	return nil, fmt.Errorf("unexpected execContext %q", query)
+	tx.execs++
+	tx.execQueries = append(tx.execQueries, query)
+	return fakeResult{}, nil
 }
+
+type fakeResult struct{}
+
+func (fakeResult) LastInsertId() (int64, error) { return 0, nil }
+func (fakeResult) RowsAffected() (int64, error) { return 1, nil }
 
 type fakeRow struct {
 	values []any
@@ -188,6 +287,30 @@ func (r fakeRow) Scan(dest ...any) error {
 				return fmt.Errorf("scan value %d has type %T, want time.Time", i, value)
 			}
 			*target = timeValue
+		case *string:
+			stringValue, ok := value.(string)
+			if !ok {
+				return fmt.Errorf("scan value %d has type %T, want string", i, value)
+			}
+			*target = stringValue
+		case *domain.ID:
+			idValue, ok := value.(domain.ID)
+			if !ok {
+				return fmt.Errorf("scan value %d has type %T, want domain.ID", i, value)
+			}
+			*target = idValue
+		case *PromptStatus:
+			statusValue, ok := value.(PromptStatus)
+			if !ok {
+				return fmt.Errorf("scan value %d has type %T, want PromptStatus", i, value)
+			}
+			*target = statusValue
+		case **domain.ID:
+			idPtr, ok := value.(*domain.ID)
+			if !ok {
+				return fmt.Errorf("scan value %d has type %T, want *domain.ID", i, value)
+			}
+			*target = idPtr
 		default:
 			return fmt.Errorf("unsupported scan destination %T", target)
 		}

@@ -75,6 +75,8 @@ type fakeBusinessStore struct {
 	getErr     error
 	createErr  error
 	created    []store.CreateBusinessParams
+	updated    []store.UpdateBusinessProfileParams
+	updateErr  error
 	gotTenant  domain.ID
 }
 
@@ -103,6 +105,37 @@ func (f *fakeBusinessStore) CreateBusiness(_ context.Context, params store.Creat
 	b.Status = params.Status
 	b.Name = params.Name
 	b.Website = params.Website
+	return b, nil
+}
+
+func (f *fakeBusinessStore) UpdateActiveProfile(_ context.Context, params store.UpdateBusinessProfileParams) (store.Business, error) {
+	f.updated = append(f.updated, params)
+	if f.updateErr != nil {
+		return store.Business{}, f.updateErr
+	}
+	b := f.business
+	if params.Name != nil {
+		b.Name = *params.Name
+	}
+	if params.WebsiteSet {
+		b.Website = params.Website
+	}
+	if params.Aliases != nil {
+		b.Aliases = *params.Aliases
+	}
+	if params.Category != nil {
+		b.Category = params.Category
+	}
+	if params.Practitioners != nil {
+		b.Practitioners = *params.Practitioners
+	}
+	if params.Services != nil {
+		b.Services = *params.Services
+	}
+	if params.Location != nil {
+		b.Location = *params.Location
+	}
+	f.business = b
 	return b, nil
 }
 

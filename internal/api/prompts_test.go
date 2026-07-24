@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +20,13 @@ type fakePromptStore struct {
 	listErr    error
 	getErr     error
 	listCalled int
+
+	createResult  store.Prompt
+	createErr     error
+	createParams  store.CreateActivePromptParams
+	replaceResult store.Prompt
+	replaceErr    error
+	replaceParams store.ReplacePromptParams
 }
 
 func (f *fakePromptStore) ListActivePrompts(_ context.Context, _, _ domain.ID) ([]store.Prompt, error) {
@@ -34,6 +43,22 @@ func (f *fakePromptStore) GetPrompt(_ context.Context, _, promptID domain.ID) (s
 		return store.Prompt{}, store.ErrNotFound
 	}
 	return p, nil
+}
+
+func (f *fakePromptStore) CreateActivePrompt(_ context.Context, params store.CreateActivePromptParams) (store.Prompt, error) {
+	f.createParams = params
+	if f.createErr != nil {
+		return store.Prompt{}, f.createErr
+	}
+	return f.createResult, nil
+}
+
+func (f *fakePromptStore) ReplacePrompt(_ context.Context, params store.ReplacePromptParams) (store.Prompt, error) {
+	f.replaceParams = params
+	if f.replaceErr != nil {
+		return store.Prompt{}, f.replaceErr
+	}
+	return f.replaceResult, nil
 }
 
 type fakePromptsMetrics struct {
@@ -188,6 +213,136 @@ func TestGetPromptDetailWalksLineageAndHistory(t *testing.T) {
 	}
 	if results.gotBusiness != businessID {
 		t.Fatalf("results scoped to business %s, want %s", results.gotBusiness, businessID)
+	}
+}
+
+func doAuthedPOST(t *testing.T, srv *Server, cookie *http.Cookie, path, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	srv.Routes().ServeHTTP(rec, req)
+	return rec
+}
+
+// TestAddPromptCreates pins the add happy path: a non-empty text creates an
+// active prompt (201) and the store is called with the session tenant + path
+// business.
+func TestAddPromptCreates(t *testing.T) {
+	newID := mustHashV7(t, "01950000-0000-7000-8000-0000000002a1")
+	prompts := &fakePromptStore{createResult: store.Prompt{ID: newID, Text: "best clinic near me", Status: store.PromptStatusActive}}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/businesses/"+businessIDForTest+"/prompts", `{"text":"best clinic near me"}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201; body=%s", rec.Code, rec.Body.String())
+	}
+	var body promptWriteResponse
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Prompt.ID != newID.String() {
+		t.Fatalf("prompt id = %s, want %s", body.Prompt.ID, newID)
+	}
+	if prompts.createParams.TenantID != mustHashV7(t, tenantID) {
+		t.Fatalf("create tenant = %s, want session tenant", prompts.createParams.TenantID)
+	}
+	if prompts.createParams.BusinessID != mustHashV7(t, businessIDForTest) {
+		t.Fatalf("create business = %s, want path business", prompts.createParams.BusinessID)
+	}
+}
+
+func TestAddPromptEmptyTextRejected(t *testing.T) {
+	prompts := &fakePromptStore{}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/businesses/"+businessIDForTest+"/prompts", `{"text":"  "}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestAddPromptAtLimitConflicts confirms the plan limit is a 409 (live
+// resource-limit conflict), distinct from a bad request.
+func TestAddPromptAtLimitConflicts(t *testing.T) {
+	prompts := &fakePromptStore{createErr: store.ErrPromptLimitExceeded}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/businesses/"+businessIDForTest+"/prompts", `{"text":"one more prompt"}`)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestAddPromptCrossTenantBusiness confirms a missing/cross-tenant business is a
+// 404 (the store's ownership gate).
+func TestAddPromptCrossTenantBusiness(t *testing.T) {
+	prompts := &fakePromptStore{createErr: store.ErrNotFound}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/businesses/"+businessIDForTest+"/prompts", `{"text":"best clinic near me"}`)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestReplacePromptCreates pins the replace happy path: the new prompt records
+// replaces_prompt_id and the store is called with the path prompt as OldPromptID.
+func TestReplacePromptCreates(t *testing.T) {
+	oldID := mustHashV7(t, promptIDForTest)
+	newID := mustHashV7(t, "01950000-0000-7000-8000-0000000002b1")
+	prompts := &fakePromptStore{replaceResult: store.Prompt{ID: newID, Text: "new text", Status: store.PromptStatusActive, ReplacesPromptID: &oldID}}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/prompts/"+promptIDForTest+"/replace", `{"text":"new text","confirmed":true}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201; body=%s", rec.Code, rec.Body.String())
+	}
+	var body promptWriteResponse
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Prompt.ID != newID.String() {
+		t.Fatalf("prompt id = %s, want new prompt %s", body.Prompt.ID, newID)
+	}
+	if body.Prompt.ReplacesPromptID == nil || *body.Prompt.ReplacesPromptID != oldID.String() {
+		t.Fatalf("replaces_prompt_id = %v, want %s", body.Prompt.ReplacesPromptID, oldID)
+	}
+	if prompts.replaceParams.OldPromptID != oldID {
+		t.Fatalf("replace old prompt = %s, want path prompt %s", prompts.replaceParams.OldPromptID, oldID)
+	}
+}
+
+// TestReplacePromptRequiresConfirmed is the server-side enforcement of the
+// unskippable warning: confirmed:false is rejected before the store is touched.
+func TestReplacePromptRequiresConfirmed(t *testing.T) {
+	prompts := &fakePromptStore{}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/prompts/"+promptIDForTest+"/replace", `{"text":"new text","confirmed":false}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
+	}
+	if prompts.replaceParams.OldPromptID != (domain.ID{}) {
+		t.Fatalf("store called despite confirmed:false")
+	}
+}
+
+// TestReplacePromptRetiredConflicts confirms replacing a non-active prompt is 409.
+func TestReplacePromptRetiredConflicts(t *testing.T) {
+	prompts := &fakePromptStore{replaceErr: store.ErrPromptNotActive}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/prompts/"+promptIDForTest+"/replace", `{"text":"new text","confirmed":true}`)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestReplacePromptCrossTenant confirms a missing/cross-tenant prompt is 404.
+func TestReplacePromptCrossTenant(t *testing.T) {
+	prompts := &fakePromptStore{replaceErr: store.ErrNotFound}
+	srv, cookie := newAuthedPromptsServer(t, prompts, &fakeResultStore{}, &fakePromptsMetrics{})
+	rec := doAuthedPOST(t, srv, cookie, "/api/v1/prompts/"+promptIDForTest+"/replace", `{"text":"new text","confirmed":true}`)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404; body=%s", rec.Code, rec.Body.String())
 	}
 }
 

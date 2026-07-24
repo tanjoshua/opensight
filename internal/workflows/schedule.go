@@ -65,13 +65,20 @@ type CreateScheduleParams struct {
 	TaskQueue   string
 }
 
+// ScheduleCreator is the narrow seam CreateMonitorSchedule needs. client.Client
+// satisfies it; so does any interface that exposes just ScheduleClient(), which
+// keeps the API layer from having to depend on the full Temporal client surface.
+type ScheduleCreator interface {
+	ScheduleClient() client.ScheduleClient
+}
+
 // CreateMonitorSchedule creates the recurring monitoring Schedule for a business
 // (design 04). The action starts RunWorkflow with trigger=scheduled and no
 // explicit ScheduledFor: a Schedule fires with static Args, so each fire derives
 // its own week bucket inside the workflow (see RunWorkflow). Overlap policy is
 // Skip. Creating an already-existing schedule is treated as success so re-seeding
 // is idempotent.
-func CreateMonitorSchedule(ctx context.Context, c client.Client, params CreateScheduleParams) (string, error) {
+func CreateMonitorSchedule(ctx context.Context, c ScheduleCreator, params CreateScheduleParams) (string, error) {
 	spec, err := ScheduleSpecFor(params.BusinessID, params.RunInterval)
 	if err != nil {
 		return "", err

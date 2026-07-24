@@ -30,15 +30,15 @@ type overviewMetrics interface {
 	KeywordStats(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.KeywordStat, error)
 	CitationDomainStats(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.DomainStat, error)
 	CompetitorStats(ctx context.Context, tenantID, businessID domain.ID) (metrics.CompetitorStats, error)
-	PromptChangeDates(ctx context.Context, tenantID, businessID domain.ID) ([]time.Time, error)
+	PromptChanges(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.PromptChange, error)
 }
 
 type overviewResponse struct {
-	Visibility        overviewVisibility          `json:"visibility"`
-	PromptChangeDates []string                    `json:"prompt_change_dates"`
-	TopKeywords       []keywordResponse           `json:"top_keywords"`
-	TopCitedDomains   []domainResponse            `json:"top_cited_domains"`
-	TopCompetitors    []competitorSummaryResponse `json:"top_competitors"`
+	Visibility      overviewVisibility          `json:"visibility"`
+	PromptChanges   []promptChangeResponse      `json:"prompt_changes"`
+	TopKeywords     []keywordResponse           `json:"top_keywords"`
+	TopCitedDomains []domainResponse            `json:"top_cited_domains"`
+	TopCompetitors  []competitorSummaryResponse `json:"top_competitors"`
 	// DiscoveredTotal is the full count of discovered (untriaged) competitors,
 	// before TopCompetitors truncates to the top-3 by coverage — it drives the
 	// Overview "N discovered → triage" backlog count, which must not undercount.
@@ -63,6 +63,15 @@ type visibilityPointResponse struct {
 	Mentioned    int      `json:"mentioned"`
 	Percent      float64  `json:"percent"`
 	ResultIDs    []string `json:"result_ids"`
+}
+
+// promptChangeResponse is one day the prompt set changed and what changed on it,
+// so the trend marker at that date can name the change (design 06).
+type promptChangeResponse struct {
+	Date     string `json:"date"`
+	Added    int    `json:"added"`
+	Retired  int    `json:"retired"`
+	Replaced int    `json:"replaced"`
 }
 
 type keywordResponse struct {
@@ -135,7 +144,7 @@ func (s *Server) handleGetOverview(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	changeDates, err := s.metrics.PromptChangeDates(ctx, su.TenantID, businessID)
+	changes, err := s.metrics.PromptChanges(ctx, su.TenantID, businessID)
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -143,13 +152,13 @@ func (s *Server) handleGetOverview(w http.ResponseWriter, r *http.Request) {
 
 	topCompetitors, discoveredTotal := topCompetitorsToResponse(competitors)
 	resp := overviewResponse{
-		Visibility:        visibilityToResponse(trend),
-		PromptChangeDates: datesToResponse(changeDates),
-		TopKeywords:       keywordsToResponse(keywords),
-		TopCitedDomains:   domainsToResponse(domains),
-		TopCompetitors:    topCompetitors,
-		DiscoveredTotal:   discoveredTotal,
-		LatestRun:         latestRunToResponse(runs),
+		Visibility:      visibilityToResponse(trend),
+		PromptChanges:   promptChangesToResponse(changes),
+		TopKeywords:     keywordsToResponse(keywords),
+		TopCitedDomains: domainsToResponse(domains),
+		TopCompetitors:  topCompetitors,
+		DiscoveredTotal: discoveredTotal,
+		LatestRun:       latestRunToResponse(runs),
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -232,10 +241,15 @@ func topCompetitorsToResponse(stats metrics.CompetitorStats) ([]competitorSummar
 	return out, total
 }
 
-func datesToResponse(dates []time.Time) []string {
-	out := make([]string, 0, len(dates))
-	for _, d := range dates {
-		out = append(out, d.UTC().Format(time.DateOnly))
+func promptChangesToResponse(changes []metrics.PromptChange) []promptChangeResponse {
+	out := make([]promptChangeResponse, 0, len(changes))
+	for _, c := range changes {
+		out = append(out, promptChangeResponse{
+			Date:     c.Date.UTC().Format(time.DateOnly),
+			Added:    c.Added,
+			Retired:  c.Retired,
+			Replaced: c.Replaced,
+		})
 	}
 	return out
 }

@@ -21,6 +21,7 @@ import {
   type CompetitorSummary,
   type DomainStat,
   type Overview,
+  type PromptChange,
   type VisibilityPoint,
 } from "@/api/overview"
 import { CitationSourcesDrilldown } from "@/components/citation-sources-drilldown"
@@ -78,22 +79,30 @@ export function OverviewPage() {
   }
   if (!business) {
     return (
-      <SectionMessage
-        title="No business yet"
-        description="Finish onboarding to start monitoring and collecting responses."
-      />
+      <OverviewFrame>
+        <SectionMessage
+          title="No business yet"
+          description="Finish onboarding to start monitoring and collecting responses."
+        />
+      </OverviewFrame>
     )
   }
   if (overview.isError) {
     return (
-      <SectionMessage
-        title="Something went wrong"
-        description="The overview could not be loaded. Try reloading the page."
-      />
+      <OverviewFrame>
+        <SectionMessage
+          title="Something went wrong"
+          description="The overview could not be loaded. Try reloading the page."
+        />
+      </OverviewFrame>
     )
   }
   if (!overview.data) {
-    return <OverviewSkeleton />
+    return (
+      <OverviewFrame>
+        <OverviewSkeleton />
+      </OverviewFrame>
+    )
   }
 
   const data = overview.data
@@ -101,12 +110,16 @@ export function OverviewPage() {
   // No analyzed history yet: either no run has happened, the first run is still
   // in flight, or results are awaiting analysis (design 06 degraded states).
   if (data.visibility.trend.length === 0) {
-    return <NoDataState overview={data} />
+    return (
+      <OverviewFrame>
+        <NoDataState overview={data} />
+      </OverviewFrame>
+    )
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-heading text-lg font-semibold">Overview</h1>
+      <OverviewHeader />
 
       <PartialRunBanner overview={data} />
 
@@ -140,6 +153,29 @@ export function OverviewPage() {
           if (!open) setSelectedResultID(undefined)
         }}
       />
+    </div>
+  )
+}
+
+function OverviewFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <OverviewHeader />
+      {children}
+    </div>
+  )
+}
+
+function OverviewHeader() {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h1 className="font-heading text-lg font-semibold">Overview</h1>
+      <Link
+        className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        to="/methodology"
+      >
+        How we measure
+      </Link>
     </div>
   )
 }
@@ -180,7 +216,7 @@ function VisibilityCard({
         ) : (
           <TrendChart
             trend={trend}
-            promptChangeDates={overview.prompt_change_dates}
+            promptChanges={overview.prompt_changes}
             onSelectRun={onSelectRun}
           />
         )}
@@ -191,11 +227,11 @@ function VisibilityCard({
 
 function TrendChart({
   trend,
-  promptChangeDates,
+  promptChanges,
   onSelectRun,
 }: {
   trend: VisibilityPoint[]
-  promptChangeDates: string[]
+  promptChanges: PromptChange[]
   onSelectRun: (runID: string) => void
 }) {
   const data = trend.map((point) => ({ x: dateMs(point.scheduled_for), point }))
@@ -203,65 +239,85 @@ function TrendChart({
   const maxX = data[data.length - 1].x
   // Markers only make sense inside the plotted window; a prompt change before the
   // first run or after the last has nothing to sit against.
-  const markers = promptChangeDates
-    .map(dateMs)
-    .filter((ms) => ms >= minX && ms <= maxX)
+  const markers = promptChanges
+    .map((change) => ({ ms: dateMs(change.date), text: describeChange(change) }))
+    .filter((m) => m.ms >= minX && m.ms <= maxX)
+  // Recharts ReferenceLine has no built-in hover tooltip, so a marker reports its
+  // pixel position and description up here; a single HTML tip is drawn over the
+  // chart at that x. Tap toggles it too (mobile has no hover).
+  const [marker, setMarker] = useState<{ x: number; text: string } | null>(null)
 
   return (
     <div className="flex flex-col gap-2">
-      <ChartContainer config={chartConfig} className="h-56 w-full">
-        <LineChart
-          accessibilityLayer
-          data={data}
-          margin={{ left: 4, right: 12, top: 8 }}
-          onClick={(state) => {
-            const point = (
-              state as unknown as {
-                activePayload?: { payload: { point: VisibilityPoint } }[]
-              }
-            ).activePayload?.[0]?.payload.point
-            if (point) onSelectRun(point.run_id)
-          }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="x"
-            type="number"
-            scale="time"
-            domain={["dataMin", "dataMax"]}
-            ticks={data.map((d) => d.x)}
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tickFormatter={(ms: number) => shortDate(ms)}
-          />
-          <YAxis
-            domain={[0, 100]}
-            width={36}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v: number) => `${v}%`}
-          />
-          <ChartTooltip cursor content={<TrendTooltip />} />
-          {markers.map((ms) => (
-            <ReferenceLine
-              key={ms}
-              x={ms}
-              stroke="var(--muted-foreground)"
-              strokeDasharray="4 4"
+      <div className="relative">
+        <ChartContainer config={chartConfig} className="h-56 w-full">
+          <LineChart
+            accessibilityLayer
+            data={data}
+            margin={{ left: 4, right: 12, top: 8 }}
+            onClick={(state) => {
+              const point = (
+                state as unknown as {
+                  activePayload?: { payload: { point: VisibilityPoint } }[]
+                }
+              ).activePayload?.[0]?.payload.point
+              if (point) onSelectRun(point.run_id)
+            }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="x"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              ticks={data.map((d) => d.x)}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(ms: number) => shortDate(ms)}
             />
-          ))}
-          <Line
-            dataKey="point.percent"
-            name="percent"
-            type="monotone"
-            stroke="var(--color-percent)"
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            activeDot={{ r: 5 }}
-          />
-        </LineChart>
-      </ChartContainer>
+            <YAxis
+              domain={[0, 100]}
+              width={36}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => `${v}%`}
+            />
+            <ChartTooltip cursor content={<TrendTooltip />} />
+            {markers.map((m) => (
+              <ReferenceLine
+                key={m.ms}
+                x={m.ms}
+                stroke="var(--muted-foreground)"
+                strokeDasharray="4 4"
+                label={
+                  <MarkerLabel
+                    onEnter={(x) => setMarker({ x, text: m.text })}
+                    onLeave={() => setMarker(null)}
+                  />
+                }
+              />
+            ))}
+            <Line
+              dataKey="point.percent"
+              name="percent"
+              type="monotone"
+              stroke="var(--color-percent)"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ChartContainer>
+        {marker && (
+          <div
+            className="pointer-events-none absolute top-0 z-10 max-w-40 -translate-x-1/2 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium shadow-md"
+            style={{ left: marker.x }}
+          >
+            {marker.text}
+          </div>
+        )}
+      </div>
       <p className="text-xs text-muted-foreground">
         Click a week to see the responses behind it.
         {markers.length > 0 &&
@@ -269,6 +325,56 @@ function TrendChart({
       </p>
     </div>
   )
+}
+
+// MarkerLabel is a ReferenceLine label (recharts injects viewBox): a small glyph
+// at the top plus a full-height transparent hit target so hovering or tapping
+// anywhere on the dashed line surfaces the change description.
+function MarkerLabel({
+  viewBox,
+  onEnter,
+  onLeave,
+}: {
+  viewBox?: { x?: number; y?: number; height?: number }
+  onEnter: (x: number) => void
+  onLeave: () => void
+}) {
+  if (!viewBox || viewBox.x == null) return null
+  const x = viewBox.x
+  const y = viewBox.y ?? 0
+  const height = viewBox.height ?? 0
+  return (
+    <g
+      className="cursor-pointer"
+      onMouseEnter={() => onEnter(x)}
+      onMouseLeave={onLeave}
+      onClick={(e) => {
+        e.stopPropagation()
+        onEnter(x)
+      }}
+    >
+      <rect x={x - 6} y={y} width={12} height={height} fill="transparent" />
+      <circle cx={x} cy={y} r={3} fill="var(--muted-foreground)" />
+    </g>
+  )
+}
+
+// describeChange names a day's prompt-set change for the marker tooltip: the
+// first segment carries the noun (pluralized), later segments just count + verb,
+// e.g. "1 prompt replaced" or "2 prompts added, 1 replaced".
+function describeChange(change: PromptChange): string {
+  const segments: { n: number; verb: string }[] = []
+  if (change.added > 0) segments.push({ n: change.added, verb: "added" })
+  if (change.replaced > 0) segments.push({ n: change.replaced, verb: "replaced" })
+  if (change.retired > 0) segments.push({ n: change.retired, verb: "retired" })
+  if (segments.length === 0) return "Prompt set changed"
+  return segments
+    .map((s, i) =>
+      i === 0
+        ? `${s.n} prompt${s.n === 1 ? "" : "s"} ${s.verb}`
+        : `${s.n} ${s.verb}`
+    )
+    .join(", ")
 }
 
 function TrendTooltip({
@@ -282,7 +388,9 @@ function TrendTooltip({
   const point = payload[0].payload.point
   return (
     <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
-      <div className="font-medium">{shortDate(dateMs(point.scheduled_for))}</div>
+      <div className="font-medium">
+        {shortDate(dateMs(point.scheduled_for))}
+      </div>
       <div className="text-muted-foreground">
         {formatPercent(point.percent)} · mentioned in {point.mentioned} of{" "}
         {point.analyzed}
@@ -469,7 +577,7 @@ function CompetitorRow({
           <Badge variant="outline">discovered</Badge>
         )}
       </span>
-      <span className="shrink-0 tabular-nums text-muted-foreground">
+      <span className="shrink-0 text-muted-foreground tabular-nums">
         {formatPercent(competitor.mention_percent)}
       </span>
     </button>
@@ -494,9 +602,7 @@ function Panel({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-0.5">{children}</CardContent>
-      {footer && (
-        <div className="border-t px-6 pt-3">{footer}</div>
-      )}
+      {footer && <div className="border-t px-6 pt-3">{footer}</div>}
     </Card>
   )
 }
@@ -518,7 +624,7 @@ function StatRow({
       className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:opacity-70"
     >
       <span className="truncate">{label}</span>
-      <span className="shrink-0 tabular-nums text-muted-foreground">
+      <span className="shrink-0 text-muted-foreground tabular-nums">
         {count}
       </span>
     </button>

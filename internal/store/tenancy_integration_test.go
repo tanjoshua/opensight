@@ -88,6 +88,40 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	if len(created.Aliases) != 2 {
 		t.Fatalf("created aliases = %v, want 2 elements", created.Aliases)
 	}
+	updatedName, updatedCategory := "Updated Clinic", "clinic"
+	updatedAliases := []string{"Updated"}
+	updatedPractitioners := json.RawMessage(`[]`)
+	updatedServices := json.RawMessage(`["screening"]`)
+	updatedLocation := json.RawMessage(`{"country":"SG"}`)
+	updated, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
+		TenantID: tenantA, BusinessID: businessA, Name: &updatedName,
+		Aliases: &updatedAliases, Category: &updatedCategory,
+		Practitioners: &updatedPractitioners, Services: &updatedServices,
+		Location: &updatedLocation,
+	})
+	if err != nil {
+		t.Fatalf("UpdateActiveProfile: %v", err)
+	}
+	if updated.Name != "Updated Clinic" || len(updated.Services) == 0 {
+		t.Fatalf("updated business = %+v", updated)
+	}
+	secondServices := json.RawMessage(`["screening","consultation"]`)
+	disjoint, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
+		TenantID: tenantA, BusinessID: businessA, Services: &secondServices,
+	})
+	if err != nil {
+		t.Fatalf("disjoint UpdateActiveProfile: %v", err)
+	}
+	if disjoint.Name != "Updated Clinic" || string(disjoint.Services) != string(secondServices) ||
+		len(disjoint.Aliases) != 1 || disjoint.Aliases[0] != "Updated" {
+		t.Fatalf("disjoint update restored omitted fields: %+v", disjoint)
+	}
+	leaked := "Leaked"
+	if _, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
+		TenantID: tenantB, BusinessID: businessA, Name: &leaked,
+	}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-tenant UpdateActiveProfile error = %v, want ErrNotFound", err)
+	}
 
 	if _, err := businesses.GetBusiness(ctx, tenantA, businessA); err != nil {
 		t.Fatalf("GetBusiness(tenantA): %v", err)

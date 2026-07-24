@@ -74,7 +74,7 @@ profile_proposals (
 )
 ```
 
-The PRD's "confirmed profile values are not overwritten automatically" is enforced structurally: **generation only ever writes `profile_proposals`**; values reach `businesses` exclusively through a user-driven apply step. There is no code path where the pipeline writes business columns directly. (Onboarding flow details: design 03.)
+The PRD's "confirmed profile values are not overwritten automatically" is enforced structurally: **generation only ever writes `profile_proposals`**; values reach `businesses` through the user-driven onboarding apply step or an explicit post-activation Setup edit. Setup updates only profile columns and never changes lifecycle, plan, prompts, runs, or derived history. There is no code path where the pipeline writes business columns directly. (Onboarding flow details: design 03.)
 
 MVP has one business per tenant, but the FK shape makes multi-location (PRD §9) additive.
 
@@ -169,6 +169,7 @@ citations (
 
 - **`mentions` is canonical — the only source of mention facts**. Self-visibility, mention order, and every PRD §6 competitor metric (mention %, totals, average order, per-prompt appearances, trend) are aggregates over it; `result_analyses` never answers "was X mentioned". A result enters the metrics base only when its run's `analysis_completed_at` is set **and** it has a `result_analyses` row — unanalyzed results are excluded from numerator and denominator alike (badged in the UI, 06). Dismissed competitors keep their mention rows (dismissal is a display filter, so re-tracking restores history).
 - Discovery inserts `competitors` with status `discovered`; the extraction pipeline (design 05) matches names against `competitors.aliases` before creating new rows.
+- Editing `competitors.aliases` changes matching keys for future reconcile passes only. It does not rewrite `suggested_aliases`, prior mentions, or any historical metric.
 - `citations.subject` is best-effort inference from the response context, not from fetching cited pages; `unknown` is an honest value. Fetching cited pages to verify is a possible later enhancement, noted in design 05.
 
 ## How the PRD's metrics map to queries

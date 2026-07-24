@@ -84,3 +84,22 @@ func (r *resultIDs) Scan(src any) error {
 	*r = ids
 	return nil
 }
+
+type stringValues []string
+
+func (s *stringValues) Scan(src any) error {
+	if src == nil {
+		*s = []string{}
+		return nil
+	}
+	var raw []byte
+	switch v := src.(type) {
+	case []byte:
+		raw = v
+	case string:
+		raw = []byte(v)
+	default:
+		return fmt.Errorf("unsupported source type %T for string values", src)
+	}
+	return json.Unmarshal(raw, (*[]string)(s))
+}

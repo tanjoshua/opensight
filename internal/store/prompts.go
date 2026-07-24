@@ -17,6 +17,10 @@ import (
 // the tenant's plan limit.
 var ErrPromptLimitExceeded = errors.New("active prompt limit exceeded")
 
+// ErrPromptNotActive is returned when a replace targets a prompt that is not
+// active (already retired, or concurrently retired by a racing replace).
+var ErrPromptNotActive = errors.New("prompt is not active")
+
 // PromptStatus is the persisted lifecycle status for a prompt.
 type PromptStatus string
 
@@ -66,6 +70,21 @@ SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.crea
 FROM prompts pr
 JOIN businesses b ON b.id = pr.business_id
 WHERE pr.id = $1 AND b.tenant_id = $2`
+
+	// lockPromptForReplaceSQL loads and row-locks the prompt to be replaced,
+	// scoped to the tenant via the business join in one statement. FOR UPDATE OF
+	// pr serializes concurrent replaces on the same prompt: the second waits, then
+	// sees status = 'retired' and is rejected. A missing or cross-tenant prompt
+	// returns no rows → ErrNotFound.
+	lockPromptForReplaceSQL = `
+SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
+FROM prompts pr
+JOIN businesses b ON b.id = pr.business_id
+WHERE pr.id = $1 AND b.tenant_id = $2
+FOR UPDATE OF pr`
+
+	retirePromptSQL = `
+UPDATE prompts SET status = 'retired', retired_at = now() WHERE id = $1`
 )
 
 // Prompt is a persisted prompt row.
@@ -87,6 +106,15 @@ type CreateActivePromptParams struct {
 	BusinessID       domain.ID
 	Text             string
 	ReplacesPromptID *domain.ID
+}
+
+// ReplacePromptParams are the inputs for replacing an active prompt: retire the
+// old prompt and insert a new active one that records replaces_prompt_id. Text
+// is immutable, so an edit is expressed as a replace with the new text.
+type ReplacePromptParams struct {
+	TenantID    domain.ID
+	OldPromptID domain.ID
+	Text        string
 }
 
 // PromptStore writes prompt rows while enforcing prompt-specific invariants.
@@ -122,6 +150,58 @@ func (s *PromptStore) CreateActivePrompt(ctx context.Context, params CreateActiv
 		return Prompt{}, err
 	}
 	return prompt, nil
+}
+
+// ReplacePrompt retires an active prompt and inserts a new active prompt that
+// records it as its predecessor, atomically. It row-locks the old prompt first
+// (tenant-scoped): a missing or cross-tenant prompt is ErrNotFound, a non-active
+// prompt is ErrPromptNotActive. The insert reuses createActivePromptInTx, so the
+// plan prompt limit is enforced against the post-retire count in the same
+// transaction (the retired old prompt no longer counts). Lock order is
+// prompt-row then business-row, consistent with CreateActivePrompt only ever
+// locking the business row.
+func (s *PromptStore) ReplacePrompt(ctx context.Context, params ReplacePromptParams) (Prompt, error) {
+	if s == nil || s.db == nil {
+		return Prompt{}, errors.New("prompt store database is required")
+	}
+
+	var prompt Prompt
+	err := withTx(ctx, s.db, func(q querier) error {
+		created, err := replacePromptInTx(ctx, q, params)
+		if err != nil {
+			return err
+		}
+		prompt = created
+		return nil
+	})
+	if err != nil {
+		return Prompt{}, err
+	}
+	return prompt, nil
+}
+
+func replacePromptInTx(ctx context.Context, q querier, params ReplacePromptParams) (Prompt, error) {
+	old, err := scanPrompt(q.queryRowContext(ctx, lockPromptForReplaceSQL, params.OldPromptID, params.TenantID))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Prompt{}, ErrNotFound
+		}
+		return Prompt{}, fmt.Errorf("lock prompt for replace: %w", err)
+	}
+	if old.Status != PromptStatusActive {
+		return Prompt{}, ErrPromptNotActive
+	}
+
+	if _, err := q.execContext(ctx, retirePromptSQL, old.ID); err != nil {
+		return Prompt{}, fmt.Errorf("retire prompt: %w", err)
+	}
+
+	return createActivePromptInTx(ctx, q, CreateActivePromptParams{
+		TenantID:         params.TenantID,
+		BusinessID:       old.BusinessID,
+		Text:             params.Text,
+		ReplacesPromptID: &old.ID,
+	})
 }
 
 // ListActivePrompts returns the business's active prompts, oldest first. It

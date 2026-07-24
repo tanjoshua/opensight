@@ -2,11 +2,10 @@
 // the business's own coverage (the baseline) plus every competitor's comparison
 // stats (mention %, totals, avg order, per-prompt appearances, weekly trend,
 // vs-self), coverage-desc ranked. Every aggregate carries the result_ids behind
-// it so every number is a door (design 06). Track/dismiss/add are POL-3/POL-4;
-// this module is read-only.
-import { useQuery } from "@tanstack/react-query"
+// it so every number is a door (design 06).
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { apiGet, type QueryParams } from "./client"
+import { apiGet, apiPatch, apiPost, type QueryParams } from "./client"
 
 const PAGE_SIZE = 100
 
@@ -44,6 +43,8 @@ export interface Competitor {
   id: string
   name: string
   status: CompetitorStatus
+  aliases: string[]
+  suggested_aliases: string[]
   mentioned: number // distinct analyzed results mentioning this competitor
   total_mentions: number
   mention_percent: number
@@ -64,6 +65,22 @@ export interface CompetitorsFilter {
   status?: CompetitorStatus
   limit?: number
   offset?: number
+}
+
+export interface CompetitorWriteResponse {
+  id: string
+  name: string
+  website: string | null
+  aliases: string[]
+  suggested_aliases: string[]
+  source: "discovered" | "manual"
+  status: CompetitorStatus
+}
+
+export interface AddCompetitorInput {
+  name: string
+  aliases?: string[]
+  website?: string
 }
 
 export function listCompetitors(
@@ -132,5 +149,98 @@ export function useAllCompetitors(
     queryKey: ["competitors", "all", businessId, filter],
     queryFn: () => listAllCompetitors(businessId!, filter),
     enabled: businessId !== undefined,
+  })
+}
+
+export function addCompetitor(
+  businessId: string,
+  input: AddCompetitorInput
+): Promise<CompetitorWriteResponse> {
+  return apiPost(`/businesses/${businessId}/competitors`, input)
+}
+
+export function setCompetitorStatus(
+  competitorId: string,
+  status: "tracked" | "dismissed"
+): Promise<CompetitorWriteResponse> {
+  const action = status === "tracked" ? "track" : "dismiss"
+  return apiPost(`/competitors/${competitorId}/${action}`)
+}
+
+export function reviewSuggestedAlias(
+  competitorId: string,
+  alias: string,
+  action: "approve" | "reject"
+): Promise<CompetitorWriteResponse> {
+  return apiPost(`/competitors/${competitorId}/suggested-aliases/${action}`, {
+    alias,
+  })
+}
+
+export function updateCompetitorAliases(
+  competitorId: string,
+  aliases: string[]
+): Promise<CompetitorWriteResponse> {
+  return apiPatch(`/competitors/${competitorId}`, { aliases })
+}
+
+function useInvalidateCompetitorViews(businessId: string | undefined) {
+  const queryClient = useQueryClient()
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["competitors"] })
+    queryClient.invalidateQueries({ queryKey: ["overview", businessId] })
+  }
+}
+
+export function useAddCompetitor(businessId: string | undefined) {
+  const invalidate = useInvalidateCompetitorViews(businessId)
+  return useMutation({
+    mutationFn: (input: AddCompetitorInput) =>
+      addCompetitor(businessId!, input),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSetCompetitorStatus(businessId: string | undefined) {
+  const invalidate = useInvalidateCompetitorViews(businessId)
+  return useMutation({
+    mutationFn: ({
+      competitorId,
+      status,
+    }: {
+      competitorId: string
+      status: "tracked" | "dismissed"
+    }) => setCompetitorStatus(competitorId, status),
+    onSuccess: invalidate,
+  })
+}
+
+export function useReviewSuggestedAlias(businessId: string | undefined) {
+  const invalidate = useInvalidateCompetitorViews(businessId)
+  return useMutation({
+    mutationFn: ({
+      competitorId,
+      alias,
+      action,
+    }: {
+      competitorId: string
+      alias: string
+      action: "approve" | "reject"
+    }) => reviewSuggestedAlias(competitorId, alias, action),
+    onSettled: invalidate,
+  })
+}
+
+export function useUpdateCompetitorAliases(businessId: string | undefined) {
+  const invalidate = useInvalidateCompetitorViews(businessId)
+  return useMutation({
+    mutationFn: ({
+      competitorId,
+      aliases,
+    }: {
+      competitorId: string
+      aliases: string[]
+    }) => updateCompetitorAliases(competitorId, aliases),
+    onSuccess: invalidate,
   })
 }

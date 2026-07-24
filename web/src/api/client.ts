@@ -48,6 +48,18 @@ export async function apiGet<T>(
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  return apiWrite<T>("POST", path, body)
+}
+
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return apiWrite<T>("PATCH", path, body)
+}
+
+async function apiWrite<T>(
+  method: "POST" | "PATCH",
+  path: string,
+  body?: unknown
+): Promise<T> {
   const headers = new Headers({
     Accept: "application/json",
     "X-Requested-With": "XMLHttpRequest",
@@ -59,7 +71,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {
-    method: "POST",
+    method,
     headers,
     body: payload,
   })

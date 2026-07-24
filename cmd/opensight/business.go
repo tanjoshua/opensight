@@ -237,7 +237,7 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 		return err
 	}
 
-	scheduledFor := truncateToDay(activatedAt)
+	scheduledFor := workflows.TruncateToDay(activatedAt)
 	workflowID := workflows.RunWorkflowID(business.ID, store.PlatformChatGPT, scheduledFor)
 	if _, err := temporalClient.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 		ID:        workflowID,
