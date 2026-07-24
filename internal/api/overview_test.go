@@ -79,7 +79,11 @@ func TestOverviewEndpointShapesPayload(t *testing.T) {
 		competitors: metrics.CompetitorStats{
 			SelfPercent: 55,
 			Competitors: []metrics.CompetitorStat{
-				{CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000101"), Name: "Tracked Co", Status: "tracked", MentionPercent: 30, VsSelf: -25, ResultIDs: []domain.ID{resultID}},
+				{CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000101"), Name: "Tracked Co", Status: "tracked", MentionPercent: 30, VsSelf: -25, ResultIDs: []domain.ID{resultID},
+					Trend: []metrics.CompetitorTrendPoint{
+						{RunID: runID, ScheduledFor: time.Date(2026, 7, 6, 0, 0, 0, 0, time.UTC), Analyzed: 20, Mentioned: 5, Percent: 25, ResultIDs: []domain.ID{resultID}},
+						{RunID: runID, ScheduledFor: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC), Analyzed: 20, Mentioned: 6, Percent: 30, ResultIDs: []domain.ID{resultID}},
+					}},
 				{CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000102"), Name: "Disc 1", Status: "discovered", MentionPercent: 25, ResultIDs: []domain.ID{resultID}},
 				{CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000103"), Name: "Disc 2", Status: "discovered", MentionPercent: 20, ResultIDs: []domain.ID{resultID}},
 				{CompetitorID: mustHashV7(t, "01950000-0000-7000-8000-000000000104"), Name: "Disc 3", Status: "discovered", MentionPercent: 15, ResultIDs: []domain.ID{resultID}},
@@ -136,6 +140,11 @@ func TestOverviewEndpointShapesPayload(t *testing.T) {
 	}
 	if body.TopCompetitors[0].Status != "tracked" || body.TopCompetitors[0].VsSelf != -25 {
 		t.Fatalf("first competitor = %+v", body.TopCompetitors[0])
+	}
+	// The competitor's weekly trend rides along so the Overview chart can plot it
+	// against the "You" line in the same per-run visibility terms.
+	if tr := body.TopCompetitors[0].Trend; len(tr) != 2 || tr[1].Percent != 30 || tr[1].RunID != runID.String() {
+		t.Fatalf("first competitor trend = %+v, want two points ending at 30%%", body.TopCompetitors[0].Trend)
 	}
 	// The panel shows 3 discovered, but the backlog count is the true total (4).
 	if body.DiscoveredTotal != 4 {

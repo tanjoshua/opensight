@@ -5,6 +5,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { apiGet } from "./client"
+import type { CompetitorTrendPoint } from "./competitors"
 import type { Run } from "./responses"
 
 export interface VisibilityPoint {
@@ -44,6 +45,10 @@ export interface CompetitorSummary {
   avg_order: number
   vs_self: number
   result_ids: string[]
+  // Weekly mention %, aligned point-for-point with the business's own visibility
+  // trend (same analyzed runs), so the Overview chart can plot this competitor as
+  // a line against the "You" line.
+  trend: CompetitorTrendPoint[]
 }
 
 // PromptChange is one day the prompt set changed and what changed on it, so the

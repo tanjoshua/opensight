@@ -400,7 +400,7 @@ func competitorToResponse(c metrics.CompetitorStat) competitorResponse {
 		VsSelf:           c.VsSelf,
 		ResultIDs:        idStrings(c.ResultIDs),
 		PerPrompt:        make([]competitorPromptResponse, 0, len(c.PerPrompt)),
-		Trend:            make([]competitorTrendResponse, 0, len(c.Trend)),
+		Trend:            competitorTrendToResponse(c.Trend),
 	}
 	for _, p := range c.PerPrompt {
 		resp.PerPrompt = append(resp.PerPrompt, competitorPromptResponse{
@@ -409,8 +409,16 @@ func competitorToResponse(c metrics.CompetitorStat) competitorResponse {
 			ResultIDs:  idStrings(p.ResultIDs),
 		})
 	}
-	for _, t := range c.Trend {
-		resp.Trend = append(resp.Trend, competitorTrendResponse{
+	return resp
+}
+
+// competitorTrendToResponse shapes a competitor's weekly mention-% series. It is
+// shared by the Competitors list and the Overview chart so both plot the same
+// per-run trend the metrics layer computes (MET-4).
+func competitorTrendToResponse(points []metrics.CompetitorTrendPoint) []competitorTrendResponse {
+	out := make([]competitorTrendResponse, 0, len(points))
+	for _, t := range points {
+		out = append(out, competitorTrendResponse{
 			RunID:        t.RunID.String(),
 			ScheduledFor: t.ScheduledFor.Format(time.DateOnly),
 			Analyzed:     t.Analyzed,
@@ -419,5 +427,5 @@ func competitorToResponse(c metrics.CompetitorStat) competitorResponse {
 			ResultIDs:    idStrings(t.ResultIDs),
 		})
 	}
-	return resp
+	return out
 }

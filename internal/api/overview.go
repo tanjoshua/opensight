@@ -94,6 +94,11 @@ type competitorSummaryResponse struct {
 	AvgOrder       float64  `json:"avg_order"`
 	VsSelf         float64  `json:"vs_self"`
 	ResultIDs      []string `json:"result_ids"`
+	// Trend is this competitor's weekly mention %, aligned point-for-point with
+	// the business's own visibility trend (same analyzed runs, including
+	// zero-mention weeks — MET-4), so the Overview chart can plot competitor
+	// lines against the "You" line in the same visibility terms.
+	Trend []competitorTrendResponse `json:"trend"`
 }
 
 // handleGetOverview assembles the single Overview payload from the shared metrics
@@ -236,6 +241,7 @@ func topCompetitorsToResponse(stats metrics.CompetitorStats) ([]competitorSummar
 			AvgOrder:       c.AvgOrder,
 			VsSelf:         c.VsSelf,
 			ResultIDs:      idStrings(c.ResultIDs),
+			Trend:          competitorTrendToResponse(c.Trend),
 		})
 	}
 	return out, total

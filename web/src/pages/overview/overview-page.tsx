@@ -50,8 +50,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 
 const chartConfig = {
-  percent: { label: "Visibility", color: "var(--primary)" },
+  you: { label: "You", color: "var(--primary)" },
 } satisfies ChartConfig
+
+// The Overview trend plots "You" against a few competitors. The app's chart
+// palette is a single monochrome stone ramp (no distinct hues), so competitor
+// lines can't be told apart by color. Instead "You" stays dominant (solid
+// primary, thick) and each competitor is a thin muted line distinguished by a
+// dash pattern + the legend — the on-brand, colorblind-safe way to carry
+// identity in a monochrome system. Cap to the top few so the chart stays legible.
+const MAX_COMPETITOR_LINES = 3
+const COMPETITOR_DASHES = ["6 4", "2 3", "8 4 2 4"]
 
 export function OverviewPage() {
   const me = useMe()
@@ -216,6 +225,7 @@ function VisibilityCard({
         ) : (
           <TrendChart
             trend={trend}
+            competitors={overview.top_competitors}
             promptChanges={overview.prompt_changes}
             onSelectRun={onSelectRun}
           />
@@ -225,18 +235,63 @@ function VisibilityCard({
   )
 }
 
+// A plotted series: "You" plus the capped competitor lines. `key` is the row
+// field recharts reads; `dash`/`width` carry identity in the monochrome palette.
+interface Series {
+  key: string
+  name: string
+  color: string
+  width: number
+  dash?: string
+}
+
 function TrendChart({
   trend,
+  competitors,
   promptChanges,
   onSelectRun,
 }: {
   trend: VisibilityPoint[]
+  competitors: CompetitorSummary[]
   promptChanges: PromptChange[]
   onSelectRun: (runID: string) => void
 }) {
-  const data = trend.map((point) => ({ x: dateMs(point.scheduled_for), point }))
-  const minX = data[0].x
-  const maxX = data[data.length - 1].x
+  const competitorSeries: Series[] = competitors
+    .slice(0, MAX_COMPETITOR_LINES)
+    .map((c, i) => ({
+      key: c.id,
+      name: c.name,
+      color: "var(--muted-foreground)",
+      width: 1.5,
+      dash: COMPETITOR_DASHES[i],
+    }))
+  const series: Series[] = [
+    { key: "you", name: "You", color: "var(--primary)", width: 2.5 },
+    ...competitorSeries,
+  ]
+  // Competitor trends are aligned point-for-point with the visibility trend
+  // (same analyzed runs), so index each competitor's percent by run_id and merge
+  // it onto the matching row.
+  const competitorPercentByRun = new Map<string, Map<string, number>>(
+    competitorSeries.map((s) => {
+      const comp = competitors.find((c) => c.id === s.key)!
+      return [s.key, new Map(comp.trend.map((p) => [p.run_id, p.percent]))]
+    })
+  )
+  const data = trend.map((point) => {
+    const row: Record<string, number | VisibilityPoint> = {
+      x: dateMs(point.scheduled_for),
+      point,
+      you: point.percent,
+    }
+    for (const s of competitorSeries) {
+      const value = competitorPercentByRun.get(s.key)?.get(point.run_id)
+      if (value !== undefined) row[s.key] = value
+    }
+    return row
+  })
+  const minX = data[0].x as number
+  const maxX = data[data.length - 1].x as number
   // Markers only make sense inside the plotted window; a prompt change before the
   // first run or after the last has nothing to sit against.
   const markers = promptChanges
@@ -270,7 +325,7 @@ function TrendChart({
               type="number"
               scale="time"
               domain={["dataMin", "dataMax"]}
-              ticks={data.map((d) => d.x)}
+              ticks={data.map((d) => d.x as number)}
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -283,7 +338,7 @@ function TrendChart({
               axisLine={false}
               tickFormatter={(v: number) => `${v}%`}
             />
-            <ChartTooltip cursor content={<TrendTooltip />} />
+            <ChartTooltip cursor content={<TrendTooltip series={series} />} />
             {markers.map((m) => (
               <ReferenceLine
                 key={m.ms}
@@ -298,12 +353,28 @@ function TrendChart({
                 }
               />
             ))}
+            {/* Competitors first, then "You" — later marks render on top, so the
+                primary line always sits above the secondary ones. */}
+            {competitorSeries.map((s) => (
+              <Line
+                key={s.key}
+                dataKey={s.key}
+                name={s.name}
+                type="monotone"
+                stroke={s.color}
+                strokeWidth={s.width}
+                strokeDasharray={s.dash}
+                dot={false}
+                activeDot={{ r: 4 }}
+                connectNulls
+              />
+            ))}
             <Line
-              dataKey="point.percent"
-              name="percent"
+              dataKey="you"
+              name="You"
               type="monotone"
-              stroke="var(--color-percent)"
-              strokeWidth={2}
+              stroke="var(--primary)"
+              strokeWidth={2.5}
               dot={{ r: 3 }}
               activeDot={{ r: 5 }}
             />
@@ -318,11 +389,41 @@ function TrendChart({
           </div>
         )}
       </div>
+      {competitorSeries.length > 0 && <ChartLegend series={series} />}
       <p className="text-xs text-muted-foreground">
         Click a week to see the responses behind it.
         {markers.length > 0 &&
           " Dashed lines mark weeks where the prompt set changed."}
       </p>
+    </div>
+  )
+}
+
+// A color/dash-alone chart isn't accessible (design 06); the legend names each
+// line so identity never rests on the monochrome stroke. Swatches mirror the
+// plotted stroke — thick solid for "You", thin dashed for each competitor.
+function ChartLegend({ series }: { series: Series[] }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {series.map((s) => (
+        <span
+          key={s.key}
+          className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
+        >
+          <svg width="18" height="6" aria-hidden className="shrink-0">
+            <line
+              x1="0"
+              y1="3"
+              x2="18"
+              y2="3"
+              stroke={s.color}
+              strokeWidth={s.width}
+              strokeDasharray={s.dash}
+            />
+          </svg>
+          <span className="truncate">{s.name}</span>
+        </span>
+      ))}
     </div>
   )
 }
@@ -380,20 +481,56 @@ function describeChange(change: PromptChange): string {
 function TrendTooltip({
   active,
   payload,
+  series,
 }: {
   active?: boolean
-  payload?: { payload: { point: VisibilityPoint } }[]
+  payload?: {
+    dataKey?: string
+    value?: number
+    payload: { point: VisibilityPoint }
+  }[]
+  series: Series[]
 }) {
   if (!active || !payload?.length) return null
   const point = payload[0].payload.point
+  const valueByKey = new Map(payload.map((p) => [p.dataKey, p.value]))
   return (
-    <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
+    <div className="min-w-40 rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
       <div className="font-medium">
         {shortDate(dateMs(point.scheduled_for))}
       </div>
-      <div className="text-muted-foreground">
-        {formatPercent(point.percent)} · mentioned in {point.mentioned} of{" "}
-        {point.analyzed}
+      <div className="mt-1 flex flex-col gap-0.5">
+        {series.map((s) => {
+          const value = valueByKey.get(s.key)
+          if (value === undefined) return null
+          return (
+            <div
+              key={s.key}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="flex min-w-0 items-center gap-1.5">
+                <svg width="14" height="6" aria-hidden className="shrink-0">
+                  <line
+                    x1="0"
+                    y1="3"
+                    x2="14"
+                    y2="3"
+                    stroke={s.color}
+                    strokeWidth={s.width}
+                    strokeDasharray={s.dash}
+                  />
+                </svg>
+                <span className="truncate">{s.name}</span>
+              </span>
+              <span className="tabular-nums text-muted-foreground">
+                {formatPercent(value)}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-1 text-muted-foreground">
+        You: mentioned in {point.mentioned} of {point.analyzed}
       </div>
     </div>
   )
