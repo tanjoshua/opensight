@@ -1,11 +1,34 @@
 package api
 
 import (
+	"encoding/json"
+
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/llm"
 	"opensight/internal/store"
 	"opensight/internal/workflows"
 )
+
+// businessToProfile decodes a store.Business's raw services/location JSONB
+// columns into an llm.ProposedProfile, the shared shape the RPC responses
+// build on (businessProfileToProto below).
+func businessToProfile(b store.Business) (llm.ProposedProfile, error) {
+	profile := llm.ProposedProfile{Name: b.Name, Aliases: b.Aliases, Services: []string{}}
+	if b.Category != nil {
+		profile.Category = *b.Category
+	}
+	if len(b.Services) > 0 && string(b.Services) != "null" {
+		if err := json.Unmarshal(b.Services, &profile.Services); err != nil {
+			return llm.ProposedProfile{}, err
+		}
+	}
+	if len(b.Location) > 0 && string(b.Location) != "null" {
+		if err := json.Unmarshal(b.Location, &profile.Location); err != nil {
+			return llm.ProposedProfile{}, err
+		}
+	}
+	return profile, nil
+}
 
 // Nil-safety and normalization rules (load-bearing, not cosmetic):
 //
@@ -126,8 +149,8 @@ func planToProto(p store.Plan) *opensightv1.Plan {
 	}
 }
 
-// businessProfileToProto wraps the existing businessToProfile helper
-// (businesses.go) to build the full BusinessProfile message.
+// businessProfileToProto wraps businessToProfile above to build the full
+// BusinessProfile message.
 func businessProfileToProto(b store.Business, plan store.Plan) (*opensightv1.BusinessProfile, error) {
 	profile, err := businessToProfile(b)
 	if err != nil {

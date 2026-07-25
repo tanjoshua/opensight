@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 
+	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
 	"opensight/internal/metrics"
@@ -13,10 +14,20 @@ import (
 
 var _ opensightv1connect.CitationServiceHandler = (*Server)(nil)
 
-// ListCitationSources serves the citation-sources drill-down (MET-6),
-// mirroring handleListCitations (citations.go). GetBusiness is the
-// ownership gate before the metrics query runs — CitationSources returns
-// empty (not an error) for an unowned business.
+const (
+	defaultCitationLimit = 50
+	maxCitationLimit     = 100
+)
+
+// citationsMetrics is the metrics seam for MET-6. CitationSources is tenant-
+// scoped and uses the same analyzed-result base as Overview.
+type citationsMetrics interface {
+	CitationSources(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.CitationSource, error)
+}
+
+// ListCitationSources serves the citation-sources drill-down (MET-6).
+// GetBusiness is the ownership gate before the metrics query runs —
+// CitationSources returns empty (not an error) for an unowned business.
 func (s *Server) ListCitationSources(ctx context.Context, req *connect.Request[opensightv1.ListCitationSourcesRequest]) (*connect.Response[opensightv1.ListCitationSourcesResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "list citations")
 	if cerr != nil {

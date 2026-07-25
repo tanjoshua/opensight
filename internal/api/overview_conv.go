@@ -3,11 +3,22 @@ package api
 import (
 	"time"
 
+	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/metrics"
 )
 
-// visibilitySummaryToProto mirrors visibilityToResponse (overview.go). Trend
+const (
+	// overviewPanelLimit caps the top-keywords and top-cited-domains panels — the
+	// Overview panels are compact (design 06); the full lists live in their own
+	// sections.
+	overviewPanelLimit = 5
+	// overviewDiscoveredLimit is the "top-3 discovered by coverage" the Overview
+	// competitor panel shows alongside every tracked competitor (MET-2 AC).
+	overviewDiscoveredLimit = 3
+)
+
+// visibilitySummaryToProto mirrors the Overview panel shaping rules. Trend
 // is oldest-first; Current is the latest point's percent (n > 0), Delta the
 // difference from the previous point (n > 1). Always returns non-nil, even
 // for an empty trend.
@@ -94,4 +105,14 @@ func topCompetitorsToProto(stats metrics.CompetitorStats) ([]*opensightv1.Compet
 		})
 	}
 	return out, total
+}
+
+// idStrings renders a slice of domain IDs to their string form for the wire —
+// shared by the Overview, Citation, and Competitor conversions.
+func idStrings(ids []domain.ID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = id.String()
+	}
+	return out
 }

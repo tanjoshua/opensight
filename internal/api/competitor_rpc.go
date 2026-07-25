@@ -4,8 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/metrics"
 	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
@@ -13,11 +15,32 @@ import (
 
 var _ opensightv1connect.CompetitorServiceHandler = (*Server)(nil)
 
+const (
+	defaultCompetitorLimit = 50
+	maxCompetitorLimit     = 100
+)
+
+// competitorsMetrics is the metrics seam for the Competitors section (MET-4).
+// CompetitorStats is tenant-scoped and computes over the shared analyzed base
+// (MET-1), so a competitor's mention % and the business's own visibility % are
+// always measured against the identical result set.
+type competitorsMetrics interface {
+	CompetitorStats(ctx context.Context, tenantID, businessID domain.ID) (metrics.CompetitorStats, error)
+}
+
+type competitorStore interface {
+	CreateManual(ctx context.Context, params store.CreateManualCompetitorParams) (store.CompetitorRecord, error)
+	SetStatus(ctx context.Context, params store.SetCompetitorStatusParams) (store.CompetitorRecord, error)
+	ApproveSuggestedAlias(ctx context.Context, params store.SuggestedAliasParams) (store.CompetitorRecord, error)
+	RejectSuggestedAlias(ctx context.Context, params store.SuggestedAliasParams) (store.CompetitorRecord, error)
+	UpdateAliases(ctx context.Context, params store.UpdateCompetitorAliasesParams) (store.CompetitorRecord, error)
+}
+
 // ListCompetitors serves every competitor's comparison stats, coverage-
 // ranked, with an optional status filter and limit/offset pagination
-// (MET-4), mirroring handleListCompetitors (competitors.go). GetBusiness is
-// the ownership gate — it must run before CompetitorStats, which returns an
-// empty-but-successful result (not an error) for an unowned business.
+// (MET-4). GetBusiness is the ownership gate — it must run before
+// CompetitorStats, which returns an empty-but-successful result (not an
+// error) for an unowned business.
 func (s *Server) ListCompetitors(ctx context.Context, req *connect.Request[opensightv1.ListCompetitorsRequest]) (*connect.Response[opensightv1.ListCompetitorsResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "list competitors")
 	if cerr != nil {

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
+	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
 	"opensight/internal/llm"
@@ -13,8 +15,15 @@ import (
 	"opensight/internal/workflows"
 
 	connect "connectrpc.com/connect"
+	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
+)
+
+const (
+	proposalStatusGenerating = "generating"
+	proposalStatusReady      = "ready"
+	proposalStatusFailed     = "failed"
 )
 
 var _ opensightv1connect.BusinessServiceHandler = (*Server)(nil)
@@ -371,4 +380,70 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 		Name:   result.Business.Name,
 		Status: businessStatusToProto(result.Business.Status),
 	}}), nil
+}
+
+// startGeneration starts GenerateProfileWorkflow under the deterministic
+// per-business workflow id, so a regen while a prior run is still open surfaces
+// as WorkflowExecutionAlreadyStarted (CodeAlreadyExists) rather than a
+// duplicate run.
+func (s *Server) startGeneration(ctx context.Context, tenantID, businessID domain.ID, name, website string, promptLimit int) error {
+	_, err := s.temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
+		ID:        workflows.GenerateProfileWorkflowID(businessID),
+		TaskQueue: s.temporalTaskQueue,
+	}, workflows.GenerateProfileWorkflow, workflows.GenerateProfileWorkflowInput{
+		TenantID:    tenantID,
+		BusinessID:  businessID,
+		Name:        name,
+		Website:     website,
+		PromptLimit: promptLimit,
+	})
+	return err
+}
+
+// generationStatus maps the business's GenerateProfileWorkflow execution state
+// to a proposal status when there is no pending proposal row. A not-found
+// workflow (never started or history expired) and any terminal state both mean
+// failed; only a running workflow means generating. For a running workflow it
+// also queries the workflow's current stage; any query error degrades to an
+// empty stage (still generating) rather than failing the poll — a briefly
+// unavailable worker, a pre-deploy run without the handler, or a Describe/Query
+// race on a just-closed workflow must not break status reporting.
+func (s *Server) generationStatus(ctx context.Context, businessID domain.ID) (status, stage string, err error) {
+	workflowID := workflows.GenerateProfileWorkflowID(businessID)
+	desc, err := s.temporal.DescribeWorkflowExecution(ctx, workflowID, "")
+	if err != nil {
+		var notFound *serviceerror.NotFound
+		if errors.As(err, &notFound) {
+			return proposalStatusFailed, "", nil
+		}
+		return "", "", err
+	}
+	if desc.GetWorkflowExecutionInfo().GetStatus() != enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING {
+		return proposalStatusFailed, "", nil
+	}
+	return proposalStatusGenerating, s.generationStage(ctx, workflowID), nil
+}
+
+// generationStage queries the running workflow for its current stage, returning
+// an empty string on any error (see generationStatus). The query is given a
+// short deadline so a slow or unreachable worker cannot stall the poll.
+func (s *Server) generationStage(ctx context.Context, workflowID string) string {
+	qctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	resp, err := s.temporal.QueryWorkflow(qctx, workflowID, "", workflows.GenerationStageQuery)
+	if err != nil {
+		return ""
+	}
+	var stage string
+	if err := resp.Get(&stage); err != nil {
+		return ""
+	}
+	return stage
+}
+
+func websiteOrEmpty(website *string) string {
+	if website == nil {
+		return ""
+	}
+	return *website
 }

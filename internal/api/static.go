@@ -42,7 +42,3 @@ func newSPAHandler() http.Handler {
 		files.ServeHTTP(w, fallback)
 	})
 }
-
-func isAPIRoute(path string) bool {
-	return path == "/api" || strings.HasPrefix(path, "/api/")
-}

@@ -1,13 +1,11 @@
-// Package api hosts the HTTP handlers, middleware, and tenant scoping for the
-// OpenSight API server (01-D2). AUTH-1 introduces the chi router and the first
-// real routes (login/logout/me); later stories mount their handlers and shared
-// middleware inside Routes().
+// Package api hosts the Connect RPC handlers and tenant scoping for the
+// OpenSight API server (01-D2). Routes() mounts /healthz, the /rpc tree
+// (rpc.go), and the embedded SPA fallback (static.go).
 package api
 
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -140,18 +138,12 @@ func New(auth *store.AuthStore, businesses *store.BusinessStore, plans *store.Ad
 	}
 }
 
-// Routes is the single place routes are registered. Later stories add
-// r.Use(...) middleware and further routes here.
+// Routes is the single place routes are registered: /healthz, the /rpc tree,
+// and the SPA fallback for everything else.
 func (s *Server) Routes() http.Handler {
 	r := chi.NewRouter()
 	spa := newSPAHandler()
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		if isAPIRoute(r.URL.Path) {
-			writeProblem(w, http.StatusNotFound, "not found", "not found")
-			return
-		}
-		spa.ServeHTTP(w, r)
-	})
+	r.NotFound(spa.ServeHTTP)
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
 		writeProblem(w, http.StatusMethodNotAllowed, "method not allowed", "method not allowed")
 	})
@@ -159,39 +151,6 @@ func (s *Server) Routes() http.Handler {
 	r.Get("/healthz", handleHealthz)
 
 	r.Mount("/rpc", s.rpcHandler())
-
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(requireRequestedWith)
-		r.Post("/login", s.handleLogin)
-
-		r.Group(func(r chi.Router) {
-			r.Use(s.requireSession)
-			r.Get("/me", s.handleMe)
-			r.Post("/businesses", s.handleCreateBusiness)
-			r.Get("/businesses/{businessID}", s.handleGetBusiness)
-			r.Patch("/businesses/{businessID}", s.handlePatchBusiness)
-			r.Get("/businesses/{businessID}/proposal", s.handleGetProposal)
-			r.Post("/businesses/{businessID}/proposal/regen", s.handleRegenProposal)
-			r.Post("/businesses/{businessID}/apply", s.handleApplyBusiness)
-			r.Get("/businesses/{businessID}/overview", s.handleGetOverview)
-			r.Get("/businesses/{businessID}/prompts", s.handleListPrompts)
-			r.Post("/businesses/{businessID}/prompts", s.handleAddPrompt)
-			r.Get("/prompts/{promptID}", s.handleGetPrompt)
-			r.Post("/prompts/{promptID}/replace", s.handleReplacePrompt)
-			r.Get("/businesses/{businessID}/competitors", s.handleListCompetitors)
-			r.Post("/businesses/{businessID}/competitors", s.handleAddCompetitor)
-			r.Post("/competitors/{competitorID}/track", s.handleTrackCompetitor)
-			r.Post("/competitors/{competitorID}/dismiss", s.handleDismissCompetitor)
-			r.Post("/competitors/{competitorID}/suggested-aliases/approve", s.handleApproveSuggestedAlias)
-			r.Post("/competitors/{competitorID}/suggested-aliases/reject", s.handleRejectSuggestedAlias)
-			r.Patch("/competitors/{competitorID}", s.handlePatchCompetitorAliases)
-			r.Get("/businesses/{businessID}/citations", s.handleListCitations)
-			r.Get("/businesses/{businessID}/runs", s.handleListRuns)
-			r.Get("/businesses/{businessID}/results", s.handleListResults)
-			r.Get("/results/{resultID}", s.handleGetResult)
-			r.Post("/logout", s.handleLogout)
-		})
-	})
 
 	return r
 }
@@ -205,40 +164,10 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok\n"))
 }
 
-// userTenantResponse is the shared core of /me and a successful login: the
-// session's own user and tenant, nothing cross-tenant.
-type userTenantResponse struct {
-	User   userResponse   `json:"user"`
-	Tenant tenantResponse `json:"tenant"`
-}
-
-// meResponse is /me's body: the login shape plus the tenant's businesses and
-// prompt entitlement, so the SPA can resolve business-scoped URLs and validate
-// onboarding's final prompt count without hardcoding a plan limit.
-type meResponse struct {
-	userTenantResponse
-	Businesses  []businessResponse `json:"businesses"`
-	PromptLimit int                `json:"prompt_limit"`
-}
-
-type businessResponse struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-}
-
-type userResponse struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-}
-
-type tenantResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// writeProblem writes an RFC 7807 problem+json response (design 06). This is the
-// smallest useful shape; AUTH-3 promotes it to an app-wide helper.
+// writeProblem writes an RFC 7807 problem+json response (design 06). It
+// survives REST's removal (RPC-8) because the SPA static-file route
+// (static.go) and the router-level MethodNotAllowed handler above still use
+// it for the handful of non-RPC responses that aren't the SPA shell itself.
 func writeProblem(w http.ResponseWriter, status int, title, detail string) {
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(status)
@@ -248,12 +177,4 @@ func writeProblem(w http.ResponseWriter, status int, title, detail string) {
 		"status": status,
 		"detail": detail,
 	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		slog.Error("api: encode response", "error", err)
-	}
 }

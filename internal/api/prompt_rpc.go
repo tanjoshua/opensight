@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"opensight/internal/domain"
@@ -15,10 +16,30 @@ import (
 
 var _ opensightv1connect.PromptServiceHandler = (*Server)(nil)
 
+// promptStore is the consumer-side seam over *store.PromptStore for the Prompts
+// endpoints. ListActivePrompts doubles as the business→tenant ownership gate for
+// ListPrompts (ErrNotFound for a missing/cross-tenant business); GetPrompt is
+// tenant-scoped and reaches retired prompts, so lineage walks and detail
+// lookups can never cross a tenant boundary.
+type promptStore interface {
+	ListActivePrompts(ctx context.Context, tenantID, businessID domain.ID) ([]store.Prompt, error)
+	GetPrompt(ctx context.Context, tenantID, promptID domain.ID) (store.Prompt, error)
+	CreateActivePrompt(ctx context.Context, params store.CreateActivePromptParams) (store.Prompt, error)
+	ReplacePrompt(ctx context.Context, params store.ReplacePromptParams) (store.Prompt, error)
+}
+
+// promptsMetrics is the metrics seam for the Prompts section. Both methods are
+// tenant-scoped and compute over the shared analyzed base (MET-1), so a prompt's
+// latest-result summary and its spark-trend can never disagree with Overview.
+type promptsMetrics interface {
+	PromptLatestStats(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.PromptLatest, error)
+	PromptTrends(ctx context.Context, tenantID, businessID domain.ID) (map[domain.ID][]metrics.PromptTrendPoint, error)
+}
+
 // ListPrompts serves every active prompt with its latest-result summary and
-// spark-trend (MET-3), mirroring handleListPrompts (prompts.go).
-// ListActivePrompts is the ownership gate — it must run before the metrics
-// calls, which return empty (not an error) for an unowned business.
+// spark-trend (MET-3). ListActivePrompts is the ownership gate — it must run
+// before the metrics calls, which return empty (not an error) for an unowned
+// business.
 func (s *Server) ListPrompts(ctx context.Context, req *connect.Request[opensightv1.ListPromptsRequest]) (*connect.Response[opensightv1.ListPromptsResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "list prompts")
 	if cerr != nil {
@@ -176,4 +197,31 @@ func (s *Server) ReplacePrompt(ctx context.Context, req *connect.Request[opensig
 	}
 
 	return connect.NewResponse(&opensightv1.ReplacePromptResponse{Prompt: promptToProto(prompt)}), nil
+}
+
+// promptLineage walks the replaces_prompt_id chain back from prompt, newest
+// predecessor first. Each hop is a tenant-scoped GetPrompt, so the chain can
+// never cross a tenant. A missing predecessor stops the walk rather than 500-ing
+// (data is retained indefinitely, so this is defensive); the visited set guards
+// against a malformed cycle.
+func (s *Server) promptLineage(ctx context.Context, tenantID domain.ID, prompt store.Prompt) ([]store.Prompt, error) {
+	lineage := []store.Prompt{}
+	visited := map[domain.ID]bool{prompt.ID: true}
+	cur := prompt.ReplacesPromptID
+	for cur != nil {
+		if visited[*cur] {
+			break
+		}
+		visited[*cur] = true
+		ancestor, err := s.prompts.GetPrompt(ctx, tenantID, *cur)
+		if err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				break
+			}
+			return nil, err
+		}
+		lineage = append(lineage, ancestor)
+		cur = ancestor.ReplacesPromptID
+	}
+	return lineage, nil
 }

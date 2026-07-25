@@ -6,6 +6,7 @@ import (
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/metrics"
 	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
@@ -13,12 +14,33 @@ import (
 
 var _ opensightv1connect.ResultServiceHandler = (*Server)(nil)
 
+const (
+	defaultResultLimit = 50
+	maxResultLimit     = 100
+)
+
+type runStore interface {
+	ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]store.Run, error)
+}
+
+// runsMetrics is the metrics seam for the Runs endpoint: per-run visibility %
+// comes from the same shared analyzed base as Overview (MET-1), so a run's
+// visibility can never disagree with the trend line.
+type runsMetrics interface {
+	VisibilityTrend(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.VisibilityPoint, error)
+}
+
+type resultStore interface {
+	ListResults(ctx context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.ResultListItem, error)
+	GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (store.ResultDetail, error)
+	GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (store.ResultAnalysis, error)
+}
+
 // ListRuns serves every monitoring run for a business with its per-run
-// visibility %, mirroring handleListRuns (responses.go). ListRuns is the
-// ownership gate — it must run before VisibilityTrend, which does not error
-// for an unowned business. This is the only place Run.Visibility gets
-// populated: runToProto itself always leaves it nil, matching REST's
-// latestRunToResponse (used by GetOverview/GetResult) never setting it.
+// visibility %. ListRuns is the ownership gate — it must run before
+// VisibilityTrend, which does not error for an unowned business. This is the
+// only place Run.Visibility gets populated: runToProto itself always leaves
+// it nil.
 func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.ListRunsRequest]) (*connect.Response[opensightv1.ListRunsResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "list runs")
 	if cerr != nil {
@@ -166,4 +188,10 @@ func (s *Server) GetResult(ctx context.Context, req *connect.Request[opensightv1
 	}
 
 	return connect.NewResponse(&opensightv1.GetResultResponse{Result: row}), nil
+}
+
+// isUnanalyzed is the "not yet analyzed" badge rule: a succeeded result with no
+// analysis row. Failed results are never flagged this way — they show an error.
+func isUnanalyzed(status store.ResultStatus, analyzed bool) bool {
+	return status == store.ResultStatusSucceeded && !analyzed
 }
