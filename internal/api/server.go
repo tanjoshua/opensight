@@ -158,6 +158,8 @@ func (s *Server) Routes() http.Handler {
 
 	r.Get("/healthz", handleHealthz)
 
+	r.Mount("/rpc", s.rpcHandler())
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(requireRequestedWith)
 		r.Post("/login", s.handleLogin)

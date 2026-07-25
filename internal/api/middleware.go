@@ -1,24 +1,10 @@
 package api
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strings"
-
-	"opensight/internal/store"
 )
-
-type sessionUserContextKey struct{}
-
-func withSessionUser(ctx context.Context, su store.SessionUser) context.Context {
-	return context.WithValue(ctx, sessionUserContextKey{}, su)
-}
-
-func sessionUserFromContext(ctx context.Context) (store.SessionUser, bool) {
-	su, ok := ctx.Value(sessionUserContextKey{}).(store.SessionUser)
-	return su, ok
-}
 
 func (s *Server) requireSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

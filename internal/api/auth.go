@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -20,6 +21,17 @@ const sessionCookieName = "opensight_session"
 // cookie or an absent/expired/invalid token). It is never surfaced to clients
 // beyond a uniform 401.
 var errNoSession = errors.New("no session")
+
+type sessionUserContextKey struct{}
+
+func withSessionUser(ctx context.Context, su store.SessionUser) context.Context {
+	return context.WithValue(ctx, sessionUserContextKey{}, su)
+}
+
+func sessionUserFromContext(ctx context.Context) (store.SessionUser, bool) {
+	su, ok := ctx.Value(sessionUserContextKey{}).(store.SessionUser)
+	return su, ok
+}
 
 type loginRequest struct {
 	Email    string `json:"email"`
@@ -43,8 +55,11 @@ func hashSessionToken(raw string) []byte {
 	return sum[:]
 }
 
-func (s *Server) setSessionCookie(w http.ResponseWriter, raw string) {
-	http.SetCookie(w, &http.Cookie{
+// sessionCookie builds the login cookie. Both the REST and RPC stacks go
+// through this (and expiredSessionCookie below) so the attributes cannot
+// drift between the two I/O boundaries.
+func (s *Server) sessionCookie(raw string) *http.Cookie {
+	return &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    raw,
 		Path:     "/",
@@ -52,11 +67,12 @@ func (s *Server) setSessionCookie(w http.ResponseWriter, raw string) {
 		Secure:   s.secureCookies,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(s.sessionTTL.Seconds()),
-	})
+	}
 }
 
-func (s *Server) clearSessionCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
+// expiredSessionCookie builds the MaxAge=-1 clearing cookie.
+func (s *Server) expiredSessionCookie() *http.Cookie {
+	return &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",
 		Path:     "/",
@@ -64,19 +80,38 @@ func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 		Secure:   s.secureCookies,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
-	})
+	}
 }
 
-// sessionFromRequest resolves the request's session cookie to its user/tenant.
-// This is the factored resolution AUTH-3 wraps into auth middleware. A missing
-// cookie or an absent/expired session both return errNoSession.
-func (s *Server) sessionFromRequest(r *http.Request) (store.SessionUser, error) {
-	cookie, err := r.Cookie(sessionCookieName)
-	if err != nil || cookie.Value == "" {
+func (s *Server) setSessionCookie(w http.ResponseWriter, raw string) {
+	http.SetCookie(w, s.sessionCookie(raw))
+}
+
+func (s *Server) clearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, s.expiredSessionCookie())
+}
+
+// sessionTokenFromHeader extracts the raw session token from a request's
+// Cookie header. Returns "" when absent or empty.
+func sessionTokenFromHeader(h http.Header) string {
+	cookie, err := (&http.Request{Header: h}).Cookie(sessionCookieName)
+	if err != nil {
+		return ""
+	}
+	return cookie.Value
+}
+
+// sessionFromHeader resolves a request's session cookie to its user/tenant.
+// Missing cookie or absent/expired session both return errNoSession. This is
+// the single resolution path shared by the REST middleware and the RPC
+// session interceptor.
+func (s *Server) sessionFromHeader(ctx context.Context, h http.Header) (store.SessionUser, error) {
+	raw := sessionTokenFromHeader(h)
+	if raw == "" {
 		return store.SessionUser{}, errNoSession
 	}
 
-	su, err := s.auth.GetSession(r.Context(), hashSessionToken(cookie.Value))
+	su, err := s.auth.GetSession(ctx, hashSessionToken(raw))
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return store.SessionUser{}, errNoSession
@@ -84,6 +119,11 @@ func (s *Server) sessionFromRequest(r *http.Request) (store.SessionUser, error) 
 		return store.SessionUser{}, err
 	}
 	return su, nil
+}
+
+// sessionFromRequest is the REST-stack wrapper (unchanged behavior).
+func (s *Server) sessionFromRequest(r *http.Request) (store.SessionUser, error) {
+	return s.sessionFromHeader(r.Context(), r.Header)
 }
 
 // handleLogin authenticates email+password and, on success, mints a fresh

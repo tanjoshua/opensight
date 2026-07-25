@@ -71,28 +71,45 @@ Deps: RPC-1 · Phase 3 · Ref: design 06 (Endpoints by section)
 As the developer, I want session auth, CSRF protection, and error mapping working end-to-end for one
 real service, so that the remaining services are a mechanical repeat of a proven pattern.
 
-- [ ] `/rpc` mounted on the chi router alongside `/healthz` and the SPA fallback; `isAPIRoute`
-      retargeted from `/api` to `/rpc`.
-- [ ] Auth interceptor resolves the `opensight_session` cookie into `store.SessionUser` and injects
+- [x] `/rpc` mounted on the chi router alongside `/healthz` and the untouched `/api/v1` REST tree.
+      `isAPIRoute`/`static.go` stay exactly as they are: chi's `Mount("/rpc", …)` registers `/rpc`,
+      `/rpc/`, and `/rpc/*` directly, so an unknown `/rpc` path is 404'd by the mounted Connect
+      handler itself and never reaches chi's `NotFound` — retargeting `isAPIRoute` to `/rpc` would
+      only make unknown `/api/v1` paths wrongly fall through to the SPA. That retarget moves to
+      RPC-8, alongside `isAPIRoute`'s deletion, once REST is actually gone.
+- [x] Auth interceptor resolves the `opensight_session` cookie into `store.SessionUser` and injects
       it via the existing `withSessionUser`/`sessionUserFromContext` context pair; a public-procedure
       allowlist covers `AuthService.Login` only.
-- [ ] `connect.WithRequireConnectProtocolHeader()` replaces `requireRequestedWith`; no RPC is marked
-      `idempotency_level = NO_SIDE_EFFECTS` (that would allow a header-less GET).
-- [ ] `internal/api/errors.go`: `rpcError(err error) *connect.Error` maps `store.ErrNotFound`→
-      `CodeNotFound`, `ErrBusinessNotDraft`/`ErrPromptNotActive`→`CodeFailedPrecondition`,
-      `ErrPromptLimitExceeded`→`CodeResourceExhausted` (uniformly — no more 409-vs-400 split),
-      `WorkflowExecutionAlreadyStarted`→`CodeAlreadyExists`, validation→`CodeInvalidArgument`,
-      no/expired session→`CodeUnauthenticated`, else `CodeInternal` (real error to `slog`, generic
-      message to the client).
-- [ ] `AuthService` (`Login`, `Logout`, `GetMe`) implemented; the uniform-failure/timing-parity
-      behavior in the current `handleLogin` (byte-identical response + dummy-hash verify for every
-      failure cause) survives verbatim.
-- [ ] `internal/api/middleware.go` deleted; its context helpers move into `internal/api/auth.go`.
-- [ ] `internal/api/rpc_test.go`: full-stack `httptest.Server` + generated client tests for the
-      things a direct method call can't cover — missing-session rejection + cookie clear, cookie
-      set/clear on login/logout, missing-Connect-Protocol-Version rejection, `/healthz` and SPA
-      fallback still reachable with `/rpc` mounted.
-- [ ] REST `/api/v1` routes untouched and still passing; both stacks run side by side.
+- [x] `connect.WithRequireConnectProtocolHeader()` is the CSRF guard for every `/rpc` call; no RPC is
+      marked `idempotency_level = NO_SIDE_EFFECTS` (that would let Connect accept the RPC as a
+      header-less GET). `requireRequestedWith` keeps guarding `/api/v1` unchanged — it is not
+      "replaced" until RPC-8 deletes the REST tree it guards.
+- [x] `internal/api/errors.go`: `rpcError(op string, err error) *connect.Error` covers the two
+      sentinels `AuthService` actually reaches — no/expired session → `CodeUnauthenticated`
+      (+ a `Set-Cookie` clear via `Meta()`), else `CodeInternal` (real error to `slog`, generic
+      message to the client, no `Meta`/details — never an oracle). `store.ErrNotFound`,
+      `ErrBusinessNotDraft`, `ErrPromptNotActive`, `ErrPromptLimitExceeded`,
+      `WorkflowExecutionAlreadyStarted` aren't reachable from AuthService; RPC-4/5/6 each extend this
+      same switch with the sentinel they introduce, rather than this story writing untested branches
+      for stores it doesn't call.
+- [x] `AuthService` (`Login`, `Logout`, `GetMe`) implemented in a new `internal/api/auth_rpc.go`; the
+      uniform-failure/timing-parity behavior in the current `handleLogin` (byte-identical response +
+      dummy-hash verify for every failure cause, via a dedicated `rpcLoginFailed()` that never gets
+      `Meta`/details attached) survives verbatim.
+- [x] `internal/api/middleware.go`'s three context helpers
+      (`sessionUserContextKey`/`withSessionUser`/`sessionUserFromContext`) move into
+      `internal/api/auth.go`, now shared by both stacks. `requireSession`/`requireRequestedWith`
+      stay in `middleware.go`, still wired into `/api/v1` — the file isn't deleted until RPC-8
+      removes the REST routes that use them.
+- [x] `internal/api/rpc_test.go`: full-stack `httptest.Server` + generated-client tests (cookie-jar
+      backed) for the things a direct method call can't cover — session lifecycle (login sets the
+      cookie, GetMe/Logout require and consume it, a missing session both 401s and clears the dead
+      cookie), missing-`Connect-Protocol-Version` rejection (asserted against the store fake never
+      being called, not just the status code), and a descriptor-reflection test that no RPC in the
+      whole schema is ever `NO_SIDE_EFFECTS`. `/healthz`, the SPA fallback, and REST's own 404
+      handling are already covered by existing tests that now run through a `Routes()` with `/rpc`
+      mounted — no need to duplicate them.
+- [x] REST `/api/v1` routes untouched and still passing; both stacks run side by side.
 
 Deps: RPC-2 · Phase 3 · Ref: design 07 (auth, CSRF)
 
@@ -175,7 +192,12 @@ As the developer, I want the old REST stack removed, so that there is exactly on
 
 - [ ] `internal/api`'s REST handler bodies, request/response DTOs, and the `/api/v1` route block
       deleted; `Routes()` left with `/healthz`, `/rpc`, and the SPA fallback only.
-- [ ] `writeProblem`/`writeJSON`/`writeStoreError`/`writeInternalError` removed in favor of `rpcError`.
+- [ ] `writeProblem`/`writeJSON`/`writeStoreError`/`writeInternalError` removed in favor of `rpcError`
+      (`writeProblem` may survive narrowly if `NotFound`/`MethodNotAllowed` still need it — check).
+- [ ] `internal/api/middleware.go` deleted (`requireSession`/`requireRequestedWith`/`isStateChanging`
+      have no REST caller left; their Connect-side equivalents, added in RPC-3, are unaffected).
+- [ ] `isAPIRoute` deleted along with the `/api/v1` block it exists to distinguish from the SPA
+      fallback — the `/rpc` mount 404s its own unknown paths and needs no equivalent check.
 - [ ] `go test ./...` and `npm run build` pass with REST fully gone.
 
 Deps: RPC-7 · Phase 3 · Ref: design 06

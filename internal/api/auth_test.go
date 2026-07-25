@@ -46,10 +46,22 @@ func (f *fakeAuthStore) CreateSession(_ context.Context, params store.CreateSess
 	if f.sessions == nil {
 		f.sessions = map[string]store.SessionUser{}
 	}
-	f.sessions[string(params.TokenHash)] = store.SessionUser{
+	su := store.SessionUser{
 		UserID:    params.UserID,
 		ExpiresAt: params.ExpiresAt,
 	}
+	// The real store's session lookup always joins to users/tenants, so mirror
+	// that here: find the matching credentials entry by user id and populate
+	// Email/TenantID/TenantName too.
+	for _, creds := range f.credsByEmail {
+		if creds.UserID == params.UserID {
+			su.Email = creds.Email
+			su.TenantID = creds.TenantID
+			su.TenantName = creds.TenantName
+			break
+		}
+	}
+	f.sessions[string(params.TokenHash)] = su
 	return nil
 }
 
@@ -490,13 +502,6 @@ func TestMeSuccess(t *testing.T) {
 	if cookie == nil {
 		t.Fatal("login did not set a cookie")
 	}
-	// The fake stores the session keyed by hash but without user email/tenant;
-	// populate what GetSession should return for this token.
-	su := f.sessions[string(hashSessionToken(cookie.Value))]
-	su.Email = "user@example.com"
-	su.TenantName = "Acme Clinic"
-	su.TenantID = mustHashV7(t, tenantID)
-	f.sessions[string(hashSessionToken(cookie.Value))] = su
 
 	rec := doJSON(t, srv, http.MethodGet, "/api/v1/me", "", cookie)
 	if rec.Code != http.StatusOK {
@@ -519,9 +524,6 @@ func TestMePlanErrorIsInternal(t *testing.T) {
 	if cookie == nil {
 		t.Fatal("login did not set a cookie")
 	}
-	su := f.sessions[string(hashSessionToken(cookie.Value))]
-	su.TenantID = mustHashV7(t, tenantID)
-	f.sessions[string(hashSessionToken(cookie.Value))] = su
 
 	rec := doJSON(t, srv, http.MethodGet, "/api/v1/me", "", cookie)
 	if rec.Code != http.StatusInternalServerError {
