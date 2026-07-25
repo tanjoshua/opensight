@@ -7,7 +7,7 @@
 
 ## Agent development process
 
-- This agent development process only applies for significant tasks that require more careful thought. Do not always use this.
+- This agent development process only applies for development of features that require careful thought. Do not use this if it is not suitable.
 - A tech lead agent using a strong reasoning model should plan the technical implementation.
 - The plan can be handed off to an engineer agent for implementation.
 - After the engineer agent is done, the engineering manager agent should review the implementation. The engineering manager agent should not make any changes themselves.
@@ -18,3 +18,4 @@
 - At an appropriate checkpoint, the changes should be committed and pushed (merged if development was done in a separate branch).
 - Code should be clean, concise. The simplest solution should always be prioritized if it doesn't sacrifice software quality.
 - For testing, it is important not to clutter the codebase with unnecessary tests. Each test case needs to justify itself for why it is a useful test case.
+- It is not necessary to always include test cases especially when the codebase is dynamic. Granular unit tests don't have to be included if they are already tested by an integration test scenario.
