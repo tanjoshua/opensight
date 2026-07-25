@@ -4,24 +4,44 @@ import (
 	"errors"
 	"log/slog"
 
+	"opensight/internal/store"
+
 	connect "connectrpc.com/connect"
+	"go.temporal.io/api/serviceerror"
 )
 
 // rpcError is the single translation from an internal error to a
 // *connect.Error. Never leaks error detail to the client: the real error goes
 // to slog, a generic message goes to the client. RPC-4/5/6 extend this switch
-// with their own store sentinels as each service reaches them — this story
-// only implements what AuthService actually reaches (no/expired session, and
-// everything else as internal).
+// with their own store sentinels as each service reaches them.
 func (s *Server) rpcError(op string, err error) *connect.Error {
-	if errors.Is(err, errNoSession) {
+	switch {
+	case errors.Is(err, errNoSession):
 		// Today's REST middleware doesn't log this either — an absent session
 		// is an expected client state, not an operational error.
 		cerr := connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required"))
 		cerr.Meta().Add("Set-Cookie", s.expiredSessionCookie().String())
 		return cerr
+	case errors.Is(err, store.ErrNotFound):
+		return connect.NewError(connect.CodeNotFound, errors.New("not found"))
+	case errors.Is(err, store.ErrBusinessNotDraft):
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("business is already active"))
+	case errors.Is(err, store.ErrPromptLimitExceeded):
+		return connect.NewError(connect.CodeResourceExhausted, errors.New("prompt count exceeds the plan limit"))
 	}
 
+	var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted
+	if errors.As(err, &alreadyStarted) {
+		return connect.NewError(connect.CodeAlreadyExists, errors.New("profile generation is already in progress"))
+	}
+
+	return s.rpcInternal(op, err)
+}
+
+// rpcInternal is the writeInternalError equivalent: always CodeInternal, never
+// sentinel-mapped. Used where even a store sentinel should be treated as our
+// bug, not the client's — e.g. a failed plan lookup during business creation.
+func (s *Server) rpcInternal(op string, err error) *connect.Error {
 	slog.Error("api: "+op, "error", err)
 	return connect.NewError(connect.CodeInternal, errors.New("an unexpected error occurred"))
 }
@@ -29,4 +49,11 @@ func (s *Server) rpcError(op string, err error) *connect.Error {
 // rpcInvalidArgument is the client-fault 400 equivalent.
 func rpcInvalidArgument(msg string) *connect.Error {
 	return connect.NewError(connect.CodeInvalidArgument, errors.New(msg))
+}
+
+// rpcFailedPrecondition is the client-fault "wrong state" equivalent of
+// today's 409 conflict responses — distinct from a duplicate-start conflict
+// (CodeAlreadyExists).
+func rpcFailedPrecondition(msg string) *connect.Error {
+	return connect.NewError(connect.CodeFailedPrecondition, errors.New(msg))
 }

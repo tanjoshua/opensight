@@ -2,11 +2,15 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
+	"opensight/internal/domain"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
+	"github.com/google/uuid"
 )
 
 // maxRPCRequestBytes matches today's REST body cap (64 KiB, applied via
@@ -49,6 +53,29 @@ func (s *Server) rpcHandler() http.Handler {
 	}
 	mux := http.NewServeMux()
 	mux.Handle(opensightv1connect.NewAuthServiceHandler(s, opts...))
-	// RPC-4/5/6 will each add one more mux.Handle(...) line here.
+	mux.Handle(opensightv1connect.NewBusinessServiceHandler(s, opts...))
+	// RPC-5/6 will each add one more mux.Handle(...) line here.
 	return http.StripPrefix("/rpc", mux)
+}
+
+// rpcID parses a request's id field, mirroring pathID's 400 on a malformed
+// UUID. Returns a concrete *connect.Error (never a typed-nil through the
+// error interface) — every call site must check `if cerr != nil`.
+func rpcID(name, raw string) (domain.ID, *connect.Error) {
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, rpcInvalidArgument(name + " must be a UUID")
+	}
+	return id, nil
+}
+
+// rpcSessionUser pulls the session user the interceptor injected. A miss
+// means broken wiring (the procedure would have to be in publicProcedures
+// otherwise), not a normal auth failure — so it's Internal.
+func (s *Server) rpcSessionUser(ctx context.Context, op string) (store.SessionUser, *connect.Error) {
+	su, ok := sessionUserFromContext(ctx)
+	if !ok {
+		return store.SessionUser{}, s.rpcInternal(op+": missing session context", errors.New("missing session context"))
+	}
+	return su, nil
 }

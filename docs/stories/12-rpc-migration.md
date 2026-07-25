@@ -118,14 +118,14 @@ Deps: RPC-2 · Phase 3 · Ref: design 07 (auth, CSRF)
 As a clinic user, I want the business/onboarding endpoints on Connect, so that profile editing and
 proposal generation work through the new contract.
 
-- [ ] `CreateBusiness`, `GetBusiness`, `UpdateBusiness`, `GetProposal`, `RegenerateProposal`,
+- [x] `CreateBusiness`, `GetBusiness`, `UpdateBusiness`, `GetProposal`, `RegenerateProposal`,
       `ApplyProposal` implemented against the existing store seams.
-- [ ] `internal/api` owns the `llm.ProposalPayload` ⇄ proto conversion both directions; `internal/llm`
+- [x] `internal/api` owns the `llm.ProposalPayload` ⇄ proto conversion both directions; `internal/llm`
       unchanged.
-- [ ] `UpdateBusiness`'s merge semantics (omitted vs null vs empty, atomic partial column update)
+- [x] `UpdateBusiness`'s merge semantics (omitted vs null vs empty, atomic partial column update)
       verified against the actual store behavior, not just the proto shape.
-- [ ] Existing `businesses_test.go` behavior ported to direct `connect.NewRequest` calls against fakes.
-- [ ] REST equivalents untouched.
+- [x] Existing `businesses_test.go` behavior ported to direct `connect.NewRequest` calls against fakes.
+- [x] REST equivalents untouched.
 
 Deps: RPC-3 · Phase 3 · Ref: design 06 (Setup), 03 (onboarding)
 

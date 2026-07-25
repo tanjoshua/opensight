@@ -129,16 +129,3 @@ func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.Get
 	}
 	return connect.NewResponse(resp), nil
 }
-
-// businessStatusToProto maps the store's string-typed business status to the
-// generated proto enum.
-func businessStatusToProto(s store.BusinessStatus) opensightv1.BusinessStatus {
-	switch s {
-	case store.BusinessStatusDraft:
-		return opensightv1.BusinessStatus_BUSINESS_STATUS_DRAFT
-	case store.BusinessStatusActive:
-		return opensightv1.BusinessStatus_BUSINESS_STATUS_ACTIVE
-	default:
-		return opensightv1.BusinessStatus_BUSINESS_STATUS_UNSPECIFIED
-	}
-}
