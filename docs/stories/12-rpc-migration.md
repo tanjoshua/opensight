@@ -41,9 +41,13 @@ schema is complete and reviewable before any server code changes.
 - [ ] `proto/opensight/v1/{common,auth,business,overview,citation,prompt,competitor,result}.proto`
       covering all 26 existing endpoints across 7 services (see design 06 for the RPC-to-endpoint
       mapping).
-- [ ] `common.proto` holds `Paging`, `StringList`, and the shared status enums
-      (`BusinessStatus`, `ProposalStatus`, `PromptStatus`, `RunStatus`, `ResultStatus`,
-      `CompetitorStatus`) — values read from `internal/store`, not from frontend string literals.
+- [ ] `common.proto` holds `Paging`, `StringList`, and the shared enums (`BusinessStatus`,
+      `PromptStatus`, `RunStatus`, `RunTrigger`, `ResultStatus`, `CompetitorStatus`,
+      `CompetitorSource`, `Sentiment`, `MentionSubject`, `MatchMethod`, `CitationSubject`,
+      `GenerationStage`) — values read from `internal/store`/its migrations, not from frontend
+      string literals. `ProposalStatus` (`generating`/`ready`/`failed`) is the one exception: it is
+      workflow-derived in `internal/api/businesses.go`, not `internal/store`'s
+      `ProfileProposalStatus` (`pending`/`applied`/`discarded`), which is never exposed over the API.
 - [ ] `UpdateBusinessRequest`/`UpdateCompetitorAliasesRequest` use `optional` scalars and the
       `StringList` message wrapper so omitted/null/empty PATCH semantics (design 06 Setup notes)
       are representable.
@@ -123,8 +127,12 @@ Deps: RPC-3 · Phase 3 · Ref: design 06 (Overview, Prompts)
 As a clinic user, I want the Competitors and Responses/Runs endpoints on Connect — the full backend
 surface is now on Connect, REST still live behind it.
 
-- [ ] `CompetitorService.{ListCompetitors,AddCompetitor,TrackCompetitor,DismissCompetitor,
-      ApproveSuggestedAlias,RejectSuggestedAlias,UpdateCompetitorAliases}` implemented.
+- [ ] `CompetitorService.{ListCompetitors,AddCompetitor,SetCompetitorStatus,
+      ReviewSuggestedAlias,UpdateCompetitorAliases}` implemented. `SetCompetitorStatus` (status
+      arg) and `ReviewSuggestedAlias` (decision arg) merge the track/dismiss and approve/reject
+      pairs into one RPC each — the server already funnels each pair through one function today,
+      and the frontend already calls both through one function with a discriminator argument, so
+      this keeps the RPC count matching the existing call shape (schema decision from RPC-2).
 - [ ] `ResultService.{ListRuns,ListResults,GetResult}` implemented, including the `mentioned` filter
       and the succeeded-but-unanalyzed badge flag.
 - [ ] Existing `competitors_test.go`, `responses_test.go` behavior ported.

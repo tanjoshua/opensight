@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "google/protobuf/timestamp.proto";
+import "opensight/v1/common.proto";
+import "opensight/v1/result.proto";
+
+// Prompt is a prompt in a replacement lineage chain (internal/api/prompts.go
+// promptLineageNode).
+message Prompt {
+  string id = 1;
+  string text = 2;
+  PromptStatus status = 3;
+  // replaces_prompt_id links to the prompt this one replaced.
+  optional string replaces_prompt_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// PromptTrendPoint is one point of a prompt's spark-trend. result_id stays
+// singular (not the result_ids invariant) — a prompt-trend point comes from
+// exactly one analyzed result per run, unlike the multi-result aggregates.
+message PromptTrendPoint {
+  string run_id = 1;
+  string scheduled_for = 2;
+  bool mentioned = 3;
+  string result_id = 4;
+}
+
+// PromptSummary is one active-prompt row of the Prompts table: its latest
+// analyzed-result summary plus its spark-trend across runs.
+message PromptSummary {
+  string id = 1;
+  string text = 2;
+  PromptStatus status = 3;
+  bool mentioned = 4;
+  optional int32 order = 5;
+  Sentiment sentiment = 6;
+  // latest_result_id stays singular — it is the one latest analyzed result
+  // this summary was derived from, not an aggregate.
+  optional string latest_result_id = 7;
+  repeated PromptTrendPoint trend = 8;
+}
+
+message ListPromptsRequest {
+  string business_id = 1;
+}
+
+message ListPromptsResponse {
+  repeated PromptSummary prompts = 1;
+}
+
+message AddPromptRequest {
+  string business_id = 1;
+  string text = 2;
+}
+
+message AddPromptResponse {
+  Prompt prompt = 1;
+}
+
+message GetPromptRequest {
+  string prompt_id = 1;
+}
+
+message GetPromptResponse {
+  Prompt prompt = 1;
+  repeated Prompt lineage = 2;
+  repeated PromptResult results = 3;
+}
+
+// ReplacePromptRequest retires the old prompt and inserts a new active prompt
+// recording it as its predecessor. confirmed must be true server-side — the
+// server-side enforcement of the unskippable warning (design 06) — a client
+// that skips the confirmation modal can never succeed by omitting it.
+message ReplacePromptRequest {
+  string prompt_id = 1;
+  string text = 2;
+  bool confirmed = 3;
+}
+
+message ReplacePromptResponse {
+  Prompt prompt = 1;
+}
+
+service PromptService {
+  rpc ListPrompts(ListPromptsRequest) returns (ListPromptsResponse);
+  rpc AddPrompt(AddPromptRequest) returns (AddPromptResponse);
+  rpc GetPrompt(GetPromptRequest) returns (GetPromptResponse);
+  rpc ReplacePrompt(ReplacePromptRequest) returns (ReplacePromptResponse);
+}

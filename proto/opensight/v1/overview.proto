@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "opensight/v1/common.proto";
+import "opensight/v1/competitor.proto";
+import "opensight/v1/result.proto";
+
+// VisibilityPoint is one week's visibility %: analyzed/mentioned counts over
+// the shared analyzed base, plus the result ids backing them.
+message VisibilityPoint {
+  string run_id = 1;
+  string scheduled_for = 2;
+  int32 analyzed = 3;
+  int32 mentioned = 4;
+  double percent = 5;
+  repeated string result_ids = 6;
+}
+
+// VisibilitySummary is the Overview headline stat plus its weekly trend.
+// current/delta are absent until there is enough analyzed history to fill
+// them (delta needs at least two analyzed runs).
+message VisibilitySummary {
+  optional double current = 1;
+  optional double delta = 2;
+  repeated VisibilityPoint trend = 3;
+}
+
+// PromptChange is one day the prompt set changed and what changed on it, so
+// the trend chart's marker at that date can name the change.
+message PromptChange {
+  string date = 1;
+  int32 added = 2;
+  int32 retired = 3;
+  int32 replaced = 4;
+}
+
+message KeywordStat {
+  string keyword = 1;
+  repeated string result_ids = 2;
+}
+
+message DomainStat {
+  string domain = 1;
+  repeated string result_ids = 2;
+}
+
+// CompetitorSummary is the Overview competitor panel's row: every tracked
+// competitor plus the top-3 discovered by coverage.
+message CompetitorSummary {
+  string id = 1;
+  string name = 2;
+  CompetitorStatus status = 3;
+  int32 mentioned = 4;
+  int32 total_mentions = 5;
+  double mention_percent = 6;
+  double avg_order = 7;
+  double vs_self = 8;
+  repeated string result_ids = 9;
+  repeated CompetitorTrendPoint trend = 10;
+}
+
+message GetOverviewRequest {
+  string business_id = 1;
+}
+
+message GetOverviewResponse {
+  VisibilitySummary visibility = 1;
+  repeated PromptChange prompt_changes = 2;
+  repeated KeywordStat top_keywords = 3;
+  repeated DomainStat top_cited_domains = 4;
+  repeated CompetitorSummary top_competitors = 5;
+  // discovered_total is the full count of discovered (untriaged) competitors,
+  // before top_competitors truncates to the top-3 by coverage.
+  int32 discovered_total = 6;
+  // latest_run is absent before the first run exists.
+  Run latest_run = 7;
+}
+
+service OverviewService {
+  rpc GetOverview(GetOverviewRequest) returns (GetOverviewResponse);
+}

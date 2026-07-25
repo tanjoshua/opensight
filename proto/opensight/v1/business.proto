@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "opensight/v1/common.proto";
+
+// Location mirrors llm.ProposedLocation (internal/llm/propose_profile.go).
+message Location {
+  string address = 1;
+  string area = 2;
+  string city = 3;
+  // country is an ISO 3166-1 alpha-2 code and is always required (design 03).
+  string country = 4;
+}
+
+// Plan is the tenant's plan config (internal/api/businesses.go planResponse).
+message Plan {
+  string slug = 1;
+  int32 prompt_limit = 2;
+  // run_interval stays a plain string, not an enum: plans.run_interval is
+  // seeded config data, not a closed domain set.
+  string run_interval = 3;
+  repeated string platforms = 4;
+}
+
+// BusinessProfile is the full business detail (internal/api/businesses.go
+// businessDetailResponse).
+message BusinessProfile {
+  string id = 1;
+  BusinessStatus status = 2;
+  string name = 3;
+  optional string website = 4;
+  repeated string aliases = 5;
+  optional string category = 6;
+  repeated string services = 7;
+  Location location = 8;
+  Plan plan = 9;
+}
+
+// ProposedProfile mirrors llm.ProposedProfile.
+message ProposedProfile {
+  string name = 1;
+  repeated string aliases = 2;
+  string category = 3;
+  repeated string services = 4;
+  Location location = 5;
+}
+
+// ProposedPrompt mirrors llm.ProposedPrompt.
+message ProposedPrompt {
+  string text = 1;
+}
+
+// ProposalSource mirrors llm.ProposalSource.
+message ProposalSource {
+  string url = 1;
+  string title = 2;
+  string domain = 3;
+}
+
+// ProposalPayload mirrors llm.ProposalPayload.
+message ProposalPayload {
+  bool low_confidence = 1;
+  ProposedProfile profile = 2;
+  repeated ProposedPrompt prompts = 3;
+  repeated ProposalSource sources = 4;
+}
+
+// ProposalState is the GET/regen proposal body (internal/api/businesses.go
+// proposalStatusResponse).
+message ProposalState {
+  ProposalStatus status = 1;
+  // stage is present only while status is GENERATING.
+  GenerationStage stage = 2;
+  // payload is nil unless status is READY.
+  ProposalPayload payload = 3;
+}
+
+message CreateBusinessRequest {
+  string name = 1;
+  string website = 2;
+}
+
+message CreateBusinessResponse {
+  BusinessSummary business = 1;
+}
+
+message GetBusinessRequest {
+  string business_id = 1;
+}
+
+message GetBusinessResponse {
+  BusinessProfile business = 1;
+}
+
+// UpdateBusinessRequest's optional/wrapper fields express PATCH semantics:
+//   - name/website/category: unset = unchanged. website: "" (present, empty)
+//     clears it.
+//   - aliases/services: nil (field unset) = unchanged; present with zero
+//     values = clear; present with values = replace.
+//   - location: nil = unchanged; present = replace wholesale.
+message UpdateBusinessRequest {
+  string business_id = 1;
+  optional string name = 2;
+  optional string website = 3;
+  StringList aliases = 4;
+  optional string category = 5;
+  StringList services = 6;
+  Location location = 7;
+}
+
+message UpdateBusinessResponse {
+  BusinessProfile business = 1;
+}
+
+message GetProposalRequest {
+  string business_id = 1;
+}
+
+message GetProposalResponse {
+  ProposalState state = 1;
+}
+
+// RegenerateProposalRequest starts an OpenAI-spending workflow. Its dedup key
+// is the deterministic Temporal workflow ID
+// (GenerateProfileWorkflowID(business_id)), not this RPC being marked
+// side-effect-free — this RPC must never be declared safe for a GET-style
+// retry.
+message RegenerateProposalRequest {
+  string business_id = 1;
+}
+
+message RegenerateProposalResponse {
+  ProposalState state = 1;
+}
+
+// ApplyProposalRequest carries the final user-edited payload verbatim. There
+// is no client-supplied prompt count/limit field: the plan's prompt_limit is
+// read and enforced server-side.
+message ApplyProposalRequest {
+  string business_id = 1;
+  ProposalPayload payload = 2;
+}
+
+message ApplyProposalResponse {
+  BusinessSummary business = 1;
+}
+
+service BusinessService {
+  rpc CreateBusiness(CreateBusinessRequest) returns (CreateBusinessResponse);
+  rpc GetBusiness(GetBusinessRequest) returns (GetBusinessResponse);
+  rpc UpdateBusiness(UpdateBusinessRequest) returns (UpdateBusinessResponse);
+  rpc GetProposal(GetProposalRequest) returns (GetProposalResponse);
+  rpc RegenerateProposal(RegenerateProposalRequest) returns (RegenerateProposalResponse);
+  rpc ApplyProposal(ApplyProposalRequest) returns (ApplyProposalResponse);
+}

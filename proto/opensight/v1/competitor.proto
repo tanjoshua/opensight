@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "opensight/v1/common.proto";
+
+// AliasDecision is a pure RPC parameter for ReviewSuggestedAlias — it has no
+// domain existence of its own, so unlike the other 13 domain enums it lives
+// here rather than in common.proto.
+enum AliasDecision {
+  ALIAS_DECISION_UNSPECIFIED = 0;
+  ALIAS_DECISION_APPROVE = 1;
+  ALIAS_DECISION_REJECT = 2;
+}
+
+// CompetitorSelf is the business's own coverage over the shared analyzed
+// base — the baseline every competitor's vs_self is measured against.
+message CompetitorSelf {
+  int32 total_analyzed = 1;
+  int32 mentioned = 2;
+  double percent = 3;
+  repeated string result_ids = 4;
+}
+
+// CompetitorPromptAppearance is "in N of the responses to this prompt": the
+// prompt and the analyzed results in which the competitor appeared.
+message CompetitorPromptAppearance {
+  string prompt_id = 1;
+  string prompt_text = 2;
+  repeated string result_ids = 3;
+}
+
+// CompetitorTrendPoint is a competitor's mention % for one analyzed run, over
+// the same per-run denominator as the business's own visibility that week.
+message CompetitorTrendPoint {
+  string run_id = 1;
+  string scheduled_for = 2;
+  int32 analyzed = 3;
+  int32 mentioned = 4;
+  double percent = 5;
+  repeated string result_ids = 6;
+}
+
+// Competitor is one competitor's full comparison stats (design 06 / PRD §6).
+message Competitor {
+  string id = 1;
+  string name = 2;
+  CompetitorStatus status = 3;
+  repeated string aliases = 4;
+  repeated string suggested_aliases = 5;
+  int32 mentioned = 6;
+  int32 total_mentions = 7;
+  double mention_percent = 8;
+  double avg_order = 9;
+  double vs_self = 10;
+  repeated string result_ids = 11;
+  repeated CompetitorPromptAppearance per_prompt = 12;
+  repeated CompetitorTrendPoint trend = 13;
+}
+
+// CompetitorRecord is the write-path competitor shape (add / status / alias
+// review / alias update responses).
+message CompetitorRecord {
+  string id = 1;
+  string name = 2;
+  optional string website = 3;
+  repeated string aliases = 4;
+  repeated string suggested_aliases = 5;
+  CompetitorSource source = 6;
+  CompetitorStatus status = 7;
+}
+
+message ListCompetitorsRequest {
+  string business_id = 1;
+  // status: COMPETITOR_STATUS_UNSPECIFIED means no filter (all statuses).
+  CompetitorStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListCompetitorsResponse {
+  CompetitorSelf self = 1;
+  repeated Competitor competitors = 2;
+  Paging paging = 3;
+}
+
+message AddCompetitorRequest {
+  string business_id = 1;
+  string name = 2;
+  repeated string aliases = 3;
+  string website = 4;
+}
+
+message AddCompetitorResponse {
+  CompetitorRecord competitor = 1;
+}
+
+// SetCompetitorStatusRequest merges the track/dismiss pair into one RPC — the
+// server already funnels both through one store method, and the frontend
+// already calls both through one function with a discriminator argument.
+// Only TRACKED and DISMISSED are valid inputs; that is enforced server-side
+// (added in RPC-6, not this schema-only story).
+message SetCompetitorStatusRequest {
+  string competitor_id = 1;
+  CompetitorStatus status = 2;
+}
+
+message SetCompetitorStatusResponse {
+  CompetitorRecord competitor = 1;
+}
+
+message ReviewSuggestedAliasRequest {
+  string competitor_id = 1;
+  string alias = 2;
+  AliasDecision decision = 3;
+}
+
+message ReviewSuggestedAliasResponse {
+  CompetitorRecord competitor = 1;
+}
+
+// UpdateCompetitorAliasesRequest uses a StringList wrapper rather than a bare
+// `repeated string` because a missing aliases field is a 400 today, while an
+// explicitly-empty list is a legitimate clear-all — a bare repeated field
+// cannot distinguish "omitted" from "present but empty".
+message UpdateCompetitorAliasesRequest {
+  string competitor_id = 1;
+  StringList aliases = 2;
+}
+
+message UpdateCompetitorAliasesResponse {
+  CompetitorRecord competitor = 1;
+}
+
+service CompetitorService {
+  rpc ListCompetitors(ListCompetitorsRequest) returns (ListCompetitorsResponse);
+  rpc AddCompetitor(AddCompetitorRequest) returns (AddCompetitorResponse);
+  rpc SetCompetitorStatus(SetCompetitorStatusRequest) returns (SetCompetitorStatusResponse);
+  rpc ReviewSuggestedAlias(ReviewSuggestedAliasRequest) returns (ReviewSuggestedAliasResponse);
+  rpc UpdateCompetitorAliases(UpdateCompetitorAliasesRequest) returns (UpdateCompetitorAliasesResponse);
+}

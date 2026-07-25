@@ -1,3 +1,145 @@
 syntax = "proto3";
 
 package opensight.v1;
+
+// common.proto holds the shared paging/list-wrapper messages and every domain
+// enum used across services (design 06).
+//
+// Conventions that apply repo-wide, not just to this file:
+//   - "every number is a door": every aggregate/summary message carries
+//     `repeated string result_ids` — the analyzed-result ids backing that
+//     number, so the frontend can always drill from a stat to its evidence.
+//   - No RPC method in this schema is ever declared side-effect-free /
+//     idempotent-safe-for-GET. Doing so would let Connect accept the RPC as a
+//     header-less GET with a query-string-encoded payload, which bypasses
+//     `connect.WithRequireConnectProtocolHeader()` (RPC-3) — that header is
+//     this API's CSRF guarantee, since a cross-site GET/form-POST cannot set
+//     custom headers. Every mutation and every read alike goes over POST with
+//     the Connect protocol header required.
+//   - Date-only values (e.g. `scheduled_for`) are plain `YYYY-MM-DD` strings.
+//     Instants (e.g. `started_at`) are `google.protobuf.Timestamp`.
+
+// Paging is the response-side pagination info for a limit/offset list RPC.
+message Paging {
+  int32 limit = 1;
+  int32 offset = 2;
+  int32 page_count = 3;
+}
+
+// StringList wraps a repeated string field so PATCH-style requests can
+// distinguish "field omitted, leave unchanged" (the outer message field is
+// nil) from "field present but empty, clear it" (StringList with zero values)
+// from "field present with values, replace" — a bare `repeated string` cannot
+// represent the unchanged/clear distinction.
+message StringList {
+  repeated string values = 1;
+}
+
+// BusinessSummary is the minimal business identity used in lists (e.g.
+// AuthService.GetMe's business picker) where the full profile isn't needed.
+message BusinessSummary {
+  string id = 1;
+  string name = 2;
+  BusinessStatus status = 3;
+}
+
+enum BusinessStatus {
+  BUSINESS_STATUS_UNSPECIFIED = 0;
+  BUSINESS_STATUS_DRAFT = 1;
+  BUSINESS_STATUS_ACTIVE = 2;
+}
+
+enum PromptStatus {
+  PROMPT_STATUS_UNSPECIFIED = 0;
+  PROMPT_STATUS_ACTIVE = 1;
+  PROMPT_STATUS_RETIRED = 2;
+}
+
+enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0;
+  RUN_STATUS_RUNNING = 1;
+  RUN_STATUS_COMPLETED = 2;
+  RUN_STATUS_PARTIAL = 3;
+  RUN_STATUS_FAILED = 4;
+}
+
+enum RunTrigger {
+  RUN_TRIGGER_UNSPECIFIED = 0;
+  RUN_TRIGGER_INITIAL = 1;
+  RUN_TRIGGER_SCHEDULED = 2;
+  RUN_TRIGGER_MANUAL = 3;
+}
+
+enum ResultStatus {
+  RESULT_STATUS_UNSPECIFIED = 0;
+  RESULT_STATUS_SUCCEEDED = 1;
+  RESULT_STATUS_FAILED = 2;
+}
+
+enum CompetitorStatus {
+  COMPETITOR_STATUS_UNSPECIFIED = 0;
+  COMPETITOR_STATUS_DISCOVERED = 1;
+  COMPETITOR_STATUS_TRACKED = 2;
+  COMPETITOR_STATUS_DISMISSED = 3;
+}
+
+enum CompetitorSource {
+  COMPETITOR_SOURCE_UNSPECIFIED = 0;
+  COMPETITOR_SOURCE_DISCOVERED = 1;
+  COMPETITOR_SOURCE_MANUAL = 2;
+}
+
+// Sentiment is the analyzed result's sentiment toward the business.
+// SENTIMENT_UNSPECIFIED means "not mentioned" (nullable sentiment in the DB),
+// distinct from a real analyzed sentiment value.
+enum Sentiment {
+  SENTIMENT_UNSPECIFIED = 0;
+  SENTIMENT_POSITIVE = 1;
+  SENTIMENT_NEUTRAL = 2;
+  SENTIMENT_NEGATIVE = 3;
+  SENTIMENT_MIXED = 4;
+}
+
+enum MentionSubject {
+  MENTION_SUBJECT_UNSPECIFIED = 0;
+  MENTION_SUBJECT_SELF = 1;
+  MENTION_SUBJECT_COMPETITOR = 2;
+}
+
+enum MatchMethod {
+  MATCH_METHOD_UNSPECIFIED = 0;
+  MATCH_METHOD_EXACT = 1;
+  MATCH_METHOD_LLM = 2;
+}
+
+// CitationSubject is the inferred subject of a cited source.
+// CITATION_SUBJECT_UNKNOWN is a real, persisted value (best-effort inference
+// failed honestly) distinct from CITATION_SUBJECT_UNSPECIFIED (field absent /
+// filter off).
+enum CitationSubject {
+  CITATION_SUBJECT_UNSPECIFIED = 0;
+  CITATION_SUBJECT_BUSINESS = 1;
+  CITATION_SUBJECT_COMPETITOR = 2;
+  CITATION_SUBJECT_OTHER = 3;
+  CITATION_SUBJECT_UNKNOWN = 4;
+}
+
+// ProposalStatus is the onboarding profile-proposal workflow status
+// (internal/api/businesses.go: generating/ready/failed). This is distinct
+// from internal/store's ProfileProposalStatus (pending/applied/discarded),
+// which is a storage-layer concept never exposed over the API.
+enum ProposalStatus {
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+  PROPOSAL_STATUS_GENERATING = 1;
+  PROPOSAL_STATUS_READY = 2;
+  PROPOSAL_STATUS_FAILED = 3;
+}
+
+// GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+// proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
+// case (e.g. a stage query that failed or timed out).
+enum GenerationStage {
+  GENERATION_STAGE_UNSPECIFIED = 0;
+  GENERATION_STAGE_FETCHING_SITE = 1;
+  GENERATION_STAGE_DRAFTING = 2;
+}

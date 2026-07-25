@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "google/protobuf/timestamp.proto";
+import "opensight/v1/common.proto";
+
+// Run is one monitoring_runs row (internal/api/responses.go runResponse).
+message Run {
+  string id = 1;
+  string business_id = 2;
+  // platform stays a plain string, not an enum: monitoring_runs.platform's
+  // only DB constraint is non-empty, and store.PlatformChatGPT is a bare
+  // untyped const, not a closed domain set.
+  string platform = 3;
+  RunTrigger trigger = 4;
+  // scheduled_for is a date (YYYY-MM-DD), not a Timestamp.
+  string scheduled_for = 5;
+  RunStatus status = 6;
+  string workflow_id = 7;
+  google.protobuf.Timestamp started_at = 8;
+  google.protobuf.Timestamp completed_at = 9;
+  google.protobuf.Timestamp analysis_completed_at = 10;
+  // visibility is the run's visibility % (self-mentions / analyzed results).
+  // Absent for a run with no analyzed results — distinct from 0%. Only
+  // ListRuns populates it.
+  optional double visibility = 11;
+}
+
+// PromptRef is the minimal prompt reference embedded in a PromptResult (not
+// named PromptSummary — that name is used by prompt.proto's richer message).
+message PromptRef {
+  string id = 1;
+  string text = 2;
+}
+
+// CitationSpan is a [start, end) character index range into response_text,
+// taken from the response's url_citation annotation.
+message CitationSpan {
+  int32 start = 1;
+  int32 end = 2;
+}
+
+message ResultMention {
+  MentionSubject subject = 1;
+  string verbatim_name = 2;
+  int32 order = 3;
+  MatchMethod matched_by = 4;
+  string excerpt = 5;
+}
+
+message ResultCitation {
+  string url = 1;
+  string domain = 2;
+  optional string title = 3;
+  int32 cite_order = 4;
+  CitationSubject subject = 5;
+  // span is nil when it cannot be resolved from raw_response (e.g. legacy
+  // rows without a matching annotation).
+  CitationSpan span = 6;
+}
+
+message ResultAnalysis {
+  Sentiment sentiment = 1;
+  repeated string keywords = 2;
+  repeated string excerpts = 3;
+  repeated ResultMention mentions = 4;
+  repeated ResultCitation citations = 5;
+}
+
+// PromptResult is one prompt_results row (internal/api/responses.go
+// resultResponse).
+message PromptResult {
+  string id = 1;
+  string run_id = 2;
+  string prompt_id = 3;
+  ResultStatus status = 4;
+  optional string model = 5;
+  // request_json / raw_response_json are opaque JSON text, not
+  // google.protobuf.Struct: Struct encodes every number as double, which
+  // would silently mangle int64 token counts in stored OpenAI response
+  // payloads. "" means absent.
+  string request_json = 6;
+  // raw_response_json is populated only when the caller asks for it
+  // (GetResult's include_raw), for the drawer's raw-JSON toggle.
+  string raw_response_json = 7;
+  optional string response_text = 8;
+  optional string error = 9;
+  google.protobuf.Timestamp requested_at = 10;
+  google.protobuf.Timestamp completed_at = 11;
+  // unanalyzed flags a succeeded result with no analysis row yet (the "not
+  // yet analyzed" badge); always false for failed results.
+  bool unanalyzed = 12;
+  // prompt is populated on list and detail views.
+  PromptRef prompt = 13;
+  // run is populated on detail view only (GetResult).
+  Run run = 14;
+  // analysis is populated on detail view only, and only when the result was
+  // analyzed.
+  ResultAnalysis analysis = 15;
+}
+
+message ListRunsRequest {
+  string business_id = 1;
+}
+
+message ListRunsResponse {
+  repeated Run runs = 1;
+}
+
+message ListResultsRequest {
+  string business_id = 1;
+  // run_id / prompt_id: "" means no filter.
+  string run_id = 2;
+  string prompt_id = 3;
+  ResultStatus status = 4;
+  // mentioned has three real states (any/mentioned/not-mentioned), so it is
+  // optional rather than a zero-value-means-absent bool.
+  optional bool mentioned = 5;
+  int32 limit = 6;
+  int32 offset = 7;
+}
+
+message ListResultsResponse {
+  repeated PromptResult results = 1;
+  Paging paging = 2;
+}
+
+message GetResultRequest {
+  string result_id = 1;
+  bool include_raw = 2;
+}
+
+message GetResultResponse {
+  PromptResult result = 1;
+}
+
+service ResultService {
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+  rpc ListResults(ListResultsRequest) returns (ListResultsResponse);
+  rpc GetResult(GetResultRequest) returns (GetResultResponse);
+}

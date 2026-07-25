@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "opensight/v1/common.proto";
+
+message User {
+  string id = 1;
+  string email = 2;
+}
+
+message Tenant {
+  string id = 1;
+  string name = 2;
+}
+
+// LoginRequest carries a credential (password) and must never be logged in
+// full — relevant to any future logging/observability interceptor.
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  User user = 1;
+  Tenant tenant = 2;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message GetMeRequest {}
+
+message GetMeResponse {
+  User user = 1;
+  Tenant tenant = 2;
+  repeated BusinessSummary businesses = 3;
+  int32 prompt_limit = 4;
+}
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+}

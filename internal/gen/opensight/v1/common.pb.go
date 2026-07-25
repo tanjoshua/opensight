@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -20,20 +21,976 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type BusinessStatus int32
+
+const (
+	BusinessStatus_BUSINESS_STATUS_UNSPECIFIED BusinessStatus = 0
+	BusinessStatus_BUSINESS_STATUS_DRAFT       BusinessStatus = 1
+	BusinessStatus_BUSINESS_STATUS_ACTIVE      BusinessStatus = 2
+)
+
+// Enum value maps for BusinessStatus.
+var (
+	BusinessStatus_name = map[int32]string{
+		0: "BUSINESS_STATUS_UNSPECIFIED",
+		1: "BUSINESS_STATUS_DRAFT",
+		2: "BUSINESS_STATUS_ACTIVE",
+	}
+	BusinessStatus_value = map[string]int32{
+		"BUSINESS_STATUS_UNSPECIFIED": 0,
+		"BUSINESS_STATUS_DRAFT":       1,
+		"BUSINESS_STATUS_ACTIVE":      2,
+	}
+)
+
+func (x BusinessStatus) Enum() *BusinessStatus {
+	p := new(BusinessStatus)
+	*p = x
+	return p
+}
+
+func (x BusinessStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BusinessStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[0].Descriptor()
+}
+
+func (BusinessStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[0]
+}
+
+func (x BusinessStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BusinessStatus.Descriptor instead.
+func (BusinessStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{0}
+}
+
+type PromptStatus int32
+
+const (
+	PromptStatus_PROMPT_STATUS_UNSPECIFIED PromptStatus = 0
+	PromptStatus_PROMPT_STATUS_ACTIVE      PromptStatus = 1
+	PromptStatus_PROMPT_STATUS_RETIRED     PromptStatus = 2
+)
+
+// Enum value maps for PromptStatus.
+var (
+	PromptStatus_name = map[int32]string{
+		0: "PROMPT_STATUS_UNSPECIFIED",
+		1: "PROMPT_STATUS_ACTIVE",
+		2: "PROMPT_STATUS_RETIRED",
+	}
+	PromptStatus_value = map[string]int32{
+		"PROMPT_STATUS_UNSPECIFIED": 0,
+		"PROMPT_STATUS_ACTIVE":      1,
+		"PROMPT_STATUS_RETIRED":     2,
+	}
+)
+
+func (x PromptStatus) Enum() *PromptStatus {
+	p := new(PromptStatus)
+	*p = x
+	return p
+}
+
+func (x PromptStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PromptStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[1].Descriptor()
+}
+
+func (PromptStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[1]
+}
+
+func (x PromptStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PromptStatus.Descriptor instead.
+func (PromptStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{1}
+}
+
+type RunStatus int32
+
+const (
+	RunStatus_RUN_STATUS_UNSPECIFIED RunStatus = 0
+	RunStatus_RUN_STATUS_RUNNING     RunStatus = 1
+	RunStatus_RUN_STATUS_COMPLETED   RunStatus = 2
+	RunStatus_RUN_STATUS_PARTIAL     RunStatus = 3
+	RunStatus_RUN_STATUS_FAILED      RunStatus = 4
+)
+
+// Enum value maps for RunStatus.
+var (
+	RunStatus_name = map[int32]string{
+		0: "RUN_STATUS_UNSPECIFIED",
+		1: "RUN_STATUS_RUNNING",
+		2: "RUN_STATUS_COMPLETED",
+		3: "RUN_STATUS_PARTIAL",
+		4: "RUN_STATUS_FAILED",
+	}
+	RunStatus_value = map[string]int32{
+		"RUN_STATUS_UNSPECIFIED": 0,
+		"RUN_STATUS_RUNNING":     1,
+		"RUN_STATUS_COMPLETED":   2,
+		"RUN_STATUS_PARTIAL":     3,
+		"RUN_STATUS_FAILED":      4,
+	}
+)
+
+func (x RunStatus) Enum() *RunStatus {
+	p := new(RunStatus)
+	*p = x
+	return p
+}
+
+func (x RunStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RunStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[2].Descriptor()
+}
+
+func (RunStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[2]
+}
+
+func (x RunStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RunStatus.Descriptor instead.
+func (RunStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
+type RunTrigger int32
+
+const (
+	RunTrigger_RUN_TRIGGER_UNSPECIFIED RunTrigger = 0
+	RunTrigger_RUN_TRIGGER_INITIAL     RunTrigger = 1
+	RunTrigger_RUN_TRIGGER_SCHEDULED   RunTrigger = 2
+	RunTrigger_RUN_TRIGGER_MANUAL      RunTrigger = 3
+)
+
+// Enum value maps for RunTrigger.
+var (
+	RunTrigger_name = map[int32]string{
+		0: "RUN_TRIGGER_UNSPECIFIED",
+		1: "RUN_TRIGGER_INITIAL",
+		2: "RUN_TRIGGER_SCHEDULED",
+		3: "RUN_TRIGGER_MANUAL",
+	}
+	RunTrigger_value = map[string]int32{
+		"RUN_TRIGGER_UNSPECIFIED": 0,
+		"RUN_TRIGGER_INITIAL":     1,
+		"RUN_TRIGGER_SCHEDULED":   2,
+		"RUN_TRIGGER_MANUAL":      3,
+	}
+)
+
+func (x RunTrigger) Enum() *RunTrigger {
+	p := new(RunTrigger)
+	*p = x
+	return p
+}
+
+func (x RunTrigger) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RunTrigger) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (RunTrigger) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[3]
+}
+
+func (x RunTrigger) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RunTrigger.Descriptor instead.
+func (RunTrigger) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+type ResultStatus int32
+
+const (
+	ResultStatus_RESULT_STATUS_UNSPECIFIED ResultStatus = 0
+	ResultStatus_RESULT_STATUS_SUCCEEDED   ResultStatus = 1
+	ResultStatus_RESULT_STATUS_FAILED      ResultStatus = 2
+)
+
+// Enum value maps for ResultStatus.
+var (
+	ResultStatus_name = map[int32]string{
+		0: "RESULT_STATUS_UNSPECIFIED",
+		1: "RESULT_STATUS_SUCCEEDED",
+		2: "RESULT_STATUS_FAILED",
+	}
+	ResultStatus_value = map[string]int32{
+		"RESULT_STATUS_UNSPECIFIED": 0,
+		"RESULT_STATUS_SUCCEEDED":   1,
+		"RESULT_STATUS_FAILED":      2,
+	}
+)
+
+func (x ResultStatus) Enum() *ResultStatus {
+	p := new(ResultStatus)
+	*p = x
+	return p
+}
+
+func (x ResultStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ResultStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[4].Descriptor()
+}
+
+func (ResultStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[4]
+}
+
+func (x ResultStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ResultStatus.Descriptor instead.
+func (ResultStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
+type CompetitorStatus int32
+
+const (
+	CompetitorStatus_COMPETITOR_STATUS_UNSPECIFIED CompetitorStatus = 0
+	CompetitorStatus_COMPETITOR_STATUS_DISCOVERED  CompetitorStatus = 1
+	CompetitorStatus_COMPETITOR_STATUS_TRACKED     CompetitorStatus = 2
+	CompetitorStatus_COMPETITOR_STATUS_DISMISSED   CompetitorStatus = 3
+)
+
+// Enum value maps for CompetitorStatus.
+var (
+	CompetitorStatus_name = map[int32]string{
+		0: "COMPETITOR_STATUS_UNSPECIFIED",
+		1: "COMPETITOR_STATUS_DISCOVERED",
+		2: "COMPETITOR_STATUS_TRACKED",
+		3: "COMPETITOR_STATUS_DISMISSED",
+	}
+	CompetitorStatus_value = map[string]int32{
+		"COMPETITOR_STATUS_UNSPECIFIED": 0,
+		"COMPETITOR_STATUS_DISCOVERED":  1,
+		"COMPETITOR_STATUS_TRACKED":     2,
+		"COMPETITOR_STATUS_DISMISSED":   3,
+	}
+)
+
+func (x CompetitorStatus) Enum() *CompetitorStatus {
+	p := new(CompetitorStatus)
+	*p = x
+	return p
+}
+
+func (x CompetitorStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CompetitorStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[5].Descriptor()
+}
+
+func (CompetitorStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[5]
+}
+
+func (x CompetitorStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CompetitorStatus.Descriptor instead.
+func (CompetitorStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
+type CompetitorSource int32
+
+const (
+	CompetitorSource_COMPETITOR_SOURCE_UNSPECIFIED CompetitorSource = 0
+	CompetitorSource_COMPETITOR_SOURCE_DISCOVERED  CompetitorSource = 1
+	CompetitorSource_COMPETITOR_SOURCE_MANUAL      CompetitorSource = 2
+)
+
+// Enum value maps for CompetitorSource.
+var (
+	CompetitorSource_name = map[int32]string{
+		0: "COMPETITOR_SOURCE_UNSPECIFIED",
+		1: "COMPETITOR_SOURCE_DISCOVERED",
+		2: "COMPETITOR_SOURCE_MANUAL",
+	}
+	CompetitorSource_value = map[string]int32{
+		"COMPETITOR_SOURCE_UNSPECIFIED": 0,
+		"COMPETITOR_SOURCE_DISCOVERED":  1,
+		"COMPETITOR_SOURCE_MANUAL":      2,
+	}
+)
+
+func (x CompetitorSource) Enum() *CompetitorSource {
+	p := new(CompetitorSource)
+	*p = x
+	return p
+}
+
+func (x CompetitorSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CompetitorSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[6].Descriptor()
+}
+
+func (CompetitorSource) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[6]
+}
+
+func (x CompetitorSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CompetitorSource.Descriptor instead.
+func (CompetitorSource) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
+// Sentiment is the analyzed result's sentiment toward the business.
+// SENTIMENT_UNSPECIFIED means "not mentioned" (nullable sentiment in the DB),
+// distinct from a real analyzed sentiment value.
+type Sentiment int32
+
+const (
+	Sentiment_SENTIMENT_UNSPECIFIED Sentiment = 0
+	Sentiment_SENTIMENT_POSITIVE    Sentiment = 1
+	Sentiment_SENTIMENT_NEUTRAL     Sentiment = 2
+	Sentiment_SENTIMENT_NEGATIVE    Sentiment = 3
+	Sentiment_SENTIMENT_MIXED       Sentiment = 4
+)
+
+// Enum value maps for Sentiment.
+var (
+	Sentiment_name = map[int32]string{
+		0: "SENTIMENT_UNSPECIFIED",
+		1: "SENTIMENT_POSITIVE",
+		2: "SENTIMENT_NEUTRAL",
+		3: "SENTIMENT_NEGATIVE",
+		4: "SENTIMENT_MIXED",
+	}
+	Sentiment_value = map[string]int32{
+		"SENTIMENT_UNSPECIFIED": 0,
+		"SENTIMENT_POSITIVE":    1,
+		"SENTIMENT_NEUTRAL":     2,
+		"SENTIMENT_NEGATIVE":    3,
+		"SENTIMENT_MIXED":       4,
+	}
+)
+
+func (x Sentiment) Enum() *Sentiment {
+	p := new(Sentiment)
+	*p = x
+	return p
+}
+
+func (x Sentiment) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Sentiment) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[7].Descriptor()
+}
+
+func (Sentiment) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[7]
+}
+
+func (x Sentiment) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Sentiment.Descriptor instead.
+func (Sentiment) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{7}
+}
+
+type MentionSubject int32
+
+const (
+	MentionSubject_MENTION_SUBJECT_UNSPECIFIED MentionSubject = 0
+	MentionSubject_MENTION_SUBJECT_SELF        MentionSubject = 1
+	MentionSubject_MENTION_SUBJECT_COMPETITOR  MentionSubject = 2
+)
+
+// Enum value maps for MentionSubject.
+var (
+	MentionSubject_name = map[int32]string{
+		0: "MENTION_SUBJECT_UNSPECIFIED",
+		1: "MENTION_SUBJECT_SELF",
+		2: "MENTION_SUBJECT_COMPETITOR",
+	}
+	MentionSubject_value = map[string]int32{
+		"MENTION_SUBJECT_UNSPECIFIED": 0,
+		"MENTION_SUBJECT_SELF":        1,
+		"MENTION_SUBJECT_COMPETITOR":  2,
+	}
+)
+
+func (x MentionSubject) Enum() *MentionSubject {
+	p := new(MentionSubject)
+	*p = x
+	return p
+}
+
+func (x MentionSubject) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MentionSubject) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[8].Descriptor()
+}
+
+func (MentionSubject) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[8]
+}
+
+func (x MentionSubject) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MentionSubject.Descriptor instead.
+func (MentionSubject) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{8}
+}
+
+type MatchMethod int32
+
+const (
+	MatchMethod_MATCH_METHOD_UNSPECIFIED MatchMethod = 0
+	MatchMethod_MATCH_METHOD_EXACT       MatchMethod = 1
+	MatchMethod_MATCH_METHOD_LLM         MatchMethod = 2
+)
+
+// Enum value maps for MatchMethod.
+var (
+	MatchMethod_name = map[int32]string{
+		0: "MATCH_METHOD_UNSPECIFIED",
+		1: "MATCH_METHOD_EXACT",
+		2: "MATCH_METHOD_LLM",
+	}
+	MatchMethod_value = map[string]int32{
+		"MATCH_METHOD_UNSPECIFIED": 0,
+		"MATCH_METHOD_EXACT":       1,
+		"MATCH_METHOD_LLM":         2,
+	}
+)
+
+func (x MatchMethod) Enum() *MatchMethod {
+	p := new(MatchMethod)
+	*p = x
+	return p
+}
+
+func (x MatchMethod) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MatchMethod) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[9].Descriptor()
+}
+
+func (MatchMethod) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[9]
+}
+
+func (x MatchMethod) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MatchMethod.Descriptor instead.
+func (MatchMethod) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{9}
+}
+
+// CitationSubject is the inferred subject of a cited source.
+// CITATION_SUBJECT_UNKNOWN is a real, persisted value (best-effort inference
+// failed honestly) distinct from CITATION_SUBJECT_UNSPECIFIED (field absent /
+// filter off).
+type CitationSubject int32
+
+const (
+	CitationSubject_CITATION_SUBJECT_UNSPECIFIED CitationSubject = 0
+	CitationSubject_CITATION_SUBJECT_BUSINESS    CitationSubject = 1
+	CitationSubject_CITATION_SUBJECT_COMPETITOR  CitationSubject = 2
+	CitationSubject_CITATION_SUBJECT_OTHER       CitationSubject = 3
+	CitationSubject_CITATION_SUBJECT_UNKNOWN     CitationSubject = 4
+)
+
+// Enum value maps for CitationSubject.
+var (
+	CitationSubject_name = map[int32]string{
+		0: "CITATION_SUBJECT_UNSPECIFIED",
+		1: "CITATION_SUBJECT_BUSINESS",
+		2: "CITATION_SUBJECT_COMPETITOR",
+		3: "CITATION_SUBJECT_OTHER",
+		4: "CITATION_SUBJECT_UNKNOWN",
+	}
+	CitationSubject_value = map[string]int32{
+		"CITATION_SUBJECT_UNSPECIFIED": 0,
+		"CITATION_SUBJECT_BUSINESS":    1,
+		"CITATION_SUBJECT_COMPETITOR":  2,
+		"CITATION_SUBJECT_OTHER":       3,
+		"CITATION_SUBJECT_UNKNOWN":     4,
+	}
+)
+
+func (x CitationSubject) Enum() *CitationSubject {
+	p := new(CitationSubject)
+	*p = x
+	return p
+}
+
+func (x CitationSubject) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CitationSubject) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[10].Descriptor()
+}
+
+func (CitationSubject) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[10]
+}
+
+func (x CitationSubject) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CitationSubject.Descriptor instead.
+func (CitationSubject) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{10}
+}
+
+// ProposalStatus is the onboarding profile-proposal workflow status
+// (internal/api/businesses.go: generating/ready/failed). This is distinct
+// from internal/store's ProfileProposalStatus (pending/applied/discarded),
+// which is a storage-layer concept never exposed over the API.
+type ProposalStatus int32
+
+const (
+	ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED ProposalStatus = 0
+	ProposalStatus_PROPOSAL_STATUS_GENERATING  ProposalStatus = 1
+	ProposalStatus_PROPOSAL_STATUS_READY       ProposalStatus = 2
+	ProposalStatus_PROPOSAL_STATUS_FAILED      ProposalStatus = 3
+)
+
+// Enum value maps for ProposalStatus.
+var (
+	ProposalStatus_name = map[int32]string{
+		0: "PROPOSAL_STATUS_UNSPECIFIED",
+		1: "PROPOSAL_STATUS_GENERATING",
+		2: "PROPOSAL_STATUS_READY",
+		3: "PROPOSAL_STATUS_FAILED",
+	}
+	ProposalStatus_value = map[string]int32{
+		"PROPOSAL_STATUS_UNSPECIFIED": 0,
+		"PROPOSAL_STATUS_GENERATING":  1,
+		"PROPOSAL_STATUS_READY":       2,
+		"PROPOSAL_STATUS_FAILED":      3,
+	}
+)
+
+func (x ProposalStatus) Enum() *ProposalStatus {
+	p := new(ProposalStatus)
+	*p = x
+	return p
+}
+
+func (x ProposalStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ProposalStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[11].Descriptor()
+}
+
+func (ProposalStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[11]
+}
+
+func (x ProposalStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ProposalStatus.Descriptor instead.
+func (ProposalStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{11}
+}
+
+// GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+// proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
+// case (e.g. a stage query that failed or timed out).
+type GenerationStage int32
+
+const (
+	GenerationStage_GENERATION_STAGE_UNSPECIFIED   GenerationStage = 0
+	GenerationStage_GENERATION_STAGE_FETCHING_SITE GenerationStage = 1
+	GenerationStage_GENERATION_STAGE_DRAFTING      GenerationStage = 2
+)
+
+// Enum value maps for GenerationStage.
+var (
+	GenerationStage_name = map[int32]string{
+		0: "GENERATION_STAGE_UNSPECIFIED",
+		1: "GENERATION_STAGE_FETCHING_SITE",
+		2: "GENERATION_STAGE_DRAFTING",
+	}
+	GenerationStage_value = map[string]int32{
+		"GENERATION_STAGE_UNSPECIFIED":   0,
+		"GENERATION_STAGE_FETCHING_SITE": 1,
+		"GENERATION_STAGE_DRAFTING":      2,
+	}
+)
+
+func (x GenerationStage) Enum() *GenerationStage {
+	p := new(GenerationStage)
+	*p = x
+	return p
+}
+
+func (x GenerationStage) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GenerationStage) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[12].Descriptor()
+}
+
+func (GenerationStage) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[12]
+}
+
+func (x GenerationStage) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GenerationStage.Descriptor instead.
+func (GenerationStage) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{12}
+}
+
+// Paging is the response-side pagination info for a limit/offset list RPC.
+type Paging struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	PageCount     int32                  `protobuf:"varint,3,opt,name=page_count,json=pageCount,proto3" json:"page_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Paging) Reset() {
+	*x = Paging{}
+	mi := &file_opensight_v1_common_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Paging) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Paging) ProtoMessage() {}
+
+func (x *Paging) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_common_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Paging.ProtoReflect.Descriptor instead.
+func (*Paging) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Paging) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *Paging) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *Paging) GetPageCount() int32 {
+	if x != nil {
+		return x.PageCount
+	}
+	return 0
+}
+
+// StringList wraps a repeated string field so PATCH-style requests can
+// distinguish "field omitted, leave unchanged" (the outer message field is
+// nil) from "field present but empty, clear it" (StringList with zero values)
+// from "field present with values, replace" — a bare `repeated string` cannot
+// represent the unchanged/clear distinction.
+type StringList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Values        []string               `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StringList) Reset() {
+	*x = StringList{}
+	mi := &file_opensight_v1_common_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StringList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringList) ProtoMessage() {}
+
+func (x *StringList) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_common_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringList.ProtoReflect.Descriptor instead.
+func (*StringList) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *StringList) GetValues() []string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+// BusinessSummary is the minimal business identity used in lists (e.g.
+// AuthService.GetMe's business picker) where the full profile isn't needed.
+type BusinessSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Status        BusinessStatus         `protobuf:"varint,3,opt,name=status,proto3,enum=opensight.v1.BusinessStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BusinessSummary) Reset() {
+	*x = BusinessSummary{}
+	mi := &file_opensight_v1_common_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BusinessSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BusinessSummary) ProtoMessage() {}
+
+func (x *BusinessSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_common_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BusinessSummary.ProtoReflect.Descriptor instead.
+func (*BusinessSummary) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BusinessSummary) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *BusinessSummary) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *BusinessSummary) GetStatus() BusinessStatus {
+	if x != nil {
+		return x.Status
+	}
+	return BusinessStatus_BUSINESS_STATUS_UNSPECIFIED
+}
+
 var File_opensight_v1_common_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x19opensight/v1/common.proto\x12\fopensight.v1B\xa1\x01\n" +
+	"\x19opensight/v1/common.proto\x12\fopensight.v1\"U\n" +
+	"\x06Paging\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\x12\x1d\n" +
+	"\n" +
+	"page_count\x18\x03 \x01(\x05R\tpageCount\"$\n" +
+	"\n" +
+	"StringList\x12\x16\n" +
+	"\x06values\x18\x01 \x03(\tR\x06values\"k\n" +
+	"\x0fBusinessSummary\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x124\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1c.opensight.v1.BusinessStatusR\x06status*h\n" +
+	"\x0eBusinessStatus\x12\x1f\n" +
+	"\x1bBUSINESS_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15BUSINESS_STATUS_DRAFT\x10\x01\x12\x1a\n" +
+	"\x16BUSINESS_STATUS_ACTIVE\x10\x02*b\n" +
+	"\fPromptStatus\x12\x1d\n" +
+	"\x19PROMPT_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14PROMPT_STATUS_ACTIVE\x10\x01\x12\x19\n" +
+	"\x15PROMPT_STATUS_RETIRED\x10\x02*\x88\x01\n" +
+	"\tRunStatus\x12\x1a\n" +
+	"\x16RUN_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12RUN_STATUS_RUNNING\x10\x01\x12\x18\n" +
+	"\x14RUN_STATUS_COMPLETED\x10\x02\x12\x16\n" +
+	"\x12RUN_STATUS_PARTIAL\x10\x03\x12\x15\n" +
+	"\x11RUN_STATUS_FAILED\x10\x04*u\n" +
+	"\n" +
+	"RunTrigger\x12\x1b\n" +
+	"\x17RUN_TRIGGER_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13RUN_TRIGGER_INITIAL\x10\x01\x12\x19\n" +
+	"\x15RUN_TRIGGER_SCHEDULED\x10\x02\x12\x16\n" +
+	"\x12RUN_TRIGGER_MANUAL\x10\x03*d\n" +
+	"\fResultStatus\x12\x1d\n" +
+	"\x19RESULT_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17RESULT_STATUS_SUCCEEDED\x10\x01\x12\x18\n" +
+	"\x14RESULT_STATUS_FAILED\x10\x02*\x97\x01\n" +
+	"\x10CompetitorStatus\x12!\n" +
+	"\x1dCOMPETITOR_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cCOMPETITOR_STATUS_DISCOVERED\x10\x01\x12\x1d\n" +
+	"\x19COMPETITOR_STATUS_TRACKED\x10\x02\x12\x1f\n" +
+	"\x1bCOMPETITOR_STATUS_DISMISSED\x10\x03*u\n" +
+	"\x10CompetitorSource\x12!\n" +
+	"\x1dCOMPETITOR_SOURCE_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cCOMPETITOR_SOURCE_DISCOVERED\x10\x01\x12\x1c\n" +
+	"\x18COMPETITOR_SOURCE_MANUAL\x10\x02*\x82\x01\n" +
+	"\tSentiment\x12\x19\n" +
+	"\x15SENTIMENT_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12SENTIMENT_POSITIVE\x10\x01\x12\x15\n" +
+	"\x11SENTIMENT_NEUTRAL\x10\x02\x12\x16\n" +
+	"\x12SENTIMENT_NEGATIVE\x10\x03\x12\x13\n" +
+	"\x0fSENTIMENT_MIXED\x10\x04*k\n" +
+	"\x0eMentionSubject\x12\x1f\n" +
+	"\x1bMENTION_SUBJECT_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14MENTION_SUBJECT_SELF\x10\x01\x12\x1e\n" +
+	"\x1aMENTION_SUBJECT_COMPETITOR\x10\x02*Y\n" +
+	"\vMatchMethod\x12\x1c\n" +
+	"\x18MATCH_METHOD_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12MATCH_METHOD_EXACT\x10\x01\x12\x14\n" +
+	"\x10MATCH_METHOD_LLM\x10\x02*\xad\x01\n" +
+	"\x0fCitationSubject\x12 \n" +
+	"\x1cCITATION_SUBJECT_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19CITATION_SUBJECT_BUSINESS\x10\x01\x12\x1f\n" +
+	"\x1bCITATION_SUBJECT_COMPETITOR\x10\x02\x12\x1a\n" +
+	"\x16CITATION_SUBJECT_OTHER\x10\x03\x12\x1c\n" +
+	"\x18CITATION_SUBJECT_UNKNOWN\x10\x04*\x88\x01\n" +
+	"\x0eProposalStatus\x12\x1f\n" +
+	"\x1bPROPOSAL_STATUS_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aPROPOSAL_STATUS_GENERATING\x10\x01\x12\x19\n" +
+	"\x15PROPOSAL_STATUS_READY\x10\x02\x12\x1a\n" +
+	"\x16PROPOSAL_STATUS_FAILED\x10\x03*v\n" +
+	"\x0fGenerationStage\x12 \n" +
+	"\x1cGENERATION_STAGE_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eGENERATION_STAGE_FETCHING_SITE\x10\x01\x12\x1d\n" +
+	"\x19GENERATION_STAGE_DRAFTING\x10\x02B\xa1\x01\n" +
 	"\x10com.opensight.v1B\vCommonProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
 
-var file_opensight_v1_common_proto_goTypes = []any{}
+var (
+	file_opensight_v1_common_proto_rawDescOnce sync.Once
+	file_opensight_v1_common_proto_rawDescData []byte
+)
+
+func file_opensight_v1_common_proto_rawDescGZIP() []byte {
+	file_opensight_v1_common_proto_rawDescOnce.Do(func() {
+		file_opensight_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_opensight_v1_common_proto_rawDesc), len(file_opensight_v1_common_proto_rawDesc)))
+	})
+	return file_opensight_v1_common_proto_rawDescData
+}
+
+var file_opensight_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
+var file_opensight_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_opensight_v1_common_proto_goTypes = []any{
+	(BusinessStatus)(0),     // 0: opensight.v1.BusinessStatus
+	(PromptStatus)(0),       // 1: opensight.v1.PromptStatus
+	(RunStatus)(0),          // 2: opensight.v1.RunStatus
+	(RunTrigger)(0),         // 3: opensight.v1.RunTrigger
+	(ResultStatus)(0),       // 4: opensight.v1.ResultStatus
+	(CompetitorStatus)(0),   // 5: opensight.v1.CompetitorStatus
+	(CompetitorSource)(0),   // 6: opensight.v1.CompetitorSource
+	(Sentiment)(0),          // 7: opensight.v1.Sentiment
+	(MentionSubject)(0),     // 8: opensight.v1.MentionSubject
+	(MatchMethod)(0),        // 9: opensight.v1.MatchMethod
+	(CitationSubject)(0),    // 10: opensight.v1.CitationSubject
+	(ProposalStatus)(0),     // 11: opensight.v1.ProposalStatus
+	(GenerationStage)(0),    // 12: opensight.v1.GenerationStage
+	(*Paging)(nil),          // 13: opensight.v1.Paging
+	(*StringList)(nil),      // 14: opensight.v1.StringList
+	(*BusinessSummary)(nil), // 15: opensight.v1.BusinessSummary
+}
 var file_opensight_v1_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: opensight.v1.BusinessSummary.status:type_name -> opensight.v1.BusinessStatus
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_common_proto_init() }
@@ -46,13 +1003,15 @@ func file_opensight_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_common_proto_rawDesc), len(file_opensight_v1_common_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   0,
+			NumEnums:      13,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_opensight_v1_common_proto_goTypes,
 		DependencyIndexes: file_opensight_v1_common_proto_depIdxs,
+		EnumInfos:         file_opensight_v1_common_proto_enumTypes,
+		MessageInfos:      file_opensight_v1_common_proto_msgTypes,
 	}.Build()
 	File_opensight_v1_common_proto = out.File
 	file_opensight_v1_common_proto_goTypes = nil

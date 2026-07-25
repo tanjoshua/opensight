@@ -2,12 +2,579 @@
 // @generated from file opensight/v1/common.proto (package opensight.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Message, UnknownEnum } from "@bufbuild/protobuf";
 
 /**
  * Describes the file opensight/v1/common.proto.
  */
 export const file_opensight_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChlvcGVuc2lnaHQvdjEvY29tbW9uLnByb3RvEgxvcGVuc2lnaHQudjFCoQEKEGNvbS5vcGVuc2lnaHQudjFCC0NvbW1vblByb3RvUAFaL29wZW5zaWdodC9pbnRlcm5hbC9nZW4vb3BlbnNpZ2h0L3YxO29wZW5zaWdodHYxogIDT1hYqgIMT3BlbnNpZ2h0LlYxygIMT3BlbnNpZ2h0XFYx4gIYT3BlbnNpZ2h0XFYxXEdQQk1ldGFkYXRh6gINT3BlbnNpZ2h0OjpWMWIGcHJvdG8z");
+  fileDesc("ChlvcGVuc2lnaHQvdjEvY29tbW9uLnByb3RvEgxvcGVuc2lnaHQudjEiOwoGUGFnaW5nEg0KBWxpbWl0GAEgASgFEg4KBm9mZnNldBgCIAEoBRISCgpwYWdlX2NvdW50GAMgASgFIhwKClN0cmluZ0xpc3QSDgoGdmFsdWVzGAEgAygJIlkKD0J1c2luZXNzU3VtbWFyeRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEiwKBnN0YXR1cxgDIAEoDjIcLm9wZW5zaWdodC52MS5CdXNpbmVzc1N0YXR1cypoCg5CdXNpbmVzc1N0YXR1cxIfChtCVVNJTkVTU19TVEFUVVNfVU5TUEVDSUZJRUQQABIZChVCVVNJTkVTU19TVEFUVVNfRFJBRlQQARIaChZCVVNJTkVTU19TVEFUVVNfQUNUSVZFEAIqYgoMUHJvbXB0U3RhdHVzEh0KGVBST01QVF9TVEFUVVNfVU5TUEVDSUZJRUQQABIYChRQUk9NUFRfU1RBVFVTX0FDVElWRRABEhkKFVBST01QVF9TVEFUVVNfUkVUSVJFRBACKogBCglSdW5TdGF0dXMSGgoWUlVOX1NUQVRVU19VTlNQRUNJRklFRBAAEhYKElJVTl9TVEFUVVNfUlVOTklORxABEhgKFFJVTl9TVEFUVVNfQ09NUExFVEVEEAISFgoSUlVOX1NUQVRVU19QQVJUSUFMEAMSFQoRUlVOX1NUQVRVU19GQUlMRUQQBCp1CgpSdW5UcmlnZ2VyEhsKF1JVTl9UUklHR0VSX1VOU1BFQ0lGSUVEEAASFwoTUlVOX1RSSUdHRVJfSU5JVElBTBABEhkKFVJVTl9UUklHR0VSX1NDSEVEVUxFRBACEhYKElJVTl9UUklHR0VSX01BTlVBTBADKmQKDFJlc3VsdFN0YXR1cxIdChlSRVNVTFRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXUkVTVUxUX1NUQVRVU19TVUNDRUVERUQQARIYChRSRVNVTFRfU1RBVFVTX0ZBSUxFRBACKpcBChBDb21wZXRpdG9yU3RhdHVzEiEKHUNPTVBFVElUT1JfU1RBVFVTX1VOU1BFQ0lGSUVEEAASIAocQ09NUEVUSVRPUl9TVEFUVVNfRElTQ09WRVJFRBABEh0KGUNPTVBFVElUT1JfU1RBVFVTX1RSQUNLRUQQAhIfChtDT01QRVRJVE9SX1NUQVRVU19ESVNNSVNTRUQQAyp1ChBDb21wZXRpdG9yU291cmNlEiEKHUNPTVBFVElUT1JfU09VUkNFX1VOU1BFQ0lGSUVEEAASIAocQ09NUEVUSVRPUl9TT1VSQ0VfRElTQ09WRVJFRBABEhwKGENPTVBFVElUT1JfU09VUkNFX01BTlVBTBACKoIBCglTZW50aW1lbnQSGQoVU0VOVElNRU5UX1VOU1BFQ0lGSUVEEAASFgoSU0VOVElNRU5UX1BPU0lUSVZFEAESFQoRU0VOVElNRU5UX05FVVRSQUwQAhIWChJTRU5USU1FTlRfTkVHQVRJVkUQAxITCg9TRU5USU1FTlRfTUlYRUQQBCprCg5NZW50aW9uU3ViamVjdBIfChtNRU5USU9OX1NVQkpFQ1RfVU5TUEVDSUZJRUQQABIYChRNRU5USU9OX1NVQkpFQ1RfU0VMRhABEh4KGk1FTlRJT05fU1VCSkVDVF9DT01QRVRJVE9SEAIqWQoLTWF0Y2hNZXRob2QSHAoYTUFUQ0hfTUVUSE9EX1VOU1BFQ0lGSUVEEAASFgoSTUFUQ0hfTUVUSE9EX0VYQUNUEAESFAoQTUFUQ0hfTUVUSE9EX0xMTRACKq0BCg9DaXRhdGlvblN1YmplY3QSIAocQ0lUQVRJT05fU1VCSkVDVF9VTlNQRUNJRklFRBAAEh0KGUNJVEFUSU9OX1NVQkpFQ1RfQlVTSU5FU1MQARIfChtDSVRBVElPTl9TVUJKRUNUX0NPTVBFVElUT1IQAhIaChZDSVRBVElPTl9TVUJKRUNUX09USEVSEAMSHAoYQ0lUQVRJT05fU1VCSkVDVF9VTktOT1dOEAQqiAEKDlByb3Bvc2FsU3RhdHVzEh8KG1BST1BPU0FMX1NUQVRVU19VTlNQRUNJRklFRBAAEh4KGlBST1BPU0FMX1NUQVRVU19HRU5FUkFUSU5HEAESGQoVUFJPUE9TQUxfU1RBVFVTX1JFQURZEAISGgoWUFJPUE9TQUxfU1RBVFVTX0ZBSUxFRBADKnYKD0dlbmVyYXRpb25TdGFnZRIgChxHRU5FUkFUSU9OX1NUQUdFX1VOU1BFQ0lGSUVEEAASIgoeR0VORVJBVElPTl9TVEFHRV9GRVRDSElOR19TSVRFEAESHQoZR0VORVJBVElPTl9TVEFHRV9EUkFGVElORxACQqEBChBjb20ub3BlbnNpZ2h0LnYxQgtDb21tb25Qcm90b1ABWi9vcGVuc2lnaHQvaW50ZXJuYWwvZ2VuL29wZW5zaWdodC92MTtvcGVuc2lnaHR2MaICA09YWKoCDE9wZW5zaWdodC5WMcoCDE9wZW5zaWdodFxWMeICGE9wZW5zaWdodFxWMVxHUEJNZXRhZGF0YeoCDU9wZW5zaWdodDo6VjFiBnByb3RvMw");
+
+/**
+ * Paging is the response-side pagination info for a limit/offset list RPC.
+ *
+ * @generated from message opensight.v1.Paging
+ */
+export type Paging = Message<"opensight.v1.Paging"> & {
+  /**
+   * @generated from field: int32 limit = 1;
+   */
+  limit: number;
+
+  /**
+   * @generated from field: int32 offset = 2;
+   */
+  offset: number;
+
+  /**
+   * @generated from field: int32 page_count = 3;
+   */
+  pageCount: number;
+};
+
+/**
+ * Describes the message opensight.v1.Paging.
+ * Use `create(PagingSchema)` to create a new message.
+ */
+export const PagingSchema: GenMessage<Paging> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_common, 0);
+
+/**
+ * StringList wraps a repeated string field so PATCH-style requests can
+ * distinguish "field omitted, leave unchanged" (the outer message field is
+ * nil) from "field present but empty, clear it" (StringList with zero values)
+ * from "field present with values, replace" — a bare `repeated string` cannot
+ * represent the unchanged/clear distinction.
+ *
+ * @generated from message opensight.v1.StringList
+ */
+export type StringList = Message<"opensight.v1.StringList"> & {
+  /**
+   * @generated from field: repeated string values = 1;
+   */
+  values: string[];
+};
+
+/**
+ * Describes the message opensight.v1.StringList.
+ * Use `create(StringListSchema)` to create a new message.
+ */
+export const StringListSchema: GenMessage<StringList> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_common, 1);
+
+/**
+ * BusinessSummary is the minimal business identity used in lists (e.g.
+ * AuthService.GetMe's business picker) where the full profile isn't needed.
+ *
+ * @generated from message opensight.v1.BusinessSummary
+ */
+export type BusinessSummary = Message<"opensight.v1.BusinessSummary"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: opensight.v1.BusinessStatus status = 3;
+   */
+  status: BusinessStatus;
+};
+
+/**
+ * Describes the message opensight.v1.BusinessSummary.
+ * Use `create(BusinessSummarySchema)` to create a new message.
+ */
+export const BusinessSummarySchema: GenMessage<BusinessSummary> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_common, 2);
+
+/**
+ * @generated from enum opensight.v1.BusinessStatus
+ */
+export const BusinessStatus = {
+  /**
+   * @generated from enum value: BUSINESS_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: BUSINESS_STATUS_DRAFT = 1;
+   */
+  DRAFT: 1,
+
+  /**
+   * @generated from enum value: BUSINESS_STATUS_ACTIVE = 2;
+   */
+  ACTIVE: 2,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.BusinessStatus
+ */
+export type BusinessStatus = (typeof BusinessStatus)[keyof typeof BusinessStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.BusinessStatus.
+ */
+export const BusinessStatusSchema: GenEnum<BusinessStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 0);
+
+/**
+ * @generated from enum opensight.v1.PromptStatus
+ */
+export const PromptStatus = {
+  /**
+   * @generated from enum value: PROMPT_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: PROMPT_STATUS_ACTIVE = 1;
+   */
+  ACTIVE: 1,
+
+  /**
+   * @generated from enum value: PROMPT_STATUS_RETIRED = 2;
+   */
+  RETIRED: 2,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.PromptStatus
+ */
+export type PromptStatus = (typeof PromptStatus)[keyof typeof PromptStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.PromptStatus.
+ */
+export const PromptStatusSchema: GenEnum<PromptStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 1);
+
+/**
+ * @generated from enum opensight.v1.RunStatus
+ */
+export const RunStatus = {
+  /**
+   * @generated from enum value: RUN_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: RUN_STATUS_RUNNING = 1;
+   */
+  RUNNING: 1,
+
+  /**
+   * @generated from enum value: RUN_STATUS_COMPLETED = 2;
+   */
+  COMPLETED: 2,
+
+  /**
+   * @generated from enum value: RUN_STATUS_PARTIAL = 3;
+   */
+  PARTIAL: 3,
+
+  /**
+   * @generated from enum value: RUN_STATUS_FAILED = 4;
+   */
+  FAILED: 4,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.RunStatus
+ */
+export type RunStatus = (typeof RunStatus)[keyof typeof RunStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.RunStatus.
+ */
+export const RunStatusSchema: GenEnum<RunStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 2);
+
+/**
+ * @generated from enum opensight.v1.RunTrigger
+ */
+export const RunTrigger = {
+  /**
+   * @generated from enum value: RUN_TRIGGER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: RUN_TRIGGER_INITIAL = 1;
+   */
+  INITIAL: 1,
+
+  /**
+   * @generated from enum value: RUN_TRIGGER_SCHEDULED = 2;
+   */
+  SCHEDULED: 2,
+
+  /**
+   * @generated from enum value: RUN_TRIGGER_MANUAL = 3;
+   */
+  MANUAL: 3,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.RunTrigger
+ */
+export type RunTrigger = (typeof RunTrigger)[keyof typeof RunTrigger] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.RunTrigger.
+ */
+export const RunTriggerSchema: GenEnum<RunTrigger> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 3);
+
+/**
+ * @generated from enum opensight.v1.ResultStatus
+ */
+export const ResultStatus = {
+  /**
+   * @generated from enum value: RESULT_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: RESULT_STATUS_SUCCEEDED = 1;
+   */
+  SUCCEEDED: 1,
+
+  /**
+   * @generated from enum value: RESULT_STATUS_FAILED = 2;
+   */
+  FAILED: 2,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.ResultStatus
+ */
+export type ResultStatus = (typeof ResultStatus)[keyof typeof ResultStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.ResultStatus.
+ */
+export const ResultStatusSchema: GenEnum<ResultStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 4);
+
+/**
+ * @generated from enum opensight.v1.CompetitorStatus
+ */
+export const CompetitorStatus = {
+  /**
+   * @generated from enum value: COMPETITOR_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: COMPETITOR_STATUS_DISCOVERED = 1;
+   */
+  DISCOVERED: 1,
+
+  /**
+   * @generated from enum value: COMPETITOR_STATUS_TRACKED = 2;
+   */
+  TRACKED: 2,
+
+  /**
+   * @generated from enum value: COMPETITOR_STATUS_DISMISSED = 3;
+   */
+  DISMISSED: 3,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.CompetitorStatus
+ */
+export type CompetitorStatus = (typeof CompetitorStatus)[keyof typeof CompetitorStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.CompetitorStatus.
+ */
+export const CompetitorStatusSchema: GenEnum<CompetitorStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 5);
+
+/**
+ * @generated from enum opensight.v1.CompetitorSource
+ */
+export const CompetitorSource = {
+  /**
+   * @generated from enum value: COMPETITOR_SOURCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: COMPETITOR_SOURCE_DISCOVERED = 1;
+   */
+  DISCOVERED: 1,
+
+  /**
+   * @generated from enum value: COMPETITOR_SOURCE_MANUAL = 2;
+   */
+  MANUAL: 2,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.CompetitorSource
+ */
+export type CompetitorSource = (typeof CompetitorSource)[keyof typeof CompetitorSource] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.CompetitorSource.
+ */
+export const CompetitorSourceSchema: GenEnum<CompetitorSource> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 6);
+
+/**
+ * Sentiment is the analyzed result's sentiment toward the business.
+ * SENTIMENT_UNSPECIFIED means "not mentioned" (nullable sentiment in the DB),
+ * distinct from a real analyzed sentiment value.
+ *
+ * @generated from enum opensight.v1.Sentiment
+ */
+export const Sentiment = {
+  /**
+   * @generated from enum value: SENTIMENT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: SENTIMENT_POSITIVE = 1;
+   */
+  POSITIVE: 1,
+
+  /**
+   * @generated from enum value: SENTIMENT_NEUTRAL = 2;
+   */
+  NEUTRAL: 2,
+
+  /**
+   * @generated from enum value: SENTIMENT_NEGATIVE = 3;
+   */
+  NEGATIVE: 3,
+
+  /**
+   * @generated from enum value: SENTIMENT_MIXED = 4;
+   */
+  MIXED: 4,
+} as const;
+
+/**
+ * Sentiment is the analyzed result's sentiment toward the business.
+ * SENTIMENT_UNSPECIFIED means "not mentioned" (nullable sentiment in the DB),
+ * distinct from a real analyzed sentiment value.
+ *
+ * @generated from enum opensight.v1.Sentiment
+ */
+export type Sentiment = (typeof Sentiment)[keyof typeof Sentiment] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.Sentiment.
+ */
+export const SentimentSchema: GenEnum<Sentiment> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 7);
+
+/**
+ * @generated from enum opensight.v1.MentionSubject
+ */
+export const MentionSubject = {
+  /**
+   * @generated from enum value: MENTION_SUBJECT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: MENTION_SUBJECT_SELF = 1;
+   */
+  SELF: 1,
+
+  /**
+   * @generated from enum value: MENTION_SUBJECT_COMPETITOR = 2;
+   */
+  COMPETITOR: 2,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.MentionSubject
+ */
+export type MentionSubject = (typeof MentionSubject)[keyof typeof MentionSubject] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.MentionSubject.
+ */
+export const MentionSubjectSchema: GenEnum<MentionSubject> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 8);
+
+/**
+ * @generated from enum opensight.v1.MatchMethod
+ */
+export const MatchMethod = {
+  /**
+   * @generated from enum value: MATCH_METHOD_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: MATCH_METHOD_EXACT = 1;
+   */
+  EXACT: 1,
+
+  /**
+   * @generated from enum value: MATCH_METHOD_LLM = 2;
+   */
+  LLM: 2,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.MatchMethod
+ */
+export type MatchMethod = (typeof MatchMethod)[keyof typeof MatchMethod] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.MatchMethod.
+ */
+export const MatchMethodSchema: GenEnum<MatchMethod> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 9);
+
+/**
+ * CitationSubject is the inferred subject of a cited source.
+ * CITATION_SUBJECT_UNKNOWN is a real, persisted value (best-effort inference
+ * failed honestly) distinct from CITATION_SUBJECT_UNSPECIFIED (field absent /
+ * filter off).
+ *
+ * @generated from enum opensight.v1.CitationSubject
+ */
+export const CitationSubject = {
+  /**
+   * @generated from enum value: CITATION_SUBJECT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: CITATION_SUBJECT_BUSINESS = 1;
+   */
+  BUSINESS: 1,
+
+  /**
+   * @generated from enum value: CITATION_SUBJECT_COMPETITOR = 2;
+   */
+  COMPETITOR: 2,
+
+  /**
+   * @generated from enum value: CITATION_SUBJECT_OTHER = 3;
+   */
+  OTHER: 3,
+
+  /**
+   * @generated from enum value: CITATION_SUBJECT_UNKNOWN = 4;
+   */
+  UNKNOWN: 4,
+} as const;
+
+/**
+ * CitationSubject is the inferred subject of a cited source.
+ * CITATION_SUBJECT_UNKNOWN is a real, persisted value (best-effort inference
+ * failed honestly) distinct from CITATION_SUBJECT_UNSPECIFIED (field absent /
+ * filter off).
+ *
+ * @generated from enum opensight.v1.CitationSubject
+ */
+export type CitationSubject = (typeof CitationSubject)[keyof typeof CitationSubject] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.CitationSubject.
+ */
+export const CitationSubjectSchema: GenEnum<CitationSubject> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 10);
+
+/**
+ * ProposalStatus is the onboarding profile-proposal workflow status
+ * (internal/api/businesses.go: generating/ready/failed). This is distinct
+ * from internal/store's ProfileProposalStatus (pending/applied/discarded),
+ * which is a storage-layer concept never exposed over the API.
+ *
+ * @generated from enum opensight.v1.ProposalStatus
+ */
+export const ProposalStatus = {
+  /**
+   * @generated from enum value: PROPOSAL_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: PROPOSAL_STATUS_GENERATING = 1;
+   */
+  GENERATING: 1,
+
+  /**
+   * @generated from enum value: PROPOSAL_STATUS_READY = 2;
+   */
+  READY: 2,
+
+  /**
+   * @generated from enum value: PROPOSAL_STATUS_FAILED = 3;
+   */
+  FAILED: 3,
+} as const;
+
+/**
+ * ProposalStatus is the onboarding profile-proposal workflow status
+ * (internal/api/businesses.go: generating/ready/failed). This is distinct
+ * from internal/store's ProfileProposalStatus (pending/applied/discarded),
+ * which is a storage-layer concept never exposed over the API.
+ *
+ * @generated from enum opensight.v1.ProposalStatus
+ */
+export type ProposalStatus = (typeof ProposalStatus)[keyof typeof ProposalStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.ProposalStatus.
+ */
+export const ProposalStatusSchema: GenEnum<ProposalStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 11);
+
+/**
+ * GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+ * proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
+ * case (e.g. a stage query that failed or timed out).
+ *
+ * @generated from enum opensight.v1.GenerationStage
+ */
+export const GenerationStage = {
+  /**
+   * @generated from enum value: GENERATION_STAGE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: GENERATION_STAGE_FETCHING_SITE = 1;
+   */
+  FETCHING_SITE: 1,
+
+  /**
+   * @generated from enum value: GENERATION_STAGE_DRAFTING = 2;
+   */
+  DRAFTING: 2,
+} as const;
+
+/**
+ * GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+ * proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
+ * case (e.g. a stage query that failed or timed out).
+ *
+ * @generated from enum opensight.v1.GenerationStage
+ */
+export type GenerationStage = (typeof GenerationStage)[keyof typeof GenerationStage] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.GenerationStage.
+ */
+export const GenerationStageSchema: GenEnum<GenerationStage> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_common, 12);
 

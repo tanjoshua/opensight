@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "opensight/v1/common.proto";
+
+message CitationSubjectStat {
+  int32 frequency = 1;
+  repeated string result_ids = 2;
+}
+
+// CitationSubjects breaks a domain's or page's citation frequency down by
+// inferred subject.
+message CitationSubjects {
+  CitationSubjectStat business = 1;
+  CitationSubjectStat competitor = 2;
+  CitationSubjectStat other = 3;
+  CitationSubjectStat unknown = 4;
+}
+
+message CitationPage {
+  string url = 1;
+  optional string title = 2;
+  int32 frequency = 3;
+  CitationSubjects subjects = 4;
+  repeated string result_ids = 5;
+}
+
+message CitationPromptStat {
+  string prompt_id = 1;
+  string prompt_text = 2;
+  int32 frequency = 3;
+  repeated string result_ids = 4;
+}
+
+// CitationSource is one cited domain: its overall frequency and subject
+// split, plus the individual pages and prompts behind it.
+message CitationSource {
+  string domain = 1;
+  int32 frequency = 2;
+  CitationSubjects subjects = 3;
+  repeated string result_ids = 4;
+  repeated CitationPage pages = 5;
+  repeated CitationPromptStat prompts = 6;
+}
+
+message ListCitationSourcesRequest {
+  string business_id = 1;
+  // domain: "" means no filter.
+  string domain = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListCitationSourcesResponse {
+  repeated CitationSource domains = 1;
+  Paging paging = 2;
+}
+
+service CitationService {
+  rpc ListCitationSources(ListCitationSourcesRequest) returns (ListCitationSourcesResponse);
+}
