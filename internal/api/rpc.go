@@ -54,7 +54,10 @@ func (s *Server) rpcHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle(opensightv1connect.NewAuthServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewBusinessServiceHandler(s, opts...))
-	// RPC-5/6 will each add one more mux.Handle(...) line here.
+	mux.Handle(opensightv1connect.NewOverviewServiceHandler(s, opts...))
+	mux.Handle(opensightv1connect.NewCitationServiceHandler(s, opts...))
+	mux.Handle(opensightv1connect.NewPromptServiceHandler(s, opts...))
+	// RPC-6 adds CompetitorService and ResultService here.
 	return http.StripPrefix("/rpc", mux)
 }
 
@@ -67,6 +70,27 @@ func rpcID(name, raw string) (domain.ID, *connect.Error) {
 		return uuid.Nil, rpcInvalidArgument(name + " must be a UUID")
 	}
 	return id, nil
+}
+
+// rpcPaging normalizes a list RPC's limit/offset. Unlike REST's
+// positiveIntParam/nonNegativeIntParam, nothing here errors: proto3 cannot
+// distinguish an omitted int32 from an explicit 0, so non-positive limit
+// means "not provided" and takes the default; an over-max limit clamps; a
+// negative offset floors to 0 (load-bearing: prevents slice-arithmetic panics
+// downstream).
+func rpcPaging(limit, offset int32, defaultLimit, maxLimit int) (int, int) {
+	l := int(limit)
+	if l <= 0 {
+		l = defaultLimit
+	}
+	if l > maxLimit {
+		l = maxLimit
+	}
+	o := int(offset)
+	if o < 0 {
+		o = 0
+	}
+	return l, o
 }
 
 // rpcSessionUser pulls the session user the interceptor injected. A miss

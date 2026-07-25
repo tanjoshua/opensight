@@ -26,6 +26,8 @@ func (s *Server) rpcError(op string, err error) *connect.Error {
 		return connect.NewError(connect.CodeNotFound, errors.New("not found"))
 	case errors.Is(err, store.ErrBusinessNotDraft):
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("business is already active"))
+	case errors.Is(err, store.ErrPromptNotActive):
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("prompt is not active"))
 	case errors.Is(err, store.ErrPromptLimitExceeded):
 		return connect.NewError(connect.CodeResourceExhausted, errors.New("prompt count exceeds the plan limit"))
 	}

@@ -133,12 +133,12 @@ Deps: RPC-3 · Phase 3 · Ref: design 06 (Setup), 03 (onboarding)
 
 As a clinic user, I want the Overview, Citations, and Prompts read/write endpoints on Connect.
 
-- [ ] `OverviewService.GetOverview`, `CitationService.ListCitationSources`,
+- [x] `OverviewService.GetOverview`, `CitationService.ListCitationSources`,
       `PromptService.{ListPrompts,AddPrompt,GetPrompt,ReplacePrompt}` implemented.
-- [ ] `ReplacePrompt`'s `confirmed: true` requirement (design 06 Prompts) preserved.
-- [ ] Pagination/filter fields (`limit`, `offset`, `domain`) normalized through a shared helper
+- [x] `ReplacePrompt`'s `confirmed: true` requirement (design 06 Prompts) preserved.
+- [x] Pagination/filter fields (`limit`, `offset`, `domain`) normalized through a shared helper
       replacing `positiveIntParam`/`nonNegativeIntParam`.
-- [ ] Existing `overview_test.go`, `citations_test.go`, `prompts_test.go` behavior ported.
+- [x] Existing `overview_test.go`, `citations_test.go`, `prompts_test.go` behavior ported.
 
 Deps: RPC-3 · Phase 3 · Ref: design 06 (Overview, Prompts)
 

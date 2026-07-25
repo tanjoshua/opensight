@@ -125,6 +125,33 @@ func TestRPCSessionLifecycle(t *testing.T) {
 	}
 }
 
+// TestRPCPaging has no REST analogue: positiveIntParam/nonNegativeIntParam
+// errored on a bad value, but proto3 can't distinguish an omitted int32 from
+// an explicit 0/-1, so rpcPaging normalizes instead of erroring.
+func TestRPCPaging(t *testing.T) {
+	const defaultLimit, maxLimit = 50, 100
+	cases := []struct {
+		name          string
+		limit, offset int32
+		wantL, wantO  int
+	}{
+		{"limit zero defaults", 0, 0, defaultLimit, 0},
+		{"negative limit defaults", -5, 0, defaultLimit, 0},
+		{"over-max limit clamps", maxLimit + 1, 0, maxLimit, 0},
+		{"in-range limit passes through", 7, 0, 7, 0},
+		{"negative offset floors to zero", 0, -1, defaultLimit, 0},
+		{"positive offset passes through", 0, 3, defaultLimit, 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			l, o := rpcPaging(tc.limit, tc.offset, defaultLimit, maxLimit)
+			if l != tc.wantL || o != tc.wantO {
+				t.Fatalf("rpcPaging(%d, %d) = (%d, %d), want (%d, %d)", tc.limit, tc.offset, l, o, tc.wantL, tc.wantO)
+			}
+		})
+	}
+}
+
 func anyContains(vals []string, sub string) bool {
 	for _, v := range vals {
 		if strings.Contains(v, sub) {
