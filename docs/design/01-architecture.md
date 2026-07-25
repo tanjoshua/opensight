@@ -46,7 +46,7 @@ flowchart LR
 
 One Go module, two run modes (`serve` and `work`) from the same binary — deployable as one process in dev, two containers in prod. Shared domain and persistence packages; no internal RPC between API and worker — they share the database and communicate through Temporal.
 
-- **API server**: HTTP/JSON (chi router; plain REST — no gRPC/Connect for MVP), auth middleware, tenant scoping.
+- **API server**: Protobuf schema + Connect RPC over HTTP/1.1 (chi router mounts the generated handlers at `/rpc`), auth middleware, tenant scoping. Connect serves its own JSON/binary protocol directly — no separate gRPC proxy or Envoy sidecar — so this keeps the same single-binary, same-origin deployment shape as a hand-rolled REST API would have.
 - **Worker**: hosts all Temporal workflows/activities: onboarding profile generation, weekly monitoring runs, analysis.
 - **Frontend**: Vite + React + TypeScript SPA. Five sections per PRD §7. Served as static files from the Go binary (no separate web server to run).
 

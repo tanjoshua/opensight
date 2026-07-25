@@ -88,6 +88,18 @@ go run ./cmd/opensight user create --tenant <tenant_id> --email owner@example.co
 
 Pipe a password with `--password-stdin` to set the initial password yourself; otherwise `user create` generates one and prints it once.
 
+## Protobuf / Connect RPC codegen
+
+The API contract is defined in `proto/opensight/v1/*.proto` and compiled with [buf](https://buf.build). After changing any `.proto` file, regenerate:
+
+```sh
+make proto
+```
+
+This runs `buf format -w`, `buf lint`, then `buf generate`, which writes Go structs + Connect handler interfaces to `internal/gen/opensight/v1/` and TypeScript messages + connect-query method descriptors to `web/src/gen/opensight/v1/`. Two of the four codegen plugins (`protoc-gen-es`, `protoc-gen-connect-query`) are npm-hosted binaries resolved from `web/node_modules/.bin`, so `npm install` in `web/` must have been run at least once before `make proto` will work.
+
+All generated output is committed — CI re-runs `make proto` and fails the build on any diff, so the checked-in generated code and the `.proto` schema can never drift apart.
+
 ## Config
 
 Runtime config is env-driven with development-safe defaults:

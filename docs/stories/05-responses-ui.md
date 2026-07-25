@@ -11,7 +11,7 @@ As the developer, I want the Vite + React + TypeScript app scaffolded with the d
 - [x] `npx shadcn@latest init --preset bLTjNXma --template vite` in `web/` (style rhea, stone base + chart colors, Lucide, Roboto).
 - [x] TanStack Query for all server state (no global store); react-router with routes `/overview`, `/prompts`, `/competitors`, `/responses`, `/setup`, `/onboarding`, `/login`.
 - [x] App shell: nav for the five sections; unbuilt sections show a placeholder.
-- [x] `web/src/{api,components,pages,lib}` structure; typed API client module; Vite dev server proxies `/api`.
+- [x] `web/src/{api,components,pages,lib}` structure; typed client generated from the proto schema (`web/src/gen`) via connect-query hooks; Vite dev server proxies `/rpc`.
 - [x] Production build embedded into the Go binary and served (completes FND-4's placeholder).
 
 Deps: FND-1 · Phase 1 · Ref: design 06 (Frontend stack and structure)
@@ -20,10 +20,10 @@ Deps: FND-1 · Phase 1 · Ref: design 06 (Frontend stack and structure)
 
 As the developer, I want the read API for runs and results, so that the Responses section has data.
 
-- [x] `GET /api/v1/businesses/:id/runs` — scheduled_for, status per run (visibility % joins in Phase 2).
-- [x] `GET /api/v1/businesses/:id/results` — filters: run, prompt, status; `limit`/`offset` pagination. (`mentioned` filter arrives Phase 2.)
-- [x] `GET /api/v1/results/:id` — response text, run/model metadata, request params, error, raw JSON on demand.
-- [x] All tenant-scoped through SCH-4; RFC 7807 errors.
+- [x] `ResultService.ListRuns` — scheduled_for, status per run (visibility % joins in Phase 2).
+- [x] `ResultService.ListResults` — filters: run, prompt, status; `limit`/`offset` pagination. (`mentioned` filter arrives Phase 2.)
+- [x] `ResultService.GetResult` — response text, run/model metadata, request params, error, raw JSON on demand.
+- [x] All tenant-scoped through SCH-4; `connect.Error` codes.
 
 Deps: SCH-4, AUTH-3 · Phase 1 · Ref: design 06 (Endpoints — Responses, Runs)
 

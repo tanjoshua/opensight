@@ -10,15 +10,15 @@ sequenceDiagram
     participant API as Go API
     participant T as Temporal
     participant W as Worker
-    U->>API: POST /businesses {name, website}
+    U->>API: BusinessService.CreateBusiness {name, website}
     API->>API: insert businesses (status=draft)
     API->>T: start GenerateProfileWorkflow
     W->>W: FetchSite (activity)
     W->>W: ProposeProfile (activity, web_search + structured output)
     W->>W: insert profile_proposals (status=pending)
-    U->>API: GET /businesses/:id/proposal (poll until ready)
+    U->>API: BusinessService.GetProposal (poll until ready)
     U->>U: review + edit everything
-    U->>API: POST /businesses/:id/apply {final payload}
+    U->>API: BusinessService.ApplyProposal {final payload}
     API->>API: write businesses, insert plan.prompt_limit prompts, proposal→applied, status=active
     API->>T: create weekly Schedule + trigger first run now
 ```
@@ -38,7 +38,7 @@ The onboarding model is configurable via `OPENAI_ONBOARDING_MODEL` (separate fro
 
 **Sources.** Under strict JSON output the response carries no `url_citation` annotations (there is no prose to annotate — empirically zero across every spike run), so `sources` is derived server-side from the `web_search_call` **actions**: the pages the model opened (`open_page`/`find_in_page` URLs), normalized (utm stripped, host lowercased) and deduped. This is a `sources` array on the proposal payload, populated by us and shown read-only in review; it is never part of the model's own schema and is not persisted to `businesses`.
 
-The workflow exposes its current stage (`fetching_site` | `drafting`) via a Temporal query (`generation-stage`), advanced between activities so a retry never regresses it. `GET /businesses/:id/proposal` includes `stage` while status is `generating`, degrading to omission if the query fails (e.g. worker briefly unavailable, a pre-deploy run without the handler); the poll never fails on a stage-query error.
+The workflow exposes its current stage (`fetching_site` | `drafting`) via a Temporal query (`generation-stage`), advanced between activities so a retry never regresses it. `BusinessService.GetProposal` includes `stage` while status is `generating`, degrading to omission if the query fails (e.g. worker briefly unavailable, a pre-deploy run without the handler); the poll never fails on a stage-query error.
 
 Failure posture: FetchSite is no longer a success gate — its text feeds the combined call, and on failure the model still has its own web research. If FetchSite fails, force `low_confidence: true` **unless** the model's web-search actions show an `open_page` on the business website's own domain (it read the site itself), in which case the model's own `low_confidence` judgement stands. The workflow fails only when the combined call fails outright (provider error after Temporal retries) or never validates after the in-activity retry — the UI then offers manual setup (same review screen, empty).
 
@@ -73,17 +73,17 @@ The 20 prompts are the product's measurement instrument, so generation is opinio
 ## Review and apply
 
 - The review screen presents every proposed value as editable; nothing is committed until the user applies. The client sends back the **final edited payload** — the server does not merge, it takes the submitted values verbatim (they've been reviewed by definition).
-- `GET /me` exposes the tenant plan's `prompt_limit`. Before apply, the client validates the final edited payload's required profile fields, country code, non-empty list entries, prompt text, and exact plan prompt count. Validation gates submission but does not normalize or rewrite it: the accepted payload is still sent verbatim.
+- `AuthService.GetMe` exposes the tenant plan's `prompt_limit`. Before apply, the client validates the final edited payload's required profile fields, country code, non-empty list entries, prompt text, and exact plan prompt count. Validation gates submission but does not normalize or rewrite it: the accepted payload is still sent verbatim.
 - **Apply is the only path that writes profile values to `businesses`** (the 02 invariant). It runs in one transaction: update business columns, insert prompts (all `active`), mark proposal `applied`, set business `active`. Then: create the Temporal weekly Schedule and **trigger the first run immediately** — PRD success criterion 4 ("view the first ChatGPT results") shouldn't wait a week.
 - **Regenerate** is allowed while the business is `draft`: discard the pending proposal, re-run the workflow. After activation there is no regenerate — profile changes are manual edits in Setup (PRD: confirmed values are never auto-overwritten), and prompt changes go through the replace flow (02).
 
 ## API surface (this slice)
 
 ```
-POST /api/businesses                      → create draft, start workflow
-GET  /api/businesses/:id/proposal         → status + payload when ready
-POST /api/businesses/:id/proposal/regen   → discard + regenerate (draft only)
-POST /api/businesses/:id/apply            → apply final payload, activate, schedule
+BusinessService.CreateBusiness       → create draft, start workflow
+BusinessService.GetProposal          → status + payload when ready
+BusinessService.RegenerateProposal   → discard + regenerate (draft only)
+BusinessService.ApplyProposal        → apply final payload, activate, schedule
 ```
 
 ## Open questions (owned by later increments)

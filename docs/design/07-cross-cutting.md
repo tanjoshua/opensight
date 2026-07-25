@@ -9,8 +9,8 @@ Depends on: all previous designs; closes their open questions.
 - Passwords hashed with argon2id; sessions are random tokens, stored hashed, in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
 - Rationale: a managed provider (Clerk/Auth0) adds an external dependency and an eventual cost floor for what is, at invite-only scale, ~200 lines of well-trodden Go. Self-hosted identity servers (Keycloak/Ory) are overkill on a 4GB VPS. Revisit only when self-serve signup + password reset + email verification become real needs — that is the point where a managed provider starts paying for itself.
 - **Invite-only**: accounts are created by an admin CLI command (`opensight user create --tenant …`), matching founder-led sales for SG clinics. The PRD's self-serve success criteria all happen *after* login (onboarding flow, 03), so this doesn't compromise them. Self-serve signup + billing arrive together post-MVP.
-- CSRF: state-changing endpoints require a custom header (`X-Requested-With`), which cross-origin forms cannot set; combined with SameSite=Lax this is sufficient for a JSON-only API.
-- API rate limiting: Caddy-level per-IP limit on `/api/`; nothing fancier until abuse exists.
+- CSRF: every RPC handler requires the Connect protocol header (`connect.WithRequireConnectProtocolHeader()`, `internal/api/rpc.go`) — a header a cross-origin form or bare browser navigation cannot set — combined with SameSite=Lax cookies this is sufficient for an RPC-only API. This guarantee depends on no method ever being declared `idempotency_level = NO_SIDE_EFFECTS`: Connect treats such a method as safe to accept over a header-less GET with the request encoded in the query string, which would bypass the header check entirely. `TestNoRPCIsSideEffectFree` (`internal/api/rpc_test.go`) walks the compiled proto descriptors and fails if any method is ever annotated that way, so this can't regress silently as new RPCs are added.
+- API rate limiting: Caddy-level per-IP limit on `/rpc/`; nothing fancier until abuse exists.
 
 ## Secrets and config
 
@@ -24,7 +24,7 @@ Depends on: all previous designs; closes their open questions.
 
 ## Local development
 
-- `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/api`.
+- `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/rpc`.
 - `docker compose -f compose.dev.yml up`: still available for infrastructure-only debugging.
 - **`PromptRunner` stub mode** (env-selected): development and tests must not spend OpenAI money or wait on real searches. Two flavors: `stub` (canned, deterministic fixtures — a fake clinic-recommendation response with citations) and `replay` (recorded real `raw_response` payloads checked into `testdata/`). The analysis pipeline (05) develops almost entirely against replay data — real responses, zero cost, deterministic tests.
 - Seed command: `opensight seed dev` creates only a tenant and login account. The developer completes the normal onboarding flow to create the business profile and initial prompts, keeping the end-to-end onboarding path exercised during local development.
@@ -32,7 +32,7 @@ Depends on: all previous designs; closes their open questions.
 ## Deployment
 
 - Git repo (private, GitHub).
-- CI (GitHub Actions): test + lint + build a single multi-stage Docker image (Go binary with embedded SPA) pushed to GHCR.
+- CI (GitHub Actions): test + lint + build a single multi-stage Docker image (Go binary with embedded SPA) pushed to GHCR. CI also re-runs `make proto` (buf format + lint + generate) and fails on any diff, so the committed generated code (`internal/gen/`, `web/src/gen/`) can never drift from the `.proto` schema.
 - Deploy = SSH script: `docker compose pull && docker compose up -d` on the VPS, then `opensight migrate`. No orchestrator, no blue/green; seconds of downtime at deploy is acceptable for this product. Compose stack per 01-D8: `app`, `worker`, `postgres`, `temporal`, `temporal-ui` (bound to localhost only, reached via SSH tunnel), `caddy` (auto-HTTPS).
 
 ## Backups and recovery
