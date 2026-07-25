@@ -219,15 +219,15 @@ Deps: RPC-7 · Phase 3 · Ref: design 06
 As the developer, I want the design docs to reflect Connect RPC as the current, only contract, so
 that they remain the finalized plan rather than a stale record of REST.
 
-- [ ] `docs/design/01-architecture.md`: replace the "no gRPC/Connect for MVP" line with the Connect
+- [x] `docs/design/01-architecture.md`: replace the "no gRPC/Connect for MVP" line with the Connect
       decision and rationale.
-- [ ] `docs/design/06-api-frontend.md`: replace the REST conventions section and endpoint table with
+- [x] `docs/design/06-api-frontend.md`: replace the REST conventions section and endpoint table with
       the service/RPC list and proto schema rules; update the `web/src/` tree to show `gen/`.
-- [ ] `docs/design/07-cross-cutting.md`: replace the `X-Requested-With` CSRF description with
+- [x] `docs/design/07-cross-cutting.md`: replace the `X-Requested-With` CSRF description with
       `WithRequireConnectProtocolHeader` and the no-`NO_SIDE_EFFECTS` constraint; note the codegen
       step in the CI/deploy description.
-- [ ] `docs/dev.md`: document `make proto`.
-- [ ] `docs/stories/05-responses-ui.md` (WEB-1/WEB-2): update the stale "typed API client"/`/api/v1`
+- [x] `docs/dev.md`: document `make proto`.
+- [x] `docs/stories/05-responses-ui.md` (WEB-1/WEB-2): update the stale "typed API client"/`/api/v1`
       references to point at this epic instead.
 
 Deps: RPC-8 · Phase 3 · Ref: AGENTS.md (docs hold only the finalized plan)
