@@ -20,8 +20,9 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 09 | [Insight UI](09-insight-ui.md) | INS | 4 | 2 |
 | 10 | [Onboarding automation](10-onboarding.md) | ONB | 6 | 3 |
 | 11 | [Self-serve polish](11-selfserve-polish.md) | POL | 7 | 3 |
+| 12 | [Protobuf/Connect RPC migration](12-rpc-migration.md) | RPC | 9 | 3 |
 
-**60 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 13.**
+**69 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 22.**
 
 ## Phases and milestones
 
@@ -36,5 +37,9 @@ There are **no users until the full MVP is complete** — phase milestones are i
 ## Execution order
 
 SPK-1 runs before everything. Within Phase 1, epics 01→02→03 are sequential foundations; 04 (backend pipeline) and 05 (frontend) can interleave after 02; 06 closes the phase. Phase 2: 07 before 08 before 09 (data → API → UI), though 09 pages can start against 08 endpoints one at a time. Phase 3 runs **10 (onboarding) before 11 (polish)**: with no mid-build users there is no live-customer pull toward polish, and ONB is the technically riskiest epic (SSRF fetcher, generation quality, ~90s end-to-end target), so its unknowns should surface first; POL's dependencies on Phase-2 UI are satisfied either way.
+
+Epic 12 (RPC) is infra work independent of the product epics — it can run any time after 08 (an
+existing, stable API surface to migrate) and before no particular milestone; it does not gate the
+Phase 3 MVP milestone.
 
 Explicitly **not** in this backlog (post-MVP, per design 07): billing/Stripe, self-serve signup, password reset, additional platforms, alerts, competitor merge, Prometheus/metrics, multi-VPS.

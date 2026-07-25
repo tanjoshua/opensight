@@ -2,7 +2,11 @@ module opensight
 
 go 1.26.5
 
-tool github.com/air-verse/air
+tool (
+	connectrpc.com/connect/cmd/protoc-gen-connect-go
+	github.com/air-verse/air
+	google.golang.org/protobuf/cmd/protoc-gen-go
+)
 
 require (
 	github.com/go-chi/chi/v5 v5.3.1
@@ -17,10 +21,12 @@ require (
 	golang.org/x/crypto v0.54.0
 	golang.org/x/net v0.56.0
 	golang.org/x/text v0.40.0
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	connectrpc.com/connect v1.20.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/air-verse/air v1.66.0 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
@@ -64,5 +70,4 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260120221211-b8f7ae30c516 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260420184626-e10c466a9529 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )

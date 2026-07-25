@@ -6,3 +6,5 @@ linters:
     paths:
       # npm packages can ship Go source (e.g. flatted); never lint them.
       - web/node_modules
+      # Generated protobuf/Connect code; not ours to style.
+      - internal/gen

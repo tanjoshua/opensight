@@ -1,8 +1,9 @@
 BIN := ./bin/opensight
+BUF := ./web/node_modules/.bin/buf
 # Use golangci-lint from PATH if present, otherwise the locally installed binary.
 GOLANGCI ?= $(shell command -v golangci-lint 2>/dev/null || echo ./bin/golangci-lint)
 
-.PHONY: build test lint up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db
+.PHONY: build test lint proto up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db
 
 build:
 	go build -o $(BIN) ./cmd/opensight
@@ -13,6 +14,11 @@ test:
 
 lint:
 	$(GOLANGCI) run
+
+proto:
+	$(BUF) format -w
+	$(BUF) lint
+	$(BUF) generate
 
 up:
 	./scripts/dev-up
