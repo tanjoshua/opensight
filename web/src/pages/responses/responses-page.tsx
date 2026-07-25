@@ -2,6 +2,8 @@
 // ChatGPT responses. Filters live in the URL search params so trend charts can
 // deep-link into a run (design 06 "every number is a door"); WEB-4 attaches the
 // response drawer to these rows.
+import { skipToken, useQuery } from "@connectrpc/connect-query"
+import { keepPreviousData } from "@tanstack/react-query"
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,14 +15,14 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "react-router"
 
-import { useMe } from "@/api/auth"
+import { resultStatusLabel, runStatusLabel } from "@/api/labels"
+import { useMe } from "@/api/hooks"
+import { ResultStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
+import type { PromptResult, Run } from "@/gen/opensight/v1/result_pb"
 import {
-  useResults,
-  useRuns,
-  type PromptResult,
-  type ResultStatus,
-  type Run,
-} from "@/api/responses"
+  listResults,
+  listRuns,
+} from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,24 +62,40 @@ export function ResponsesPage() {
 
   const run = searchParams.get("run") ?? undefined
   const prompt = searchParams.get("prompt") ?? undefined
-  const rawStatus = searchParams.get("status")
-  const status: ResultStatus | undefined =
-    rawStatus === "succeeded" || rawStatus === "failed" ? rawStatus : undefined
+  const status = resultStatusFromParam(searchParams.get("status"))
   const offset = Math.max(0, Number(searchParams.get("offset")) || 0)
 
-  const runsQuery = useRuns(business?.id)
-  const hasRunningRun =
-    runsQuery.data?.runs.some((item) => item.status === "running") ?? false
-  const resultsQuery = useResults(
-    business?.id,
+  // Re-created here and in app-layout.tsx's RunProgressBadge: the old REST
+  // client centralized this poll-while-running behavior in one useRuns hook.
+  const runsQuery = useQuery(
+    listRuns,
+    business === undefined ? skipToken : { businessId: business.id },
     {
-      run,
-      prompt,
-      status,
-      limit: PAGE_SIZE,
-      offset,
-    },
-    { poll: hasRunningRun }
+      refetchInterval: (query) =>
+        query.state.data?.runs.some((item) => item.status === RunStatus.RUNNING)
+          ? 5000
+          : false,
+    }
+  )
+  const hasRunningRun =
+    runsQuery.data?.runs.some((item) => item.status === RunStatus.RUNNING) ??
+    false
+  const resultsQuery = useQuery(
+    listResults,
+    business === undefined
+      ? skipToken
+      : {
+          businessId: business.id,
+          runId: run ?? "",
+          promptId: prompt ?? "",
+          status,
+          limit: PAGE_SIZE,
+          offset,
+        },
+    {
+      placeholderData: keepPreviousData,
+      refetchInterval: hasRunningRun ? 5000 : false,
+    }
   )
   const refetchResults = resultsQuery.refetch
   const hadRunningRun = useRef(false)
@@ -147,16 +165,16 @@ export function ResponsesPage() {
 
   const results = resultsQuery.data?.results ?? []
   const runsById = new Map(runs.map((r) => [r.id, r]))
-  const runningRuns = runs.filter((item) => item.status === "running")
+  const runningRuns = runs.filter((item) => item.status === RunStatus.RUNNING)
   // The prompt filter is applied from a row (there is no prompts endpoint yet),
   // so label the chip from any loaded row of that prompt.
   const promptFilterText =
     prompt === undefined
       ? undefined
-      : (results.find((r) => r.prompt_id === prompt)?.prompt?.text ??
+      : (results.find((r) => r.promptId === prompt)?.prompt?.text ??
         "1 prompt")
   const page = Math.floor(offset / PAGE_SIZE) + 1
-  const hasNextPage = (resultsQuery.data?.paging.page_count ?? 0) === PAGE_SIZE
+  const hasNextPage = (resultsQuery.data?.paging?.pageCount ?? 0) === PAGE_SIZE
 
   return (
     <div className="flex flex-col gap-4">
@@ -225,9 +243,9 @@ export function ResponsesPage() {
                 <ResultRow
                   key={result.id}
                   result={result}
-                  run={runsById.get(result.run_id)}
+                  run={runsById.get(result.runId)}
                   onOpen={() => setSelectedResultID(result.id)}
-                  onFilterByPrompt={() => setFilter("prompt", result.prompt_id)}
+                  onFilterByPrompt={() => setFilter("prompt", result.promptId)}
                 />
               ))
             )}
@@ -282,17 +300,17 @@ function ResultRow({
     <TableRow className="cursor-pointer" onClick={onOpen}>
       <TableCell className="max-w-0">
         <span className="line-clamp-2 whitespace-normal">
-          {result.prompt?.text ?? result.prompt_id}
+          {result.prompt?.text ?? result.promptId}
         </span>
       </TableCell>
       <TableCell className="max-w-0">
-        {result.status === "failed" ? (
+        {result.status === ResultStatus.FAILED ? (
           <span className="line-clamp-2 whitespace-normal text-destructive">
             {result.error ?? "Unknown error"}
           </span>
         ) : (
           <span className="line-clamp-2 whitespace-normal text-muted-foreground">
-            {result.response_text}
+            {result.responseText}
           </span>
         )}
       </TableCell>
@@ -307,7 +325,7 @@ function ResultRow({
       <TableCell>
         {run ? (
           <span className="flex items-center gap-1.5 whitespace-nowrap">
-            {formatRunDate(run.scheduled_for)}
+            {formatRunDate(run.scheduledFor)}
             <RunStatusBadge status={run.status} />
           </span>
         ) : (
@@ -356,7 +374,7 @@ function RunFilter({
   const items = [
     { label: "All runs", value: ALL_FILTER_VALUE },
     ...runs.map((run) => ({
-      label: `${formatRunDate(run.scheduled_for)} - ${run.status}`,
+      label: `${formatRunDate(run.scheduledFor)} - ${runStatusLabel(run.status)}`,
       value: run.id,
     })),
   ]
@@ -386,18 +404,18 @@ function StatusFilter({
   value,
   onChange,
 }: {
-  value: ResultStatus | undefined
+  value: ResultStatus
   onChange: (value?: string) => void
 }) {
   const items = [
     { label: "All statuses", value: ALL_FILTER_VALUE },
-    { label: "Succeeded", value: "succeeded" },
-    { label: "Failed", value: "failed" },
+    { label: "Succeeded", value: resultStatusLabel(ResultStatus.SUCCEEDED) },
+    { label: "Failed", value: resultStatusLabel(ResultStatus.FAILED) },
   ]
   return (
     <Select
       items={items}
-      value={value ?? ALL_FILTER_VALUE}
+      value={resultStatusToParam(value) ?? ALL_FILTER_VALUE}
       onValueChange={(v) => onChange(filterValueFromSelect(v))}
     >
       <SelectTrigger size="sm" aria-label="Filter by status">
@@ -421,23 +439,43 @@ function filterValueFromSelect(value: string | null | undefined) {
   return selected === ALL_FILTER_VALUE ? undefined : selected
 }
 
-function ResultStatusBadge({ status }: { status: string }) {
+// resultStatusFromParam/resultStatusToParam round-trip the URL's ?status=
+// param through the same words resultStatusLabel renders, so the URL contract
+// (succeeded|failed) is unaffected by the REST-to-RPC cutover. An unrecognized
+// or absent param means "no filter", i.e. ResultStatus.UNSPECIFIED.
+function resultStatusFromParam(value: string | null): ResultStatus {
+  if (value === resultStatusLabel(ResultStatus.SUCCEEDED)) {
+    return ResultStatus.SUCCEEDED
+  }
+  if (value === resultStatusLabel(ResultStatus.FAILED)) {
+    return ResultStatus.FAILED
+  }
+  return ResultStatus.UNSPECIFIED
+}
+
+function resultStatusToParam(status: ResultStatus): string | undefined {
+  return status === ResultStatus.UNSPECIFIED
+    ? undefined
+    : resultStatusLabel(status)
+}
+
+function ResultStatusBadge({ status }: { status: ResultStatus }) {
   return (
-    <Badge variant={status === "failed" ? "destructive" : "secondary"}>
-      {status}
+    <Badge variant={status === ResultStatus.FAILED ? "destructive" : "secondary"}>
+      {resultStatusLabel(status)}
     </Badge>
   )
 }
 
 // Run-level status: completed / partial / failed (running until finished).
-function RunStatusBadge({ status }: { status: string }) {
+function RunStatusBadge({ status }: { status: RunStatus }) {
   const variant =
-    status === "failed"
+    status === RunStatus.FAILED
       ? ("destructive" as const)
-      : status === "completed"
+      : status === RunStatus.COMPLETED
         ? ("secondary" as const)
         : ("outline" as const)
-  return <Badge variant={variant}>{status}</Badge>
+  return <Badge variant={variant}>{runStatusLabel(status)}</Badge>
 }
 
 function SectionMessage({

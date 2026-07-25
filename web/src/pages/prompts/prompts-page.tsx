@@ -2,18 +2,29 @@
 // mention order, sentiment, and a spark-trend across runs. Every stat opens the
 // Response drawer via its result_id (every number is a door); a row click drills
 // into the prompt's detail and lineage.
+import {
+  createConnectQueryKey,
+  skipToken,
+  useMutation,
+  useQuery,
+} from "@connectrpc/connect-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { MessageSquareText, Plus } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router"
 
-import { useMe } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { errorMessage } from "@/api/errors"
+import { useMe } from "@/api/hooks"
+import { sentimentLabel } from "@/api/labels"
+import { Sentiment } from "@/gen/opensight/v1/common_pb"
+import type {
+  PromptSummary,
+  PromptTrendPoint,
+} from "@/gen/opensight/v1/prompt_pb"
 import {
-  useAddPrompt,
-  usePrompts,
-  type PromptSummary,
-  type PromptTrendPoint,
-} from "@/api/prompts"
+  addPrompt,
+  listPrompts,
+} from "@/gen/opensight/v1/prompt-PromptService_connectquery"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
@@ -39,10 +50,24 @@ export function PromptsPage() {
   const me = useMe()
   const business = me.data?.businesses[0]
   const navigate = useNavigate()
-  const promptsQuery = usePrompts(business?.id)
+  const queryClient = useQueryClient()
+  const promptsQuery = useQuery(
+    listPrompts,
+    business === undefined ? skipToken : { businessId: business.id }
+  )
   const [selectedResultID, setSelectedResultID] = useState<string>()
   const [addOpen, setAddOpen] = useState(false)
-  const addPrompt = useAddPrompt(business?.id)
+  const addPromptMutation = useMutation(addPrompt, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: listPrompts,
+          input: business === undefined ? undefined : { businessId: business.id },
+          cardinality: "finite",
+        }),
+      })
+    },
+  })
 
   if (me.isError || promptsQuery.isError) {
     return (
@@ -69,16 +94,13 @@ export function PromptsPage() {
 
   const prompts = promptsQuery.data.prompts
 
-  const addError =
-    addPrompt.error instanceof ApiError
-      ? addPrompt.error.message
-      : addPrompt.isError
-        ? "Could not add prompt. Try again."
-        : undefined
+  const addError = addPromptMutation.isError
+    ? errorMessage(addPromptMutation.error, "Could not add prompt. Try again.")
+    : undefined
 
   const openAdd = (open: boolean) => {
     setAddOpen(open)
-    if (!open) addPrompt.reset()
+    if (!open) addPromptMutation.reset()
   }
 
   return (
@@ -95,10 +117,13 @@ export function PromptsPage() {
         mode="add"
         open={addOpen}
         onOpenChange={openAdd}
-        submitting={addPrompt.isPending}
+        submitting={addPromptMutation.isPending}
         errorMessage={addError}
         onSubmit={(text) =>
-          addPrompt.mutate(text, { onSuccess: () => setAddOpen(false) })
+          addPromptMutation.mutate(
+            { businessId: business.id, text },
+            { onSuccess: () => setAddOpen(false) }
+          )
         }
       />
 
@@ -156,11 +181,12 @@ function PromptRow({
   onNavigate: () => void
   onOpenResult: (resultID: string) => void
 }) {
-  // latest_result_id null means "not yet measured" — no analyzed result exists,
-  // which is distinct from "measured, not mentioned" and has no door to open.
-  const measured = prompt.latest_result_id !== null
+  // latest_result_id absent means "not yet measured" — no analyzed result
+  // exists, which is distinct from "measured, not mentioned" and has no door
+  // to open.
+  const measured = prompt.latestResultId !== undefined
   const openLatest = () => {
-    if (prompt.latest_result_id) onOpenResult(prompt.latest_result_id)
+    if (prompt.latestResultId) onOpenResult(prompt.latestResultId)
   }
 
   return (
@@ -180,7 +206,7 @@ function PromptRow({
         )}
       </TableCell>
       <TableCell className="tabular-nums">
-        {prompt.order === null ? (
+        {prompt.order === undefined ? (
           <span className="text-muted-foreground">—</span>
         ) : (
           <StatButton onClick={openLatest} label="Open the latest response">
@@ -189,11 +215,11 @@ function PromptRow({
         )}
       </TableCell>
       <TableCell>
-        {prompt.sentiment === null ? (
+        {prompt.sentiment === Sentiment.UNSPECIFIED ? (
           <span className="text-muted-foreground">—</span>
         ) : (
           <StatButton onClick={openLatest} label="Open the latest response">
-            <span className="capitalize">{prompt.sentiment}</span>
+            <span className="capitalize">{sentimentLabel(prompt.sentiment)}</span>
           </StatButton>
         )}
       </TableCell>
@@ -248,18 +274,18 @@ function Sparkline({
     <div className="flex items-center gap-1.5">
       {trend.map((point) => (
         <button
-          key={point.run_id}
+          key={point.runId}
           type="button"
-          title={`${point.scheduled_for}: ${
+          title={`${point.scheduledFor}: ${
             point.mentioned ? "mentioned" : "not mentioned"
           }`}
-          aria-label={`${point.scheduled_for}: ${
+          aria-label={`${point.scheduledFor}: ${
             point.mentioned ? "mentioned" : "not mentioned"
           }`}
           className="cursor-pointer"
           onClick={(event) => {
             event.stopPropagation()
-            onOpenResult(point.result_id)
+            onOpenResult(point.resultId)
           }}
         >
           <span

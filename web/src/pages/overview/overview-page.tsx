@@ -3,6 +3,7 @@
 // change markers, then three compact panels (themes, cited domains, competitors).
 // Every number is a door — stats open the Response drawer via their result_ids,
 // and clicking a week on the trend deep-links to Responses filtered to that run.
+import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { ArrowRight, LayoutDashboard, TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router"
@@ -15,15 +16,16 @@ import {
   YAxis,
 } from "recharts"
 
-import { useMe } from "@/api/auth"
-import {
-  useOverview,
-  type CompetitorSummary,
-  type DomainStat,
-  type Overview,
-  type PromptChange,
-  type VisibilityPoint,
-} from "@/api/overview"
+import { useMe } from "@/api/hooks"
+import { CompetitorStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
+import type {
+  CompetitorSummary,
+  DomainStat,
+  GetOverviewResponse,
+  PromptChange,
+  VisibilityPoint,
+} from "@/gen/opensight/v1/overview_pb"
+import { getOverview } from "@/gen/opensight/v1/overview-OverviewService_connectquery"
 import { CitationSourcesDrilldown } from "@/components/citation-sources-drilldown"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -71,11 +73,26 @@ const COMPETITOR_COLORS = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)"]
 // is labeled "Next run" rather than a date for that reason.
 const PROJECTED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
+// GetOverviewResponse's fields are already the flat Overview shape (no
+// further response-wrapper unwrapping needed).
+type Overview = GetOverviewResponse
+
 export function OverviewPage() {
   const me = useMe()
   const business = me.data?.businesses[0]
   const navigate = useNavigate()
-  const overview = useOverview(business?.id)
+  // Re-created here as in Responses/app-layout: poll while the latest run is
+  // still executing (first-run-in-progress, design 06).
+  const overview = useQuery(
+    getOverview,
+    business === undefined ? skipToken : { businessId: business.id },
+    {
+      refetchInterval: (query) =>
+        query.state.data?.latestRun?.status === RunStatus.RUNNING
+          ? 5000
+          : false,
+    }
+  )
   // Opening the drawer is the shared "every number is a door" action: a stat's
   // result_ids are the responses behind it; we surface the first one.
   const [selectedResultID, setSelectedResultID] = useState<string>()
@@ -127,7 +144,7 @@ export function OverviewPage() {
 
   // No analyzed history yet: either no run has happened, the first run is still
   // in flight, or results are awaiting analysis (design 06 degraded states).
-  if (data.visibility.trend.length === 0) {
+  if ((data.visibility?.trend.length ?? 0) === 0) {
     return (
       <OverviewFrame>
         <NoDataState overview={data} />
@@ -207,7 +224,9 @@ function VisibilityCard({
   onOpenResult: (ids: string[]) => void
   onSelectRun: (runID: string) => void
 }) {
-  const { current, delta, trend } = overview.visibility
+  const current = overview.visibility?.current
+  const delta = overview.visibility?.delta
+  const trend = overview.visibility?.trend ?? []
   const latestPoint = trend[trend.length - 1]
 
   return (
@@ -221,18 +240,18 @@ function VisibilityCard({
             type="button"
             className="cursor-pointer text-4xl font-semibold tabular-nums hover:underline"
             title="Open a response behind this number"
-            onClick={() => onOpenResult(latestPoint.result_ids)}
+            onClick={() => onOpenResult(latestPoint.resultIds)}
           >
-            {current === null ? "—" : formatPercent(current)}
+            {current === undefined ? "—" : formatPercent(current)}
           </button>
-          {delta !== null && <DeltaBadge delta={delta} />}
+          {delta !== undefined && <DeltaBadge delta={delta} />}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <TrendChart
           trend={trend}
-          competitors={overview.top_competitors}
-          promptChanges={overview.prompt_changes}
+          competitors={overview.topCompetitors}
+          promptChanges={overview.promptChanges}
           onSelectRun={onSelectRun}
         />
       </CardContent>
@@ -278,17 +297,17 @@ function TrendChart({
   const competitorPercentByRun = new Map<string, Map<string, number>>(
     competitorSeries.map((s) => {
       const comp = competitors.find((c) => c.id === s.key)!
-      return [s.key, new Map(comp.trend.map((p) => [p.run_id, p.percent]))]
+      return [s.key, new Map(comp.trend.map((p) => [p.runId, p.percent]))]
     })
   )
   const data = trend.map((point) => {
     const row: Record<string, number | VisibilityPoint> = {
-      x: dateMs(point.scheduled_for),
+      x: dateMs(point.scheduledFor),
       point,
       you: point.percent,
     }
     for (const s of competitorSeries) {
-      const value = competitorPercentByRun.get(s.key)?.get(point.run_id)
+      const value = competitorPercentByRun.get(s.key)?.get(point.runId)
       if (value !== undefined) row[s.key] = value
     }
     return row
@@ -325,7 +344,7 @@ function TrendChart({
                   activePayload?: { payload: { point: VisibilityPoint } }[]
                 }
               ).activePayload?.[0]?.payload.point
-              if (point) onSelectRun(point.run_id)
+              if (point) onSelectRun(point.runId)
             }}
           >
             <CartesianGrid vertical={false} />
@@ -511,7 +530,7 @@ function TrendTooltip({
   return (
     <div className="min-w-40 rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
       <div className="font-medium">
-        {shortDate(dateMs(point.scheduled_for))}
+        {shortDate(dateMs(point.scheduledFor))}
       </div>
       <div className="mt-1 flex flex-col gap-0.5">
         {series.map((s) => {
@@ -561,16 +580,21 @@ function DeltaBadge({ delta }: { delta: number }) {
 }
 
 function PartialRunBanner({ overview }: { overview: Overview }) {
-  const run = overview.latest_run
+  const run = overview.latestRun
   // The overview payload carries run status but not per-prompt success counts, so
   // the banner names the condition and links to the failed responses rather than
   // inventing an "N of M" figure (design 06 partial-run state).
-  if (!run || (run.status !== "partial" && run.status !== "failed")) return null
+  if (
+    !run ||
+    (run.status !== RunStatus.PARTIAL && run.status !== RunStatus.FAILED)
+  ) {
+    return null
+  }
   return (
     <Alert variant="destructive">
       <TriangleAlert />
       <AlertTitle>
-        {run.status === "failed"
+        {run.status === RunStatus.FAILED
           ? "The latest run failed"
           : "Some prompts failed in the latest run"}
       </AlertTitle>
@@ -595,15 +619,15 @@ function ThemesPanel({
 }) {
   return (
     <Panel title="Common themes" description="Keywords across your responses">
-      {overview.top_keywords.length === 0 ? (
+      {overview.topKeywords.length === 0 ? (
         <PanelEmpty>No keywords yet.</PanelEmpty>
       ) : (
-        overview.top_keywords.map((keyword) => (
+        overview.topKeywords.map((keyword) => (
           <StatRow
             key={keyword.keyword}
             label={keyword.keyword}
-            count={keyword.result_ids.length}
-            onClick={() => onOpenResult(keyword.result_ids)}
+            count={keyword.resultIds.length}
+            onClick={() => onOpenResult(keyword.resultIds)}
           />
         ))
       )}
@@ -620,14 +644,14 @@ function DomainsPanel({
 }) {
   return (
     <Panel title="Top cited domains" description="Sources ChatGPT links to">
-      {overview.top_cited_domains.length === 0 ? (
+      {overview.topCitedDomains.length === 0 ? (
         <PanelEmpty>No citations yet.</PanelEmpty>
       ) : (
-        overview.top_cited_domains.map((domain) => (
+        overview.topCitedDomains.map((domain) => (
           <StatRow
             key={domain.domain}
             label={domain.domain}
-            count={domain.result_ids.length}
+            count={domain.resultIds.length}
             onClick={() => onOpenDomain(domain)}
           />
         ))
@@ -645,7 +669,7 @@ function CompetitorsPanel({
 }) {
   // top_competitors is truncated to the top-3 discovered, so the backlog count
   // comes from the server's untruncated discovered_total.
-  const discovered = overview.discovered_total
+  const discovered = overview.discoveredTotal
   return (
     <Panel
       title="Leading competitors"
@@ -662,14 +686,14 @@ function CompetitorsPanel({
         ) : undefined
       }
     >
-      {overview.top_competitors.length === 0 ? (
+      {overview.topCompetitors.length === 0 ? (
         <PanelEmpty>No competitors yet.</PanelEmpty>
       ) : (
-        overview.top_competitors.map((competitor) => (
+        overview.topCompetitors.map((competitor) => (
           <CompetitorRow
             key={competitor.id}
             competitor={competitor}
-            onClick={() => onOpenResult(competitor.result_ids)}
+            onClick={() => onOpenResult(competitor.resultIds)}
           />
         ))
       )}
@@ -684,7 +708,7 @@ function CompetitorRow({
   competitor: CompetitorSummary
   onClick: () => void
 }) {
-  const disabled = competitor.result_ids.length === 0
+  const disabled = competitor.resultIds.length === 0
   return (
     <button
       type="button"
@@ -694,12 +718,12 @@ function CompetitorRow({
     >
       <span className="flex min-w-0 items-center gap-2">
         <span className="truncate">{competitor.name}</span>
-        {competitor.status === "discovered" && (
+        {competitor.status === CompetitorStatus.DISCOVERED && (
           <Badge variant="outline">discovered</Badge>
         )}
       </span>
       <span className="shrink-0 text-muted-foreground tabular-nums">
-        {formatPercent(competitor.mention_percent)}
+        {formatPercent(competitor.mentionPercent)}
       </span>
     </button>
   )
@@ -759,7 +783,7 @@ function PanelEmpty({ children }: { children: React.ReactNode }) {
 // Trend is empty: no analyzed results exist yet. Distinguish "no run", "run in
 // progress", and "awaiting analysis" so the honest state shows (design 06).
 function NoDataState({ overview }: { overview: Overview }) {
-  const run = overview.latest_run
+  const run = overview.latestRun
   if (!run) {
     return (
       <SectionMessage
@@ -768,7 +792,7 @@ function NoDataState({ overview }: { overview: Overview }) {
       />
     )
   }
-  if (run.status === "running") {
+  if (run.status === RunStatus.RUNNING) {
     return (
       <SectionMessage
         title="First run in progress"

@@ -16,6 +16,7 @@ export default defineConfig({
     // SPA is served by the same binary, so no CORS anywhere (design 06).
     proxy: {
       "/api": process.env.OPENSIGHT_API_URL ?? "http://127.0.0.1:8080",
+      "/rpc": process.env.OPENSIGHT_API_URL ?? "http://127.0.0.1:8080",
     },
   },
 })

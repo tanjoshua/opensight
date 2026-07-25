@@ -2,18 +2,29 @@
 // its replacement lineage. Reached by drilling in from the Prompts table or by
 // walking a lineage link — GetPrompt reaches retired prompts too, so a retired
 // predecessor renders here correctly. Every result row opens the Response drawer.
+import {
+  createConnectQueryKey,
+  skipToken,
+  useMutation,
+  useQuery,
+} from "@connectrpc/connect-query"
+import { timestampDate, type Timestamp } from "@bufbuild/protobuf/wkt"
+import { useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, MessageSquareText, Replace } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 
-import { useMe } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { errorMessage } from "@/api/errors"
+import { useMe } from "@/api/hooks"
+import { promptStatusLabel, resultStatusLabel } from "@/api/labels"
+import { PromptStatus, ResultStatus } from "@/gen/opensight/v1/common_pb"
+import type { Prompt } from "@/gen/opensight/v1/prompt_pb"
+import type { PromptResult } from "@/gen/opensight/v1/result_pb"
 import {
-  usePrompt,
-  useReplacePrompt,
-  type PromptDetailResult,
-  type PromptLineageNode,
-} from "@/api/prompts"
+  getPrompt,
+  listPrompts,
+  replacePrompt,
+} from "@/gen/opensight/v1/prompt-PromptService_connectquery"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
@@ -41,10 +52,28 @@ export function PromptDetailPage() {
   const navigate = useNavigate()
   const me = useMe()
   const businessId = me.data?.businesses[0]?.id
-  const promptQuery = usePrompt(id)
+  const queryClient = useQueryClient()
+  const promptQuery = useQuery(getPrompt, id === undefined ? skipToken : { promptId: id })
   const [selectedResultID, setSelectedResultID] = useState<string>()
   const [replaceOpen, setReplaceOpen] = useState(false)
-  const replacePrompt = useReplacePrompt(businessId)
+  const replacePromptMutation = useMutation(replacePrompt, {
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: listPrompts,
+          input: businessId === undefined ? undefined : { businessId },
+          cardinality: "finite",
+        }),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: getPrompt,
+          input: { promptId: variables.promptId },
+          cardinality: "finite",
+        }),
+      })
+    },
+  })
 
   if (promptQuery.isError) {
     return (
@@ -57,20 +86,24 @@ export function PromptDetailPage() {
   if (!promptQuery.data) {
     return <DetailSkeleton />
   }
-
   const { prompt, lineage, results } = promptQuery.data
+  if (!prompt) {
+    return (
+      <SectionMessage
+        title="Prompt not found"
+        description="This prompt could not be loaded. It may have been removed."
+      />
+    )
+  }
   const replacements = buildReplacements(prompt, lineage)
 
-  const replaceError =
-    replacePrompt.error instanceof ApiError
-      ? replacePrompt.error.message
-      : replacePrompt.isError
-        ? "Could not replace prompt. Try again."
-        : undefined
+  const replaceError = replacePromptMutation.isError
+    ? errorMessage(replacePromptMutation.error, "Could not replace prompt. Try again.")
+    : undefined
 
   const openReplace = (open: boolean) => {
     setReplaceOpen(open)
-    if (!open) replacePrompt.reset()
+    if (!open) replacePromptMutation.reset()
   }
 
   return (
@@ -86,12 +119,12 @@ export function PromptDetailPage() {
         </Button>
         <h1 className="font-heading text-lg font-semibold">Prompt</h1>
         <Badge
-          variant={prompt.status === "retired" ? "outline" : "secondary"}
+          variant={prompt.status === PromptStatus.RETIRED ? "outline" : "secondary"}
           className="capitalize"
         >
-          {prompt.status}
+          {promptStatusLabel(prompt.status)}
         </Badge>
-        {prompt.status === "active" && (
+        {prompt.status === PromptStatus.ACTIVE && (
           <Button
             variant="outline"
             className="ms-auto"
@@ -108,15 +141,15 @@ export function PromptDetailPage() {
         open={replaceOpen}
         onOpenChange={openReplace}
         initialText={prompt.text}
-        submitting={replacePrompt.isPending}
+        submitting={replacePromptMutation.isPending}
         errorMessage={replaceError}
         onSubmit={(text) =>
-          replacePrompt.mutate(
-            { promptId: prompt.id, text },
+          replacePromptMutation.mutate(
+            { promptId: prompt.id, text, confirmed: true },
             {
               onSuccess: (data) => {
                 setReplaceOpen(false)
-                navigate(`/prompts/${data.prompt.id}`)
+                if (data.prompt) navigate(`/prompts/${data.prompt.id}`)
               },
             }
           )
@@ -196,30 +229,30 @@ function ResultRow({
   result,
   onOpen,
 }: {
-  result: PromptDetailResult
+  result: PromptResult
   onOpen: () => void
 }) {
   return (
     <TableRow className="cursor-pointer" onClick={onOpen}>
       <TableCell className="whitespace-nowrap">
-        {formatDate(result.requested_at)}
+        {formatDate(result.requestedAt)}
       </TableCell>
       <TableCell className="max-w-0">
-        {result.status === "failed" ? (
+        {result.status === ResultStatus.FAILED ? (
           <span className="line-clamp-2 whitespace-normal text-destructive">
             {result.error ?? "Unknown error"}
           </span>
         ) : (
           <span className="line-clamp-2 whitespace-normal text-muted-foreground">
-            {result.response_text}
+            {result.responseText}
           </span>
         )}
       </TableCell>
       <TableCell className="space-x-1.5 whitespace-nowrap">
         <Badge
-          variant={result.status === "failed" ? "destructive" : "secondary"}
+          variant={result.status === ResultStatus.FAILED ? "destructive" : "secondary"}
         >
-          {result.status}
+          {resultStatusLabel(result.status)}
         </Badge>
         {result.unanalyzed && <Badge variant="outline">not yet analyzed</Badge>}
       </TableCell>
@@ -230,27 +263,24 @@ function ResultRow({
 interface Replacement {
   replacedId: string
   replacedText: string
-  on: string
+  on: Timestamp | undefined
 }
 
 // Walk the newest-first chain [prompt, ...lineage]: a node with a
 // replaces_prompt_id replaced the next node in the chain, on that node's
 // created_at. The API only exposes the backward chain (replaces_prompt_id), so
 // this renders "replaced X" going back — there is no forward "replaced by Y" link.
-function buildReplacements(
-  prompt: PromptLineageNode,
-  lineage: PromptLineageNode[]
-): Replacement[] {
+function buildReplacements(prompt: Prompt, lineage: Prompt[]): Replacement[] {
   const chain = [prompt, ...lineage]
   const out: Replacement[] = []
   for (let i = 0; i < chain.length; i++) {
     const node = chain[i]
     const predecessor = chain[i + 1]
-    if (node.replaces_prompt_id && predecessor) {
+    if (node.replacesPromptId && predecessor) {
       out.push({
         replacedId: predecessor.id,
         replacedText: predecessor.text,
-        on: node.created_at,
+        on: node.createdAt,
       })
     }
   }
@@ -291,12 +321,10 @@ function DetailSkeleton() {
   )
 }
 
-// created_at is a full timestamp; scheduled_for is a plain date (YYYY-MM-DD)
-// parsed as local midnight. Both render as a short local date.
-function formatDate(value: string): string {
-  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value
-  const date = new Date(iso)
-  if (Number.isNaN(date.valueOf())) return value
+function formatDate(value: Timestamp | undefined): string {
+  if (value === undefined) return "-"
+  const date = timestampDate(value)
+  if (Number.isNaN(date.valueOf())) return "-"
   return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",

@@ -2,6 +2,8 @@
 // value is editable; nothing is committed until the user applies, and the client
 // sends the final edited payload verbatim (the server does not merge). Reused for
 // manual setup (failed generation) by seeding an empty payload.
+import { create } from "@bufbuild/protobuf"
+import { useMutation } from "@connectrpc/connect-query"
 import { useState, type ReactNode } from "react"
 import {
   ArrowRight,
@@ -12,16 +14,29 @@ import {
   TriangleAlert,
 } from "lucide-react"
 
-import { ApiError } from "@/api/client"
+import { errorMessage } from "@/api/errors"
 import {
+  ProposedProfileSchema,
+  ProposedPromptSchema,
   type ProposalPayload,
+  type ProposedProfile,
   type ProposedPrompt,
-  useApplyProposal,
-} from "@/api/onboarding"
+} from "@/gen/opensight/v1/business_pb"
+import { applyProposal } from "@/gen/opensight/v1/business-BusinessService_connectquery"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+
+const EMPTY_LOCATION = { address: "", area: "", city: "", country: "" }
+
+const EMPTY_PROFILE: ProposedProfile = create(ProposedProfileSchema, {
+  name: "",
+  aliases: [],
+  category: "",
+  services: [],
+  location: EMPTY_LOCATION,
+})
 
 export function ReviewScreen({
   businessId,
@@ -43,21 +58,42 @@ export function ReviewScreen({
   onApplied: () => void
 }) {
   const [draft, setDraft] = useState<ProposalPayload>(payload)
-  const apply = useApplyProposal(businessId)
+  const apply = useMutation(applyProposal, {
+    onSuccess: onApplied,
+  })
 
-  const profile = draft.profile
-  const setProfile = (patch: Partial<ProposalPayload["profile"]>) =>
-    setDraft((d) => ({ ...d, profile: { ...d.profile, ...patch } }))
+  // profile is always populated in practice (EMPTY_PAYLOAD sets it, and a
+  // ready/failed proposal payload always carries one); the empty fallback
+  // keeps the form rendering rather than special-casing an impossible state.
+  const profile = draft.profile ?? EMPTY_PROFILE
+  const location = profile.location ?? EMPTY_LOCATION
+  const setProfile = (patch: {
+    name?: string
+    category?: string
+    aliases?: string[]
+    services?: string[]
+    location?: { address: string; area: string; city: string; country: string }
+  }) =>
+    setDraft((d) => {
+      const current = d.profile ?? EMPTY_PROFILE
+      return {
+        ...d,
+        profile: create(ProposedProfileSchema, {
+          name: patch.name ?? current.name,
+          category: patch.category ?? current.category,
+          aliases: patch.aliases ?? current.aliases,
+          services: patch.services ?? current.services,
+          location: patch.location ?? current.location,
+        }),
+      }
+    })
 
   const validationError = validateFinalPayload(draft, promptLimit)
   const canApply = validationError === undefined
 
-  const applyError =
-    apply.error instanceof ApiError
-      ? apply.error.message
-      : apply.isError
-        ? "Could not apply. Try again."
-        : undefined
+  const applyError = apply.isError
+    ? errorMessage(apply.error, "Could not apply. Try again.")
+    : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,7 +126,7 @@ export function ReviewScreen({
         )}
       </div>
 
-      {draft.low_confidence && (
+      {draft.lowConfidence && (
         <Alert variant="destructive">
           <TriangleAlert />
           <AlertTitle>Review these values carefully</AlertTitle>
@@ -133,11 +169,11 @@ export function ReviewScreen({
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Address">
             <Input
-              value={profile.location.address}
+              value={location.address}
               onChange={(e) =>
                 setProfile({
                   location: {
-                    ...profile.location,
+                    ...location,
                     address: e.currentTarget.value,
                   },
                 })
@@ -146,12 +182,12 @@ export function ReviewScreen({
           </Field>
           <Field label="Area">
             <Input
-              value={profile.location.area}
+              value={location.area}
               placeholder="e.g. Novena"
               onChange={(e) =>
                 setProfile({
                   location: {
-                    ...profile.location,
+                    ...location,
                     area: e.currentTarget.value,
                   },
                 })
@@ -160,11 +196,11 @@ export function ReviewScreen({
           </Field>
           <Field label="City">
             <Input
-              value={profile.location.city}
+              value={location.city}
               onChange={(e) =>
                 setProfile({
                   location: {
-                    ...profile.location,
+                    ...location,
                     city: e.currentTarget.value,
                   },
                 })
@@ -173,11 +209,11 @@ export function ReviewScreen({
           </Field>
           <Field label="Country" hint="ISO code, e.g. SG.">
             <Input
-              value={profile.location.country}
+              value={location.country}
               onChange={(e) =>
                 setProfile({
                   location: {
-                    ...profile.location,
+                    ...location,
                     country: e.currentTarget.value,
                   },
                 })
@@ -209,7 +245,7 @@ export function ReviewScreen({
             onClick={() =>
               setDraft((d) => ({
                 ...d,
-                prompts: [...d.prompts, { text: "" }],
+                prompts: [...d.prompts, create(ProposedPromptSchema, { text: "" })],
               }))
             }
           >
@@ -244,7 +280,7 @@ export function ReviewScreen({
         )}
       </Section>
 
-      {payload.sources && payload.sources.length > 0 && (
+      {payload.sources.length > 0 && (
         <Section
           title="Sources"
           subtitle="Pages we read while researching this business."
@@ -282,7 +318,7 @@ export function ReviewScreen({
             type="button"
             className="ms-auto"
             disabled={!canApply || apply.isPending}
-            onClick={() => apply.mutate(draft, { onSuccess: onApplied })}
+            onClick={() => apply.mutate({ businessId, payload: draft })}
           >
             {apply.isPending ? "Applying" : "Apply and start monitoring"}
             <ArrowRight data-icon="inline-end" />
@@ -297,11 +333,12 @@ function validateFinalPayload(
   payload: ProposalPayload,
   promptLimit: number
 ): string | undefined {
-  const profile = payload.profile
+  const profile = payload.profile ?? EMPTY_PROFILE
+  const location = profile.location ?? EMPTY_LOCATION
   if (profile.name.trim() === "") return "Add a business name to continue."
   if (profile.category.trim() === "")
     return "Add a business category to continue."
-  if (!/^[A-Za-z]{2}$/.test(profile.location.country.trim()))
+  if (!/^[A-Za-z]{2}$/.test(location.country.trim()))
     return "Add a two-letter country code to continue."
   if (profile.aliases.some((alias) => alias.trim() === ""))
     return "Complete or remove every alias to continue."

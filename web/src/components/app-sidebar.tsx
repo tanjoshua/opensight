@@ -7,10 +7,12 @@ import {
   Settings,
   Users,
 } from "lucide-react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@connectrpc/connect-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { NavLink, useLocation, useNavigate } from "react-router"
 
-import { logout, useMe } from "@/api/auth"
+import { useMe } from "@/api/hooks"
+import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -37,8 +39,7 @@ export function AppSidebar() {
   const { data: me } = useMe()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const logoutMutation = useMutation({
-    mutationFn: logout,
+  const logoutMutation = useMutation(logout, {
     onSettled: () => {
       queryClient.clear()
       navigate("/login", { replace: true })
@@ -79,9 +80,9 @@ export function AppSidebar() {
         <SidebarFooter>
           <div className="flex items-center gap-2 px-2 py-1.5">
             <div className="min-w-0 flex-1 text-xs">
-              <div className="truncate font-medium">{me.tenant.name}</div>
+              <div className="truncate font-medium">{me.tenant?.name}</div>
               <div className="truncate text-muted-foreground">
-                {me.user.email}
+                {me.user?.email}
               </div>
             </div>
             <Button
@@ -90,7 +91,7 @@ export function AppSidebar() {
               aria-label="Log out"
               title="Log out"
               disabled={logoutMutation.isPending}
-              onClick={() => logoutMutation.mutate()}
+              onClick={() => logoutMutation.mutate({})}
             >
               <LogOut />
             </Button>

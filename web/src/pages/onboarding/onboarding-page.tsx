@@ -3,8 +3,14 @@
 // generation drops into the same review screen, empty, for manual setup. The
 // draft is recoverable via /me, so a reload mid-flow resumes rather than
 // restarting.
+import { create } from "@bufbuild/protobuf"
+import {
+  createConnectQueryKey,
+  useMutation,
+  useQuery,
+} from "@connectrpc/connect-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { type FormEvent, type ReactNode, useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Building2,
   Check,
@@ -14,22 +20,23 @@ import {
 } from "lucide-react"
 import { Navigate, useNavigate } from "react-router"
 
-import { useMe } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { errorMessage, isUnauthenticated } from "@/api/errors"
+import { useMe } from "@/api/hooks"
+import { BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
+import { ProposalPayloadSchema, type ProposalPayload } from "@/gen/opensight/v1/business_pb"
 import {
   createBusiness,
-  useProposal,
-  useRegenProposal,
-  type GenerationStage,
-  type ProposalPayload,
-} from "@/api/onboarding"
+  getProposal,
+  regenerateProposal,
+} from "@/gen/opensight/v1/business-BusinessService_connectquery"
+import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { ReviewScreen } from "@/pages/onboarding/review-screen"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 
-const EMPTY_PAYLOAD: ProposalPayload = {
-  low_confidence: false,
+const EMPTY_PAYLOAD: ProposalPayload = create(ProposalPayloadSchema, {
+  lowConfidence: false,
   profile: {
     name: "",
     aliases: [],
@@ -38,7 +45,8 @@ const EMPTY_PAYLOAD: ProposalPayload = {
     location: { address: "", area: "", city: "", country: "" },
   },
   prompts: [],
-}
+  sources: [],
+})
 
 export function OnboardingPage() {
   const me = useMe()
@@ -49,7 +57,7 @@ export function OnboardingPage() {
       <OnboardingShell>{<Skeleton className="h-64 w-full" />}</OnboardingShell>
     )
   }
-  if (me.error instanceof ApiError && me.error.status === 401) {
+  if (isUnauthenticated(me.error)) {
     return <Navigate to="/login" replace />
   }
   if (me.isError || !me.data) {
@@ -70,10 +78,10 @@ export function OnboardingPage() {
   }
 
   const businesses = me.data.businesses
-  const draft = businesses.find((b) => b.status === "draft")
+  const draft = businesses.find((b) => b.status === BusinessStatus.DRAFT)
   // MVP is one business per tenant: an already-active business means onboarding
   // is done, so send the user into the app rather than letting them start over.
-  const active = businesses.find((b) => b.status !== "draft")
+  const active = businesses.find((b) => b.status !== BusinessStatus.DRAFT)
   const businessId = createdId ?? draft?.id
 
   if (!businessId) {
@@ -89,7 +97,7 @@ export function OnboardingPage() {
     <OnboardingShell wide>
       <ProposalFlow
         businessId={businessId}
-        promptLimit={me.data.prompt_limit}
+        promptLimit={me.data.promptLimit}
       />
     </OnboardingShell>
   )
@@ -100,21 +108,19 @@ function CreateForm({ onCreated }: { onCreated: (id: string) => void }) {
   const [name, setName] = useState("")
   const [website, setWebsite] = useState("")
 
-  const create = useMutation({
-    mutationFn: createBusiness,
-    onSuccess: async (business) => {
+  const create = useMutation(createBusiness, {
+    onSuccess: async (data) => {
       // Refresh /me so the draft is resumable on reload, then enter the flow.
-      await queryClient.invalidateQueries({ queryKey: ["me"] })
-      onCreated(business.id)
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
+      })
+      if (data.business) onCreated(data.business.id)
     },
   })
 
-  const error =
-    create.error instanceof ApiError
-      ? create.error.message
-      : create.isError
-        ? "Could not start setup. Try again."
-        : undefined
+  const error = create.isError
+    ? errorMessage(create.error, "Could not start setup. Try again.")
+    : undefined
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -184,11 +190,35 @@ function ProposalFlow({
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const proposal = useProposal(businessId)
-  const regen = useRegenProposal(businessId)
+  // useProposal polled while generation is running; a ready or failed
+  // proposal is terminal, so polling stops (matches ResultService.ListRuns'
+  // data-driven refetchInterval elsewhere).
+  const proposal = useQuery(
+    getProposal,
+    { businessId },
+    {
+      refetchInterval: (query) =>
+        query.state.data?.state?.status === ProposalStatus.GENERATING
+          ? 5000
+          : false,
+    }
+  )
+  const regen = useMutation(regenerateProposal, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: getProposal,
+          input: { businessId },
+          cardinality: "finite",
+        }),
+      })
+    },
+  })
 
   const onApplied = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["me"] })
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
+    })
     navigate("/overview", { replace: true })
   }
 
@@ -206,24 +236,21 @@ function ProposalFlow({
       />
     )
   }
-  if (proposal.isLoading || !proposal.data) {
+  if (proposal.isLoading || !proposal.data?.state) {
     return <Skeleton className="h-64 w-full" />
   }
 
-  const status = proposal.data.status
+  const status = proposal.data.state.status
 
-  const regenError =
-    regen.error instanceof ApiError
-      ? regen.error.message
-      : regen.isError
-        ? "Couldn't regenerate. Try again."
-        : undefined
+  const regenError = regen.isError
+    ? errorMessage(regen.error, "Couldn't regenerate. Try again.")
+    : undefined
 
-  if (status === "generating" || regen.isPending) {
-    return <GenerationProgress stage={proposal.data?.stage} />
+  if (status === ProposalStatus.GENERATING || regen.isPending) {
+    return <GenerationProgress stage={proposal.data.state.stage} />
   }
 
-  if (status === "failed") {
+  if (status === ProposalStatus.FAILED) {
     // Manual setup: same review screen, empty (design 03, failure posture).
     return (
       <div className="flex flex-col gap-4">
@@ -235,7 +262,7 @@ function ProposalFlow({
           businessId={businessId}
           payload={EMPTY_PAYLOAD}
           promptLimit={promptLimit}
-          onRegenerate={() => regen.mutate()}
+          onRegenerate={() => regen.mutate({ businessId })}
           regenerating={regen.isPending}
           regenError={regenError}
           canRegenerate
@@ -245,13 +272,13 @@ function ProposalFlow({
     )
   }
 
-  // status === "ready"
+  // status === ProposalStatus.READY
   return (
     <ReviewScreen
       businessId={businessId}
-      payload={proposal.data.payload ?? EMPTY_PAYLOAD}
+      payload={proposal.data.state.payload ?? EMPTY_PAYLOAD}
       promptLimit={promptLimit}
-      onRegenerate={() => regen.mutate()}
+      onRegenerate={() => regen.mutate({ businessId })}
       regenerating={regen.isPending}
       regenError={regenError}
       canRegenerate
@@ -265,8 +292,8 @@ function ProposalFlow({
 // "drafting"; there is no terminal step because a ready proposal immediately
 // swaps this screen for the review screen.
 const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
-  { stage: "fetching_site", label: "Reading your website" },
-  { stage: "drafting", label: "Researching and drafting your profile" },
+  { stage: GenerationStage.FETCHING_SITE, label: "Reading your website" },
+  { stage: GenerationStage.DRAFTING, label: "Researching and drafting your profile" },
 ]
 
 // GenerationProgress renders the live, stage-driven step list while the
@@ -275,7 +302,7 @@ const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
 // falls back to step 1. The only motion tied to progress is the real polled
 // stage — completed steps get a checkmark that transitions in as the workflow
 // advances.
-function GenerationProgress({ stage }: { stage?: GenerationStage }) {
+function GenerationProgress({ stage }: { stage: GenerationStage }) {
   const current = Math.max(
     0,
     GENERATION_STEPS.findIndex((s) => s.stage === stage)

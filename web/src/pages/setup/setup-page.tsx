@@ -1,19 +1,24 @@
+import {
+  createConnectQueryKey,
+  skipToken,
+  useMutation,
+  useQuery,
+} from "@connectrpc/connect-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { useState, type FormEvent } from "react"
 import { Link, Navigate } from "react-router"
 
-import { useMe } from "@/api/auth"
+import { errorMessage } from "@/api/errors"
+import { useAllCompetitors, useInvalidateCompetitorViews, useMe } from "@/api/hooks"
+import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
+import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
+import type { BusinessProfile } from "@/gen/opensight/v1/business_pb"
 import {
-  useBusiness,
-  usePatchBusiness,
-  type BusinessProfile,
-  type BusinessProfilePatch,
-} from "@/api/businesses"
-import { ApiError } from "@/api/client"
-import {
-  useAllCompetitors,
-  useUpdateCompetitorAliases,
-  type Competitor,
-} from "@/api/competitors"
+  getBusiness,
+  updateBusiness,
+} from "@/gen/opensight/v1/business-BusinessService_connectquery"
+import type { Competitor } from "@/gen/opensight/v1/competitor_pb"
+import { updateCompetitorAliases } from "@/gen/opensight/v1/competitor-CompetitorService_connectquery"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -38,7 +43,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function SetupPage() {
   const me = useMe()
   const summary = me.data?.businesses[0]
-  const business = useBusiness(summary?.id)
+  const business = useQuery(
+    getBusiness,
+    summary === undefined ? skipToken : { businessId: summary.id }
+  )
   const competitors = useAllCompetitors(summary?.id)
 
   if (me.isLoading || business.isLoading || competitors.isLoading) {
@@ -52,10 +60,13 @@ export function SetupPage() {
   if (!summary) {
     return <Navigate to="/onboarding" replace />
   }
-  if (summary.status === "draft" || business.data?.status === "draft") {
+  if (
+    summary.status === BusinessStatus.DRAFT ||
+    business.data?.business?.status === BusinessStatus.DRAFT
+  ) {
     return <Navigate to="/onboarding" replace />
   }
-  if (!business.data || !competitors.data) return <SetupSkeleton />
+  if (!business.data?.business || !competitors.data) return <SetupSkeleton />
 
   return (
     <div className="flex flex-col gap-6">
@@ -65,7 +76,7 @@ export function SetupPage() {
           Manage the confirmed values used by future monitoring runs.
         </p>
       </div>
-      <ProfileEditor key={business.data.id} business={business.data} />
+      <ProfileEditor key={business.data.business.id} business={business.data.business} />
       <Card>
         <CardHeader>
           <CardTitle>Prompts</CardTitle>
@@ -92,32 +103,39 @@ export function SetupPage() {
             </p>
           ) : (
             competitors.data.competitors.map((competitor) => (
-              <CompetitorAliases
-                key={competitor.id}
-                businessId={business.data.id}
-                competitor={competitor}
-              />
+              <CompetitorAliases key={competitor.id} competitor={competitor} />
             ))
           )}
         </CardContent>
       </Card>
-      <PlanCard business={business.data} />
+      <PlanCard business={business.data.business} />
     </div>
   )
 }
 
 function ProfileEditor({ business }: { business: BusinessProfile }) {
-  const mutation = usePatchBusiness(business.id)
+  const queryClient = useQueryClient()
+  const mutation = useMutation(updateBusiness, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: getBusiness,
+          input: { businessId: business.id },
+          cardinality: "finite",
+        }),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
+      })
+    },
+  })
   const [form, setForm] = useState(() => profileForm(business))
   const [touched, setTouched] = useState<Set<ProfilePatchField>>(() => new Set())
   const [saved, setSaved] = useState(false)
   const error = validateProfileForm(form)
-  const serverError =
-    mutation.error instanceof ApiError
-      ? mutation.error.message
-      : mutation.isError
-        ? "Profile could not be saved. Try again."
-        : undefined
+  const serverError = mutation.isError
+    ? errorMessage(mutation.error, "Profile could not be saved. Try again.")
+    : undefined
   const patch = profilePatch(form, business, touched)
   const dirty = Object.keys(patch).length > 0
   const markTouched = (field: ProfilePatchField) =>
@@ -140,13 +158,21 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (error) return
-    mutation.mutate(patch, {
-      onSuccess: (updated) => {
-        setForm(profileForm(updated))
-        setTouched(new Set())
-        setSaved(true)
+    mutation.mutate(
+      {
+        businessId: business.id,
+        ...patch,
+        aliases: patch.aliases === undefined ? undefined : { values: patch.aliases },
+        services: patch.services === undefined ? undefined : { values: patch.services },
       },
-    })
+      {
+        onSuccess: (data) => {
+          if (data.business) setForm(profileForm(data.business))
+          setTouched(new Set())
+          setSaved(true)
+        },
+      }
+    )
   }
 
   return (
@@ -314,24 +340,18 @@ function TextField({
   )
 }
 
-function CompetitorAliases({
-  businessId,
-  competitor,
-}: {
-  businessId: string
-  competitor: Competitor
-}) {
-  const mutation = useUpdateCompetitorAliases(businessId)
+function CompetitorAliases({ competitor }: { competitor: Competitor }) {
+  const invalidateCompetitorViews = useInvalidateCompetitorViews()
+  const mutation = useMutation(updateCompetitorAliases, {
+    onSuccess: invalidateCompetitorViews,
+  })
   const [items, setItems] = useState(() => competitor.aliases.map(listItem))
   const [saved, setSaved] = useState(false)
   const aliases = items.map((item) => item.value)
   const dirty = JSON.stringify(aliases) !== JSON.stringify(competitor.aliases)
-  const error =
-    mutation.error instanceof ApiError
-      ? mutation.error.message
-      : mutation.isError
-        ? "Aliases could not be saved."
-        : undefined
+  const error = mutation.isError
+    ? errorMessage(mutation.error, "Aliases could not be saved.")
+    : undefined
   return (
     <FieldSet>
       <FieldLegend variant="label">{competitor.name} approved aliases</FieldLegend>
@@ -382,10 +402,12 @@ function CompetitorAliases({
           disabled={!dirty || mutation.isPending}
           onClick={() =>
             mutation.mutate(
-              { competitorId: competitor.id, aliases },
+              { competitorId: competitor.id, aliases: { values: aliases } },
               {
                 onSuccess: (updated) => {
-                  setItems(updated.aliases.map(listItem))
+                  if (updated.competitor) {
+                    setItems(updated.competitor.aliases.map(listItem))
+                  }
                   setSaved(true)
                 },
               }
@@ -405,6 +427,7 @@ function CompetitorAliases({
 
 function PlanCard({ business }: { business: BusinessProfile }) {
   const plan = business.plan
+  if (!plan) return null
   return (
     <Card>
       <CardHeader>
@@ -415,8 +438,8 @@ function PlanCard({ business }: { business: BusinessProfile }) {
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
         <PlanValue label="Plan" value={plan.slug} />
-        <PlanValue label="Prompt limit" value={String(plan.prompt_limit)} />
-        <PlanValue label="Run interval" value={plan.run_interval} />
+        <PlanValue label="Prompt limit" value={String(plan.promptLimit)} />
+        <PlanValue label="Run interval" value={plan.runInterval} />
         <PlanValue label="Platforms" value={plan.platforms.join(", ")} />
       </CardContent>
     </Card>
@@ -437,6 +460,19 @@ interface ListItem {
   value: string
 }
 
+// Local patch shape the form builds — profilePatch below turns "aliases"/
+// "services" into the StringList wrapper UpdateBusinessRequest expects only
+// at the mutate() call site, since proto3 optional presence (omitted =
+// unchanged) doesn't map cleanly onto a plain array field.
+interface BusinessProfilePatch {
+  name?: string
+  website?: string
+  aliases?: string[]
+  category?: string
+  services?: string[]
+  location?: { address: string; area: string; city: string; country: string }
+}
+
 type ProfileForm = ReturnType<typeof profileForm>
 type ProfileScalar = Exclude<keyof ProfileForm, "aliases" | "services">
 type ProfilePatchField = keyof BusinessProfilePatch
@@ -452,16 +488,17 @@ function listItem(value: string): ListItem {
 }
 
 function profileForm(business: BusinessProfile) {
+  const location = business.location
   return {
     name: business.name,
     website: business.website ?? "",
     category: business.category ?? "",
     aliases: business.aliases.map(listItem),
     services: business.services.map(listItem),
-    address: business.location.address,
-    area: business.location.area,
-    city: business.location.city,
-    country: business.location.country,
+    address: location?.address ?? "",
+    area: location?.area ?? "",
+    city: location?.city ?? "",
+    country: location?.country ?? "",
   }
 }
 

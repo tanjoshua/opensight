@@ -1,22 +1,25 @@
+import { useMutation } from "@connectrpc/connect-query"
 import { ChevronDown, ChevronRight, Plus, Users } from "lucide-react"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
-import { useMe } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { errorMessage } from "@/api/errors"
+import { useAllCompetitors, useInvalidateCompetitorViews, useMe } from "@/api/hooks"
+import { competitorStatusLabel } from "@/api/labels"
+import { AliasDecision } from "@/gen/opensight/v1/competitor_pb"
+import type {
+  Competitor,
+  CompetitorPromptAppearance,
+  CompetitorSelf,
+  CompetitorTrendPoint,
+} from "@/gen/opensight/v1/competitor_pb"
+import { CompetitorStatus } from "@/gen/opensight/v1/common_pb"
 import {
-  useAddCompetitor,
-  useAllCompetitors,
-  useReviewSuggestedAlias,
-  useSetCompetitorStatus,
-  type AddCompetitorInput,
-  type Competitor,
-  type CompetitorPromptAppearance,
-  type CompetitorSelf,
-  type CompetitorStatus,
-  type CompetitorTrendPoint,
-} from "@/api/competitors"
+  addCompetitor,
+  reviewSuggestedAlias,
+  setCompetitorStatus,
+} from "@/gen/opensight/v1/competitor-CompetitorService_connectquery"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -54,6 +57,14 @@ const chartConfig = {
   percent: { label: "Coverage", color: "var(--primary)" },
 } satisfies ChartConfig
 
+// The AddCompetitor dialog's local input shape — AddCompetitorRequest minus
+// business_id, which the page fills in at the call site.
+interface AddCompetitorInput {
+  name: string
+  aliases: string[]
+  website: string
+}
+
 export function CompetitorsPage() {
   const me = useMe()
   const business = me.data?.businesses[0]
@@ -61,9 +72,16 @@ export function CompetitorsPage() {
   const [searchParams] = useSearchParams()
   const focus = statusParam(searchParams.get("status"))
   const competitorsQuery = useAllCompetitors(business?.id)
-  const addCompetitor = useAddCompetitor(business?.id)
-  const setStatus = useSetCompetitorStatus(business?.id)
-  const reviewAlias = useReviewSuggestedAlias(business?.id)
+  const invalidateCompetitorViews = useInvalidateCompetitorViews()
+  const addCompetitorMutation = useMutation(addCompetitor, {
+    onSuccess: invalidateCompetitorViews,
+  })
+  const setStatusMutation = useMutation(setCompetitorStatus, {
+    onSuccess: invalidateCompetitorViews,
+  })
+  const reviewAliasMutation = useMutation(reviewSuggestedAlias, {
+    onSettled: invalidateCompetitorViews,
+  })
   const [selectedResultID, setSelectedResultID] = useState<string>()
   const [addOpen, setAddOpen] = useState(false)
   const openResult = (ids: string[]) => {
@@ -89,51 +107,51 @@ export function CompetitorsPage() {
       />
     )
   }
-  if (!competitorsQuery.data) {
+  if (!competitorsQuery.data?.self) {
     return <ListSkeleton />
   }
 
   const { self, competitors } = competitorsQuery.data
-  const discovered = competitors.filter((c) => c.status === "discovered")
-  const tracked = competitors.filter((c) => c.status === "tracked")
-  const dismissed = competitors.filter((c) => c.status === "dismissed")
-  const statusError =
-    setStatus.error instanceof ApiError
-      ? setStatus.error.message
-      : setStatus.isError
-        ? "Could not update the competitor. Try again."
-        : undefined
-  const addError =
-    addCompetitor.error instanceof ApiError
-      ? addCompetitor.error.message
-      : addCompetitor.isError
-        ? "Could not add the competitor. Try again."
-        : undefined
-  const aliasError =
-    reviewAlias.error instanceof ApiError
-      ? reviewAlias.error.message
-      : reviewAlias.isError
-        ? "Could not review the suggested alias. Refresh and try again."
-        : undefined
-  const pendingCompetitorID = setStatus.isPending
-    ? setStatus.variables.competitorId
+  const discovered = competitors.filter(
+    (c) => c.status === CompetitorStatus.DISCOVERED
+  )
+  const tracked = competitors.filter(
+    (c) => c.status === CompetitorStatus.TRACKED
+  )
+  const dismissed = competitors.filter(
+    (c) => c.status === CompetitorStatus.DISMISSED
+  )
+  const statusError = setStatusMutation.isError
+    ? errorMessage(setStatusMutation.error, "Could not update the competitor. Try again.")
+    : undefined
+  const addError = addCompetitorMutation.isError
+    ? errorMessage(addCompetitorMutation.error, "Could not add the competitor. Try again.")
+    : undefined
+  const aliasError = reviewAliasMutation.isError
+    ? errorMessage(
+        reviewAliasMutation.error,
+        "Could not review the suggested alias. Refresh and try again."
+      )
+    : undefined
+  const pendingCompetitorID = setStatusMutation.isPending
+    ? setStatusMutation.variables?.competitorId
     : undefined
   const changeStatus = (
     competitorId: string,
-    status: "tracked" | "dismissed"
-  ) => setStatus.mutate({ competitorId, status })
+    status: typeof CompetitorStatus.TRACKED | typeof CompetitorStatus.DISMISSED
+  ) => setStatusMutation.mutate({ competitorId, status })
   const changeAlias = (
     competitorId: string,
     alias: string,
-    action: "approve" | "reject"
-  ) => reviewAlias.mutate({ competitorId, alias, action })
+    action: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
+  ) => reviewAliasMutation.mutate({ competitorId, alias, decision: action })
   const pendingAlias =
-    reviewAlias.isPending && reviewAlias.variables
-      ? `${reviewAlias.variables.competitorId}\u0000${reviewAlias.variables.alias}`
+    reviewAliasMutation.isPending && reviewAliasMutation.variables
+      ? `${reviewAliasMutation.variables.competitorId}\u0000${reviewAliasMutation.variables.alias}`
       : undefined
   const changeAddOpen = (open: boolean) => {
     setAddOpen(open)
-    if (!open) addCompetitor.reset()
+    if (!open) addCompetitorMutation.reset()
   }
 
   return (
@@ -152,12 +170,13 @@ export function CompetitorsPage() {
       <AddCompetitorDialog
         open={addOpen}
         onOpenChange={changeAddOpen}
-        submitting={addCompetitor.isPending}
+        submitting={addCompetitorMutation.isPending}
         errorMessage={addError}
         onSubmit={(input) =>
-          addCompetitor.mutate(input, {
-            onSuccess: () => setAddOpen(false),
-          })
+          addCompetitorMutation.mutate(
+            { businessId: business.id, ...input },
+            { onSuccess: () => setAddOpen(false) }
+          )
         }
       />
 
@@ -170,7 +189,7 @@ export function CompetitorsPage() {
       <DiscoveredSection
         competitors={discovered}
         self={self}
-        focus={focus === "discovered"}
+        focus={focus === CompetitorStatus.DISCOVERED}
         onOpenResult={openResult}
         onStatusChange={changeStatus}
         pendingCompetitorID={pendingCompetitorID}
@@ -179,7 +198,7 @@ export function CompetitorsPage() {
       />
       <TrackedSection
         competitors={tracked}
-        focus={focus === "tracked"}
+        focus={focus === CompetitorStatus.TRACKED}
         onOpenResult={openResult}
         onSelectRun={(runID) => navigate(`/responses?run=${runID}`)}
         onStatusChange={changeStatus}
@@ -190,7 +209,7 @@ export function CompetitorsPage() {
       <DismissedSection
         competitors={dismissed}
         self={self}
-        focus={focus === "dismissed"}
+        focus={focus === CompetitorStatus.DISMISSED}
         onOpenResult={openResult}
         onStatusChange={changeStatus}
         pendingCompetitorID={pendingCompetitorID}
@@ -215,17 +234,17 @@ function SelfBaseline({
   self: CompetitorSelf
   onOpenResult: (ids: string[]) => void
 }) {
-  const disabled = self.result_ids.length === 0
+  const disabled = self.resultIds.length === 0
   return (
     <button
       type="button"
       disabled={disabled}
-      onClick={() => onOpenResult(self.result_ids)}
+      onClick={() => onOpenResult(self.resultIds)}
       title="Open a response behind this number"
       className="rounded-lg border px-4 py-2 text-left enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:opacity-70"
     >
       <div className="text-xs text-muted-foreground">
-        You appear in {self.mentioned} of {self.total_analyzed} responses
+        You appear in {self.mentioned} of {self.totalAnalyzed} responses
       </div>
       <div className="text-2xl font-semibold tabular-nums">
         {formatPercent(self.percent)}
@@ -250,13 +269,13 @@ function DiscoveredSection({
   onOpenResult: (ids: string[]) => void
   onStatusChange: (
     competitorId: string,
-    status: "tracked" | "dismissed"
+    status: typeof CompetitorStatus.TRACKED | typeof CompetitorStatus.DISMISSED
   ) => void
   pendingCompetitorID?: string
   onReviewAlias: (
     competitorId: string,
     alias: string,
-    action: "approve" | "reject"
+    action: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
   ) => void
   pendingAlias?: string
 }) {
@@ -275,7 +294,7 @@ function DiscoveredSection({
             <CoverageRow
               key={competitor.id}
               competitor={competitor}
-              total={self.total_analyzed}
+              total={self.totalAnalyzed}
               onOpenResult={onOpenResult}
               aliasReview={
                 <SuggestedAliasReview
@@ -290,7 +309,7 @@ function DiscoveredSection({
                     size="sm"
                     aria-label={`Track ${competitor.name}`}
                     disabled={pendingCompetitorID === competitor.id}
-                    onClick={() => onStatusChange(competitor.id, "tracked")}
+                    onClick={() => onStatusChange(competitor.id, CompetitorStatus.TRACKED)}
                   >
                     Track
                   </Button>
@@ -299,7 +318,7 @@ function DiscoveredSection({
                     variant="outline"
                     aria-label={`Dismiss ${competitor.name}`}
                     disabled={pendingCompetitorID === competitor.id}
-                    onClick={() => onStatusChange(competitor.id, "dismissed")}
+                    onClick={() => onStatusChange(competitor.id, CompetitorStatus.DISMISSED)}
                   >
                     Dismiss
                   </Button>
@@ -326,7 +345,7 @@ function CoverageRow({
   actions?: ReactNode
   aliasReview?: ReactNode
 }) {
-  const disabled = competitor.result_ids.length === 0
+  const disabled = competitor.resultIds.length === 0
   return (
     <div className="flex w-full flex-col gap-2 rounded-md border px-3 py-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -335,7 +354,7 @@ function CoverageRow({
           <button
             type="button"
             disabled={disabled}
-            onClick={() => onOpenResult(competitor.result_ids)}
+            onClick={() => onOpenResult(competitor.resultIds)}
             title="Open a response behind this number"
             className="flex items-center gap-3 self-start rounded text-left text-sm text-muted-foreground enabled:cursor-pointer enabled:hover:text-foreground disabled:opacity-70"
           >
@@ -343,7 +362,7 @@ function CoverageRow({
               in {competitor.mentioned} of {total} responses
             </span>
             <Badge variant="outline" className="tabular-nums">
-              {formatPercent(competitor.mention_percent)}
+              {formatPercent(competitor.mentionPercent)}
             </Badge>
           </button>
         </div>
@@ -372,13 +391,13 @@ function TrackedSection({
   onSelectRun: (runID: string) => void
   onStatusChange: (
     competitorId: string,
-    status: "tracked" | "dismissed"
+    status: typeof CompetitorStatus.TRACKED | typeof CompetitorStatus.DISMISSED
   ) => void
   pendingCompetitorID?: string
   onReviewAlias: (
     competitorId: string,
     alias: string,
-    action: "approve" | "reject"
+    action: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
   ) => void
   pendingAlias?: string
 }) {
@@ -402,7 +421,7 @@ function TrackedSection({
               competitor={competitor}
               onOpenResult={onOpenResult}
               onSelectRun={onSelectRun}
-              onDismiss={() => onStatusChange(competitor.id, "dismissed")}
+              onDismiss={() => onStatusChange(competitor.id, CompetitorStatus.DISMISSED)}
               statusPending={pendingCompetitorID === competitor.id}
               onReviewAlias={onReviewAlias}
               pendingAlias={pendingAlias}
@@ -431,12 +450,12 @@ function TrackedCard({
   onReviewAlias: (
     competitorId: string,
     alias: string,
-    action: "approve" | "reject"
+    action: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
   ) => void
   pendingAlias?: string
 }) {
-  const openOwn = () => onOpenResult(competitor.result_ids)
-  const hasEvidence = competitor.result_ids.length > 0
+  const openOwn = () => onOpenResult(competitor.resultIds)
+  const hasEvidence = competitor.resultIds.length > 0
   return (
     <Card className="gap-3">
       <CardHeader className="flex-row items-start justify-between gap-2">
@@ -460,11 +479,11 @@ function TrackedCard({
         <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
           <Stat label="Mention %" onClick={openOwn} disabled={!hasEvidence}>
             <span className="text-2xl font-semibold tabular-nums">
-              {formatPercent(competitor.mention_percent)}
+              {formatPercent(competitor.mentionPercent)}
             </span>
           </Stat>
           <Stat label="vs you" onClick={openOwn} disabled={!hasEvidence}>
-            <VsSelf vsSelf={competitor.vs_self} />
+            <VsSelf vsSelf={competitor.vsSelf} />
           </Stat>
           <Stat
             label="Total mentions"
@@ -472,12 +491,12 @@ function TrackedCard({
             disabled={!hasEvidence}
           >
             <span className="text-2xl font-semibold tabular-nums">
-              {competitor.total_mentions}
+              {competitor.totalMentions}
             </span>
           </Stat>
           <Stat label="Avg. rank" onClick={openOwn} disabled={!hasEvidence}>
             <span className="text-2xl font-semibold tabular-nums">
-              {hasEvidence ? `#${(competitor.avg_order + 1).toFixed(1)}` : "—"}
+              {hasEvidence ? `#${(competitor.avgOrder + 1).toFixed(1)}` : "—"}
             </span>
           </Stat>
         </div>
@@ -487,7 +506,7 @@ function TrackedCard({
           pendingAlias={pendingAlias}
         />
         <PromptAppearances
-          appearances={competitor.per_prompt}
+          appearances={competitor.perPrompt}
           onOpenResult={onOpenResult}
         />
         <TrendChart trend={competitor.trend} onSelectRun={onSelectRun} />
@@ -549,17 +568,17 @@ function PromptAppearances({
       <div className="max-h-36 overflow-auto rounded-md border">
         {appearances.map((appearance) => (
           <button
-            key={appearance.prompt_id}
+            key={appearance.promptId}
             type="button"
-            onClick={() => onOpenResult(appearance.result_ids)}
+            onClick={() => onOpenResult(appearance.resultIds)}
             title="Open a response for this prompt"
             className="flex w-full items-start justify-between gap-3 border-b px-3 py-2 text-left text-xs last:border-b-0 hover:bg-muted/50"
           >
             <span className="line-clamp-2 min-w-0">
-              {appearance.prompt_text}
+              {appearance.promptText}
             </span>
             <span className="shrink-0 text-muted-foreground tabular-nums">
-              {appearance.result_ids.length}
+              {appearance.resultIds.length}
             </span>
           </button>
         ))}
@@ -577,18 +596,18 @@ function SuggestedAliasReview({
   onReview: (
     competitorId: string,
     alias: string,
-    action: "approve" | "reject"
+    action: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
   ) => void
   pendingAlias?: string
 }) {
-  if (competitor.suggested_aliases.length === 0) return null
+  if (competitor.suggestedAliases.length === 0) return null
   return (
     <div className="flex flex-col gap-1.5">
       <h3 className="text-xs font-medium text-muted-foreground">
         Suggested aliases
       </h3>
       <div className="flex flex-col gap-1.5">
-        {competitor.suggested_aliases.map((alias) => {
+        {competitor.suggestedAliases.map((alias) => {
           const pending = pendingAlias === `${competitor.id}\u0000${alias}`
           return (
             <div
@@ -601,7 +620,7 @@ function SuggestedAliasReview({
                   size="xs"
                   aria-label={`Approve ${alias} as an alias for ${competitor.name}`}
                   disabled={pending}
-                  onClick={() => onReview(competitor.id, alias, "approve")}
+                  onClick={() => onReview(competitor.id, alias, AliasDecision.APPROVE)}
                 >
                   Approve
                 </Button>
@@ -610,7 +629,7 @@ function SuggestedAliasReview({
                   variant="outline"
                   aria-label={`Reject ${alias} as an alias for ${competitor.name}`}
                   disabled={pending}
-                  onClick={() => onReview(competitor.id, alias, "reject")}
+                  onClick={() => onReview(competitor.id, alias, AliasDecision.REJECT)}
                 >
                   Reject
                 </Button>
@@ -638,12 +657,12 @@ function TrendChart({
     return (
       <button
         type="button"
-        onClick={() => onSelectRun(point.run_id)}
+        onClick={() => onSelectRun(point.runId)}
         className="flex cursor-pointer items-center gap-2 self-start rounded-lg border px-3 py-2 text-left text-xs hover:bg-muted/50"
       >
         <span className="size-2.5 rounded-full bg-primary" />
         <span>
-          {shortDate(dateMs(point.scheduled_for))} ·{" "}
+          {shortDate(dateMs(point.scheduledFor))} ·{" "}
           {formatPercent(point.percent)} · the trend line starts after the next
           run
         </span>
@@ -651,7 +670,7 @@ function TrendChart({
     )
   }
 
-  const data = trend.map((point) => ({ x: dateMs(point.scheduled_for), point }))
+  const data = trend.map((point) => ({ x: dateMs(point.scheduledFor), point }))
   return (
     <div className="flex flex-col gap-1.5">
       <ChartContainer config={chartConfig} className="h-32 w-full">
@@ -665,7 +684,7 @@ function TrendChart({
                 activePayload?: { payload: { point: CompetitorTrendPoint } }[]
               }
             ).activePayload?.[0]?.payload.point
-            if (point) onSelectRun(point.run_id)
+            if (point) onSelectRun(point.runId)
           }}
         >
           <CartesianGrid vertical={false} />
@@ -718,7 +737,7 @@ function TrendTooltip({
   return (
     <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
       <div className="font-medium">
-        {shortDate(dateMs(point.scheduled_for))}
+        {shortDate(dateMs(point.scheduledFor))}
       </div>
       <div className="text-muted-foreground">
         {formatPercent(point.percent)} · mentioned in {point.mentioned} of{" "}
@@ -744,13 +763,13 @@ function DismissedSection({
   onOpenResult: (ids: string[]) => void
   onStatusChange: (
     competitorId: string,
-    status: "tracked" | "dismissed"
+    status: typeof CompetitorStatus.TRACKED | typeof CompetitorStatus.DISMISSED
   ) => void
   pendingCompetitorID?: string
   onReviewAlias: (
     competitorId: string,
     alias: string,
-    action: "approve" | "reject"
+    action: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
   ) => void
   pendingAlias?: string
 }) {
@@ -784,7 +803,7 @@ function DismissedSection({
             <CoverageRow
               key={competitor.id}
               competitor={competitor}
-              total={self.total_analyzed}
+              total={self.totalAnalyzed}
               onOpenResult={onOpenResult}
               aliasReview={
                 <SuggestedAliasReview
@@ -798,7 +817,7 @@ function DismissedSection({
                   size="sm"
                   aria-label={`Track ${competitor.name} again`}
                   disabled={pendingCompetitorID === competitor.id}
-                  onClick={() => onStatusChange(competitor.id, "tracked")}
+                  onClick={() => onStatusChange(competitor.id, CompetitorStatus.TRACKED)}
                 >
                   Track again
                 </Button>
@@ -847,9 +866,8 @@ function AddCompetitorDialog({
         .split(",")
         .map((alias) => alias.trim())
         .filter(Boolean),
+      website: website.trim(),
     }
-    const trimmedWebsite = website.trim()
-    if (trimmedWebsite !== "") input.website = trimmedWebsite
     onSubmit(input)
   }
 
@@ -961,10 +979,19 @@ function useScrollIntoView<T extends HTMLElement>(focus: boolean) {
   return ref
 }
 
+// Round-trips the ?status= URL param the same way resultStatusFromParam does
+// for Responses (responses-page.tsx).
 function statusParam(raw: string | null): CompetitorStatus | undefined {
-  return raw === "discovered" || raw === "tracked" || raw === "dismissed"
-    ? raw
-    : undefined
+  if (raw === competitorStatusLabel(CompetitorStatus.DISCOVERED)) {
+    return CompetitorStatus.DISCOVERED
+  }
+  if (raw === competitorStatusLabel(CompetitorStatus.TRACKED)) {
+    return CompetitorStatus.TRACKED
+  }
+  if (raw === competitorStatusLabel(CompetitorStatus.DISMISSED)) {
+    return CompetitorStatus.DISMISSED
+  }
+  return undefined
 }
 
 function SectionMessage({

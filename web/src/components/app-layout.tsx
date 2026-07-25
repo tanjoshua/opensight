@@ -1,8 +1,10 @@
+import { useQuery } from "@connectrpc/connect-query"
 import { Link, Navigate, Outlet, useLocation } from "react-router"
 
-import { ApiError } from "@/api/client"
-import { useMe } from "@/api/auth"
-import { useRuns } from "@/api/responses"
+import { isUnauthenticated } from "@/api/errors"
+import { useMe } from "@/api/hooks"
+import { RunStatus } from "@/gen/opensight/v1/common_pb"
+import { listRuns } from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -22,7 +24,7 @@ export function AppLayout() {
   if (me.isLoading) {
     return <AppSkeleton />
   }
-  if (me.error instanceof ApiError && me.error.status === 401) {
+  if (isUnauthenticated(me.error)) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
   if (me.isError || !me.data) {
@@ -62,8 +64,22 @@ export function AppLayout() {
 }
 
 function RunProgressBadge({ businessId }: { businessId: string }) {
-  const runs = useRuns(businessId)
-  const hasRunningRun = runs.data?.runs.some((run) => run.status === "running")
+  // Re-created at this call site and in responses-page.tsx: the old REST
+  // client centralized this poll-while-running behavior in one useRuns hook,
+  // but connect-query's listRuns is a bare descriptor, not a custom hook.
+  const runs = useQuery(
+    listRuns,
+    { businessId },
+    {
+      refetchInterval: (query) =>
+        query.state.data?.runs.some((run) => run.status === RunStatus.RUNNING)
+          ? 5000
+          : false,
+    }
+  )
+  const hasRunningRun = runs.data?.runs.some(
+    (run) => run.status === RunStatus.RUNNING
+  )
 
   if (!hasRunningRun) return null
   return (

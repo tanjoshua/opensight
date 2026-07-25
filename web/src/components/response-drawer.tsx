@@ -1,13 +1,29 @@
+import { skipToken, useQuery } from "@connectrpc/connect-query"
+import { timestampDate, type Timestamp } from "@bufbuild/protobuf/wkt"
+import { keepPreviousData } from "@tanstack/react-query"
 import { type ReactNode, useState } from "react"
 import { ExternalLink, FileJson } from "lucide-react"
 import { Link } from "react-router"
 
 import {
-  useResult,
-  type ResultAnalysis,
-  type ResultCitation,
-  type ResultMention,
-} from "@/api/responses"
+  citationSubjectLabel,
+  matchMethodLabel,
+  mentionSubjectLabel,
+  resultStatusLabel,
+  runStatusLabel,
+  sentimentLabel,
+} from "@/api/labels"
+import {
+  MentionSubject,
+  ResultStatus,
+  Sentiment,
+} from "@/gen/opensight/v1/common_pb"
+import type {
+  ResultAnalysis,
+  ResultCitation,
+  ResultMention,
+} from "@/gen/opensight/v1/result_pb"
+import { getResult } from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -28,7 +44,12 @@ export function ResponseDrawer({
   onOpenChange: (open: boolean) => void
 }) {
   const [includeRaw, setIncludeRaw] = useState(false)
-  const detail = useResult(resultId, { includeRaw })
+  const detail = useQuery(
+    getResult,
+    resultId === undefined ? skipToken : { resultId, includeRaw },
+    { placeholderData: keepPreviousData }
+  )
+  const result = detail.data?.result
 
   return (
     <Sheet
@@ -53,36 +74,36 @@ export function ResponseDrawer({
               The response could not be loaded. Try again.
             </p>
           )}
-          {detail.data && (
+          {result && (
             <>
               <DetailSection title="Prompt">
                 <p className="text-sm whitespace-pre-wrap">
-                  {detail.data.prompt?.text ?? detail.data.prompt_id}
+                  {result.prompt?.text ?? result.promptId}
                 </p>
               </DetailSection>
 
               <DetailSection
                 title={
-                  detail.data.status === "failed"
+                  result.status === ResultStatus.FAILED
                     ? "Error"
-                    : detail.data.unanalyzed
+                    : result.unanalyzed
                       ? "Answer"
                       : "Answer Evidence"
                 }
                 action={
-                  detail.data.unanalyzed ? (
+                  result.unanalyzed ? (
                     <Badge variant="outline">not yet analyzed</Badge>
                   ) : undefined
                 }
               >
-                {detail.data.status === "failed" ? (
+                {result.status === ResultStatus.FAILED ? (
                   <p className="text-sm whitespace-pre-wrap text-destructive">
-                    {detail.data.error ?? "Unknown error"}
+                    {result.error ?? "Unknown error"}
                   </p>
-                ) : detail.data.response_text ? (
+                ) : result.responseText ? (
                   <AnswerText
-                    text={detail.data.response_text}
-                    analysis={detail.data.analysis}
+                    text={result.responseText}
+                    analysis={result.analysis}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -91,20 +112,20 @@ export function ResponseDrawer({
                 )}
               </DetailSection>
 
-              {detail.data.status !== "failed" && (
+              {result.status !== ResultStatus.FAILED && (
                 <AnalysisSection
-                  analysis={detail.data.analysis}
-                  unanalyzed={detail.data.unanalyzed}
+                  analysis={result.analysis}
+                  unanalyzed={result.unanalyzed}
                 />
               )}
 
               <DetailSection title="Run">
                 <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-2 text-sm">
                   <dt className="text-muted-foreground">Status</dt>
-                  <dd>{detail.data.status}</dd>
+                  <dd>{resultStatusLabel(result.status)}</dd>
                   <dt className="text-muted-foreground">Model</dt>
                   <dd>
-                    {detail.data.model ?? "Not recorded"}{" "}
+                    {result.model ?? "Not recorded"}{" "}
                     <Link
                       className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
                       to="/methodology"
@@ -113,15 +134,15 @@ export function ResponseDrawer({
                     </Link>
                   </dd>
                   <dt className="text-muted-foreground">Requested</dt>
-                  <dd>{formatDateTime(detail.data.requested_at)}</dd>
+                  <dd>{formatDateTime(result.requestedAt)}</dd>
                   <dt className="text-muted-foreground">Completed</dt>
-                  <dd>{formatDateTime(detail.data.completed_at)}</dd>
-                  {detail.data.run && (
+                  <dd>{formatDateTime(result.completedAt)}</dd>
+                  {result.run && (
                     <>
                       <dt className="text-muted-foreground">Scheduled</dt>
-                      <dd>{formatRunDate(detail.data.run.scheduled_for)}</dd>
+                      <dd>{formatRunDate(result.run.scheduledFor)}</dd>
                       <dt className="text-muted-foreground">Run status</dt>
-                      <dd>{detail.data.run.status}</dd>
+                      <dd>{runStatusLabel(result.run.status)}</dd>
                     </>
                   )}
                 </dl>
@@ -129,7 +150,7 @@ export function ResponseDrawer({
 
               <DetailSection title="Request">
                 <JSONBlock
-                  value={detail.data.request}
+                  json={result.requestJson}
                   empty="No request params stored."
                 />
               </DetailSection>
@@ -149,7 +170,7 @@ export function ResponseDrawer({
                 </Button>
                 {includeRaw && (
                   <JSONBlock
-                    value={detail.data.raw_response}
+                    json={result.rawResponseJson}
                     empty={
                       detail.isFetching
                         ? "Loading raw JSON."
@@ -220,7 +241,7 @@ function AnswerText({
           <span key={index}>
             {node}
             {segment.markers.map((citation) => (
-              <CitationMarker key={citation.cite_order} citation={citation} />
+              <CitationMarker key={citation.citeOrder} citation={citation} />
             ))}
           </span>
         )
@@ -230,11 +251,11 @@ function AnswerText({
 }
 
 function CitationMarker({ citation }: { citation: ResultCitation }) {
-  const label = citation.cite_order + 1
+  const label = citation.citeOrder + 1
   return (
     <sup className="ms-0.5 align-super text-[0.65rem] leading-none">
       <a
-        href={`#citation-${citation.cite_order}`}
+        href={`#citation-${citation.citeOrder}`}
         className="rounded-sm bg-secondary px-1 py-0.5 font-medium text-secondary-foreground no-underline ring-1 ring-border hover:bg-muted"
         title={citation.title ?? citation.domain}
       >
@@ -267,9 +288,9 @@ function AnalysisSection({
     <DetailSection
       title="Analysis"
       action={
-        analysis.sentiment ? (
+        analysis.sentiment !== Sentiment.UNSPECIFIED ? (
           <Badge variant={sentimentVariant(analysis.sentiment)}>
-            {analysis.sentiment}
+            {sentimentLabel(analysis.sentiment)}
           </Badge>
         ) : (
           <Badge variant="outline">no sentiment</Badge>
@@ -323,16 +344,18 @@ function AnalysisSection({
                   <span className="flex flex-wrap items-center gap-1.5">
                     <Badge
                       variant={
-                        mention.subject === "self" ? "secondary" : "outline"
+                        mention.subject === MentionSubject.SELF
+                          ? "secondary"
+                          : "outline"
                       }
                     >
-                      {subjectLabel(mention.subject)}
+                      {mentionSubjectLabel(mention.subject)}
                     </Badge>
                     <span className="text-muted-foreground">
-                      #{mention.order + 1} · {mention.matched_by}
+                      #{mention.order + 1} · {matchMethodLabel(mention.matchedBy)}
                     </span>
                   </span>
-                  <span className="font-medium">{mention.verbatim_name}</span>
+                  <span className="font-medium">{mention.verbatimName}</span>
                   {mention.excerpt && (
                     <span className="leading-6 text-muted-foreground">
                       {mention.excerpt}
@@ -351,16 +374,16 @@ function AnalysisSection({
             <ul className="flex flex-col gap-2">
               {analysis.citations.map((citation) => (
                 <li
-                  id={`citation-${citation.cite_order}`}
-                  key={`${citation.cite_order}-${citation.url}`}
+                  id={`citation-${citation.citeOrder}`}
+                  key={`${citation.citeOrder}-${citation.url}`}
                   className="scroll-mt-4 rounded-md border px-3 py-2 text-sm"
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant="secondary">{citation.cite_order + 1}</Badge>
+                    <Badge variant="secondary">{citation.citeOrder + 1}</Badge>
                     <Badge variant="outline">
-                      {subjectLabel(citation.subject)}
+                      {citationSubjectLabel(citation.subject)}
                     </Badge>
-                    {citation.span === null && (
+                    {citation.span === undefined && (
                       <Badge variant="outline">no span</Badge>
                     )}
                   </div>
@@ -490,7 +513,7 @@ function mentionRanges(
   const ranges: MentionRange[] = []
   for (const mention of mentions) {
     const range =
-      findTextRange(text, mention.verbatim_name) ??
+      findTextRange(text, mention.verbatimName) ??
       findTextRange(text, mention.excerpt)
     if (range !== null) {
       ranges.push({ ...range, mention })
@@ -507,7 +530,7 @@ function citationRanges(
 ): CitationRange[] {
   const ranges: CitationRange[] = []
   for (const citation of citations) {
-    if (citation.span === null) continue
+    if (citation.span === undefined) continue
     const start = citation.span.start
     const end = citation.span.end
     if (start < 0 || end <= start || start >= text.length) continue
@@ -559,7 +582,7 @@ function findTextRange(
 }
 
 function byCiteOrder(a: ResultCitation, b: ResultCitation): number {
-  return a.cite_order - b.cite_order
+  return a.citeOrder - b.citeOrder
 }
 
 function mentionHighlightClass(mentions: ResultMention[]): string {
@@ -567,7 +590,7 @@ function mentionHighlightClass(mentions: ResultMention[]): string {
   if (subjects.size > 1) {
     return "rounded-sm bg-sky-100 px-0.5 text-sky-950 ring-1 ring-sky-200 dark:bg-sky-500/20 dark:text-sky-50 dark:ring-sky-500/30"
   }
-  if (subjects.has("self")) {
+  if (subjects.has(MentionSubject.SELF)) {
     return "rounded-sm bg-emerald-100 px-0.5 text-emerald-950 ring-1 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-50 dark:ring-emerald-500/30"
   }
   return "rounded-sm bg-amber-100 px-0.5 text-amber-950 ring-1 ring-amber-200 dark:bg-amber-500/20 dark:text-amber-50 dark:ring-amber-500/30"
@@ -575,45 +598,34 @@ function mentionHighlightClass(mentions: ResultMention[]): string {
 
 function mentionTitle(mentions: ResultMention[]): string {
   const labels = [
-    ...new Set(mentions.map((mention) => subjectLabel(mention.subject))),
+    ...new Set(mentions.map((mention) => mentionSubjectLabel(mention.subject))),
   ]
   return `${labels.join(" and ")} mention${labels.length === 1 ? "" : "s"}`
 }
 
 function sentimentVariant(
-  sentiment: string
+  sentiment: Sentiment
 ): "secondary" | "outline" | "destructive" {
-  return sentiment === "negative"
+  return sentiment === Sentiment.NEGATIVE
     ? "destructive"
-    : sentiment === "positive"
+    : sentiment === Sentiment.POSITIVE
       ? "secondary"
       : "outline"
 }
 
-function subjectLabel(subject: string): string {
-  switch (subject) {
-    case "self":
-      return "Self"
-    case "business":
-      return "Business"
-    case "competitor":
-      return "Competitor"
-    case "other":
-      return "Other"
-    case "unknown":
-      return "Unknown"
-    default:
-      return subject
-  }
-}
-
-function JSONBlock({ value, empty }: { value: unknown; empty: string }) {
-  if (value === undefined || value === null || value === "") {
+function JSONBlock({ json, empty }: { json: string; empty: string }) {
+  if (json === "") {
     return <p className="text-sm text-muted-foreground">{empty}</p>
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(json)
+  } catch {
+    parsed = json
   }
   return (
     <pre className="max-h-80 overflow-auto rounded-lg bg-muted p-3 text-xs leading-5">
-      {JSON.stringify(value, null, 2)}
+      {JSON.stringify(parsed, null, 2)}
     </pre>
   )
 }
@@ -630,9 +642,10 @@ function DrawerSkeleton() {
   )
 }
 
-function formatDateTime(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) return value
+function formatDateTime(value: Timestamp | undefined): string {
+  if (value === undefined) return "-"
+  const date = timestampDate(value)
+  if (Number.isNaN(date.valueOf())) return "-"
   return date.toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",

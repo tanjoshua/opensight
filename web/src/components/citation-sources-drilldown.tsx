@@ -1,12 +1,13 @@
+import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { Link2 } from "lucide-react"
 
-import {
-  useCitationSources,
-  type CitationPage,
-  type CitationPrompt,
-  type CitationSource,
-  type CitationSubjectStat,
-} from "@/api/citations"
+import type {
+  CitationPage,
+  CitationPromptStat,
+  CitationSource,
+  CitationSubjectStat,
+} from "@/gen/opensight/v1/citation_pb"
+import { listCitationSources } from "@/gen/opensight/v1/citation-CitationService_connectquery"
 import { Badge } from "@/components/ui/badge"
 import {
   Empty,
@@ -37,7 +38,12 @@ export function CitationSourcesDrilldown({
   onOpenChange: (open: boolean) => void
   onOpenResult: (ids: string[]) => void
 }) {
-  const sources = useCitationSources(open ? businessId : undefined, { domain })
+  const sources = useQuery(
+    listCitationSources,
+    open && businessId !== undefined
+      ? { businessId, domain: domain ?? "", limit: 0, offset: 0 }
+      : skipToken
+  )
   const source = sources.data?.domains[0]
 
   return (
@@ -92,10 +98,10 @@ function SubjectSplit({
   onOpenResult: (ids: string[]) => void
 }) {
   const items = [
-    ["Business", source.subjects.business],
-    ["Competitor", source.subjects.competitor],
-    ["Other", source.subjects.other],
-    ["Unknown", source.subjects.unknown],
+    ["Business", source.subjects?.business],
+    ["Competitor", source.subjects?.competitor],
+    ["Other", source.subjects?.other],
+    ["Unknown", source.subjects?.unknown],
   ] as const
   return (
     <section className="flex flex-col gap-2">
@@ -120,20 +126,22 @@ function SubjectBadge({
   onOpenResult,
 }: {
   label: string
-  stat: CitationSubjectStat
+  stat: CitationSubjectStat | undefined
   onOpenResult: (ids: string[]) => void
 }) {
+  const frequency = stat?.frequency ?? 0
+  const resultIds = stat?.resultIds ?? []
   return (
     <button
       type="button"
-      disabled={stat.frequency === 0}
+      disabled={frequency === 0}
       title="Open a response behind this subject"
-      onClick={() => onOpenResult(stat.result_ids)}
+      onClick={() => onOpenResult(resultIds)}
       className="enabled:cursor-pointer enabled:hover:opacity-75 disabled:opacity-60"
     >
       <Badge variant="outline" className="gap-1">
         <span>{label}</span>
-        <span className="tabular-nums">{stat.frequency}</span>
+        <span className="tabular-nums">{frequency}</span>
       </Badge>
     </button>
   )
@@ -157,7 +165,7 @@ function PagesList({
             <button
               key={page.url}
               type="button"
-              onClick={() => onOpenResult(page.result_ids)}
+              onClick={() => onOpenResult(page.resultIds)}
               title="Open a response citing this page"
               className="flex w-full flex-col gap-2 border-b px-3 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >
@@ -175,10 +183,10 @@ function PagesList({
                 </Badge>
               </div>
               <SubjectMiniSplit
-                business={page.subjects.business.frequency}
-                competitor={page.subjects.competitor.frequency}
-                other={page.subjects.other.frequency}
-                unknown={page.subjects.unknown.frequency}
+                business={page.subjects?.business?.frequency ?? 0}
+                competitor={page.subjects?.competitor?.frequency ?? 0}
+                other={page.subjects?.other?.frequency ?? 0}
+                unknown={page.subjects?.unknown?.frequency ?? 0}
               />
             </button>
           ))}
@@ -192,7 +200,7 @@ function PromptsList({
   prompts,
   onOpenResult,
 }: {
-  prompts: CitationPrompt[]
+  prompts: CitationPromptStat[]
   onOpenResult: (ids: string[]) => void
 }) {
   return (
@@ -204,14 +212,14 @@ function PromptsList({
         <div className="overflow-hidden rounded-lg border">
           {prompts.map((prompt) => (
             <button
-              key={prompt.prompt_id}
+              key={prompt.promptId}
               type="button"
-              onClick={() => onOpenResult(prompt.result_ids)}
+              onClick={() => onOpenResult(prompt.resultIds)}
               title="Open a response for this prompt"
               className="flex w-full items-start justify-between gap-3 border-b px-3 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >
               <span className="line-clamp-2 min-w-0 text-sm">
-                {prompt.prompt_text}
+                {prompt.promptText}
               </span>
               <Badge variant="secondary" className="shrink-0 tabular-nums">
                 {prompt.frequency}

@@ -1,10 +1,12 @@
 import { type FormEvent, useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, createConnectQueryKey } from "@connectrpc/connect-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { LogIn } from "lucide-react"
 import { Navigate, useNavigate } from "react-router"
 
-import { login, useMe } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { errorMessage } from "@/api/errors"
+import { useMe } from "@/api/hooks"
+import { getMe, login } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -15,10 +17,11 @@ export function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  const loginMutation = useMutation({
-    mutationFn: login,
+  const loginMutation = useMutation(login, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["me"] })
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
+      })
       navigate("/responses", { replace: true })
     },
   })
@@ -27,12 +30,9 @@ export function LoginPage() {
     return <Navigate to="/responses" replace />
   }
 
-  const error =
-    loginMutation.error instanceof ApiError
-      ? loginMutation.error.message
-      : loginMutation.isError
-        ? "Login failed. Try again."
-        : undefined
+  const error = loginMutation.isError
+    ? errorMessage(loginMutation.error, "Login failed. Try again.")
+    : undefined
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
