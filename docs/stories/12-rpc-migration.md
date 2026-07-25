@@ -166,23 +166,32 @@ Deps: RPC-3 · Phase 3 · Ref: design 06 (Competitors, Responses, Runs)
 As a clinic user, I want the SPA talking to `/rpc` instead of `/api/v1`, so that the frontend gets
 generated types and connect-query's derived cache keys.
 
-- [ ] `web/src/api/transport.ts`: `createConnectTransport({ baseUrl: "/rpc" })`;
+- [x] `web/src/api/transport.ts`: `createConnectTransport({ baseUrl: "/rpc" })`;
       `<TransportProvider>` wraps `<QueryClientProvider>` in `main.tsx`.
-- [ ] All 13 consumer files (`app-layout`, `app-sidebar`, `response-drawer`,
+- [x] All 13 consumer files (`app-layout`, `app-sidebar`, `response-drawer`,
       `citation-sources-drilldown`, and the competitors/login/onboarding/overview/prompts/responses/
       setup pages) ported to connect-query hooks.
-- [ ] `enabled: businessId !== undefined`, `placeholderData: keepPreviousData`, data-driven
+- [x] `enabled: businessId !== undefined`, `placeholderData: keepPreviousData`, data-driven
       `refetchInterval`, and manual invalidation (`useInvalidateCompetitorViews`) idioms preserved,
       the last via `createConnectQueryKey` instead of string literals.
-- [ ] `useAllCompetitors`'s client-side pagination loop kept as a hand-written hook over a plain
+- [x] `useAllCompetitors`'s client-side pagination loop kept as a hand-written hook over a plain
       `createClient` (connect-query has no equivalent).
-- [ ] Date rendering switched to `timestampDate()`; status comparisons switched to generated enums.
-- [ ] `ApiError` call sites replaced with `ConnectError.from(err)` / `.code === Code.Unauthenticated`.
-- [ ] `web/vite.config.ts` proxies `/rpc`.
-- [ ] `web/src/api/{client,auth,businesses,overview,prompts,competitors,responses,citations,
+- [x] Date rendering switched to `timestampDate()`; status comparisons switched to generated enums.
+      Every place a status/enum value is *rendered* as text (not just compared) gets an explicit
+      label map — `tsc` cannot catch a numeric enum leaking into a React child or template literal,
+      so this needs a deliberate audit of the drawer, prompts, and responses pages, not just a
+      mechanical find-and-replace.
+- [x] `ApiError` call sites replaced with `ConnectError.from(err)`, reading `.rawMessage` (not
+      `.message`, which is code-prefixed, e.g. `"[unauthenticated] invalid email or password"` — the
+      prefixed form must never reach the UI) and `.code === Code.Unauthenticated`.
+- [x] `web/vite.config.ts` proxies `/rpc` (kept alongside the existing `/api` proxy — REST is still
+      live until RPC-8, which also removes this entry).
+- [x] `web/src/api/{client,auth,businesses,overview,prompts,competitors,responses,citations,
       onboarding}.ts` deleted (resolves the `PromptSummary` name collision as a side effect).
-- [ ] `npm run typecheck && npm run build && npm run lint` pass; full manual walkthrough (login →
-      onboarding → all 5 sections) confirms no behavior regression.
+- [x] `npm run typecheck && npm run build && npm run lint` pass; full manual walkthrough (login →
+      onboarding → all 5 sections) confirms no behavior regression, including a check that zero
+      requests hit `/api/v1/**` for the whole session — the cheapest, highest-signal proof the
+      cutover is actually complete.
 
 Deps: RPC-4, RPC-5, RPC-6 · Phase 3 · Ref: design 06 (Frontend stack)
 
@@ -198,6 +207,8 @@ As the developer, I want the old REST stack removed, so that there is exactly on
       have no REST caller left; their Connect-side equivalents, added in RPC-3, are unaffected).
 - [ ] `isAPIRoute` deleted along with the `/api/v1` block it exists to distinguish from the SPA
       fallback — the `/rpc` mount 404s its own unknown paths and needs no equivalent check.
+- [ ] `web/vite.config.ts`'s `/api` dev-proxy entry removed (RPC-7 kept it alongside `/rpc` while
+      REST was still live; nothing calls it after RPC-7's cutover).
 - [ ] `go test ./...` and `npm run build` pass with REST fully gone.
 
 Deps: RPC-7 · Phase 3 · Ref: design 06
