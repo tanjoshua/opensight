@@ -50,17 +50,26 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 
 const chartConfig = {
-  you: { label: "You", color: "var(--primary)" },
+  you: { label: "You", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
-// The Overview trend plots "You" against a few competitors. The app's chart
-// palette is a single monochrome stone ramp (no distinct hues), so competitor
-// lines can't be told apart by color. Instead "You" stays dominant (solid
-// primary, thick) and each competitor is a thin muted line distinguished by a
-// dash pattern + the legend — the on-brand, colorblind-safe way to carry
-// identity in a monochrome system. Cap to the top few so the chart stays legible.
+// The Overview trend plots "You" against a few competitors, one line each,
+// identified by color: --chart-1 (you) through --chart-4 (up to 3
+// competitors), a fixed-order categorical set validated colorblind-safe as a
+// line-chart adjacent-pair palette (dataviz skill). "You" stays visually
+// dominant via line/dot weight, not color alone — a legend still names every
+// line since two of the four slots (aqua, yellow) sit under 3:1 contrast on a
+// light card. Cap to the top few so the chart stays legible.
 const MAX_COMPETITOR_LINES = 3
-const COMPETITOR_DASHES = ["6 4", "2 3", "8 4 2 4"]
+const COMPETITOR_COLORS = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)"]
+
+// First run, single data point: the chart still renders as a chart (axes, grid,
+// one dot) rather than swapping to a separate empty-state layout, with the
+// x-axis stretched one interval past the point so the shape reads as "day one
+// of a growing trend" rather than a dead end. The window doesn't assert an
+// actual next-run date (cadence is plan-driven, MVP is weekly-only) — the tick
+// is labeled "Next run" rather than a date for that reason.
+const PROJECTED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
 export function OverviewPage() {
   const me = useMe()
@@ -220,29 +229,24 @@ function VisibilityCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {trend.length === 1 ? (
-          <SinglePoint point={trend[0]} onSelectRun={onSelectRun} />
-        ) : (
-          <TrendChart
-            trend={trend}
-            competitors={overview.top_competitors}
-            promptChanges={overview.prompt_changes}
-            onSelectRun={onSelectRun}
-          />
-        )}
+        <TrendChart
+          trend={trend}
+          competitors={overview.top_competitors}
+          promptChanges={overview.prompt_changes}
+          onSelectRun={onSelectRun}
+        />
       </CardContent>
     </Card>
   )
 }
 
 // A plotted series: "You" plus the capped competitor lines. `key` is the row
-// field recharts reads; `dash`/`width` carry identity in the monochrome palette.
+// field recharts reads; `color` carries identity, `width` keeps "You" dominant.
 interface Series {
   key: string
   name: string
   color: string
   width: number
-  dash?: string
 }
 
 function TrendChart({
@@ -261,12 +265,11 @@ function TrendChart({
     .map((c, i) => ({
       key: c.id,
       name: c.name,
-      color: "var(--muted-foreground)",
-      width: 1.5,
-      dash: COMPETITOR_DASHES[i],
+      color: COMPETITOR_COLORS[i],
+      width: 2,
     }))
   const series: Series[] = [
-    { key: "you", name: "You", color: "var(--primary)", width: 2.5 },
+    { key: "you", name: "You", color: "var(--chart-1)", width: 2.5 },
     ...competitorSeries,
   ]
   // Competitor trends are aligned point-for-point with the visibility trend
@@ -291,7 +294,13 @@ function TrendChart({
     return row
   })
   const minX = data[0].x as number
-  const maxX = data[data.length - 1].x as number
+  // With only one run so far, stretch the axis one interval past the point so
+  // the chart still reads as a chart — a dot at the left with room to grow —
+  // instead of collapsing to a zero-width domain.
+  const maxX =
+    data.length > 1
+      ? (data[data.length - 1].x as number)
+      : minX + PROJECTED_WINDOW_MS
   // Markers only make sense inside the plotted window; a prompt change before the
   // first run or after the last has nothing to sit against.
   const markers = promptChanges
@@ -324,12 +333,18 @@ function TrendChart({
               dataKey="x"
               type="number"
               scale="time"
-              domain={["dataMin", "dataMax"]}
-              ticks={data.map((d) => d.x as number)}
+              domain={[minX, maxX]}
+              ticks={
+                data.length > 1
+                  ? data.map((d) => d.x as number)
+                  : [minX, maxX]
+              }
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(ms: number) => shortDate(ms)}
+              tickFormatter={(ms: number) =>
+                data.length === 1 && ms === maxX ? "Next run" : shortDate(ms)
+              }
             />
             <YAxis
               domain={[0, 100]}
@@ -363,7 +378,6 @@ function TrendChart({
                 type="monotone"
                 stroke={s.color}
                 strokeWidth={s.width}
-                strokeDasharray={s.dash}
                 dot={false}
                 activeDot={{ r: 4 }}
                 connectNulls
@@ -373,7 +387,7 @@ function TrendChart({
               dataKey="you"
               name="You"
               type="monotone"
-              stroke="var(--primary)"
+              stroke="var(--chart-1)"
               strokeWidth={2.5}
               dot={{ r: 3 }}
               activeDot={{ r: 5 }}
@@ -391,7 +405,9 @@ function TrendChart({
       </div>
       {competitorSeries.length > 0 && <ChartLegend series={series} />}
       <p className="text-xs text-muted-foreground">
-        Click a week to see the responses behind it.
+        {trend.length === 1
+          ? "This is your starting point — click it to see the responses behind it. The line grows as each run completes."
+          : "Click a week to see the responses behind it."}
         {markers.length > 0 &&
           " Dashed lines mark weeks where the prompt set changed."}
       </p>
@@ -399,9 +415,8 @@ function TrendChart({
   )
 }
 
-// A color/dash-alone chart isn't accessible (design 06); the legend names each
-// line so identity never rests on the monochrome stroke. Swatches mirror the
-// plotted stroke — thick solid for "You", thin dashed for each competitor.
+// A color-alone chart isn't accessible (some slots sit under 3:1 contrast on a
+// light card — dataviz skill relief rule), so the legend names each line too.
 function ChartLegend({ series }: { series: Series[] }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -418,7 +433,6 @@ function ChartLegend({ series }: { series: Series[] }) {
               y2="3"
               stroke={s.color}
               strokeWidth={s.width}
-              strokeDasharray={s.dash}
             />
           </svg>
           <span className="truncate">{s.name}</span>
@@ -517,7 +531,6 @@ function TrendTooltip({
                     y2="3"
                     stroke={s.color}
                     strokeWidth={s.width}
-                    strokeDasharray={s.dash}
                   />
                 </svg>
                 <span className="truncate">{s.name}</span>
@@ -533,35 +546,6 @@ function TrendTooltip({
         You: mentioned in {point.mentioned} of {point.analyzed}
       </div>
     </div>
-  )
-}
-
-// A lone run is most users' week one — render it as a labeled point, never a
-// one-node "line" (design 06 degraded states).
-function SinglePoint({
-  point,
-  onSelectRun,
-}: {
-  point: VisibilityPoint
-  onSelectRun: (runID: string) => void
-}) {
-  return (
-    <button
-      type="button"
-      className="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-left hover:bg-muted/50"
-      onClick={() => onSelectRun(point.run_id)}
-    >
-      <span className="size-3 rounded-full bg-primary" />
-      <div className="flex flex-col">
-        <span className="text-sm font-medium">
-          {shortDate(dateMs(point.scheduled_for))}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {formatPercent(point.percent)} · the trend line starts after your next
-          run
-        </span>
-      </div>
-    </button>
   )
 }
 

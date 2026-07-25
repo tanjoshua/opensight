@@ -67,10 +67,13 @@
     --border: oklch(0.923 0.003 48.717);
     --input: oklch(0.923 0.003 48.717);
     --ring: oklch(0.709 0.01 56.259);
-    --chart-1: oklch(0.869 0.005 56.366);
-    --chart-2: oklch(0.553 0.013 58.071);
-    --chart-3: oklch(0.444 0.011 73.639);
-    --chart-4: oklch(0.374 0.01 67.558);
+    /* Categorical, CVD-safe fixed order (dataviz skill palette): 1 you, 2-4
+       competitors. Validated as a set (adjacent-pair line-chart use): worst
+       adjacent CVD dE 9.1, normal-vision dE 22.9 (both above the 8/15 floors). */
+    --chart-1: #2a78d6;
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
     --chart-5: oklch(0.268 0.007 34.298);
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0.001 106.423);
@@ -102,10 +105,12 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.553 0.013 58.071);
-    --chart-1: oklch(0.869 0.005 56.366);
-    --chart-2: oklch(0.553 0.013 58.071);
-    --chart-3: oklch(0.444 0.011 73.639);
-    --chart-4: oklch(0.374 0.01 67.558);
+    /* Dark step of the same 4-slot categorical set (see :root); worst adjacent
+       CVD dE 8.4, normal-vision dE 19.8, all >=3:1 on the dark card surface. */
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
     --chart-5: oklch(0.268 0.007 34.298);
     --sidebar: oklch(0.216 0.006 56.043);
     --sidebar-foreground: oklch(0.985 0.001 106.423);
