@@ -199,17 +199,18 @@ Deps: RPC-4, RPC-5, RPC-6 · Phase 3 · Ref: design 06 (Frontend stack)
 
 As the developer, I want the old REST stack removed, so that there is exactly one contract.
 
-- [ ] `internal/api`'s REST handler bodies, request/response DTOs, and the `/api/v1` route block
+- [x] `internal/api`'s REST handler bodies, request/response DTOs, and the `/api/v1` route block
       deleted; `Routes()` left with `/healthz`, `/rpc`, and the SPA fallback only.
-- [ ] `writeProblem`/`writeJSON`/`writeStoreError`/`writeInternalError` removed in favor of `rpcError`
+- [x] `writeProblem`/`writeJSON`/`writeStoreError`/`writeInternalError` removed in favor of `rpcError`
       (`writeProblem` may survive narrowly if `NotFound`/`MethodNotAllowed` still need it — check).
-- [ ] `internal/api/middleware.go` deleted (`requireSession`/`requireRequestedWith`/`isStateChanging`
+      `writeProblem` kept: still backs the SPA route's 405 and the router's `MethodNotAllowed`.
+- [x] `internal/api/middleware.go` deleted (`requireSession`/`requireRequestedWith`/`isStateChanging`
       have no REST caller left; their Connect-side equivalents, added in RPC-3, are unaffected).
-- [ ] `isAPIRoute` deleted along with the `/api/v1` block it exists to distinguish from the SPA
+- [x] `isAPIRoute` deleted along with the `/api/v1` block it exists to distinguish from the SPA
       fallback — the `/rpc` mount 404s its own unknown paths and needs no equivalent check.
-- [ ] `web/vite.config.ts`'s `/api` dev-proxy entry removed (RPC-7 kept it alongside `/rpc` while
+- [x] `web/vite.config.ts`'s `/api` dev-proxy entry removed (RPC-7 kept it alongside `/rpc` while
       REST was still live; nothing calls it after RPC-7's cutover).
-- [ ] `go test ./...` and `npm run build` pass with REST fully gone.
+- [x] `go test ./...` and `npm run build` pass with REST fully gone.
 
 Deps: RPC-7 · Phase 3 · Ref: design 06
 
