@@ -1,12 +1,16 @@
 package api
 
-// Shared with RPC-6: RPC-6 extends this with ResultAnalysis/PromptRef
-// population for ListResults/GetResult.
+// Converters shared by PromptService and ResultService: Run and PromptResult
+// shaping, plus the ResultAnalysis/citation-span reconstruction
+// ListResults/GetResult need.
 
 import (
+	"encoding/json"
+	"sort"
 	"time"
 
 	opensightv1 "opensight/internal/gen/opensight/v1"
+	"opensight/internal/llm"
 	"opensight/internal/store"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -61,8 +65,8 @@ func timestampOrNil(t *time.Time) *timestamppb.Timestamp {
 }
 
 // runToProto mirrors runToResponse (responses.go) field-for-field.
-// Visibility is deliberately left nil here — only RPC-6's ListRuns populates
-// it (matches latestRunToResponse's REST behavior, which never sets it).
+// Visibility is deliberately left nil here — only ListRuns populates it
+// (matches latestRunToResponse's REST behavior, which never sets it).
 func runToProto(run store.Run) *opensightv1.Run {
 	return &opensightv1.Run{
 		Id:                  run.ID.String(),
@@ -79,9 +83,11 @@ func runToProto(run store.Run) *opensightv1.Run {
 }
 
 // promptResultToProto mirrors resultToResponse(result, includeRaw=false)
-// (responses.go): raw_response_json always stays "" here — RPC-6's GetResult
-// adds that. Unanalyzed and Prompt/Run/Analysis are left at zero value; the
-// caller sets Unanalyzed and any of those it owns.
+// (responses.go): raw_response_json always stays "" here. Unanalyzed and
+// Prompt/Run/Analysis are left at zero value; each caller (GetPrompt,
+// ListResults, GetResult) sets the extra fields it owns on the returned
+// struct after the call — GetResult additionally sets RawResponseJson when
+// include_raw is requested.
 func promptResultToProto(r store.PromptResult) *opensightv1.PromptResult {
 	return &opensightv1.PromptResult{
 		Id:           r.ID.String(),
@@ -95,4 +101,105 @@ func promptResultToProto(r store.PromptResult) *opensightv1.PromptResult {
 		RequestedAt:  timestamppb.New(r.RequestedAt),
 		CompletedAt:  timestamppb.New(r.CompletedAt),
 	}
+}
+
+func mentionSubjectToProto(s string) opensightv1.MentionSubject {
+	switch s {
+	case "self":
+		return opensightv1.MentionSubject_MENTION_SUBJECT_SELF
+	case "competitor":
+		return opensightv1.MentionSubject_MENTION_SUBJECT_COMPETITOR
+	default:
+		return opensightv1.MentionSubject_MENTION_SUBJECT_UNSPECIFIED
+	}
+}
+
+func matchMethodToProto(s string) opensightv1.MatchMethod {
+	switch s {
+	case "exact":
+		return opensightv1.MatchMethod_MATCH_METHOD_EXACT
+	case "llm":
+		return opensightv1.MatchMethod_MATCH_METHOD_LLM
+	default:
+		return opensightv1.MatchMethod_MATCH_METHOD_UNSPECIFIED
+	}
+}
+
+// resultCitationSubjectToProto maps a store.ResultCitation's subject string
+// to the generated enum. Named distinctly from citation_conv.go's
+// citationSubjectToProto (which converts a different type,
+// metrics.CitationSubjectStat) to avoid a duplicate function name.
+// "unknown" is a real, persisted value, not an error case.
+func resultCitationSubjectToProto(s string) opensightv1.CitationSubject {
+	switch s {
+	case "business":
+		return opensightv1.CitationSubject_CITATION_SUBJECT_BUSINESS
+	case "competitor":
+		return opensightv1.CitationSubject_CITATION_SUBJECT_COMPETITOR
+	case "other":
+		return opensightv1.CitationSubject_CITATION_SUBJECT_OTHER
+	case "unknown":
+		return opensightv1.CitationSubject_CITATION_SUBJECT_UNKNOWN
+	default:
+		return opensightv1.CitationSubject_CITATION_SUBJECT_UNSPECIFIED
+	}
+}
+
+// citationSpansToProto returns the response's url_citation annotation spans
+// in first-appearance (StartIndex-ascending) order — the same order
+// cite_order was assigned in (ANA-2's buildCitationWrites). A malformed or
+// empty raw_response yields no spans. Mirrors citationSpans (responses.go).
+func citationSpansToProto(rawResponse json.RawMessage) []*opensightv1.CitationSpan {
+	annotations, err := llm.ParseCitationAnnotations(rawResponse)
+	if err != nil || len(annotations) == 0 {
+		return nil
+	}
+	sort.SliceStable(annotations, func(i, j int) bool {
+		return annotations[i].StartIndex < annotations[j].StartIndex
+	})
+	spans := make([]*opensightv1.CitationSpan, len(annotations))
+	for i, a := range annotations {
+		spans[i] = &opensightv1.CitationSpan{Start: int32(a.StartIndex), End: int32(a.EndIndex)}
+	}
+	return spans
+}
+
+// resultAnalysisToProto mirrors analysisToResponse (responses.go), including
+// the span-index reconstruction: citations were written one-per-annotation
+// in StartIndex order with cite_order equal to that index, so cite_order
+// indexes directly into the sorted span slice from citationSpansToProto — no
+// URL matching needed.
+func resultAnalysisToProto(a store.ResultAnalysis, rawResponse json.RawMessage) *opensightv1.ResultAnalysis {
+	resp := &opensightv1.ResultAnalysis{
+		Sentiment: sentimentToProto(a.Sentiment),
+		Keywords:  a.Keywords,
+		Excerpts:  a.Excerpts,
+		Mentions:  make([]*opensightv1.ResultMention, 0, len(a.Mentions)),
+		Citations: make([]*opensightv1.ResultCitation, 0, len(a.Citations)),
+	}
+	for _, m := range a.Mentions {
+		resp.Mentions = append(resp.Mentions, &opensightv1.ResultMention{
+			Subject:      mentionSubjectToProto(m.Subject),
+			VerbatimName: m.VerbatimName,
+			Order:        int32(m.MentionOrder),
+			MatchedBy:    matchMethodToProto(m.MatchedBy),
+			Excerpt:      m.Excerpt,
+		})
+	}
+
+	spans := citationSpansToProto(rawResponse)
+	for _, c := range a.Citations {
+		row := &opensightv1.ResultCitation{
+			Url:       c.URL,
+			Domain:    c.Domain,
+			Title:     c.Title,
+			CiteOrder: int32(c.CiteOrder),
+			Subject:   resultCitationSubjectToProto(c.Subject),
+		}
+		if c.CiteOrder >= 0 && c.CiteOrder < len(spans) {
+			row.Span = spans[c.CiteOrder]
+		}
+		resp.Citations = append(resp.Citations, row)
+	}
+	return resp
 }

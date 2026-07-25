@@ -12,8 +12,9 @@ import (
 
 // rpcError is the single translation from an internal error to a
 // *connect.Error. Never leaks error detail to the client: the real error goes
-// to slog, a generic message goes to the client. RPC-4/5/6 extend this switch
-// with their own store sentinels as each service reaches them.
+// to slog, a generic message goes to the client. All 7 services are now
+// mounted; this switch covers every store sentinel reachable from any of
+// them.
 func (s *Server) rpcError(op string, err error) *connect.Error {
 	switch {
 	case errors.Is(err, errNoSession):

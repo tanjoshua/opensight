@@ -139,7 +139,6 @@ func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1
 		row.Unanalyzed = isUnanalyzed(item.Status, item.Analyzed)
 		// Prompt/Run/Analysis are left nil: matches REST's
 		// resultToResponse(item, false) with no .Prompt assignment here.
-		// RPC-6 owns any change to this field's population.
 		resp.Results = append(resp.Results, row)
 	}
 	return connect.NewResponse(resp), nil

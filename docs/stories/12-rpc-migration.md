@@ -147,16 +147,16 @@ Deps: RPC-3 · Phase 3 · Ref: design 06 (Overview, Prompts)
 As a clinic user, I want the Competitors and Responses/Runs endpoints on Connect — the full backend
 surface is now on Connect, REST still live behind it.
 
-- [ ] `CompetitorService.{ListCompetitors,AddCompetitor,SetCompetitorStatus,
+- [x] `CompetitorService.{ListCompetitors,AddCompetitor,SetCompetitorStatus,
       ReviewSuggestedAlias,UpdateCompetitorAliases}` implemented. `SetCompetitorStatus` (status
       arg) and `ReviewSuggestedAlias` (decision arg) merge the track/dismiss and approve/reject
       pairs into one RPC each — the server already funnels each pair through one function today,
       and the frontend already calls both through one function with a discriminator argument, so
       this keeps the RPC count matching the existing call shape (schema decision from RPC-2).
-- [ ] `ResultService.{ListRuns,ListResults,GetResult}` implemented, including the `mentioned` filter
+- [x] `ResultService.{ListRuns,ListResults,GetResult}` implemented, including the `mentioned` filter
       and the succeeded-but-unanalyzed badge flag.
-- [ ] Existing `competitors_test.go`, `responses_test.go` behavior ported.
-- [ ] All 7 services now live under `/rpc`; REST `/api/v1` still mounted and unchanged (deleted in
+- [x] Existing `competitors_test.go`, `responses_test.go` behavior ported.
+- [x] All 7 services now live under `/rpc`; REST `/api/v1` still mounted and unchanged (deleted in
       RPC-8, after the frontend cutover).
 
 Deps: RPC-3 · Phase 3 · Ref: design 06 (Competitors, Responses, Runs)

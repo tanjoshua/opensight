@@ -57,7 +57,8 @@ func (s *Server) rpcHandler() http.Handler {
 	mux.Handle(opensightv1connect.NewOverviewServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewCitationServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewPromptServiceHandler(s, opts...))
-	// RPC-6 adds CompetitorService and ResultService here.
+	mux.Handle(opensightv1connect.NewCompetitorServiceHandler(s, opts...))
+	mux.Handle(opensightv1connect.NewResultServiceHandler(s, opts...))
 	return http.StripPrefix("/rpc", mux)
 }
 

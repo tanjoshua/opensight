@@ -63,40 +63,8 @@ func promptChangesToProto(changes []metrics.PromptChange) []*opensightv1.PromptC
 	return out
 }
 
-// competitorStatusToProto maps metrics.CompetitorStat.Status (a plain Go
-// string: discovered|tracked|dismissed) to the generated enum.
-func competitorStatusToProto(status string) opensightv1.CompetitorStatus {
-	switch status {
-	case "discovered":
-		return opensightv1.CompetitorStatus_COMPETITOR_STATUS_DISCOVERED
-	case "tracked":
-		return opensightv1.CompetitorStatus_COMPETITOR_STATUS_TRACKED
-	case "dismissed":
-		return opensightv1.CompetitorStatus_COMPETITOR_STATUS_DISMISSED
-	default:
-		return opensightv1.CompetitorStatus_COMPETITOR_STATUS_UNSPECIFIED
-	}
-}
-
-func competitorTrendPointsToProto(points []metrics.CompetitorTrendPoint) []*opensightv1.CompetitorTrendPoint {
-	out := make([]*opensightv1.CompetitorTrendPoint, 0, len(points))
-	for _, p := range points {
-		out = append(out, &opensightv1.CompetitorTrendPoint{
-			RunId:        p.RunID.String(),
-			ScheduledFor: p.ScheduledFor.Format(time.DateOnly),
-			Analyzed:     int32(p.Analyzed),
-			Mentioned:    int32(p.Mentioned),
-			Percent:      p.Percent,
-			ResultIds:    idStrings(p.ResultIDs),
-		})
-	}
-	return out
-}
-
 // topCompetitorsToProto mirrors topCompetitorsToResponse (overview.go)
-// including its exact switch shape — RPC-6 should relocate these two
-// competitor converters to a future competitor_conv.go once it owns
-// CompetitorService.
+// including its exact switch shape.
 func topCompetitorsToProto(stats metrics.CompetitorStats) ([]*opensightv1.CompetitorSummary, int) {
 	out := []*opensightv1.CompetitorSummary{}
 	shown, total := 0, 0
