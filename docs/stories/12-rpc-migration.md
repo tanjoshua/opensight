@@ -38,27 +38,30 @@ Deps: — · Phase 3 · Ref: design 06 (API conventions)
 As the developer, I want every endpoint's request/response shape defined in `.proto`, so that the
 schema is complete and reviewable before any server code changes.
 
-- [ ] `proto/opensight/v1/{common,auth,business,overview,citation,prompt,competitor,result}.proto`
-      covering all 26 existing endpoints across 7 services (see design 06 for the RPC-to-endpoint
-      mapping).
-- [ ] `common.proto` holds `Paging`, `StringList`, and the shared enums (`BusinessStatus`,
+- [x] `proto/opensight/v1/{common,auth,business,overview,citation,prompt,competitor,result}.proto`
+      covering all 25 existing `/api/v1` endpoints (26 router entries counting `/healthz`, which is
+      not an RPC) across 7 services, 23 RPCs — `SetCompetitorStatus` and `ReviewSuggestedAlias` each
+      merge a track/dismiss or approve/reject pair, matching the single Go handler function and
+      single frontend call each pair already funnels through.
+- [x] `common.proto` holds `Paging`, `StringList`, and the shared enums (`BusinessStatus`,
       `PromptStatus`, `RunStatus`, `RunTrigger`, `ResultStatus`, `CompetitorStatus`,
       `CompetitorSource`, `Sentiment`, `MentionSubject`, `MatchMethod`, `CitationSubject`,
       `GenerationStage`) — values read from `internal/store`/its migrations, not from frontend
       string literals. `ProposalStatus` (`generating`/`ready`/`failed`) is the one exception: it is
       workflow-derived in `internal/api/businesses.go`, not `internal/store`'s
       `ProfileProposalStatus` (`pending`/`applied`/`discarded`), which is never exposed over the API.
-- [ ] `UpdateBusinessRequest`/`UpdateCompetitorAliasesRequest` use `optional` scalars and the
+- [x] `UpdateBusinessRequest`/`UpdateCompetitorAliasesRequest` use `optional` scalars and the
       `StringList` message wrapper so omitted/null/empty PATCH semantics (design 06 Setup notes)
       are representable.
-- [ ] Every aggregate message carries `repeated string result_ids` (the "every number is a door"
-      invariant) under that exact field name.
-- [ ] `PromptResult.request_json` / `.raw_response_json` are `string`, not `google.protobuf.Struct`
+- [x] Every aggregate message carries `repeated string result_ids` (the "every number is a door"
+      invariant) under that exact field name; verified exhaustively across all 12 aggregate
+      messages plus the 2 singular `result_id`/`latest_result_id` exceptions.
+- [x] `PromptResult.request_json` / `.raw_response_json` are `string`, not `google.protobuf.Struct`
       (avoids float-mangling int64 token counts).
-- [ ] `ProposalPayload`/`ProposedProfile`/`Location`/`ProposedPrompt`/`ProposalSource` mirror
+- [x] `ProposalPayload`/`ProposedProfile`/`Location`/`ProposedPrompt`/`ProposalSource` mirror
       `internal/llm/propose_profile.go` field-for-field; `internal/llm` itself takes no dependency
       on generated types.
-- [ ] `buf lint` and `buf generate` pass; generated Go/TS committed. No service implementation yet —
+- [x] `buf lint` and `buf generate` pass; generated Go/TS committed. No service implementation yet —
       this story is schema only.
 
 Deps: RPC-1 · Phase 3 · Ref: design 06 (Endpoints by section)
