@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -151,6 +152,7 @@ func TestParseOpenAIResponseConcatenatesOutputText(t *testing.T) {
 
 func TestOpenAIRunnerRejectsIncompleteResponseWithText(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"status": "incomplete",
 			"incomplete_details": {"reason": "max_output_tokens"},
@@ -222,7 +224,10 @@ func TestOpenAIRunnerClassifiesHTTPError(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			var calls atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				calls.Add(1)
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tc.status)
 				_, _ = w.Write([]byte(tc.responseBody))
 			}))
@@ -257,12 +262,136 @@ func TestOpenAIRunnerClassifiesHTTPError(t *testing.T) {
 			if !strings.Contains(err.Error(), tc.expectedSubstr) {
 				t.Errorf("error = %q, want substring %q", err.Error(), tc.expectedSubstr)
 			}
+			if got := calls.Load(); got != 1 {
+				t.Errorf("OpenAI request count = %d, want 1; activity retries must not be multiplied by SDK retries", got)
+			}
+		})
+	}
+}
+
+func TestOpenAIRunnerPreservesUnstructuredHTTPErrorBody(t *testing.T) {
+	tests := []struct {
+		name         string
+		status       int
+		contentType  string
+		body         string
+		wantMessage  string
+		nonRetryable bool
+	}{
+		{
+			name:         "plain text client error",
+			status:       http.StatusBadRequest,
+			contentType:  "text/plain",
+			body:         "plain provider failure\n",
+			wantMessage:  "plain provider failure",
+			nonRetryable: true,
+		},
+		{
+			name:         "malformed json client error",
+			status:       http.StatusUnprocessableEntity,
+			contentType:  "application/json",
+			body:         `{"error":{"message":"truncated"`,
+			wantMessage:  `{"error":{"message":"truncated"`,
+			nonRetryable: true,
+		},
+		{
+			name:         "html server error",
+			status:       http.StatusBadGateway,
+			contentType:  "text/html",
+			body:         "<html>upstream failed</html>",
+			wantMessage:  "<html>upstream failed</html>",
+			nonRetryable: false,
+		},
+		{
+			name:         "empty client error",
+			status:       http.StatusForbidden,
+			contentType:  "application/json",
+			wantMessage:  http.StatusText(http.StatusForbidden),
+			nonRetryable: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", tt.contentType)
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			runner, err := NewOpenAIPromptRunner(OpenAIConfig{
+				APIKey:  "sk-test",
+				Model:   "chat-latest",
+				BaseURL: server.URL,
+			})
+			if err != nil {
+				t.Fatalf("NewOpenAIPromptRunner: %v", err)
+			}
+
+			_, err = runner.RunPrompt(context.Background(), PromptRequest{
+				Prompt:   "Where should I go?",
+				Location: Location{Country: "SG"},
+			})
+			var runnerErr *RunnerError
+			if !errors.As(err, &runnerErr) {
+				t.Fatalf("error = %T %v, want RunnerError", err, err)
+			}
+			if runnerErr.StatusCode != tt.status {
+				t.Errorf("StatusCode = %d, want %d", runnerErr.StatusCode, tt.status)
+			}
+			if runnerErr.Message != tt.wantMessage {
+				t.Errorf("Message = %q, want %q", runnerErr.Message, tt.wantMessage)
+			}
+			if string(runnerErr.Body) != tt.body {
+				t.Errorf("Body = %q, want exact provider bytes %q", runnerErr.Body, tt.body)
+			}
+			if runnerErr.NonRetryable() != tt.nonRetryable {
+				t.Errorf("NonRetryable = %v, want %v", runnerErr.NonRetryable(), tt.nonRetryable)
+			}
+		})
+	}
+}
+
+func TestOpenAIRunnerRejectsOversizedResponseBeforeDecoding(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		status int
+	}{
+		{name: "success", status: http.StatusOK},
+		{name: "error", status: http.StatusInternalServerError},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(strings.Repeat("x", maxOpenAIResponseBodyBytes+1)))
+			}))
+			defer server.Close()
+
+			runner, err := NewOpenAIPromptRunner(OpenAIConfig{
+				APIKey:  "sk-test",
+				Model:   "chat-latest",
+				BaseURL: server.URL,
+			})
+			if err != nil {
+				t.Fatalf("NewOpenAIPromptRunner: %v", err)
+			}
+
+			_, err = runner.RunPrompt(context.Background(), PromptRequest{
+				Prompt:   "Where should I go?",
+				Location: Location{Country: "SG"},
+			})
+			if err == nil || !strings.Contains(err.Error(), "response body exceeds size limit") {
+				t.Fatalf("error = %v, want response size limit error", err)
+			}
 		})
 	}
 }
 
 func TestOpenAIRunnerTreatsRefusalAsNonRetryable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"status": "completed",
 			"model": "gpt-reported",

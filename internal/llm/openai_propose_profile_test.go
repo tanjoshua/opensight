@@ -30,6 +30,7 @@ func TestOpenAIProposeProfileBuildsStructuredRequest(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&gotRequest); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(proposalCompletedBody(t)))
 	}))
 	defer server.Close()
@@ -101,6 +102,7 @@ func TestOpenAIProposeProfileAppendsRetryTurns(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&gotRequest); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(proposalCompletedBody(t)))
 	}))
 	defer server.Close()
@@ -168,6 +170,7 @@ func TestOpenAIProposeProfileErrorMapping(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.status)
 				_, _ = w.Write([]byte(tt.body))
 			}))

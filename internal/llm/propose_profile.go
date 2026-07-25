@@ -121,7 +121,7 @@ var stubProposalPrompts = []ProposedPrompt{
 	{Text: "best orthopaedic clinic in Singapore"},
 	{Text: "where can I get ACL reconstruction in Singapore"},
 	{Text: "knee pain that won't go away, who should I see in Singapore"},
-	{Text: "orthopaedic specialist near Novena"},
+	{Text: "top rated orthopaedic specialist in Singapore"},
 }
 
 // RunProposeProfile returns a canned proposal shaped by the input. LowConfidence

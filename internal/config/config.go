@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type PromptRunnerMode string
@@ -50,7 +52,13 @@ type Config struct {
 	PromptConcurrency     int
 }
 
+// Load reads runtime settings from the process environment. It first loads a
+// .env file from the working directory if present (dev convenience, e.g. air
+// under `make dev-serve`/`dev-work` — see docs/dev.md), without overriding
+// any variable already set in the real environment; a missing .env (the
+// normal case in deployment) is not an error.
 func Load() (Config, error) {
+	_ = godotenv.Load()
 	return LoadFromEnv(os.Getenv)
 }
 

@@ -9,6 +9,12 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/packages/param"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 const (
@@ -30,36 +36,16 @@ type OpenAIConfig struct {
 
 // OpenAIPromptRunner executes prompts through the OpenAI Responses API.
 type OpenAIPromptRunner struct {
-	apiKey     string
-	model      string
-	baseURL    string
-	httpClient *http.Client
+	openAIResponsesClient
 }
 
 // NewOpenAIPromptRunner returns an OpenAI-backed PromptRunner.
 func NewOpenAIPromptRunner(cfg OpenAIConfig) (*OpenAIPromptRunner, error) {
-	apiKey := strings.TrimSpace(cfg.APIKey)
-	if apiKey == "" {
-		return nil, errors.New("openai api key is required")
+	client, err := newOpenAIResponsesClient(cfg, "openai responses model is required")
+	if err != nil {
+		return nil, err
 	}
-	model := strings.TrimSpace(cfg.Model)
-	if model == "" {
-		return nil, errors.New("openai responses model is required")
-	}
-	baseURL := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if baseURL == "" {
-		baseURL = defaultOpenAIBaseURL
-	}
-	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-	return &OpenAIPromptRunner{
-		apiKey:     apiKey,
-		model:      model,
-		baseURL:    baseURL,
-		httpClient: httpClient,
-	}, nil
+	return &OpenAIPromptRunner{openAIResponsesClient: client}, nil
 }
 
 // RunPrompt sends the user's prompt as the only instruction and returns both
@@ -77,7 +63,8 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 		return PromptRunResult{}, err
 	}
 
-	requestJSON, err := r.requestJSON(prompt, location)
+	params := responsesParams(r.model, prompt, location)
+	requestJSON, err := marshalOpenAIRequest(params, "openai request")
 	if err != nil {
 		return PromptRunResult{}, err
 	}
@@ -85,57 +72,12 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 	// From here on the request body exists, so every failure path carries
 	// RequestJSON: ExecutePrompt (RUN-4) persists a failed row whose NOT NULL
 	// request column is this body, even when the provider fails.
-	httpReq, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		r.baseURL+openAIResponsesPath,
-		bytes.NewReader(requestJSON),
-	)
-	if err != nil {
-		return PromptRunResult{RequestJSON: requestJSON}, fmt.Errorf("build openai request: %w", err)
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+r.apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := r.httpClient.Do(httpReq)
-	if err != nil {
-		return PromptRunResult{RequestJSON: requestJSON}, fmt.Errorf("call openai responses: %w", err)
-	}
-	defer func() {
-		_ = httpResp.Body.Close()
-	}()
-
-	body, err := io.ReadAll(io.LimitReader(httpResp.Body, int64(maxOpenAIResponseBodyBytes)+1))
-	if err != nil {
-		return PromptRunResult{RequestJSON: requestJSON}, fmt.Errorf("read openai response: %w", err)
-	}
-	if len(body) > maxOpenAIResponseBodyBytes {
-		return PromptRunResult{RequestJSON: requestJSON}, errors.New("openai response body exceeds size limit")
-	}
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return PromptRunResult{RequestJSON: requestJSON}, openAIHTTPError(httpResp.StatusCode, body)
-	}
-
-	parsed, err := parseOpenAIResponse(body)
+	parsed, body, err := r.call(ctx, params)
 	if err != nil {
 		return PromptRunResult{RequestJSON: requestJSON}, err
 	}
-	if parsed.Status != "completed" {
-		return PromptRunResult{RequestJSON: requestJSON}, incompleteOpenAIResponseError(parsed, body)
-	}
-	if parsed.Refusal != "" {
-		return PromptRunResult{RequestJSON: requestJSON}, &RunnerError{
-			Type:         "content_policy_refusal",
-			Message:      parsed.Refusal,
-			Body:         append(json.RawMessage(nil), body...),
-			nonRetryable: true,
-		}
-	}
-	if strings.TrimSpace(parsed.Model) == "" {
-		return PromptRunResult{RequestJSON: requestJSON}, errors.New("openai response missing reported model")
-	}
-	if strings.TrimSpace(parsed.Text) == "" {
-		return PromptRunResult{RequestJSON: requestJSON}, errors.New("openai response missing output_text")
+	if err := validateOpenAIResponse(parsed, body, "openai response missing reported model", "openai response missing output_text"); err != nil {
+		return PromptRunResult{RequestJSON: requestJSON}, err
 	}
 
 	return PromptRunResult{
@@ -146,56 +88,225 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 	}, nil
 }
 
-func (r *OpenAIPromptRunner) requestJSON(prompt string, location Location) (json.RawMessage, error) {
-	return buildResponsesRequestJSON(r.model, prompt, location)
-}
-
 // buildResponsesRequestJSON marshals the exact Responses API request body. It is
 // shared by the OpenAI runner and the replay/stub runners so a persisted
 // prompt_results.request has the same shape regardless of execution mode.
 func buildResponsesRequestJSON(model, prompt string, location Location) (json.RawMessage, error) {
-	payload := openAIResponseRequest{
-		Model: model,
-		Input: prompt,
-		Store: false,
-		Tools: []openAIWebSearchTool{{
-			Type:              openAIWebSearchToolType,
-			SearchContextSize: openAISearchContextSize,
-			UserLocation: openAIUserLocation{
-				Type:     openAIApproximateLocationType,
-				Country:  location.Country,
-				City:     location.City,
-				Region:   location.Region,
-				Timezone: location.Timezone,
-			},
-		}},
+	return marshalOpenAIRequest(responsesParams(model, prompt, location), "openai request")
+}
+
+type openAIResponsesClient struct {
+	client *openai.Client
+	model  string
+}
+
+func newOpenAIResponsesClient(cfg OpenAIConfig, modelError string) (openAIResponsesClient, error) {
+	apiKey := strings.TrimSpace(cfg.APIKey)
+	if apiKey == "" {
+		return openAIResponsesClient{}, errors.New("openai api key is required")
 	}
-	raw, err := json.Marshal(payload)
+	model := strings.TrimSpace(cfg.Model)
+	if model == "" {
+		return openAIResponsesClient{}, errors.New(modelError)
+	}
+	baseURL := strings.TrimSpace(cfg.BaseURL)
+	if baseURL == "" {
+		baseURL = defaultOpenAIBaseURL
+	}
+	httpClient := cfg.HTTPClient
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	client := openai.NewClient(
+		option.WithAPIKey(apiKey),
+		option.WithBaseURL(baseURL),
+		option.WithHTTPClient(openAIHTTPClient{base: httpClient}),
+		// Temporal owns activity retries. An SDK retry here would multiply calls
+		// and make the activity-level retry policy inaccurate.
+		option.WithMaxRetries(0),
+	)
+	return openAIResponsesClient{client: &client, model: model}, nil
+}
+
+func responsesParams(model, prompt string, location Location) responses.ResponseNewParams {
+	return responses.ResponseNewParams{
+		Model: shared.ResponsesModel(model),
+		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(prompt)},
+		Store: openai.Bool(false),
+		Tools: []responses.ToolUnionParam{webSearchTool(location)},
+	}
+}
+
+func webSearchTool(location Location) responses.ToolUnionParam {
+	tool := responses.ToolParamOfWebSearch(responses.WebSearchToolTypeWebSearch)
+	tool.OfWebSearch.SearchContextSize = responses.WebSearchToolSearchContextSizeMedium
+	tool.OfWebSearch.UserLocation = responses.WebSearchToolUserLocationParam{
+		Type:     openAIApproximateLocationType,
+		Country:  optionalString(location.Country),
+		City:     optionalString(location.City),
+		Region:   optionalString(location.Region),
+		Timezone: optionalString(location.Timezone),
+	}
+	return tool
+}
+
+func optionalString(value string) (out param.Opt[string]) {
+	if value != "" {
+		out = openai.String(value)
+	}
+	return out
+}
+
+func strictJSONSchemaFormat(name string, schema json.RawMessage) responses.ResponseFormatTextConfigUnionParam {
+	var schemaObject map[string]any
+	if err := json.Unmarshal(schema, &schemaObject); err != nil {
+		panic("invalid JSON schema: " + err.Error())
+	}
+	format := responses.ResponseFormatTextConfigParamOfJSONSchema(name, schemaObject)
+	format.OfJSONSchema.Strict = openai.Bool(true)
+	return format
+}
+
+func marshalOpenAIRequest(params responses.ResponseNewParams, label string) (json.RawMessage, error) {
+	raw, err := json.Marshal(params)
 	if err != nil {
-		return nil, fmt.Errorf("marshal openai request: %w", err)
+		return nil, fmt.Errorf("marshal %s: %w", label, err)
 	}
 	return raw, nil
 }
 
-type openAIResponseRequest struct {
-	Model string                `json:"model"`
-	Input string                `json:"input"`
-	Store bool                  `json:"store"`
-	Tools []openAIWebSearchTool `json:"tools"`
+func (c openAIResponsesClient) call(ctx context.Context, params responses.ResponseNewParams) (openAIParsedResponse, json.RawMessage, error) {
+	capture := &openAIResponseCapture{}
+	_, sdkErr := c.client.Responses.New(context.WithValue(ctx, openAIResponseCaptureKey{}, capture), params)
+	if capture.tooLarge {
+		return openAIParsedResponse{}, nil, errors.New("openai response body exceeds size limit")
+	}
+	if capture.readErr != nil {
+		return openAIParsedResponse{}, nil, fmt.Errorf("read openai response: %w", capture.readErr)
+	}
+	if capture.statusCode != 0 {
+		if capture.statusCode < 200 || capture.statusCode >= 300 {
+			return openAIParsedResponse{}, nil, openAIHTTPError(capture.statusCode, capture.body)
+		}
+		body := append(json.RawMessage(nil), capture.body...)
+		parsed, err := parseOpenAIResponse(body)
+		return parsed, body, err
+	}
+	if sdkErr != nil {
+		return openAIParsedResponse{}, nil, classifyOpenAISDKError(sdkErr)
+	}
+	return openAIParsedResponse{}, nil, errors.New("openai response is missing captured HTTP response")
 }
 
-type openAIWebSearchTool struct {
-	Type              string             `json:"type"`
-	SearchContextSize string             `json:"search_context_size"`
-	UserLocation      openAIUserLocation `json:"user_location"`
+type openAIResponseCaptureKey struct{}
+
+type openAIResponseCapture struct {
+	statusCode int
+	body       []byte
+	readErr    error
+	tooLarge   bool
 }
 
-type openAIUserLocation struct {
-	Type     string `json:"type"`
-	Country  string `json:"country"`
-	City     string `json:"city,omitempty"`
-	Region   string `json:"region,omitempty"`
-	Timezone string `json:"timezone,omitempty"`
+// openAIHTTPClient reads and caps the provider response before the SDK decoder
+// sees it, then replaces the body so the SDK can continue normally. Capture
+// state is request-scoped through the context, so one shared SDK client remains
+// safe for concurrent activity calls.
+type openAIHTTPClient struct {
+	base *http.Client
+}
+
+func (c openAIHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	response, err := c.base.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	body, readErr := io.ReadAll(io.LimitReader(response.Body, int64(maxOpenAIResponseBodyBytes)+1))
+	_ = response.Body.Close()
+
+	capture, _ := req.Context().Value(openAIResponseCaptureKey{}).(*openAIResponseCapture)
+	if capture != nil {
+		capture.statusCode = response.StatusCode
+		capture.readErr = readErr
+		capture.tooLarge = len(body) > maxOpenAIResponseBodyBytes
+		if !capture.tooLarge {
+			capture.body = append([]byte(nil), body...)
+		}
+	}
+	if readErr != nil {
+		return nil, readErr
+	}
+
+	response.Body = io.NopCloser(bytes.NewReader(body))
+	return response, nil
+}
+
+func classifyOpenAISDKError(err error) error {
+	var apiErr *openai.Error
+	if !errors.As(err, &apiErr) {
+		return fmt.Errorf("call openai responses: %w", err)
+	}
+	body := json.RawMessage(apiErr.RawJSON())
+	if len(body) > 0 {
+		body = json.RawMessage(`{"error":` + string(body) + `}`)
+	}
+	return &RunnerError{
+		StatusCode:   apiErr.StatusCode,
+		Type:         apiErr.Type,
+		Code:         apiErr.Code,
+		Message:      apiErr.Message,
+		Body:         append(json.RawMessage(nil), body...),
+		nonRetryable: apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 && apiErr.StatusCode != http.StatusTooManyRequests,
+	}
+}
+
+func openAIHTTPError(statusCode int, body []byte) error {
+	var parsed struct {
+		Error struct {
+			Message string `json:"message"`
+			Type    string `json:"type"`
+			Code    string `json:"code"`
+		} `json:"error"`
+	}
+	_ = json.Unmarshal(body, &parsed)
+
+	message := strings.TrimSpace(parsed.Error.Message)
+	if message == "" {
+		message = strings.TrimSpace(string(body))
+	}
+	if message == "" {
+		message = http.StatusText(statusCode)
+	}
+
+	return &RunnerError{
+		StatusCode:   statusCode,
+		Type:         parsed.Error.Type,
+		Code:         parsed.Error.Code,
+		Message:      message,
+		Body:         append(json.RawMessage(nil), body...),
+		nonRetryable: statusCode >= 400 && statusCode < 500 && statusCode != http.StatusTooManyRequests,
+	}
+}
+
+func validateOpenAIResponse(parsed openAIParsedResponse, body []byte, missingModel, missingText string) error {
+	if parsed.Status != "completed" {
+		return incompleteOpenAIResponseError(parsed, body)
+	}
+	if parsed.Refusal != "" {
+		return &RunnerError{
+			Type:         "content_policy_refusal",
+			Message:      parsed.Refusal,
+			Body:         append(json.RawMessage(nil), body...),
+			nonRetryable: true,
+		}
+	}
+	if strings.TrimSpace(parsed.Model) == "" {
+		return errors.New(missingModel)
+	}
+	if strings.TrimSpace(parsed.Text) == "" {
+		return errors.New(missingText)
+	}
+	return nil
 }
 
 type openAIParsedResponse struct {
@@ -289,32 +400,4 @@ func incompleteDetailsLookPolicyFiltered(raw json.RawMessage) bool {
 	return strings.Contains(lower, "content_filter") ||
 		strings.Contains(lower, "content_policy") ||
 		strings.Contains(lower, "safety")
-}
-
-func openAIHTTPError(statusCode int, body []byte) error {
-	var parsed struct {
-		Error struct {
-			Message string `json:"message"`
-			Type    string `json:"type"`
-			Code    string `json:"code"`
-		} `json:"error"`
-	}
-	_ = json.Unmarshal(body, &parsed)
-
-	message := strings.TrimSpace(parsed.Error.Message)
-	if message == "" {
-		message = strings.TrimSpace(string(body))
-	}
-	if message == "" {
-		message = http.StatusText(statusCode)
-	}
-
-	return &RunnerError{
-		StatusCode:   statusCode,
-		Type:         parsed.Error.Type,
-		Code:         parsed.Error.Code,
-		Message:      message,
-		Body:         append(json.RawMessage(nil), body...),
-		nonRetryable: statusCode >= 400 && statusCode < 500 && statusCode != http.StatusTooManyRequests,
-	}
 }

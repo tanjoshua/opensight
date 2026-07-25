@@ -1,14 +1,15 @@
 package llm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 const openAIProposeProfileSchemaName = "profile_proposal"
@@ -18,7 +19,7 @@ const openAIProposeProfileSchemaName = "profile_proposal"
 // never hardcoded — it is passed as prompt_count in the user content. This call
 // has the web_search tool attached (tool_choice: required), so the model gathers
 // its own evidence rather than being handed a separate research summary.
-const proposeProfileInstructions = `You build a structured business profile proposal for a clinic/practice, to be reviewed and edited by the business owner before anything is saved — nothing here is written until they approve it. You have a web_search tool with agentic browsing (you can open and read pages). Use it to gather evidence, then output ONLY the JSON object required by the schema. Do not invent facts beyond what site_text and your web research honestly support.
+const proposeProfileInstructions = `Research and draft a business profile proposal for a clinic/practice. The business owner will review it before anything is saved. Use web search and agentic browsing to gather evidence. Do not invent facts beyond what site_text and your web research support.
 
 RESEARCH (do this before drafting)
 - site_text is the primary evidence: the business's own website, pre-fetched for you. It may be empty or thin (some sites render nothing without JavaScript, which the fetcher cannot run).
@@ -27,16 +28,14 @@ RESEARCH (do this before drafting)
 - Set low_confidence to true whenever you had to guess a value with weak or no supporting evidence (most commonly: location.country, category, aliases). For category specifically: if neither site_text, your research, nor the business name itself states what this business does, any category you output is a guess — set low_confidence true. Set it false only when the evidence clearly supports the whole profile.
 
 PROFILE
-- name: the business's primary trading name.
 - aliases: OTHER organization trading identities only — former names, foreign-language names, colloquial/abbreviated names, directory-listing names. NEVER a practitioner's personal name, unless it is genuinely part of the trading name itself (e.g. "Dr Lim's Family Clinic"). Empty array if none found.
 - category: the specialist category a prospective patient would search for (examples across specialties: "endodontic clinic", "orthopaedic clinic", "aesthetic skin clinic"). It MUST be derived from evidence about THIS business — never copy an example and never default to a common category when evidence is thin. The business name itself is strong evidence when it contains a medical/dental specialty term: a name containing "Endodontics" means an endodontic (root canal) dental clinic, "Dermatology" a dermatology clinic, and so on.
-- services: services/procedures offered, as short phrases. Empty array if none found.
-- location: address/area/city as best known (empty string for any unknown part); country is ALWAYS a two-letter ISO 3166-1 alpha-2 code (e.g. "SG", "US") — never a full country name, never blank. If the evidence gives no explicit country, infer your best guess from address format, phone country code, domain TLD, currency, or language, and set low_confidence true.
+- location.country must be a two-letter ISO 3166-1 alpha-2 code. If evidence gives no explicit country, infer the best guess from address format, phone country code, domain TLD, currency, or language, and set low_confidence true.
 
 PROMPTS (this is the product's core measurement instrument)
 - Generate EXACTLY prompt_count prompts (given in the input; never hardcode a number).
 - A prompt's text must NEVER contain the business name or any alias, in any form. Prompts simulate a prospective patient who does not know this business exists yet.
-- Vary the set across broad category searches ("best <category> in <city>"), specific services/procedures, symptom or problem descriptions, and searches anchored to an area/neighbourhood/landmark.
+- Vary the set across broad category searches ("best <category> in <city>"), specific services/procedures, and symptom or problem descriptions. Ground prompts in the business's city only — never in a neighbourhood, district, street, or landmark within it.
 - Phrase every prompt the way a real person types a question or problem to a chatbot — natural questions or problem statements, never a bare keyword string.
 
 RETRY
@@ -93,36 +92,16 @@ var proposeProfileSchema = mustParseJSONSchema(proposeProfileJSONSchema)
 // OpenAIProposeProfileRunner runs the proposal call through the OpenAI Responses
 // API. Same field shape as OpenAIExtractionRunner.
 type OpenAIProposeProfileRunner struct {
-	apiKey     string
-	model      string
-	baseURL    string
-	httpClient *http.Client
+	openAIResponsesClient
 }
 
 // NewOpenAIProposeProfileRunner returns an OpenAI-backed ProposeProfileRunner.
 func NewOpenAIProposeProfileRunner(cfg OpenAIConfig) (*OpenAIProposeProfileRunner, error) {
-	apiKey := strings.TrimSpace(cfg.APIKey)
-	if apiKey == "" {
-		return nil, errors.New("openai api key is required")
+	client, err := newOpenAIResponsesClient(cfg, "openai analysis model is required")
+	if err != nil {
+		return nil, err
 	}
-	model := strings.TrimSpace(cfg.Model)
-	if model == "" {
-		return nil, errors.New("openai analysis model is required")
-	}
-	baseURL := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if baseURL == "" {
-		baseURL = defaultOpenAIBaseURL
-	}
-	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-	return &OpenAIProposeProfileRunner{
-		apiKey:     apiKey,
-		model:      model,
-		baseURL:    baseURL,
-		httpClient: httpClient,
-	}, nil
+	return &OpenAIProposeProfileRunner{openAIResponsesClient: client}, nil
 }
 
 // RunProposeProfile sends one combined research+draft call: the web_search tool
@@ -137,62 +116,16 @@ func (r *OpenAIProposeProfileRunner) RunProposeProfile(ctx context.Context, in P
 		return ProposeProfileRunResult{}, errors.New("openai propose profile runner is nil")
 	}
 
-	requestJSON, err := r.requestJSON(in)
+	params, err := r.requestParams(in)
 	if err != nil {
 		return ProposeProfileRunResult{}, err
 	}
-
-	httpReq, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		r.baseURL+openAIResponsesPath,
-		bytes.NewReader(requestJSON),
-	)
-	if err != nil {
-		return ProposeProfileRunResult{}, fmt.Errorf("build openai propose profile request: %w", err)
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+r.apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := r.httpClient.Do(httpReq)
-	if err != nil {
-		return ProposeProfileRunResult{}, fmt.Errorf("call openai propose profile: %w", err)
-	}
-	defer func() {
-		_ = httpResp.Body.Close()
-	}()
-
-	body, err := io.ReadAll(io.LimitReader(httpResp.Body, int64(maxOpenAIResponseBodyBytes)+1))
-	if err != nil {
-		return ProposeProfileRunResult{}, fmt.Errorf("read openai propose profile response: %w", err)
-	}
-	if len(body) > maxOpenAIResponseBodyBytes {
-		return ProposeProfileRunResult{}, errors.New("openai propose profile response body exceeds size limit")
-	}
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return ProposeProfileRunResult{}, openAIHTTPError(httpResp.StatusCode, body)
-	}
-
-	parsed, err := parseOpenAIResponse(body)
+	parsed, body, err := r.call(ctx, params)
 	if err != nil {
 		return ProposeProfileRunResult{}, err
 	}
-	if parsed.Status != "completed" {
-		return ProposeProfileRunResult{}, incompleteOpenAIResponseError(parsed, body)
-	}
-	if parsed.Refusal != "" {
-		return ProposeProfileRunResult{}, &RunnerError{
-			Type:         "content_policy_refusal",
-			Message:      parsed.Refusal,
-			Body:         append(json.RawMessage(nil), body...),
-			nonRetryable: true,
-		}
-	}
-	if strings.TrimSpace(parsed.Model) == "" {
-		return ProposeProfileRunResult{}, errors.New("openai propose profile response missing reported model")
-	}
-	if strings.TrimSpace(parsed.Text) == "" {
-		return ProposeProfileRunResult{}, errors.New("openai propose profile response missing structured output")
+	if err := validateOpenAIResponse(parsed, body, "openai propose profile response missing reported model", "openai propose profile response missing structured output"); err != nil {
+		return ProposeProfileRunResult{}, err
 	}
 
 	return ProposeProfileRunResult{
@@ -202,68 +135,38 @@ func (r *OpenAIProposeProfileRunner) RunProposeProfile(ctx context.Context, in P
 	}, nil
 }
 
-func (r *OpenAIProposeProfileRunner) requestJSON(in ProposeProfileInput) (json.RawMessage, error) {
+func (r *OpenAIProposeProfileRunner) requestParams(in ProposeProfileInput) (responses.ResponseNewParams, error) {
 	userContent, err := marshalProposeProfileUserContent(in)
 	if err != nil {
-		return nil, err
+		return responses.ResponseNewParams{}, err
 	}
 
-	input := []openAIExtractionMessage{
-		{Role: "developer", Content: proposeProfileInstructions},
-		{Role: "user", Content: userContent},
+	input := responses.ResponseInputParam{
+		responses.ResponseInputItemParamOfMessage(proposeProfileInstructions, responses.EasyInputMessageRoleDeveloper),
+		responses.ResponseInputItemParamOfMessage(userContent, responses.EasyInputMessageRoleUser),
 	}
 	if len(in.PriorOutputJSON) > 0 || len(in.RetryValidationErrors) > 0 {
 		input = append(input,
-			openAIExtractionMessage{Role: "assistant", Content: string(in.PriorOutputJSON)},
-			openAIExtractionMessage{Role: "user", Content: retryContent(in.RetryValidationErrors)},
+			responses.ResponseInputItemParamOfMessage(string(in.PriorOutputJSON), responses.EasyInputMessageRoleAssistant),
+			responses.ResponseInputItemParamOfMessage(retryContent(in.RetryValidationErrors), responses.EasyInputMessageRoleUser),
 		)
 	}
 
-	payload := openAIProposeProfileRequest{
-		Model: r.model,
-		Input: input,
-		Store: false,
-		Tools: []openAIWebSearchTool{{
-			Type:              openAIWebSearchToolType,
-			SearchContextSize: openAISearchContextSize,
-			UserLocation: openAIUserLocation{
-				Type:     openAIApproximateLocationType,
-				Country:  in.Location.Country,
-				City:     in.Location.City,
-				Region:   in.Location.Region,
-				Timezone: in.Location.Timezone,
-			},
-		}},
+	return responses.ResponseNewParams{
+		Model: shared.ResponsesModel(r.model),
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: input},
+		Store: openai.Bool(false),
+		Tools: []responses.ToolUnionParam{webSearchTool(in.Location)},
 		// The spike showed tool_choice "required" drives one or two search/open_page
 		// actions per run with no loops or errors, so we force at least one search
 		// rather than relying on the model's discretion.
-		ToolChoice: "required",
-		Text: openAIResponseTextFormat{
-			Format: openAIJSONSchemaFormat{
-				Type:   "json_schema",
-				Name:   openAIProposeProfileSchemaName,
-				Schema: proposeProfileSchema,
-				Strict: true,
-			},
+		ToolChoice: responses.ResponseNewParamsToolChoiceUnion{
+			OfToolChoiceMode: openai.Opt(responses.ToolChoiceOptionsRequired),
 		},
-	}
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("marshal openai propose profile request: %w", err)
-	}
-	return raw, nil
-}
-
-// openAIProposeProfileRequest is the combined research+draft request: the
-// extraction-style message input and strict JSON schema, plus the web_search
-// tool and a forced tool_choice so the model always gathers evidence.
-type openAIProposeProfileRequest struct {
-	Model      string                    `json:"model"`
-	Input      []openAIExtractionMessage `json:"input"`
-	Store      bool                      `json:"store"`
-	Tools      []openAIWebSearchTool     `json:"tools"`
-	ToolChoice string                    `json:"tool_choice"`
-	Text       openAIResponseTextFormat  `json:"text"`
+		Text: responses.ResponseTextConfigParam{
+			Format: strictJSONSchemaFormat(openAIProposeProfileSchemaName, proposeProfileSchema),
+		},
+	}, nil
 }
 
 // marshalProposeProfileUserContent serialises the evidence the model reads.

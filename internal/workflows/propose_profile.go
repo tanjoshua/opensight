@@ -89,9 +89,29 @@ func (a *Activities) ProposeProfile(ctx context.Context, in ProposeProfileInput)
 	// Sources are the pages the model opened while researching; OpenedOwnSite
 	// records whether it read the business's own site (both derived from the raw
 	// response's web-search actions — neither is asked of the model).
+	actions := llm.ParseWebSearchActions(result.RawResponse)
 	payload := result.Payload
 	payload.Sources = llm.SourcesFromWebSearch(result.RawResponse)
-	openedOwnSite := llm.OpenedSiteDomain(llm.ParseWebSearchActions(result.RawResponse), in.Website)
+	openedOwnSite := llm.OpenedSiteDomain(actions, in.Website)
+
+	// Observability for "did this actually search, or did it guess/run in
+	// stub mode": model is a real OpenAI model id when a live call ran and the
+	// fixed "stub-propose-profile" marker in stub/replay mode; action_counts
+	// being empty on a live model means tool_choice:"required" did not force a
+	// search, which should not happen but is worth being able to see. Never
+	// log SiteText or the raw model JSON here (PII/scraped content).
+	actionCounts := map[string]int{}
+	for _, a := range actions {
+		actionCounts[a.Type]++
+	}
+	activity.GetLogger(ctx).Info("propose profile: generated",
+		"business_name", name,
+		"model", result.Model,
+		"category", payload.Profile.Category,
+		"low_confidence", payload.LowConfidence,
+		"web_search_action_counts", actionCounts,
+		"opened_own_site", openedOwnSite,
+		"source_count", len(payload.Sources))
 
 	return ProposeProfileOutput{
 		Payload:       payload,

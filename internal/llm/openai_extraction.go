@@ -1,21 +1,22 @@
 package llm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 // ExtractionPromptVersion is the version of the extraction prompt + schema,
 // recorded per row as result_analyses.extraction_version so a later pass can
 // target "re-analyze everything below version N" (design 05). Bump it in the
 // same commit as any change to extractionInstructions or extractionJSONSchema.
-const ExtractionPromptVersion = 2
+const ExtractionPromptVersion = 3
 
 const openAIExtractionSchemaName = "result_extraction"
 
@@ -23,7 +24,7 @@ const openAIExtractionSchemaName = "result_extraction"
 // extraction rules; the literal phrasing may be iterated by the quality gate,
 // but the set of rules encoded is fixed. Any edit here bumps
 // ExtractionPromptVersion.
-const extractionInstructions = `You extract structured facts from a single AI assistant response that answered a consumer's question about local businesses. You never browse, fetch, or infer beyond the response text you are given. Return only the JSON object required by the schema.
+const extractionInstructions = `Extract structured facts from a single AI assistant response that answered a consumer's question about local businesses. Never browse, fetch, or infer beyond the response text.
 
 ENTITIES (organizations only)
 - List every ORGANISATION the response recommends or discusses — clinics, practices, hospitals, companies. Never list an individual practitioner or employee (e.g. "Dr Tan Wei Ming"), and never list directories, review sites, aggregators, or government bodies; those are citation sources, not entities.
@@ -103,36 +104,16 @@ func mustParseJSONSchema(s string) json.RawMessage {
 // OpenAIExtractionRunner runs the extraction call through the OpenAI Responses
 // API. Same field shape as OpenAIPromptRunner.
 type OpenAIExtractionRunner struct {
-	apiKey     string
-	model      string
-	baseURL    string
-	httpClient *http.Client
+	openAIResponsesClient
 }
 
 // NewOpenAIExtractionRunner returns an OpenAI-backed ExtractionRunner.
 func NewOpenAIExtractionRunner(cfg OpenAIConfig) (*OpenAIExtractionRunner, error) {
-	apiKey := strings.TrimSpace(cfg.APIKey)
-	if apiKey == "" {
-		return nil, errors.New("openai api key is required")
+	client, err := newOpenAIResponsesClient(cfg, "openai analysis model is required")
+	if err != nil {
+		return nil, err
 	}
-	model := strings.TrimSpace(cfg.Model)
-	if model == "" {
-		return nil, errors.New("openai analysis model is required")
-	}
-	baseURL := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if baseURL == "" {
-		baseURL = defaultOpenAIBaseURL
-	}
-	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-	return &OpenAIExtractionRunner{
-		apiKey:     apiKey,
-		model:      model,
-		baseURL:    baseURL,
-		httpClient: httpClient,
-	}, nil
+	return &OpenAIExtractionRunner{openAIResponsesClient: client}, nil
 }
 
 // RunExtraction sends one structured-output extraction call and returns the
@@ -147,62 +128,16 @@ func (r *OpenAIExtractionRunner) RunExtraction(ctx context.Context, in Extractio
 		return ExtractionRunResult{}, errors.New("response text is required")
 	}
 
-	requestJSON, err := r.requestJSON(in)
+	params, err := r.requestParams(in)
 	if err != nil {
 		return ExtractionRunResult{}, err
 	}
-
-	httpReq, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		r.baseURL+openAIResponsesPath,
-		bytes.NewReader(requestJSON),
-	)
-	if err != nil {
-		return ExtractionRunResult{}, fmt.Errorf("build openai extraction request: %w", err)
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+r.apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := r.httpClient.Do(httpReq)
-	if err != nil {
-		return ExtractionRunResult{}, fmt.Errorf("call openai extraction: %w", err)
-	}
-	defer func() {
-		_ = httpResp.Body.Close()
-	}()
-
-	body, err := io.ReadAll(io.LimitReader(httpResp.Body, int64(maxOpenAIResponseBodyBytes)+1))
-	if err != nil {
-		return ExtractionRunResult{}, fmt.Errorf("read openai extraction response: %w", err)
-	}
-	if len(body) > maxOpenAIResponseBodyBytes {
-		return ExtractionRunResult{}, errors.New("openai extraction response body exceeds size limit")
-	}
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return ExtractionRunResult{}, openAIHTTPError(httpResp.StatusCode, body)
-	}
-
-	parsed, err := parseOpenAIResponse(body)
+	parsed, body, err := r.call(ctx, params)
 	if err != nil {
 		return ExtractionRunResult{}, err
 	}
-	if parsed.Status != "completed" {
-		return ExtractionRunResult{}, incompleteOpenAIResponseError(parsed, body)
-	}
-	if parsed.Refusal != "" {
-		return ExtractionRunResult{}, &RunnerError{
-			Type:         "content_policy_refusal",
-			Message:      parsed.Refusal,
-			Body:         append(json.RawMessage(nil), body...),
-			nonRetryable: true,
-		}
-	}
-	if strings.TrimSpace(parsed.Model) == "" {
-		return ExtractionRunResult{}, errors.New("openai extraction response missing reported model")
-	}
-	if strings.TrimSpace(parsed.Text) == "" {
-		return ExtractionRunResult{}, errors.New("openai extraction response missing structured output")
+	if err := validateOpenAIResponse(parsed, body, "openai extraction response missing reported model", "openai extraction response missing structured output"); err != nil {
+		return ExtractionRunResult{}, err
 	}
 
 	return ExtractionRunResult{
@@ -211,41 +146,31 @@ func (r *OpenAIExtractionRunner) RunExtraction(ctx context.Context, in Extractio
 	}, nil
 }
 
-func (r *OpenAIExtractionRunner) requestJSON(in ExtractionInput) (json.RawMessage, error) {
+func (r *OpenAIExtractionRunner) requestParams(in ExtractionInput) (responses.ResponseNewParams, error) {
 	userContent, err := marshalExtractionUserContent(in)
 	if err != nil {
-		return nil, err
+		return responses.ResponseNewParams{}, err
 	}
 
-	input := []openAIExtractionMessage{
-		{Role: "developer", Content: extractionInstructions},
-		{Role: "user", Content: userContent},
+	input := responses.ResponseInputParam{
+		responses.ResponseInputItemParamOfMessage(extractionInstructions, responses.EasyInputMessageRoleDeveloper),
+		responses.ResponseInputItemParamOfMessage(userContent, responses.EasyInputMessageRoleUser),
 	}
 	if len(in.PriorOutputJSON) > 0 || len(in.RetryValidationErrors) > 0 {
 		input = append(input,
-			openAIExtractionMessage{Role: "assistant", Content: string(in.PriorOutputJSON)},
-			openAIExtractionMessage{Role: "user", Content: retryContent(in.RetryValidationErrors)},
+			responses.ResponseInputItemParamOfMessage(string(in.PriorOutputJSON), responses.EasyInputMessageRoleAssistant),
+			responses.ResponseInputItemParamOfMessage(retryContent(in.RetryValidationErrors), responses.EasyInputMessageRoleUser),
 		)
 	}
 
-	payload := openAIExtractionRequest{
-		Model: r.model,
-		Input: input,
-		Store: false,
-		Text: openAIResponseTextFormat{
-			Format: openAIJSONSchemaFormat{
-				Type:   "json_schema",
-				Name:   openAIExtractionSchemaName,
-				Schema: extractionSchema,
-				Strict: true,
-			},
+	return responses.ResponseNewParams{
+		Model: shared.ResponsesModel(r.model),
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: input},
+		Store: openai.Bool(false),
+		Text: responses.ResponseTextConfigParam{
+			Format: strictJSONSchemaFormat(openAIExtractionSchemaName, extractionSchema),
 		},
-	}
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("marshal openai extraction request: %w", err)
-	}
-	return raw, nil
+	}, nil
 }
 
 // marshalExtractionUserContent serialises the analysis payload the model reads.
@@ -307,27 +232,4 @@ func retryContent(validationErrors []string) string {
 	}
 	b.WriteString("Fix all issues and re-emit the full corrected object.")
 	return b.String()
-}
-
-type openAIExtractionRequest struct {
-	Model string                    `json:"model"`
-	Input []openAIExtractionMessage `json:"input"`
-	Store bool                      `json:"store"`
-	Text  openAIResponseTextFormat  `json:"text"`
-}
-
-type openAIExtractionMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type openAIResponseTextFormat struct {
-	Format openAIJSONSchemaFormat `json:"format"`
-}
-
-type openAIJSONSchemaFormat struct {
-	Type   string          `json:"type"`
-	Name   string          `json:"name"`
-	Schema json.RawMessage `json:"schema"`
-	Strict bool            `json:"strict"`
 }

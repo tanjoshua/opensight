@@ -92,6 +92,7 @@ func TestOpenAIExtractionAppendsRetryTurns(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&gotRequest); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
+		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"status": "completed",
 			"model": "gpt-mini-2026",

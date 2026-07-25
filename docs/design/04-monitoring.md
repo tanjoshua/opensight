@@ -34,14 +34,14 @@ One activity per prompt. Idempotent: first thing it does is check for an existin
 
 Request (via the `PromptRunner` interface):
 
-- OpenAI Responses API, `web_search` tool enabled, **`store: false`** — OpenAI retains nothing server-side; our `raw_response` is the system of record.
+- OpenAI Responses API via the official Go SDK, `web_search` tool enabled, **`store: false`** — OpenAI retains nothing server-side; our `raw_response` is the system of record.
 - The exact request parameters (model, `user_location`, tool config) are persisted to `prompt_results.request`, so every stored result is reproducible and interpretable later.
 - **`user_location` set from the business profile's `location` (country, city, area — see 02).** This is load-bearing for a local-visibility product: search-grounded answers vary by inferred location, and we want the answer a user *near the business* would get, not a US datacenter's. Nothing hardcodes Singapore; new markets and future multi-location support (PRD §9) are profile data, not code changes.
 - Model: configured default (the closest available proxy for consumer ChatGPT's default tier); the response's reported model id is what gets stored — never the config value.
 - No system prompt beyond the user's prompt text — we are simulating a cold consumer query, not engineering a better answer.
 - Timeout 120s per attempt.
 
-Retry policy: 4 attempts, exponential backoff starting 10s. Non-retryable: 400-class request errors and content-policy refusals — those fail the result immediately with `error` recorded (a refusal is a *finding*, not an outage). 429/5xx retry with backoff; the global concurrency cap (~4, worker-level activity slot limit) is the primary rate-limit courtesy.
+Retry policy: 4 Temporal activity attempts, exponential backoff starting 10s. SDK automatic retries are disabled so each activity attempt makes exactly one provider call. Non-retryable: 400-class request errors and content-policy refusals — those fail the result immediately with `error` recorded (a refusal is a *finding*, not an outage). 429/5xx retry with backoff; the global concurrency cap (~4, worker-level activity slot limit) is the primary rate-limit courtesy.
 
 ## Cost model
 

@@ -29,7 +29,7 @@ We use the OpenAI Responses API with the `web_search` tool as a **proxy for cons
 
 Honest limitation, to be reflected in product copy: results approximate, but are not identical to, what a logged-in chatgpt.com user sees (no memory/personalization, possibly different model routing). We record the exact model ID with every run (PRD §5 requires it) so results stay interpretable as models change.
 
-The executor is defined behind a Go interface (`PromptRunner`) so future platforms (Gemini, Perplexity — PRD §9) are additive, not rewrites.
+Production Responses calls use the official `github.com/openai/openai-go/v3` SDK through one shared client adapter. The adapter applies API key, base URL and HTTP client configuration, forces `store: false`, preserves the exact marshalled request and raw response where the data model requires them, and disables SDK retries so Temporal activity policies remain the single retry owner. Executors remain behind Go interfaces (`PromptRunner` and the analysis/onboarding runner interfaces), so future platforms (Gemini, Perplexity — PRD §9) are additive, not rewrites.
 
 ## D2/D3 — Application shape
 

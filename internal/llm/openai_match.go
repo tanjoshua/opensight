@@ -1,14 +1,15 @@
 package llm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 const openAIMatchSchemaName = "competitor_match"
@@ -18,11 +19,7 @@ const openAIMatchSchemaName = "competitor_match"
 // silently pollutes a competitor's trend, while a wrong split is visible and
 // user-fixable, so the model defaults to "no match" unless the evidence is
 // strong.
-const matchInstructions = `You decide whether each unmatched business name refers to the SAME real-world business as one of a supplied list of known competitors. You judge only from the name, aliases, and website supplied for each competitor — you never browse or infer beyond them. Return only the JSON object required by the schema.
-
-INPUT
-- names: a list of unmatched business names, each addressed by its integer index.
-- competitors: the known competitors, each with an id, name, aliases, and (sometimes) a website.
+const matchInstructions = `Decide whether each unmatched business name refers to the SAME real-world business as one supplied known competitor. Judge only from the supplied names, aliases, and websites; never browse or infer beyond them.
 
 RULES
 - For each name index, decide if it is the SAME real-world business as exactly one competitor. Set competitor_id to that competitor's id ONLY when the evidence is strong (e.g. an obvious abbreviation, a spelling/spacing variant, or a website that plainly belongs to the same business). Otherwise set competitor_id to null.
@@ -55,36 +52,16 @@ var matchSchema = mustParseJSONSchema(matchJSONSchema)
 // OpenAIMatchRunner runs the match call through the OpenAI Responses API. Same
 // field shape as OpenAIExtractionRunner.
 type OpenAIMatchRunner struct {
-	apiKey     string
-	model      string
-	baseURL    string
-	httpClient *http.Client
+	openAIResponsesClient
 }
 
 // NewOpenAIMatchRunner returns an OpenAI-backed MatchRunner.
 func NewOpenAIMatchRunner(cfg OpenAIConfig) (*OpenAIMatchRunner, error) {
-	apiKey := strings.TrimSpace(cfg.APIKey)
-	if apiKey == "" {
-		return nil, errors.New("openai api key is required")
+	client, err := newOpenAIResponsesClient(cfg, "openai analysis model is required")
+	if err != nil {
+		return nil, err
 	}
-	model := strings.TrimSpace(cfg.Model)
-	if model == "" {
-		return nil, errors.New("openai analysis model is required")
-	}
-	baseURL := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if baseURL == "" {
-		baseURL = defaultOpenAIBaseURL
-	}
-	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-	return &OpenAIMatchRunner{
-		apiKey:     apiKey,
-		model:      model,
-		baseURL:    baseURL,
-		httpClient: httpClient,
-	}, nil
+	return &OpenAIMatchRunner{openAIResponsesClient: client}, nil
 }
 
 // RunMatch sends one structured-output match call and returns the model's JSON
@@ -98,62 +75,16 @@ func (r *OpenAIMatchRunner) RunMatch(ctx context.Context, in MatchInput) (MatchR
 		return MatchRunResult{}, errors.New("match input has no names")
 	}
 
-	requestJSON, err := r.requestJSON(in)
+	params, err := r.requestParams(in)
 	if err != nil {
 		return MatchRunResult{}, err
 	}
-
-	httpReq, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		r.baseURL+openAIResponsesPath,
-		bytes.NewReader(requestJSON),
-	)
-	if err != nil {
-		return MatchRunResult{}, fmt.Errorf("build openai match request: %w", err)
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+r.apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := r.httpClient.Do(httpReq)
-	if err != nil {
-		return MatchRunResult{}, fmt.Errorf("call openai match: %w", err)
-	}
-	defer func() {
-		_ = httpResp.Body.Close()
-	}()
-
-	body, err := io.ReadAll(io.LimitReader(httpResp.Body, int64(maxOpenAIResponseBodyBytes)+1))
-	if err != nil {
-		return MatchRunResult{}, fmt.Errorf("read openai match response: %w", err)
-	}
-	if len(body) > maxOpenAIResponseBodyBytes {
-		return MatchRunResult{}, errors.New("openai match response body exceeds size limit")
-	}
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return MatchRunResult{}, openAIHTTPError(httpResp.StatusCode, body)
-	}
-
-	parsed, err := parseOpenAIResponse(body)
+	parsed, body, err := r.call(ctx, params)
 	if err != nil {
 		return MatchRunResult{}, err
 	}
-	if parsed.Status != "completed" {
-		return MatchRunResult{}, incompleteOpenAIResponseError(parsed, body)
-	}
-	if parsed.Refusal != "" {
-		return MatchRunResult{}, &RunnerError{
-			Type:         "content_policy_refusal",
-			Message:      parsed.Refusal,
-			Body:         append(json.RawMessage(nil), body...),
-			nonRetryable: true,
-		}
-	}
-	if strings.TrimSpace(parsed.Model) == "" {
-		return MatchRunResult{}, errors.New("openai match response missing reported model")
-	}
-	if strings.TrimSpace(parsed.Text) == "" {
-		return MatchRunResult{}, errors.New("openai match response missing structured output")
+	if err := validateOpenAIResponse(parsed, body, "openai match response missing reported model", "openai match response missing structured output"); err != nil {
+		return MatchRunResult{}, err
 	}
 
 	return MatchRunResult{
@@ -162,33 +93,23 @@ func (r *OpenAIMatchRunner) RunMatch(ctx context.Context, in MatchInput) (MatchR
 	}, nil
 }
 
-func (r *OpenAIMatchRunner) requestJSON(in MatchInput) (json.RawMessage, error) {
+func (r *OpenAIMatchRunner) requestParams(in MatchInput) (responses.ResponseNewParams, error) {
 	userContent, err := marshalMatchUserContent(in)
 	if err != nil {
-		return nil, err
+		return responses.ResponseNewParams{}, err
 	}
 
-	payload := openAIExtractionRequest{
-		Model: r.model,
-		Input: []openAIExtractionMessage{
-			{Role: "developer", Content: matchInstructions},
-			{Role: "user", Content: userContent},
+	return responses.ResponseNewParams{
+		Model: shared.ResponsesModel(r.model),
+		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
+			responses.ResponseInputItemParamOfMessage(matchInstructions, responses.EasyInputMessageRoleDeveloper),
+			responses.ResponseInputItemParamOfMessage(userContent, responses.EasyInputMessageRoleUser),
+		}},
+		Store: openai.Bool(false),
+		Text: responses.ResponseTextConfigParam{
+			Format: strictJSONSchemaFormat(openAIMatchSchemaName, matchSchema),
 		},
-		Store: false,
-		Text: openAIResponseTextFormat{
-			Format: openAIJSONSchemaFormat{
-				Type:   "json_schema",
-				Name:   openAIMatchSchemaName,
-				Schema: matchSchema,
-				Strict: true,
-			},
-		},
-	}
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("marshal openai match request: %w", err)
-	}
-	return raw, nil
+	}, nil
 }
 
 // marshalMatchUserContent serialises the names (index-referenced) and the

@@ -79,6 +79,8 @@ Known limitation, accepted: despite the LLM pass, some real-world businesses wil
 
 ## Where the extraction prompt lives
 
+Extraction and competitor matching use strict structured outputs through the official OpenAI Go SDK. Their prompts state only semantic rules the schemas cannot encode: organization-only extraction, exact evidence quotes, citation-subject evidence, and conservative identity matching.
+
 The extraction prompt text, its JSON schema, and its version live together in code (`internal/llm`), not in config. `ExtractionPromptVersion` is a Go `int` constant co-located with the prompt; a prompt or schema change and its version bump are one commit. Each analyzed row records that version as `result_analyses.extraction_version`, so a later pass can target "re-analyze everything below version N" after an extraction-prompt improvement.
 
 ## Open questions (owned by later increments)
