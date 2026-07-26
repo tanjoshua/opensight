@@ -65,7 +65,7 @@ func (r fakeApplyRow) Scan(dest ...any) error {
 			continue
 		}
 		rv := reflect.ValueOf(dest[i])
-		if rv.Kind() != reflect.Ptr {
+		if rv.Kind() != reflect.Pointer {
 			return fmt.Errorf("scan destination %d is not a pointer: %T", i, dest[i])
 		}
 		if v == nil {

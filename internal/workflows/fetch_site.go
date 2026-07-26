@@ -524,7 +524,7 @@ func (f *siteFetcher) fetchURL(ctx context.Context, target *url.URL, accept stri
 		}
 		return nil, nil, "", fmt.Errorf("fetch %s: %w", target.Redacted(), err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	finalURL := resp.Request.URL
 	if err := validateFetchURL(finalURL); err != nil {

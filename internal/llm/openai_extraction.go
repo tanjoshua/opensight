@@ -183,12 +183,7 @@ func marshalExtractionUserContent(in ExtractionInput) (string, error) {
 	}
 	citations := make([]citationView, 0, len(in.Citations))
 	for _, c := range in.Citations {
-		citations = append(citations, citationView{
-			URL:        c.URL,
-			Title:      c.Title,
-			StartIndex: c.StartIndex,
-			EndIndex:   c.EndIndex,
-		})
+		citations = append(citations, citationView(c))
 	}
 	aliases := in.BusinessAliases
 	if aliases == nil {

@@ -1,13 +1,18 @@
 <!doctype html>
+<!--
+  Committed placeholder for go:embed (see web/assets.go). `npm run build`
+  overwrites this with the real Vite output plus hashed /assets/* refs; the
+  Dockerfile always runs that build before embedding. Never commit build
+  output here — TestDistIndexAssetRefsAreEmbedded will fail because the
+  hashed assets it references are gitignored (web/.gitignore).
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OpenSight</title>
-    <script type="module" crossorigin src="/assets/index-Dl0py0wp.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-n92A4h6i.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">OpenSight</div>
   </body>
 </html>
