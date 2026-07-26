@@ -127,20 +127,21 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 		return RunSpec{}, err
 	}
 
-	run, err := a.Runs.UpsertRun(ctx, tenantID, store.UpsertRunParams{
-		BusinessID:   in.BusinessID,
-		Platform:     in.Platform,
-		Trigger:      in.Trigger,
-		ScheduledFor: in.ScheduledFor,
-		WorkflowID:   in.WorkflowID,
-	})
-	if err != nil {
-		return RunSpec{}, fmt.Errorf("upsert run: %w", err)
-	}
-
 	snapshots := make([]PromptSnapshot, 0, len(prompts))
 	for _, p := range prompts {
 		snapshots = append(snapshots, PromptSnapshot{ID: p.ID, Text: p.Text})
+	}
+
+	run, err := a.Runs.UpsertRun(ctx, tenantID, store.UpsertRunParams{
+		BusinessID:      in.BusinessID,
+		Platform:        in.Platform,
+		Trigger:         in.Trigger,
+		ScheduledFor:    in.ScheduledFor,
+		WorkflowID:      in.WorkflowID,
+		ExpectedResults: len(prompts),
+	})
+	if err != nil {
+		return RunSpec{}, fmt.Errorf("upsert run: %w", err)
 	}
 
 	return RunSpec{
@@ -151,18 +152,17 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 	}, nil
 }
 
-// FinalizeRunInput identifies the run to finalize and how many results were
-// expected (the prompt-snapshot size).
+// FinalizeRunInput identifies the run to finalize.
 type FinalizeRunInput struct {
-	TenantID        domain.ID
-	RunID           domain.ID
-	ExpectedResults int
+	TenantID domain.ID
+	RunID    domain.ID
 }
 
 // FinalizeRun sets the run's terminal status from its succeeded result count
-// against ExpectedResults. It is a pure recomputation, safe to retry.
+// against the run's stored expected_results. It is a pure recomputation, safe
+// to retry.
 func (a *Activities) FinalizeRun(ctx context.Context, in FinalizeRunInput) (store.Run, error) {
-	return a.Runs.FinalizeRun(ctx, in.TenantID, in.RunID, in.ExpectedResults)
+	return a.Runs.FinalizeRun(ctx, in.TenantID, in.RunID)
 }
 
 // PersistProposalInput carries the generated proposal to persist as the

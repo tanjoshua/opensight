@@ -195,11 +195,12 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	// --- RunStore: idempotent upsert + tenant scoping. ---
 	scheduledFor := time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC)
 	run, err := runs.UpsertRun(ctx, tenantA, UpsertRunParams{
-		BusinessID:   businessA,
-		Platform:     "chatgpt",
-		Trigger:      RunTriggerScheduled,
-		ScheduledFor: scheduledFor,
-		WorkflowID:   "run-" + businessA.String() + "-chatgpt-2026-07-13",
+		BusinessID:      businessA,
+		Platform:        "chatgpt",
+		Trigger:         RunTriggerScheduled,
+		ScheduledFor:    scheduledFor,
+		WorkflowID:      "run-" + businessA.String() + "-chatgpt-2026-07-13",
+		ExpectedResults: 1,
 	})
 	if err != nil {
 		t.Fatalf("UpsertRun(tenantA): %v", err)
@@ -346,8 +347,8 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 		t.Fatalf("ListResults(tenantB) err = %v, want ErrNotFound", err)
 	}
 
-	// --- FinalizeRun: 1 expected + 1 succeeded -> completed; tenant scoped. ---
-	finalized, err := runs.FinalizeRun(ctx, tenantA, run.ID, 1)
+	// --- FinalizeRun: 1 expected (from the row) + 1 succeeded -> completed; tenant scoped. ---
+	finalized, err := runs.FinalizeRun(ctx, tenantA, run.ID)
 	if err != nil {
 		t.Fatalf("FinalizeRun(tenantA): %v", err)
 	}
@@ -357,7 +358,7 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	if finalized.CompletedAt == nil {
 		t.Fatal("FinalizeRun completed_at is nil, want set")
 	}
-	if _, err := runs.FinalizeRun(ctx, tenantB, run.ID, 1); !errors.Is(err, ErrNotFound) {
+	if _, err := runs.FinalizeRun(ctx, tenantB, run.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("FinalizeRun(tenantB) err = %v, want ErrNotFound", err)
 	}
 

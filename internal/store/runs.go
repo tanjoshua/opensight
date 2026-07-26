@@ -54,17 +54,22 @@ type Run struct {
 	StartedAt           time.Time
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
+	// ExpectedResults is the prompt-snapshot size at run start (the "N" in
+	// "k of N"). Nullable: runs created before RUNS-1 stay null, never
+	// backfilled — null means "unknown," not zero.
+	ExpectedResults *int
 }
 
 // UpsertRunParams are the inputs for UpsertRun. If ID is uuid.Nil a UUIDv7 is
 // generated for the potential insert. ScheduledFor is stored as a date.
 type UpsertRunParams struct {
-	ID           domain.ID
-	BusinessID   domain.ID
-	Platform     string
-	Trigger      RunTrigger
-	ScheduledFor time.Time
-	WorkflowID   string
+	ID              domain.ID
+	BusinessID      domain.ID
+	Platform        string
+	Trigger         RunTrigger
+	ScheduledFor    time.Time
+	WorkflowID      string
+	ExpectedResults int
 }
 
 // RunStore reads and writes monitoring_runs rows.
@@ -79,11 +84,11 @@ func NewRunStore(db *sql.DB) *RunStore {
 
 const (
 	runColumns = `id, business_id, platform, trigger, scheduled_for, status,
-       workflow_id, started_at, completed_at, analysis_completed_at`
+       workflow_id, started_at, completed_at, analysis_completed_at, expected_results`
 
 	insertRunOnConflictNothingSQL = `
-INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id)
-VALUES ($1, $2, $3, $4, $5, 'running', $6)
+INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, expected_results)
+VALUES ($1, $2, $3, $4, $5, 'running', $6, $7)
 ON CONFLICT (business_id, platform, scheduled_for) DO NOTHING`
 
 	selectRunByKeySQL = `
@@ -93,28 +98,32 @@ WHERE business_id = $1 AND platform = $2 AND scheduled_for = $3`
 
 	// finalizeRunSQL recomputes the terminal status from the run's succeeded
 	// result count (design 04): succeeded == 0 -> failed; succeeded == expected
-	// -> completed; else partial. The failed branch is checked first so a
-	// zero-prompt run (expected == succeeded == 0) is failed, not completed. It
-	// is tenant-scoped via the businesses join and safe to re-run under activity
-	// retry (a pure recomputation). 0 rows updated -> ErrNotFound.
+	// -> completed; else partial. expected_results is read from the row rather
+	// than passed in (RUNS-1); a legacy null row falls back to the observed
+	// total so an in-flight-at-deploy run still finalizes sensibly. The failed
+	// branch is checked first so a zero-prompt run (expected == succeeded == 0)
+	// is failed, not completed. It is tenant-scoped via the businesses join and
+	// safe to re-run under activity retry (a pure recomputation). 0 rows
+	// updated -> ErrNotFound.
 	finalizeRunSQL = `
 UPDATE monitoring_runs r
 SET status = CASE
       WHEN sub.succeeded = 0 THEN 'failed'
-      WHEN sub.succeeded = $2 THEN 'completed'
+      WHEN sub.succeeded = COALESCE(r.expected_results, sub.total) THEN 'completed'
       ELSE 'partial'
     END,
     completed_at = now()
 FROM businesses b,
-     (SELECT count(*) FILTER (WHERE status = 'succeeded') AS succeeded
+     (SELECT count(*) FILTER (WHERE status = 'succeeded') AS succeeded,
+             count(*) AS total
       FROM prompt_results WHERE run_id = $1) sub
 WHERE r.id = $1
   AND r.business_id = b.id
-  AND b.tenant_id = $3
+  AND b.tenant_id = $2
 RETURNING ` + runColumnsPrefixed
 
 	runColumnsPrefixed = `r.id, r.business_id, r.platform, r.trigger, r.scheduled_for, r.status,
-       r.workflow_id, r.started_at, r.completed_at, r.analysis_completed_at`
+       r.workflow_id, r.started_at, r.completed_at, r.analysis_completed_at, r.expected_results`
 
 	listRunsSQL = `
 SELECT ` + runColumns + `
@@ -156,6 +165,7 @@ func (s *RunStore) UpsertRun(ctx context.Context, tenantID domain.ID, params Ups
 			string(params.Trigger),
 			params.ScheduledFor,
 			params.WorkflowID,
+			params.ExpectedResults,
 		); err != nil {
 			return fmt.Errorf("insert monitoring run: %w", err)
 		}
@@ -179,19 +189,16 @@ func (s *RunStore) UpsertRun(ctx context.Context, tenantID domain.ID, params Ups
 }
 
 // FinalizeRun sets the run's terminal status from its succeeded result count
-// against expectedResults (the workflow's prompt-snapshot size, so a prompt
-// whose activity never wrote a row still counts against completion). It is
-// tenant-scoped and safe under retry. A missing or cross-tenant run returns
-// ErrNotFound.
-func (s *RunStore) FinalizeRun(ctx context.Context, tenantID, runID domain.ID, expectedResults int) (Run, error) {
+// against the run's stored expected_results (the prompt-snapshot size, so a
+// prompt whose activity never wrote a row still counts against completion).
+// It is tenant-scoped and safe under retry. A missing or cross-tenant run
+// returns ErrNotFound.
+func (s *RunStore) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (Run, error) {
 	if s == nil || s.db == nil {
 		return Run{}, errors.New("run store database is required")
 	}
-	if expectedResults < 0 {
-		return Run{}, errors.New("expected results must not be negative")
-	}
 
-	run, err := scanRun(s.db.QueryRowContext(ctx, finalizeRunSQL, runID, expectedResults, tenantID))
+	run, err := scanRun(s.db.QueryRowContext(ctx, finalizeRunSQL, runID, tenantID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Run{}, ErrNotFound
@@ -249,6 +256,7 @@ func scanRun(row rowScanner) (Run, error) {
 		&run.StartedAt,
 		&run.CompletedAt,
 		&run.AnalysisCompletedAt,
+		&run.ExpectedResults,
 	); err != nil {
 		return Run{}, err
 	}
@@ -282,6 +290,9 @@ func normalizeUpsertRunParams(params UpsertRunParams) (UpsertRunParams, error) {
 	}
 	if strings.TrimSpace(params.WorkflowID) == "" {
 		return UpsertRunParams{}, errors.New("run workflow_id is required")
+	}
+	if params.ExpectedResults < 0 {
+		return UpsertRunParams{}, errors.New("run expected_results must not be negative")
 	}
 	return params, nil
 }

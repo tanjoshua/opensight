@@ -226,12 +226,12 @@ VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city"
 			t.Fatalf("LoadRunSpec: %v", err)
 		}
 
-		// No results written and ExpectedResults == 0: a zero-prompt run must
-		// classify as failed (RUN-3 "none -> failed"), not completed.
+		// No results written and expected_results == 0 (LoadRunSpec's empty
+		// prompt snapshot): a zero-prompt run must classify as failed (RUN-3
+		// "none -> failed"), not completed.
 		run, err := acts.FinalizeRun(ctx, FinalizeRunInput{
-			TenantID:        spec.TenantID,
-			RunID:           spec.RunID,
-			ExpectedResults: 0,
+			TenantID: spec.TenantID,
+			RunID:    spec.RunID,
 		})
 		if err != nil {
 			t.Fatalf("FinalizeRun: %v", err)

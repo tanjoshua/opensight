@@ -109,9 +109,8 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
 	})
 	var run store.Run
 	if err := workflow.ExecuteActivity(finalizeCtx, acts.FinalizeRun, FinalizeRunInput{
-		TenantID:        spec.TenantID,
-		RunID:           spec.RunID,
-		ExpectedResults: len(spec.Prompts),
+		TenantID: spec.TenantID,
+		RunID:    spec.RunID,
 	}).Get(ctx, &run); err != nil {
 		return err
 	}

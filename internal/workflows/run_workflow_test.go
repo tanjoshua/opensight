@@ -41,7 +41,7 @@ func runInput(t *testing.T) RunWorkflowInput {
 }
 
 // TestRunWorkflowFansOutAndFinalizes covers the happy path: N prompts produce N
-// ExecutePrompt calls and one FinalizeRun with ExpectedResults == N.
+// ExecutePrompt calls and one FinalizeRun call for the run.
 func TestRunWorkflowFansOutAndFinalizes(t *testing.T) {
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
@@ -53,7 +53,7 @@ func TestRunWorkflowFansOutAndFinalizes(t *testing.T) {
 	env.OnActivity(a.ExecutePrompt, mock.Anything, mock.Anything).
 		Return(ExecutePromptOutput{Status: store.ResultStatusSucceeded}, nil).Times(n)
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
-		return in.ExpectedResults == n && in.RunID == spec.RunID
+		return in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusCompleted}, nil).Once()
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -85,7 +85,7 @@ func TestRunWorkflowContinuesPastPromptError(t *testing.T) {
 	env.OnActivity(a.ExecutePrompt, mock.Anything, mock.Anything).
 		Return(ExecutePromptOutput{Status: store.ResultStatusSucceeded}, nil).Once()
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
-		return in.ExpectedResults == n
+		return in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusPartial}, nil).Once()
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 
@@ -101,9 +101,9 @@ func TestRunWorkflowContinuesPastPromptError(t *testing.T) {
 }
 
 // TestRunWorkflowZeroPrompts confirms the workflow wiring for an empty prompt
-// snapshot: no ExecutePrompt runs and FinalizeRun is still called once with
-// ExpectedResults == 0. FinalizeRun is mocked here, so the resulting status
-// classification is not exercised — that is covered against real SQL by
+// snapshot: no ExecutePrompt runs and FinalizeRun is still called once.
+// FinalizeRun is mocked here, so the resulting status classification is not
+// exercised — that is covered against real SQL by
 // TestActivitiesAgainstPostgres/FinalizeRun_with_zero_expected_results_is_failed.
 func TestRunWorkflowZeroPrompts(t *testing.T) {
 	var ts testsuite.WorkflowTestSuite
@@ -113,7 +113,7 @@ func TestRunWorkflowZeroPrompts(t *testing.T) {
 
 	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.Anything).Return(spec, nil).Once()
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
-		return in.ExpectedResults == 0
+		return in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusFailed}, nil).Once()
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
 

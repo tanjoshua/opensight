@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -197,5 +199,144 @@ VALUES ($1, $2, $3, 'failed', '{"model":"gpt-5-mini"}'::jsonb, 'openai: timeout'
 	}
 	if _, err := resultStore.GetResultDetail(ctx, tenantID, failedResultID); err != nil {
 		t.Fatalf("GetResultDetail(failed result): %v", err)
+	}
+}
+
+// TestFinalizeRunPartialWhenBelowExpected is RUNS-1's reason for existing: a
+// run whose expected_results (the prompt-snapshot size persisted at run
+// start) exceeds its succeeded count must land on partial, not completed —
+// something only the DB round-trip through the stored column can prove now
+// that FinalizeRun no longer takes the count as an argument.
+func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	planID := mustNewID(t)
+	tenantID := mustNewID(t)
+	businessID := mustNewID(t)
+	promptID := mustNewID(t)
+	runID := mustNewID(t)
+	slug := "finalize-partial-" + planID.String()
+
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE run_id = $1", runID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
+	})
+
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
+VALUES ($1, $2, 5, 'test', ARRAY['chatgpt']::text[])`,
+		planID, slug,
+	); err != nil {
+		t.Fatalf("insert test plan: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Finalize Partial Tenant', $2)`,
+		tenantID, planID,
+	); err != nil {
+		t.Fatalf("insert test tenant: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+VALUES ($1, $2, 'active', 'Finalize Partial Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`,
+		businessID, tenantID,
+	); err != nil {
+		t.Fatalf("insert test business: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompts (id, business_id, text, status)
+VALUES ($1, $2, 'best clinic near me', 'active')`,
+		promptID, businessID,
+	); err != nil {
+		t.Fatalf("insert test prompt: %v", err)
+	}
+
+	runs := NewRunStore(db)
+	results := NewResultStore(db)
+
+	run, err := runs.UpsertRun(ctx, tenantID, UpsertRunParams{
+		ID:              runID,
+		BusinessID:      businessID,
+		Platform:        PlatformChatGPT,
+		Trigger:         RunTriggerScheduled,
+		ScheduledFor:    time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC),
+		WorkflowID:      "run-finalize-partial",
+		ExpectedResults: 3,
+	})
+	if err != nil {
+		t.Fatalf("UpsertRun: %v", err)
+	}
+
+	// Only 2 of the 3 expected results were written (the third prompt's
+	// activity never completed) — the run must finalize as partial, not
+	// completed. The unique (run_id, prompt_id) constraint means the two
+	// succeeded results need two distinct prompts.
+	if _, err := results.CreateResult(ctx, tenantID, CreateResultParams{
+		ID:           mustNewID(t),
+		RunID:        run.ID,
+		PromptID:     promptID,
+		Status:       ResultStatusSucceeded,
+		Model:        ptr("gpt-5-mini-2026-07-01"),
+		Request:      json.RawMessage(`{"model":"gpt-5-mini"}`),
+		RawResponse:  json.RawMessage(`{"id":"resp_1"}`),
+		ResponseText: ptr("A good clinic."),
+		RequestedAt:  time.Now().UTC(),
+		CompletedAt:  time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("create first result: %v", err)
+	}
+
+	secondPromptID := mustNewID(t)
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", secondPromptID)
+	})
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompts (id, business_id, text, status)
+VALUES ($1, $2, 'cheapest clinic near me', 'active')`,
+		secondPromptID, businessID,
+	); err != nil {
+		t.Fatalf("insert second prompt: %v", err)
+	}
+	if _, err := results.CreateResult(ctx, tenantID, CreateResultParams{
+		ID:           mustNewID(t),
+		RunID:        run.ID,
+		PromptID:     secondPromptID,
+		Status:       ResultStatusSucceeded,
+		Model:        ptr("gpt-5-mini-2026-07-01"),
+		Request:      json.RawMessage(`{"model":"gpt-5-mini"}`),
+		RawResponse:  json.RawMessage(`{"id":"resp_2"}`),
+		ResponseText: ptr("Another good clinic."),
+		RequestedAt:  time.Now().UTC(),
+		CompletedAt:  time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("create second result: %v", err)
+	}
+
+	finalized, err := runs.FinalizeRun(ctx, tenantID, run.ID)
+	if err != nil {
+		t.Fatalf("FinalizeRun: %v", err)
+	}
+	if finalized.Status != RunStatusPartial {
+		t.Fatalf("status = %q, want %q (2 succeeded of 3 expected)", finalized.Status, RunStatusPartial)
 	}
 }
