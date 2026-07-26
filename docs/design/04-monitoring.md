@@ -22,12 +22,17 @@ RunWorkflow(businessID, platform, scheduledFor)
  │                     (already entitlement-bounded: prompt_limit is enforced
  │                     at prompt-write time)
  ├─ ExecutePrompt ×N   activities, fan-out, max ~4 concurrent
- ├─ AnalyzeRun         child workflow (design 05) — independent retry budget,
- │                     a failed analysis never re-spends prompt executions
- └─ FinalizeRun        activity: set status completed | partial | failed,
-                        reading expected_results back off the row (not a
-                        workflow-passed argument) so a later prompt
-                        replacement can't change a historical run's target
+ ├─ FinalizeRun        activity: set status completed | partial | failed,
+ │                     reading expected_results back off the row (not a
+ │                     workflow-passed argument) so a later prompt
+ │                     replacement can't change a historical run's target.
+ │                     Runs before AnalyzeRun (monitoring_runs' CHECK forbids
+ │                     analysis_completed_at unless completed_at is already
+ │                     set) — so a healthy run sits terminal-but-unanalyzed
+ │                     for the whole span below, which the UI (06) renders as
+ │                     an in-progress "Analyzing" state, not an error
+ └─ AnalyzeRun         child workflow (design 05) — independent retry budget,
+                        a failed analysis never re-spends prompt executions
 ```
 
 Status rules: all prompts succeeded → `completed`; some → `partial`; none → `failed`. Analysis failure does not change run status (results exist and are viewable raw); it flags the run for re-analysis instead.

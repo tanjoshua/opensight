@@ -2,8 +2,8 @@
 // four-stage strip — Preparing, Asking ChatGPT, Analyzing, Done — computed
 // from the counts ListRuns/GetOverview already carry on Run, never from
 // Temporal workflow history (which stays an ops-only surface). This is the
-// one place a stage gets derived; the shell badge, Overview, the Runs list
-// rows and the run detail page all call it so they can't disagree.
+// one place a stage gets derived; Overview, the Runs list rows and the run
+// detail page all call it so they can't disagree.
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { Run } from "@/gen/opensight/v1/result_pb"
 
@@ -135,12 +135,20 @@ function buildStages(
     })
   }
 
-  // Terminal run: Preparing always completed. Asking/Analyzing carry a
-  // warning instead of "done" when the run didn't fully succeed — a partial
-  // or failed run, or one whose analysis never finished (design 04/05:
-  // analysis failure never changes run status, it just leaves this unset).
+  // Terminal run: Preparing always completed. Asking carries a warning when
+  // the run didn't fully succeed (partial/failed) — that's a real, known-bad
+  // outcome. Analyzing is different: FinalizeRun runs before AnalyzeRun (see
+  // run_workflow.go), so every healthy run sits with analysisCompletedAt
+  // unset for the entire — often multi-minute, 20-prompt — window while
+  // analysis is still in flight. There's no field distinguishing "still
+  // analyzing" from "analysis actually failed/flagged for re-analysis"
+  // (design 04/05 doesn't surface that distinction anywhere else either), so
+  // treating unset as a warning would red-flag the common case, not the rare
+  // one. Render it as an in-progress state (spinner, neutral text) instead —
+  // matches Overview's own copy for this state ("...being analyzed...
+  // shortly").
   const askingWarning = run.status === RunStatus.PARTIAL || run.status === RunStatus.FAILED
-  const analyzingWarning = run.analysisCompletedAt === undefined
+  const stillAnalyzing = run.analysisCompletedAt === undefined
 
   return [
     { id: "preparing", label: STAGE_LABELS.preparing, detail: "", state: "done" },
@@ -156,8 +164,8 @@ function buildStages(
     {
       id: "analyzing",
       label: STAGE_LABELS.analyzing,
-      detail: analyzingWarning ? "Analysis incomplete" : analyzingDetail(counts),
-      state: analyzingWarning ? "warning" : "done",
+      detail: stillAnalyzing ? "Still analyzing" : analyzingDetail(counts),
+      state: stillAnalyzing ? "active" : "done",
     },
     { id: "done", label: STAGE_LABELS.done, detail: "", state: "done" },
   ]

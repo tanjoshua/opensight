@@ -21,8 +21,9 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 10 | [Onboarding automation](10-onboarding.md) | ONB | 6 | 3 |
 | 11 | [Self-serve polish](11-selfserve-polish.md) | POL | 7 | 3 |
 | 12 | [Protobuf/Connect RPC migration](12-rpc-migration.md) | RPC | 9 | 3 |
+| 13 | [Runs UI](13-runs-ui.md) | RUNS | 6 | 3 |
 
-**69 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 22.**
+**75 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 28.**
 
 ## Phases and milestones
 

@@ -1,8 +1,8 @@
 // RunStageStrip (RUNS-3, design 04): renders the four-stage progress derived
 // by runProgress. "full" is a vertical list (run detail page, Overview's
 // first-run state); "compact" is one horizontal line of pips plus the active
-// stage's label (Runs list rows, the shell badge). No charting/DAG library —
-// the pipeline is linear with one fan-out, a graph would overstate it.
+// stage's label (Runs list rows). No charting/DAG library — the pipeline is
+// linear with one fan-out, a graph would overstate it.
 import { Check, Circle, LoaderCircle, TriangleAlert } from "lucide-react"
 
 import { runProgress, type RunStage, type RunStageState } from "@/api/run-progress"
