@@ -333,8 +333,8 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 		t.Fatalf("GetResultByRunAndPrompt(tenantB) err = %v, want ErrNotFound", err)
 	}
 
-	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{}); err != nil || len(list) != 1 {
-		t.Fatalf("ListResults(tenantA) = %d,%v, want 1,nil", len(list), err)
+	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{ResultIDs: []domain.ID{result.ID}}); err != nil || len(list) != 1 {
+		t.Fatalf("ListResults(tenantA, result IDs) = %d,%v, want 1,nil", len(list), err)
 	}
 	failed := ResultStatusFailed
 	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{Status: &failed}); err != nil || len(list) != 0 {
@@ -343,8 +343,8 @@ VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
 	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{RunID: &run.ID, Limit: 10}); err != nil || len(list) != 1 {
 		t.Fatalf("ListResults(tenantA, run filter) = %d,%v, want 1,nil", len(list), err)
 	}
-	if _, err := results.ListResults(ctx, tenantB, businessA, ResultFilter{}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("ListResults(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := results.ListResults(ctx, tenantB, businessA, ResultFilter{ResultIDs: []domain.ID{result.ID}}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("ListResults(tenantB, result IDs) err = %v, want ErrNotFound", err)
 	}
 
 	// --- FinalizeRun: 1 expected (from the row) + 1 succeeded -> completed; tenant scoped. ---

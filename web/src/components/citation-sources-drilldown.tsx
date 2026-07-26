@@ -36,7 +36,7 @@ export function CitationSourcesDrilldown({
   domain: string | undefined
   open: boolean
   onOpenChange: (open: boolean) => void
-  onOpenResult: (ids: string[]) => void
+  onOpenResult: (ids: string[], context?: string) => void
 }) {
   const sources = useQuery(
     listCitationSources,
@@ -95,7 +95,7 @@ function SubjectSplit({
   onOpenResult,
 }: {
   source: CitationSource
-  onOpenResult: (ids: string[]) => void
+  onOpenResult: (ids: string[], context?: string) => void
 }) {
   const items = [
     ["Business", source.subjects?.business],
@@ -127,7 +127,7 @@ function SubjectBadge({
 }: {
   label: string
   stat: CitationSubjectStat | undefined
-  onOpenResult: (ids: string[]) => void
+  onOpenResult: (ids: string[], context?: string) => void
 }) {
   const frequency = stat?.frequency ?? 0
   const resultIds = stat?.resultIds ?? []
@@ -136,7 +136,12 @@ function SubjectBadge({
       type="button"
       disabled={frequency === 0}
       title="Open a response behind this subject"
-      onClick={() => onOpenResult(resultIds)}
+      onClick={() =>
+        onOpenResult(
+          resultIds,
+          `Responses with ${label.toLowerCase()} citations`
+        )
+      }
       className="enabled:cursor-pointer enabled:hover:opacity-75 disabled:opacity-60"
     >
       <Badge variant="outline" className="gap-1">
@@ -152,7 +157,7 @@ function PagesList({
   onOpenResult,
 }: {
   pages: CitationPage[]
-  onOpenResult: (ids: string[]) => void
+  onOpenResult: (ids: string[], context?: string) => void
 }) {
   return (
     <section className="flex flex-col gap-2">
@@ -165,7 +170,12 @@ function PagesList({
             <button
               key={page.url}
               type="button"
-              onClick={() => onOpenResult(page.resultIds)}
+              onClick={() =>
+                onOpenResult(
+                  page.resultIds,
+                  `Responses citing ${page.title ?? page.url}`
+                )
+              }
               title="Open a response citing this page"
               className="flex w-full flex-col gap-2 border-b px-3 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >
@@ -201,7 +211,7 @@ function PromptsList({
   onOpenResult,
 }: {
   prompts: CitationPromptStat[]
-  onOpenResult: (ids: string[]) => void
+  onOpenResult: (ids: string[], context?: string) => void
 }) {
   return (
     <section className="flex flex-col gap-2">
@@ -214,7 +224,12 @@ function PromptsList({
             <button
               key={prompt.promptId}
               type="button"
-              onClick={() => onOpenResult(prompt.resultIds)}
+              onClick={() =>
+                onOpenResult(
+                  prompt.resultIds,
+                  "Responses citing this source for this question"
+                )
+              }
               title="Open a response for this prompt"
               className="flex w-full items-start justify-between gap-3 border-b px-3 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >

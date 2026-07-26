@@ -8,8 +8,9 @@ Overview, Prompts, and Competitors sections; the drawer becomes evidence-grade. 
 
 As a clinic user, I want one page answering "how visible am I and what changed", so that weekly check-ins take a minute.
 
-- [x] Headline visibility stat + weekly trend line (shadcn `Chart`); clicking a week deep-links to Responses filtered to that run.
-- [x] Three compact panels: common themes (keywords), top cited domains (rows open the citation sources drill-down, MET-6), leading competitors (tracked + top-3 discovered, with "N discovered → triage" link).
+- [x] Brief header states the exact latest analyzed run date and denominator; the visibility hero shows mentioned/analyzed counts, an explicit complete-evidence action, dated delta when a baseline exists, and the weekly trend (shadcn `Chart`). Clicking a trend point deep-links to that run.
+- [x] "What changed" compares only the two latest analyzed points for the same active prompt (newly visible, no longer visible, still absent); one-point/new prompts are labeled as lacking a baseline.
+- [x] "Where to focus" surfaces latest absent questions, cited domains (rows open the citation sources drill-down, MET-6), and leading competitors (tracked + top-3 discovered, with "N discovered → triage") as evidence to review. Common themes are secondary.
 - [x] Partial-run banner ("18 of 20 prompts succeeded this week") linking to failed results.
 - [x] Single data point still renders inside the trend chart itself (dot + axes, x-axis extended one interval to a "Next run" tick) so it reads as day one of a growing trend, not a placeholder; every stat opens the Response drawer via its `result_ids`.
 

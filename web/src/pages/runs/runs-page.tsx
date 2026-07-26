@@ -11,7 +11,16 @@ import { runStatusLabel, runTriggerLabel } from "@/api/labels"
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { Run } from "@/gen/opensight/v1/result_pb"
 import { RunStageStrip } from "@/components/run-stage-strip"
+import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -46,12 +55,7 @@ export function RunsPage() {
     return <ListSkeleton />
   }
   if (!business) {
-    return (
-      <SectionMessage
-        title="No business yet"
-        description="Finish onboarding to start monitoring and collecting responses."
-      />
-    )
+    return <ListSkeleton />
   }
   if (runsQuery.isError) {
     return (
@@ -70,14 +74,17 @@ export function RunsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="font-heading text-lg font-semibold">Runs</h1>
-        {nextRunAt && (
-          <span className="text-sm text-muted-foreground">
-            Next run: {formatDateOnly(timestampDate(nextRunAt))}
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Monitoring history"
+        description="Inspect each monitoring run and the responses behind your metrics."
+        actions={
+          nextRunAt ? (
+            <span className="text-sm text-muted-foreground">
+              Next run: {formatDateOnly(timestampDate(nextRunAt))}
+            </span>
+          ) : undefined
+        }
+      />
 
       {runs.length === 0 ? (
         <SectionMessage
@@ -85,39 +92,116 @@ export function RunsPage() {
           description="Runs appear here after your first weekly monitoring run. Check back once it has started."
         />
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Responses</TableHead>
-                <TableHead>Visibility</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {runs.map((run) => (
-                <RunRow
-                  key={run.id}
-                  run={run}
-                  onNavigate={() => navigate(`/runs/${run.id}`)}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <div className="flex flex-col gap-3 md:hidden">
+            {runs.map((run) => (
+              <RunMobileCard
+                key={run.id}
+                run={run}
+                onNavigate={() => navigate(`/runs/${run.id}`)}
+              />
+            ))}
+          </div>
+          <div className="hidden rounded-lg border md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Responses</TableHead>
+                  <TableHead>Visibility</TableHead>
+                  <TableHead className="w-32 text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {runs.map((run) => (
+                  <RunRow
+                    key={run.id}
+                    run={run}
+                    onNavigate={() => navigate(`/runs/${run.id}`)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
     </div>
   )
 }
 
-function RunRow({ run, onNavigate }: { run: Run; onNavigate: () => void }) {
+function RunMobileCard({
+  run,
+  onNavigate,
+}: {
+  run: Run
+  onNavigate: () => void
+}) {
   const trigger = runTriggerLabel(run.trigger)
-  const expected = run.expectedResults ?? run.succeededResults + run.failedResults
-  const unanalyzed = run.status !== RunStatus.RUNNING && run.analysisCompletedAt === undefined
+  const expected =
+    run.expectedResults ?? run.succeededResults + run.failedResults
+  const unanalyzed =
+    run.status !== RunStatus.RUNNING && run.analysisCompletedAt === undefined
 
   return (
-    <TableRow className="cursor-pointer" onClick={onNavigate}>
+    <Card size="sm" className="min-w-0">
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          {formatRunDate(run.scheduledFor)}
+          {trigger !== undefined && <Badge variant="outline">{trigger}</Badge>}
+        </CardTitle>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <RunStatusBadge status={run.status} />
+          {unanalyzed && <Badge variant="outline">not yet analyzed</Badge>}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {run.status === RunStatus.RUNNING ? (
+          <RunStageStrip run={run} variant="compact" />
+        ) : (
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs text-muted-foreground">Responses</dt>
+              <dd className="tabular-nums">
+                {run.succeededResults} of {expected}
+              </dd>
+            </div>
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs text-muted-foreground">Visibility</dt>
+              <dd className="tabular-nums">
+                {run.visibility === undefined
+                  ? "—"
+                  : formatPercent(run.visibility)}
+              </dd>
+            </div>
+          </dl>
+        )}
+      </CardContent>
+      <CardFooter>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={onNavigate}
+        >
+          View run evidence
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+function RunRow({ run, onNavigate }: { run: Run; onNavigate: () => void }) {
+  const trigger = runTriggerLabel(run.trigger)
+  const expected =
+    run.expectedResults ?? run.succeededResults + run.failedResults
+  const unanalyzed =
+    run.status !== RunStatus.RUNNING && run.analysisCompletedAt === undefined
+
+  return (
+    <TableRow>
       <TableCell className="whitespace-nowrap">
         <span className="flex items-center gap-1.5">
           {formatRunDate(run.scheduledFor)}
@@ -139,8 +223,15 @@ function RunRow({ run, onNavigate }: { run: Run; onNavigate: () => void }) {
           </span>
         )}
       </TableCell>
-      <TableCell className="tabular-nums text-muted-foreground">
-        {run.visibility === undefined ? "—" : `${formatPercent(run.visibility)}`}
+      <TableCell className="text-muted-foreground tabular-nums">
+        {run.visibility === undefined
+          ? "—"
+          : `${formatPercent(run.visibility)}`}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button type="button" variant="outline" size="sm" onClick={onNavigate}>
+          View evidence
+        </Button>
       </TableCell>
     </TableRow>
   )

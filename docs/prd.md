@@ -102,11 +102,18 @@ Users can track, dismiss, or manually add competitors.
 
 ## 7. Product Structure
 
-### Overview
+### Brief
 
-Visibility, weekly change, common themes, top citation sources, and leading competitors.
+A concise visibility briefing led by the latest analyzed run: AI visibility with its
+mentioned/analyzed denominator and evidence, change from the previous analyzed run,
+and the retained trend with prompt-set markers. It compares each active question's
+two latest analyzed responses to show newly visible, no-longer-visible, and
+still-absent questions; questions without two points are explicitly treated as
+having no baseline. It then surfaces absent questions, cited domains, and competitors
+as evidence to review. Common themes remain a secondary view. The briefing does not
+claim a weekly change when the available history cannot establish one.
 
-### Prompts
+### Questions
 
 The 20 tracked prompts and their latest results.
 
@@ -114,11 +121,11 @@ The 20 tracked prompts and their latest results.
 
 Discovered and tracked competitors with simple visibility comparisons.
 
-### Responses
+### Monitoring history
 
-All stored ChatGPT responses with mentions and citations.
+Monitoring runs and all stored ChatGPT responses with mentions and citations.
 
-### Setup
+### Settings
 
 Business profile, prompts, and competitor configuration.
 

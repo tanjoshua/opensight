@@ -1,7 +1,7 @@
 import {
   Eye,
-  History,
-  LayoutDashboard,
+  FileSearch,
+  Newspaper,
   LogOut,
   MessageSquareText,
   Settings,
@@ -27,11 +27,11 @@ import {
 } from "@/components/ui/sidebar"
 
 const sections = [
-  { title: "Overview", to: "/overview", icon: LayoutDashboard },
-  { title: "Prompts", to: "/prompts", icon: MessageSquareText },
+  { title: "Brief", to: "/overview", icon: Newspaper },
+  { title: "Questions", to: "/prompts", icon: MessageSquareText },
   { title: "Competitors", to: "/competitors", icon: Users },
-  { title: "Runs", to: "/runs", icon: History },
-  { title: "Setup", to: "/setup", icon: Settings },
+  { title: "Monitoring history", to: "/runs", icon: FileSearch },
+  { title: "Settings", to: "/setup", icon: Settings },
 ]
 
 export function AppSidebar() {
@@ -51,7 +51,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
           <Eye className="size-5" />
-          <span className="font-heading text-base font-semibold">
+          <span className="font-heading text-base font-semibold tracking-tight">
             OpenSight
           </span>
         </div>

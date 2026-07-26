@@ -2,6 +2,7 @@ import { Link, Navigate, Outlet, useLocation } from "react-router"
 
 import { isUnauthenticated } from "@/api/errors"
 import { useCurrentBusiness, useMe, useRuns } from "@/api/hooks"
+import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -32,6 +33,15 @@ export function AppLayout() {
       </div>
     )
   }
+  // Onboarding is tenant-scoped (a teammate joining an already-onboarded org
+  // has an active business the moment they log in), so this checks every
+  // business on the tenant, not just useCurrentBusiness's first entry.
+  const hasActiveBusiness = me.data.businesses.some(
+    (b) => b.status !== BusinessStatus.DRAFT
+  )
+  if (!hasActiveBusiness) {
+    return <Navigate to="/onboarding" replace />
+  }
 
   return (
     <SidebarProvider>
@@ -40,19 +50,31 @@ export function AppLayout() {
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
-          <span className="font-heading text-sm font-medium">OpenSight</span>
+          <span className="min-w-0 truncate text-sm font-medium">
+            {business?.name ?? me.data.tenant?.name ?? "OpenSight"}
+          </span>
           {business && <RunProgressBadge businessId={business.id} />}
         </header>
-        <main className="flex flex-1 flex-col p-6">
-          <Outlet />
+        <main className="flex flex-1 flex-col px-4 py-6 md:px-6">
+          <div className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col">
+            <Outlet />
+          </div>
         </main>
-        <footer className="flex flex-wrap gap-x-4 gap-y-2 border-t px-6 py-4 text-xs text-muted-foreground">
-          <Link className="hover:text-foreground hover:underline" to="/methodology">
-            How we measure
-          </Link>
-          <Link className="hover:text-foreground hover:underline" to="/privacy">
-            Privacy
-          </Link>
+        <footer className="border-t px-4 py-4 md:px-6">
+          <div className="mx-auto flex w-full max-w-[1180px] flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <Link
+              className="hover:text-foreground hover:underline"
+              to="/methodology"
+            >
+              How we measure
+            </Link>
+            <Link
+              className="hover:text-foreground hover:underline"
+              to="/privacy"
+            >
+              Privacy
+            </Link>
+          </div>
         </footer>
       </SidebarInset>
     </SidebarProvider>

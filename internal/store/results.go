@@ -83,10 +83,12 @@ type ResultListItem struct {
 }
 
 // ResultFilter narrows ListResults. All predicates are optional; Limit/Offset
-// apply as given when > 0 (the handler chooses defaults and caps). Mentioned,
+// apply as given when > 0 (the handler chooses defaults and caps). ResultIDs,
+// when non-empty, restrict results and preserve the requested order. Mentioned,
 // when set, keeps only results whose analysis found (true) or did not find
 // (false) a self mention — the Responses "mentioned" filter (design 06, MET-5).
 type ResultFilter struct {
+	ResultIDs []domain.ID
 	RunID     *domain.ID
 	PromptID  *domain.ID
 	Status    *ResultStatus
@@ -483,9 +485,17 @@ WHERE r.business_id = $1
   AND ($4::text IS NULL OR pr.status = $4)
   AND ($5::boolean IS NULL OR EXISTS(
         SELECT 1 FROM mentions m WHERE m.prompt_result_id = pr.id AND m.subject = 'self') = $5)
-ORDER BY pr.requested_at DESC`
+  AND ($6::uuid[] IS NULL OR pr.id = ANY($6))
+ORDER BY
+  CASE WHEN $6::uuid[] IS NOT NULL THEN array_position($6, pr.id) END,
+  pr.requested_at DESC,
+  pr.id`
 
-	args := []any{businessID, filter.RunID, filter.PromptID, statusArg(filter.Status), boolArg(filter.Mentioned)}
+	var resultIDs any
+	if len(filter.ResultIDs) > 0 {
+		resultIDs = filter.ResultIDs
+	}
+	args := []any{businessID, filter.RunID, filter.PromptID, statusArg(filter.Status), boolArg(filter.Mentioned), resultIDs}
 	if filter.Limit > 0 {
 		args = append(args, filter.Limit)
 		query += " LIMIT $" + strconv.Itoa(len(args))

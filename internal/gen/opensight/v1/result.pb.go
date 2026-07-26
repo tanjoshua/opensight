@@ -814,9 +814,12 @@ type ListResultsRequest struct {
 	Status   ResultStatus `protobuf:"varint,4,opt,name=status,proto3,enum=opensight.v1.ResultStatus" json:"status,omitempty"`
 	// mentioned has three real states (any/mentioned/not-mentioned), so it is
 	// optional rather than a zero-value-means-absent bool.
-	Mentioned     *bool `protobuf:"varint,5,opt,name=mentioned,proto3,oneof" json:"mentioned,omitempty"`
-	Limit         int32 `protobuf:"varint,6,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32 `protobuf:"varint,7,opt,name=offset,proto3" json:"offset,omitempty"`
+	Mentioned *bool `protobuf:"varint,5,opt,name=mentioned,proto3,oneof" json:"mentioned,omitempty"`
+	Limit     int32 `protobuf:"varint,6,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset    int32 `protobuf:"varint,7,opt,name=offset,proto3" json:"offset,omitempty"`
+	// When set, returns only these results in the caller-provided order. IDs
+	// outside business_id (including another tenant's results) are omitted.
+	ResultIds     []string `protobuf:"bytes,8,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -898,6 +901,13 @@ func (x *ListResultsRequest) GetOffset() int32 {
 		return x.Offset
 	}
 	return 0
+}
+
+func (x *ListResultsRequest) GetResultIds() []string {
+	if x != nil {
+		return x.ResultIds
+	}
+	return nil
 }
 
 type ListResultsResponse struct {
@@ -1132,7 +1142,7 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"businessId\"u\n" +
 	"\x10ListRunsResponse\x12%\n" +
 	"\x04runs\x18\x01 \x03(\v2\x11.opensight.v1.RunR\x04runs\x12:\n" +
-	"\vnext_run_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tnextRunAt\"\xfc\x01\n" +
+	"\vnext_run_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tnextRunAt\"\x9b\x02\n" +
 	"\x12ListResultsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
 	"businessId\x12\x15\n" +
@@ -1141,7 +1151,9 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"\x06status\x18\x04 \x01(\x0e2\x1a.opensight.v1.ResultStatusR\x06status\x12!\n" +
 	"\tmentioned\x18\x05 \x01(\bH\x00R\tmentioned\x88\x01\x01\x12\x14\n" +
 	"\x05limit\x18\x06 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\a \x01(\x05R\x06offsetB\f\n" +
+	"\x06offset\x18\a \x01(\x05R\x06offset\x12\x1d\n" +
+	"\n" +
+	"result_ids\x18\b \x03(\tR\tresultIdsB\f\n" +
 	"\n" +
 	"_mentioned\"y\n" +
 	"\x13ListResultsResponse\x124\n" +

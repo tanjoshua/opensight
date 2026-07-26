@@ -32,7 +32,7 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/runs" replace />} />
+        <Route index element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/prompts/:id" element={<PromptDetailPage />} />
@@ -43,7 +43,7 @@ export function App() {
         <Route path="/setup" element={<SetupPage />} />
         <Route path="/methodology" element={<MethodologyPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<Navigate to="/runs" replace />} />
+        <Route path="*" element={<Navigate to="/overview" replace />} />
       </Route>
     </Routes>
   )

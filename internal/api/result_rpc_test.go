@@ -147,6 +147,7 @@ func TestRPCListResultsParsesFiltersAndPagination(t *testing.T) {
 	runID := mustHashV7(t, runIDForTest)
 	promptID := mustHashV7(t, promptIDForTest)
 	resultID := mustHashV7(t, resultIDForTest)
+	secondResultID := mustHashV7(t, runIDForTest)
 	results := &fakeResultStore{results: []store.ResultListItem{{
 		PromptResult: store.PromptResult{
 			ID:          resultID,
@@ -164,7 +165,10 @@ func TestRPCListResultsParsesFiltersAndPagination(t *testing.T) {
 
 	resp, err := srv.ListResults(businessRPCContext(t), connect.NewRequest(&opensightv1.ListResultsRequest{
 		BusinessId: businessIDForTest, RunId: runIDForTest, PromptId: promptIDForTest,
-		Status: opensightv1.ResultStatus_RESULT_STATUS_FAILED, Limit: 25, Offset: 10,
+		Status:    opensightv1.ResultStatus_RESULT_STATUS_FAILED,
+		ResultIds: []string{runIDForTest, resultIDForTest},
+		Limit:     25,
+		Offset:    10,
 	}))
 	if err != nil {
 		t.Fatalf("ListResults: %v", err)
@@ -180,6 +184,11 @@ func TestRPCListResultsParsesFiltersAndPagination(t *testing.T) {
 	}
 	if results.gotFilter.Status == nil || *results.gotFilter.Status != store.ResultStatusFailed {
 		t.Fatalf("status filter = %v, want failed", results.gotFilter.Status)
+	}
+	if len(results.gotFilter.ResultIDs) != 2 ||
+		results.gotFilter.ResultIDs[0] != secondResultID ||
+		results.gotFilter.ResultIDs[1] != resultID {
+		t.Fatalf("result ID filter = %v, want [%s %s]", results.gotFilter.ResultIDs, secondResultID, resultID)
 	}
 	if results.gotFilter.Limit != 25 || results.gotFilter.Offset != 10 {
 		t.Fatalf("paging filter = %d/%d, want 25/10", results.gotFilter.Limit, results.gotFilter.Offset)
@@ -247,6 +256,7 @@ func TestRPCListResultsRejectsInvalidFilters(t *testing.T) {
 		{"status", &opensightv1.ListResultsRequest{BusinessId: businessIDForTest, Status: opensightv1.ResultStatus(99)}},
 		{"run uuid", &opensightv1.ListResultsRequest{BusinessId: businessIDForTest, RunId: "not-a-uuid"}},
 		{"prompt uuid", &opensightv1.ListResultsRequest{BusinessId: businessIDForTest, PromptId: "not-a-uuid"}},
+		{"result uuid", &opensightv1.ListResultsRequest{BusinessId: businessIDForTest, ResultIds: []string{resultIDForTest, "not-a-uuid"}}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

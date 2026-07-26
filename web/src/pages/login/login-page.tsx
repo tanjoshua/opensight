@@ -20,14 +20,17 @@ export function LoginPage() {
   const loginMutation = useMutation(login, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
+        queryKey: createConnectQueryKey({
+          schema: getMe,
+          cardinality: "finite",
+        }),
       })
-      navigate("/runs", { replace: true })
+      navigate("/overview", { replace: true })
     },
   })
 
   if (me.data) {
-    return <Navigate to="/runs" replace />
+    return <Navigate to="/overview" replace />
   }
 
   const error = loginMutation.isError

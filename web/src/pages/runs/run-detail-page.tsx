@@ -22,9 +22,20 @@ import { ResultStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { PromptResult } from "@/gen/opensight/v1/result_pb"
 import { listResults } from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { ResponseDrawer } from "@/components/response-drawer"
+import {
+  evidenceSelection,
+  type EvidenceSelection,
+} from "@/components/evidence-selection"
 import { RunStageStrip } from "@/components/run-stage-strip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -58,7 +69,7 @@ export function RunDetailPage() {
   const navigate = useNavigate()
   const { businessId } = useCurrentBusiness()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedResultID, setSelectedResultID] = useState<string>()
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()
 
   const prompt = searchParams.get("prompt") ?? undefined
   const status = resultStatusFromParam(searchParams.get("status"))
@@ -143,6 +154,7 @@ export function RunDetailPage() {
         <Button
           variant="ghost"
           size="icon-sm"
+          className="min-h-11 min-w-11"
           aria-label="Back to runs"
           onClick={() => navigate("/runs")}
         >
@@ -157,7 +169,9 @@ export function RunDetailPage() {
         <RunStageStrip
           run={run}
           variant="full"
-          onShowFailed={() => setFilter("status", resultStatusToParam(ResultStatus.FAILED))}
+          onShowFailed={() =>
+            setFilter("status", resultStatusToParam(ResultStatus.FAILED))
+          }
         />
         <details className="mt-3 text-xs text-muted-foreground">
           <summary className="cursor-pointer select-none">
@@ -176,18 +190,45 @@ export function RunDetailPage() {
               <button
                 type="button"
                 aria-label="Clear prompt filter"
-                className="cursor-pointer"
+                className="flex size-11 cursor-pointer items-center justify-center md:size-auto"
                 onClick={() => setFilter("prompt")}
               >
                 <X />
               </button>
             </Badge>
           )}
-          <StatusFilter value={status} onChange={(v) => setFilter("status", v)} />
+          <StatusFilter
+            value={status}
+            onChange={(v) => setFilter("status", v)}
+          />
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      {results.length === 0 ? (
+        <div className="md:hidden">
+          <SectionMessage
+            title="No matching responses"
+            description="No responses match the current filters."
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 md:hidden">
+          {results.map((result) => (
+            <ResultMobileCard
+              key={result.id}
+              result={result}
+              onOpen={() =>
+                setSelectedEvidence(
+                  evidenceSelection([result.id], "Response from this run")
+                )
+              }
+              onFilterByPrompt={() => setFilter("prompt", result.promptId)}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -212,7 +253,11 @@ export function RunDetailPage() {
                 <ResultRow
                   key={result.id}
                   result={result}
-                  onOpen={() => setSelectedResultID(result.id)}
+                  onOpen={() =>
+                    setSelectedEvidence(
+                      evidenceSelection([result.id], "Response from this run")
+                    )
+                  }
                   onFilterByPrompt={() => setFilter("prompt", result.promptId)}
                 />
               ))
@@ -226,6 +271,7 @@ export function RunDetailPage() {
         <Button
           variant="outline"
           size="icon-sm"
+          className="min-h-11 min-w-11"
           aria-label="Previous page"
           disabled={offset === 0 || resultsQuery.isPlaceholderData}
           onClick={() => setOffset(offset - PAGE_SIZE)}
@@ -235,6 +281,7 @@ export function RunDetailPage() {
         <Button
           variant="outline"
           size="icon-sm"
+          className="min-h-11 min-w-11"
           aria-label="Next page"
           disabled={!hasNextPage || resultsQuery.isPlaceholderData}
           onClick={() => setOffset(offset + PAGE_SIZE)}
@@ -244,12 +291,69 @@ export function RunDetailPage() {
       </div>
 
       <ResponseDrawer
-        resultId={selectedResultID}
+        evidence={selectedEvidence}
         onOpenChange={(open) => {
-          if (!open) setSelectedResultID(undefined)
+          if (!open) setSelectedEvidence(undefined)
         }}
       />
     </div>
+  )
+}
+
+function ResultMobileCard({
+  result,
+  onOpen,
+  onFilterByPrompt,
+}: {
+  result: PromptResult
+  onOpen: () => void
+  onFilterByPrompt: () => void
+}) {
+  return (
+    <Card size="sm" className="min-w-0">
+      <CardHeader>
+        <CardTitle className="break-words">
+          {result.prompt?.text ?? result.promptId}
+        </CardTitle>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ResultStatusBadge status={result.status} />
+          {result.unanalyzed && (
+            <Badge variant="outline">not yet analyzed</Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {result.status === ResultStatus.FAILED ? (
+          <p className="line-clamp-3 text-sm break-words text-destructive">
+            {result.error ?? "Unknown error"}
+          </p>
+        ) : (
+          <p className="line-clamp-3 text-sm break-words text-muted-foreground">
+            {result.responseText}
+          </p>
+        )}
+      </CardContent>
+      <CardFooter className="flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={onOpen}
+        >
+          <PanelRightOpen data-icon="inline-start" />
+          Open response
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11"
+          onClick={onFilterByPrompt}
+        >
+          <ListFilter data-icon="inline-start" />
+          Only this question
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -336,7 +440,11 @@ function StatusFilter({
       value={resultStatusToParam(value) ?? ALL_FILTER_VALUE}
       onValueChange={(v) => onChange(filterValueFromSelect(v))}
     >
-      <SelectTrigger size="sm" aria-label="Filter by status">
+      <SelectTrigger
+        size="sm"
+        className="min-h-11 md:min-h-0"
+        aria-label="Filter by status"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -379,7 +487,9 @@ function resultStatusToParam(status: ResultStatus): string | undefined {
 
 function ResultStatusBadge({ status }: { status: ResultStatus }) {
   return (
-    <Badge variant={status === ResultStatus.FAILED ? "destructive" : "secondary"}>
+    <Badge
+      variant={status === ResultStatus.FAILED ? "destructive" : "secondary"}
+    >
       {resultStatusLabel(status)}
     </Badge>
   )

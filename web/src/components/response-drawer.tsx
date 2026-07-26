@@ -1,8 +1,7 @@
 import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { timestampDate, type Timestamp } from "@bufbuild/protobuf/wkt"
-import { keepPreviousData } from "@tanstack/react-query"
-import { type ReactNode, useState } from "react"
-import { ExternalLink, FileJson } from "lucide-react"
+import { type ReactNode, useMemo, useState } from "react"
+import { ChevronLeft, ChevronRight, ExternalLink, FileJson } from "lucide-react"
 import { Link } from "react-router"
 
 import {
@@ -24,6 +23,10 @@ import type {
   ResultMention,
 } from "@/gen/opensight/v1/result_pb"
 import { getResult } from "@/gen/opensight/v1/result-ResultService_connectquery"
+import {
+  dedupeResultIds,
+  type EvidenceSelection,
+} from "@/components/evidence-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -37,34 +40,99 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function ResponseDrawer({
-  resultId,
+  evidence,
   onOpenChange,
 }: {
-  resultId: string | undefined
+  evidence: EvidenceSelection | undefined
   onOpenChange: (open: boolean) => void
 }) {
+  const resultIds = useMemo(
+    () => dedupeResultIds(evidence?.resultIds ?? []),
+    [evidence]
+  )
+  const selectionKey = `${evidence?.context ?? ""}\u0000${resultIds.join("\u0000")}`
+
+  return (
+    <ResponseDrawerContent
+      key={selectionKey}
+      evidence={evidence}
+      resultIds={resultIds}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+function ResponseDrawerContent({
+  evidence,
+  resultIds,
+  onOpenChange,
+}: {
+  evidence: EvidenceSelection | undefined
+  resultIds: string[]
+  onOpenChange: (open: boolean) => void
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [includeRaw, setIncludeRaw] = useState(false)
+  const resultId = resultIds[currentIndex]
+
   const detail = useQuery(
     getResult,
-    resultId === undefined ? skipToken : { resultId, includeRaw },
-    { placeholderData: keepPreviousData }
+    resultId === undefined ? skipToken : { resultId, includeRaw }
   )
   const result = detail.data?.result
+  const count = resultIds.length
+  const hasPrevious = currentIndex > 0
+  const hasNext = currentIndex + 1 < count
 
   return (
     <Sheet
-      open={resultId !== undefined}
+      open={evidence !== undefined && resultId !== undefined}
       onOpenChange={(open) => {
         if (!open) setIncludeRaw(false)
         onOpenChange(open)
       }}
     >
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        <SheetHeader>
-          <SheetTitle>Response detail</SheetTitle>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+        <SheetHeader className="border-b">
+          <SheetTitle>Evidence</SheetTitle>
           <SheetDescription>
-            Stored answer, analysis evidence, prompt, model, and run metadata.
+            {evidence?.context ?? "Stored response and analysis evidence."}
           </SheetDescription>
+          {count > 1 && (
+            <div
+              className="mt-2 flex items-center gap-2"
+              aria-label="Evidence response navigation"
+            >
+              <span
+                className="me-auto text-sm font-medium tabular-nums"
+                aria-live="polite"
+              >
+                Response {currentIndex + 1} of {count}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11"
+                disabled={!hasPrevious}
+                onClick={() => setCurrentIndex((index) => index - 1)}
+              >
+                <ChevronLeft data-icon="inline-start" />
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11"
+                disabled={!hasNext}
+                onClick={() => setCurrentIndex((index) => index + 1)}
+              >
+                Next
+                <ChevronRight data-icon="inline-end" />
+              </Button>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="flex flex-col gap-5 px-6 pb-6">
@@ -76,12 +144,6 @@ export function ResponseDrawer({
           )}
           {result && (
             <>
-              <DetailSection title="Prompt">
-                <p className="text-sm whitespace-pre-wrap">
-                  {result.prompt?.text ?? result.promptId}
-                </p>
-              </DetailSection>
-
               <DetailSection
                 title={
                   result.status === ResultStatus.FAILED
@@ -119,66 +181,74 @@ export function ResponseDrawer({
                 />
               )}
 
-              <DetailSection title="Run">
-                <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-2 text-sm">
-                  <dt className="text-muted-foreground">Status</dt>
-                  <dd>{resultStatusLabel(result.status)}</dd>
-                  <dt className="text-muted-foreground">Model</dt>
-                  <dd>
-                    {result.model ?? "Not recorded"}{" "}
-                    <Link
-                      className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                      to="/methodology"
-                    >
-                      How measured
-                    </Link>
-                  </dd>
-                  <dt className="text-muted-foreground">Requested</dt>
-                  <dd>{formatDateTime(result.requestedAt)}</dd>
-                  <dt className="text-muted-foreground">Completed</dt>
-                  <dd>{formatDateTime(result.completedAt)}</dd>
-                  {result.run && (
-                    <>
-                      <dt className="text-muted-foreground">Scheduled</dt>
-                      <dd>{formatRunDate(result.run.scheduledFor)}</dd>
-                      <dt className="text-muted-foreground">Run status</dt>
-                      <dd>{runStatusLabel(result.run.status)}</dd>
-                    </>
-                  )}
-                </dl>
-              </DetailSection>
-
-              <DetailSection title="Request">
-                <JSONBlock
-                  json={result.requestJson}
-                  empty="No request params stored."
-                />
+              <DetailSection title="Prompt">
+                <p className="text-sm whitespace-pre-wrap">
+                  {result.prompt?.text ?? result.promptId}
+                </p>
               </DetailSection>
 
               <Separator />
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-fit"
-                  onClick={() => setIncludeRaw((value) => !value)}
-                >
-                  <FileJson data-icon="inline-start" />
-                  {includeRaw ? "Hide raw JSON" : "Show raw JSON"}
-                </Button>
-                {includeRaw && (
-                  <JSONBlock
-                    json={result.rawResponseJson}
-                    empty={
-                      detail.isFetching
-                        ? "Loading raw JSON."
-                        : "No raw response stored."
-                    }
-                  />
-                )}
-              </div>
+              <details className="group rounded-lg border">
+                <summary className="cursor-pointer px-4 py-3 text-sm font-medium select-none">
+                  Technical details
+                </summary>
+                <div className="flex flex-col gap-5 border-t px-4 py-4">
+                  <DetailSection title="Run">
+                    <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-2 text-sm">
+                      <dt className="text-muted-foreground">Status</dt>
+                      <dd>{resultStatusLabel(result.status)}</dd>
+                      <dt className="text-muted-foreground">Model</dt>
+                      <dd>
+                        {result.model ?? "Not recorded"}{" "}
+                        <Link
+                          className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                          to="/methodology"
+                        >
+                          How measured
+                        </Link>
+                      </dd>
+                      <dt className="text-muted-foreground">Requested</dt>
+                      <dd>{formatDateTime(result.requestedAt)}</dd>
+                      <dt className="text-muted-foreground">Completed</dt>
+                      <dd>{formatDateTime(result.completedAt)}</dd>
+                      {result.run && (
+                        <>
+                          <dt className="text-muted-foreground">Scheduled</dt>
+                          <dd>{formatRunDate(result.run.scheduledFor)}</dd>
+                          <dt className="text-muted-foreground">Run status</dt>
+                          <dd>{runStatusLabel(result.run.status)}</dd>
+                        </>
+                      )}
+                    </dl>
+                  </DetailSection>
+                  <DetailSection title="Request">
+                    <JSONBlock
+                      json={result.requestJson}
+                      empty="No request params stored."
+                    />
+                  </DetailSection>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => setIncludeRaw((value) => !value)}
+                  >
+                    <FileJson data-icon="inline-start" />
+                    {includeRaw ? "Hide raw JSON" : "Show raw JSON"}
+                  </Button>
+                  {includeRaw && (
+                    <JSONBlock
+                      json={result.rawResponseJson}
+                      empty={
+                        detail.isFetching
+                          ? "Loading raw JSON."
+                          : "No raw response stored."
+                      }
+                    />
+                  )}
+                </div>
+              </details>
             </>
           )}
         </div>
@@ -352,7 +422,8 @@ function AnalysisSection({
                       {mentionSubjectLabel(mention.subject)}
                     </Badge>
                     <span className="text-muted-foreground">
-                      #{mention.order + 1} · {matchMethodLabel(mention.matchedBy)}
+                      #{mention.order + 1} ·{" "}
+                      {matchMethodLabel(mention.matchedBy)}
                     </span>
                   </span>
                   <span className="font-medium">{mention.verbatimName}</span>

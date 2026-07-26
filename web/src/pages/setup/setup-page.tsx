@@ -24,6 +24,7 @@ import {
 import type { Competitor } from "@/gen/opensight/v1/competitor_pb"
 import { updateCompetitorAliases } from "@/gen/opensight/v1/competitor-CompetitorService_connectquery"
 import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/page-header"
 import {
   Card,
   CardAction,
@@ -56,7 +57,12 @@ export function SetupPage() {
   if (current.isLoading || business.isLoading || competitors.isLoading) {
     return <SetupSkeleton />
   }
-  if (current.isError || business.isError || competitors.isError || !current.isReady) {
+  if (
+    current.isError ||
+    business.isError ||
+    competitors.isError ||
+    !current.isReady
+  ) {
     return (
       <p role="alert">Setup could not be loaded. Try reloading the page.</p>
     )
@@ -74,13 +80,14 @@ export function SetupPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-xl font-semibold">Setup</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage the confirmed values used by future monitoring runs.
-        </p>
-      </div>
-      <ProfileEditor key={business.data.business.id} business={business.data.business} />
+      <PageHeader
+        title="Settings"
+        description="Manage the confirmed values used by future monitoring runs."
+      />
+      <ProfileEditor
+        key={business.data.business.id}
+        business={business.data.business}
+      />
       <Card>
         <CardHeader>
           <CardTitle>Prompts</CardTitle>
@@ -129,12 +136,17 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
         }),
       })
       void queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
+        queryKey: createConnectQueryKey({
+          schema: getMe,
+          cardinality: "finite",
+        }),
       })
     },
   })
   const [form, setForm] = useState(() => profileForm(business))
-  const [touched, setTouched] = useState<Set<ProfilePatchField>>(() => new Set())
+  const [touched, setTouched] = useState<Set<ProfilePatchField>>(
+    () => new Set()
+  )
   const [saved, setSaved] = useState(false)
   const error = validateProfileForm(form)
   const serverError = mutation.isError
@@ -148,7 +160,10 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
   const set = (field: ProfileScalar, value: string) => {
     setSaved(false)
     markTouched(
-      field === "address" || field === "area" || field === "city" || field === "country"
+      field === "address" ||
+        field === "area" ||
+        field === "city" ||
+        field === "country"
         ? "location"
         : field
     )
@@ -166,8 +181,10 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
       {
         businessId: business.id,
         ...patch,
-        aliases: patch.aliases === undefined ? undefined : { values: patch.aliases },
-        services: patch.services === undefined ? undefined : { values: patch.services },
+        aliases:
+          patch.aliases === undefined ? undefined : { values: patch.aliases },
+        services:
+          patch.services === undefined ? undefined : { values: patch.services },
       },
       {
         onSuccess: (data) => {
@@ -242,8 +259,16 @@ function ProfileEditor({ business }: { business: BusinessProfile }) {
           {(error || serverError) && (
             <FieldError>{error ?? serverError}</FieldError>
           )}
-          <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
-            {mutation.isPending ? "Saving profile…" : saved ? "Profile saved." : ""}
+          <p
+            role="status"
+            aria-live="polite"
+            className="text-sm text-muted-foreground"
+          >
+            {mutation.isPending
+              ? "Saving profile…"
+              : saved
+                ? "Profile saved."
+                : ""}
           </p>
           <Button
             type="submit"
@@ -296,7 +321,9 @@ function RepeatableTextFields({
                 type="button"
                 variant="outline"
                 aria-label={`Remove ${label.toLowerCase()} ${index + 1}`}
-                onClick={() => onChange(items.filter((current) => current.key !== item.key))}
+                onClick={() =>
+                  onChange(items.filter((current) => current.key !== item.key))
+                }
               >
                 Remove
               </Button>
@@ -358,7 +385,9 @@ function CompetitorAliases({ competitor }: { competitor: Competitor }) {
     : undefined
   return (
     <FieldSet>
-      <FieldLegend variant="label">{competitor.name} approved aliases</FieldLegend>
+      <FieldLegend variant="label">
+        {competitor.name} approved aliases
+      </FieldLegend>
       {items.map((item, index) => (
         <div key={item.key} className="flex gap-2">
           <Input
@@ -381,7 +410,9 @@ function CompetitorAliases({ competitor }: { competitor: Competitor }) {
             aria-label={`Remove approved alias ${index + 1} for ${competitor.name}`}
             onClick={() => {
               setSaved(false)
-              setItems((current) => current.filter((value) => value.key !== item.key))
+              setItems((current) =>
+                current.filter((value) => value.key !== item.key)
+              )
             }}
           >
             Remove
@@ -422,7 +453,11 @@ function CompetitorAliases({ competitor }: { competitor: Competitor }) {
         </Button>
       </div>
       {error && <FieldError>{error}</FieldError>}
-      <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+      <p
+        role="status"
+        aria-live="polite"
+        className="text-sm text-muted-foreground"
+      >
         {mutation.isPending ? "Saving aliases…" : saved ? "Aliases saved." : ""}
       </p>
     </FieldSet>
@@ -521,11 +556,17 @@ function profilePatch(
   }
 
   const aliases = form.aliases.map((item) => item.value)
-  if (touched.has("aliases") && JSON.stringify(aliases) !== JSON.stringify(business.aliases)) {
+  if (
+    touched.has("aliases") &&
+    JSON.stringify(aliases) !== JSON.stringify(business.aliases)
+  ) {
     patch.aliases = aliases
   }
   const services = form.services.map((item) => item.value)
-  if (touched.has("services") && JSON.stringify(services) !== JSON.stringify(business.services)) {
+  if (
+    touched.has("services") &&
+    JSON.stringify(services) !== JSON.stringify(business.services)
+  ) {
     patch.services = services
   }
   const location = {
@@ -534,7 +575,10 @@ function profilePatch(
     city: form.city,
     country: form.country,
   }
-  if (touched.has("location") && JSON.stringify(location) !== JSON.stringify(business.location)) {
+  if (
+    touched.has("location") &&
+    JSON.stringify(location) !== JSON.stringify(business.location)
+  ) {
     patch.location = location
   }
   return patch

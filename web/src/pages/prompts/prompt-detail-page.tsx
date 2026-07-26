@@ -27,6 +27,10 @@ import {
 } from "@/gen/opensight/v1/prompt-PromptService_connectquery"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { ResponseDrawer } from "@/components/response-drawer"
+import {
+  evidenceSelection,
+  type EvidenceSelection,
+} from "@/components/evidence-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,8 +56,11 @@ export function PromptDetailPage() {
   const navigate = useNavigate()
   const { businessId } = useCurrentBusiness()
   const queryClient = useQueryClient()
-  const promptQuery = useQuery(getPrompt, id === undefined ? skipToken : { promptId: id })
-  const [selectedResultID, setSelectedResultID] = useState<string>()
+  const promptQuery = useQuery(
+    getPrompt,
+    id === undefined ? skipToken : { promptId: id }
+  )
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()
   const [replaceOpen, setReplaceOpen] = useState(false)
   const replacePromptMutation = useMutation(replacePrompt, {
     onSuccess: (_data, variables) => {
@@ -97,7 +104,10 @@ export function PromptDetailPage() {
   const replacements = buildReplacements(prompt, lineage)
 
   const replaceError = replacePromptMutation.isError
-    ? errorMessage(replacePromptMutation.error, "Could not replace prompt. Try again.")
+    ? errorMessage(
+        replacePromptMutation.error,
+        "Could not replace prompt. Try again."
+      )
     : undefined
 
   const openReplace = (open: boolean) => {
@@ -118,7 +128,9 @@ export function PromptDetailPage() {
         </Button>
         <h1 className="font-heading text-lg font-semibold">Prompt</h1>
         <Badge
-          variant={prompt.status === PromptStatus.RETIRED ? "outline" : "secondary"}
+          variant={
+            prompt.status === PromptStatus.RETIRED ? "outline" : "secondary"
+          }
           className="capitalize"
         >
           {promptStatusLabel(prompt.status)}
@@ -205,7 +217,14 @@ export function PromptDetailPage() {
                   <ResultRow
                     key={result.id}
                     result={result}
-                    onOpen={() => setSelectedResultID(result.id)}
+                    onOpen={() =>
+                      setSelectedEvidence(
+                        evidenceSelection(
+                          [result.id],
+                          "Response history for this question"
+                        )
+                      )
+                    }
                   />
                 ))
               )}
@@ -215,9 +234,9 @@ export function PromptDetailPage() {
       </div>
 
       <ResponseDrawer
-        resultId={selectedResultID}
+        evidence={selectedEvidence}
         onOpenChange={(open) => {
-          if (!open) setSelectedResultID(undefined)
+          if (!open) setSelectedEvidence(undefined)
         }}
       />
     </div>
@@ -249,7 +268,9 @@ function ResultRow({
       </TableCell>
       <TableCell className="space-x-1.5 whitespace-nowrap">
         <Badge
-          variant={result.status === ResultStatus.FAILED ? "destructive" : "secondary"}
+          variant={
+            result.status === ResultStatus.FAILED ? "destructive" : "secondary"
+          }
         >
           {resultStatusLabel(result.status)}
         </Badge>

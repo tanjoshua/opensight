@@ -26,9 +26,21 @@ import {
   listPrompts,
 } from "@/gen/opensight/v1/prompt-PromptService_connectquery"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
+import { PageHeader } from "@/components/page-header"
 import { ResponseDrawer } from "@/components/response-drawer"
+import {
+  evidenceSelection,
+  type EvidenceSelection,
+} from "@/components/evidence-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -54,14 +66,15 @@ export function PromptsPage() {
     listPrompts,
     business === undefined ? skipToken : { businessId: business.id }
   )
-  const [selectedResultID, setSelectedResultID] = useState<string>()
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()
   const [addOpen, setAddOpen] = useState(false)
   const addPromptMutation = useMutation(addPrompt, {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: listPrompts,
-          input: business === undefined ? undefined : { businessId: business.id },
+          input:
+            business === undefined ? undefined : { businessId: business.id },
           cardinality: "finite",
         }),
       })
@@ -80,12 +93,7 @@ export function PromptsPage() {
     return <ListSkeleton />
   }
   if (!business) {
-    return (
-      <SectionMessage
-        title="No business yet"
-        description="Finish onboarding to start monitoring and collecting responses."
-      />
-    )
+    return <ListSkeleton />
   }
   if (!promptsQuery.data) {
     return <ListSkeleton />
@@ -104,13 +112,16 @@ export function PromptsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="font-heading text-lg font-semibold">Prompts</h1>
-        <Button onClick={() => openAdd(true)}>
-          <Plus data-icon="inline-start" />
-          Add prompt
-        </Button>
-      </div>
+      <PageHeader
+        title="Questions"
+        description="The customer questions OpenSight checks in every monitoring run."
+        actions={
+          <Button className="min-h-11 md:min-h-0" onClick={() => openAdd(true)}>
+            <Plus data-icon="inline-start" />
+            Add question
+          </Button>
+        }
+      />
 
       <PromptConfirmDialog
         mode="add"
@@ -126,7 +137,34 @@ export function PromptsPage() {
         }
       />
 
-      <div className="overflow-x-auto rounded-lg border">
+      {prompts.length === 0 ? (
+        <div className="md:hidden">
+          <SectionMessage
+            title="No questions yet"
+            description="Questions appear here once monitoring is set up."
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 md:hidden">
+          {prompts.map((prompt) => (
+            <PromptMobileCard
+              key={prompt.id}
+              prompt={prompt}
+              onNavigate={() => navigate(`/prompts/${prompt.id}`)}
+              onOpenResult={(resultId) =>
+                setSelectedEvidence(
+                  evidenceSelection(
+                    [resultId],
+                    "Latest response for this question"
+                  )
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -153,7 +191,14 @@ export function PromptsPage() {
                   key={prompt.id}
                   prompt={prompt}
                   onNavigate={() => navigate(`/prompts/${prompt.id}`)}
-                  onOpenResult={setSelectedResultID}
+                  onOpenResult={(resultId) =>
+                    setSelectedEvidence(
+                      evidenceSelection(
+                        [resultId],
+                        "Latest response for this question"
+                      )
+                    )
+                  }
                 />
               ))
             )}
@@ -162,12 +207,103 @@ export function PromptsPage() {
       </div>
 
       <ResponseDrawer
-        resultId={selectedResultID}
+        evidence={selectedEvidence}
         onOpenChange={(open) => {
-          if (!open) setSelectedResultID(undefined)
+          if (!open) setSelectedEvidence(undefined)
         }}
       />
     </div>
+  )
+}
+
+function PromptMobileCard({
+  prompt,
+  onNavigate,
+  onOpenResult,
+}: {
+  prompt: PromptSummary
+  onNavigate: () => void
+  onOpenResult: (resultID: string) => void
+}) {
+  const measured = prompt.latestResultId !== undefined
+  return (
+    <Card size="sm" className="min-w-0">
+      <CardHeader>
+        <CardTitle>
+          <button
+            type="button"
+            className="min-h-11 text-left"
+            onClick={onNavigate}
+          >
+            {prompt.text}
+          </button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <dl className="grid grid-cols-3 gap-3 text-sm">
+          <div className="flex min-w-0 flex-col gap-1">
+            <dt className="text-xs text-muted-foreground">Mentioned</dt>
+            <dd>
+              {!measured ? (
+                <span className="text-muted-foreground">Not measured</span>
+              ) : (
+                <Badge variant={prompt.mentioned ? "secondary" : "outline"}>
+                  {prompt.mentioned ? "Yes" : "No"}
+                </Badge>
+              )}
+            </dd>
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <dt className="text-xs text-muted-foreground">Order</dt>
+            <dd className="tabular-nums">
+              {prompt.order === undefined ? "—" : ordinal(prompt.order)}
+            </dd>
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <dt className="text-xs text-muted-foreground">Sentiment</dt>
+            <dd className="truncate capitalize">
+              {prompt.sentiment === Sentiment.UNSPECIFIED
+                ? "—"
+                : sentimentLabel(prompt.sentiment)}
+            </dd>
+          </div>
+        </dl>
+        {prompt.trend.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">
+              Response history
+            </span>
+            <Sparkline
+              trend={prompt.trend}
+              onOpenResult={onOpenResult}
+              largeTargets
+            />
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex-wrap gap-2">
+        {measured && (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => {
+              if (prompt.latestResultId) onOpenResult(prompt.latestResultId)
+            }}
+          >
+            View latest response
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11"
+          onClick={onNavigate}
+        >
+          View question details
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -218,7 +354,9 @@ function PromptRow({
           <span className="text-muted-foreground">—</span>
         ) : (
           <StatButton onClick={openLatest} label="Open the latest response">
-            <span className="capitalize">{sentimentLabel(prompt.sentiment)}</span>
+            <span className="capitalize">
+              {sentimentLabel(prompt.sentiment)}
+            </span>
           </StatButton>
         )}
       </TableCell>
@@ -262,9 +400,11 @@ function StatButton({
 function Sparkline({
   trend,
   onOpenResult,
+  largeTargets = false,
 }: {
   trend: PromptTrendPoint[]
   onOpenResult: (resultID: string) => void
+  largeTargets?: boolean
 }) {
   if (trend.length === 0) {
     return <span className="text-sm text-muted-foreground">No runs yet</span>
@@ -281,7 +421,11 @@ function Sparkline({
           aria-label={`${point.scheduledFor}: ${
             point.mentioned ? "mentioned" : "not mentioned"
           }`}
-          className="cursor-pointer"
+          className={
+            largeTargets
+              ? "flex size-11 cursor-pointer items-center justify-center"
+              : "cursor-pointer"
+          }
           onClick={(event) => {
             event.stopPropagation()
             onOpenResult(point.resultId)

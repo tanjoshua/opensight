@@ -114,6 +114,16 @@ func resultFilterFromProto(msg *opensightv1.ListResultsRequest) (store.ResultFil
 	limit, offset := rpcPaging(msg.Limit, msg.Offset, defaultResultLimit, maxResultLimit)
 	filter := store.ResultFilter{Limit: limit, Offset: offset}
 
+	if len(msg.ResultIds) > 0 {
+		filter.ResultIDs = make([]domain.ID, 0, len(msg.ResultIds))
+		for _, rawID := range msg.ResultIds {
+			id, cerr := rpcID("result_ids", rawID)
+			if cerr != nil {
+				return store.ResultFilter{}, 0, 0, cerr
+			}
+			filter.ResultIDs = append(filter.ResultIDs, id)
+		}
+	}
 	if msg.RunId != "" {
 		id, cerr := rpcID("run_id", msg.RunId)
 		if cerr != nil {

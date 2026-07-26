@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"opensight/internal/domain"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -196,6 +198,20 @@ VALUES ($1, $2, $3, 'failed', '{"model":"gpt-5-mini"}'::jsonb, 'openai: timeout'
 	}
 	if list[0].PromptText != "cheapest clinic near me" {
 		t.Fatalf("ListResults prompt text = %q, want the joined prompt text", list[0].PromptText)
+	}
+	// Evidence drill-downs pass aggregate result IDs in their display order.
+	// Filtering must retain that order, then apply pagination to the ordered
+	// set rather than falling back to response timestamps.
+	ordered, err := resultStore.ListResults(ctx, tenantID, businessID, ResultFilter{
+		ResultIDs: []domain.ID{failedResultID, resultID},
+		Limit:     1,
+		Offset:    1,
+	})
+	if err != nil {
+		t.Fatalf("ListResults(result IDs, paged): %v", err)
+	}
+	if len(ordered) != 1 || ordered[0].ID != resultID {
+		t.Fatalf("ListResults(result IDs, paged) = %+v, want second requested result %s", ordered, resultID)
 	}
 	if _, err := resultStore.GetResultDetail(ctx, tenantID, failedResultID); err != nil {
 		t.Fatalf("GetResultDetail(failed result): %v", err)
