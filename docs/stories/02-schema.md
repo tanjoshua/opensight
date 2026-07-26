@@ -51,6 +51,6 @@ As the developer, I want the opt-in `internal/store` integration tests to actual
 
 - [x] `TestRepositoriesEnforceTenantScoping` compares JSONB services as parsed values rather than relying on Postgres's serialized whitespace.
 - [x] `TestCompetitorStoreTenantScopingAndHistoryPreservation` gives its `active` business fixture a valid category, location country, and activation timestamp.
-- [ ] `OPENSIGHT_STORE_TEST_DATABASE_URL=<dsn> go test ./internal/store/...` passes clean against a freshly migrated database (all migrations applied, no skipped/failing tests).
+- [x] `OPENSIGHT_STORE_TEST_DATABASE_URL=<dsn> go test ./internal/store/...` passes clean against a freshly migrated database (all migrations applied, no skipped/failing tests).
 
 Deps: SCH-2 (active-profile constraint), SCH-4 (tenant-scoping test) · Phase 1 (backfill) · Ref: design 02 (Businesses and profile — active-profile invariant), 01 (D4 multi-tenancy)

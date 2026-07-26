@@ -88,6 +88,19 @@ go run ./cmd/opensight user create --tenant <tenant_id> --email owner@example.co
 
 Pipe a password with `--password-stdin` to set the initial password yourself; otherwise `user create` generates one and prints it once.
 
+## Tests
+
+`make test` runs the unit suite; it needs no infrastructure.
+
+The DB-backed tests in `internal/store`, `internal/workflows`, and `internal/metrics` skip themselves unless `OPENSIGHT_STORE_TEST_DATABASE_URL` is set. They run against their own `opensight_test` database so a test run can't disturb local data:
+
+```sh
+make test-db           # drop and recreate opensight_test (needs make dev-stack)
+make test-integration  # migrate opensight_test, then run the DB-backed tests
+```
+
+`make test-integration` migrates first, so it is safe to re-run; `make test-db` is only needed the first time or to reset. Override the target database with `TEST_DATABASE_URL=<dsn>`. CI runs both targets against a Postgres service container.
+
 ## Protobuf / Connect RPC codegen
 
 The API contract is defined in `proto/opensight/v1/*.proto` and compiled with [buf](https://buf.build). After changing any `.proto` file, regenerate:

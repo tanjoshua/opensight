@@ -13,6 +13,21 @@ jobs:
     name: Test And Lint
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: opensight
+          POSTGRES_PASSWORD: opensight
+          POSTGRES_DB: opensight_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U opensight -d opensight_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +53,12 @@ jobs:
         run: make proto && git diff --exit-code
 
       - name: Test
-        run: go test ./...
+        run: make test
+
+      # Applies migrations to the Postgres service, then runs the DB-backed
+      # tests that skip themselves without OPENSIGHT_STORE_TEST_DATABASE_URL.
+      - name: Integration test
+        run: make test-integration
 
       - name: Lint
         uses: golangci/golangci-lint-action@v6
