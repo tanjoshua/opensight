@@ -104,14 +104,16 @@ Users can track, dismiss, or manually add competitors.
 
 ### Brief
 
-A concise visibility briefing led by the latest analyzed run: AI visibility with its
-mentioned/analyzed denominator and evidence, change from the previous analyzed run,
-and the retained trend with prompt-set markers. It compares each active question's
-two latest analyzed responses to show newly visible, no-longer-visible, and
-still-absent questions; questions without two points are explicitly treated as
-having no baseline. It then surfaces absent questions, cited domains, and competitors
-as evidence to review. Common themes remain a secondary view. The briefing does not
-claim a weekly change when the available history cannot establish one.
+A concise visibility briefing led by the latest analyzed run. Its adaptive visibility
+explorer can inspect any analyzed run as a dated snapshot or compare runs over time
+without changing evidence elsewhere in the Brief. Question changes and absence use
+each question's latest analyzed responses, while sources, themes, and competitors
+summarize evidence collected to date. A snapshot compares the business with current
+leading competitors when that run has competitor data; the trend uses exact observed
+values and never fabricates a future point. The chart is the explorer's primary
+visual object; compact, low-emphasis mode and range controls stay at its edge. The
+Brief also shows newly visible, no-longer-visible, and still-absent questions;
+questions without two points explicitly have no baseline.
 
 ### Questions
 

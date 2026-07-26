@@ -1,8 +1,9 @@
 // Overview section (INS-1, design 06): one page answering "how visible am I and
 // what changed". Headline visibility stat + weekly trend line with prompt-set
 // change markers, then three compact panels (themes, cited domains, competitors).
-// Every number is a door — stats open the Response drawer via their result_ids,
-// and clicking a week on the trend deep-links to that run's detail page.
+// Every number is a door — stats open the Response drawer via their result_ids.
+// The adaptive visibility explorer inspects historical runs without changing
+// the independently scoped evidence elsewhere in the Brief.
 import { skipToken, useQuery } from "@connectrpc/connect-query"
 import {
   ArrowDownRight,
@@ -15,7 +16,11 @@ import {
 import { useState } from "react"
 import { Link, useNavigate } from "react-router"
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
+  LabelList,
   Line,
   LineChart,
   ReferenceLine,
@@ -66,6 +71,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 const chartConfig = {
   you: { label: "You", color: "var(--chart-1)" },
@@ -78,17 +92,10 @@ const chartConfig = {
 // dominant via line/dot weight, not color alone — a legend still names every
 // line since two of the four slots (aqua, yellow) sit under 3:1 contrast on a
 // light card. Cap to the top few so the chart stays legible.
-const MAX_COMPETITOR_LINES = 3
+const MAX_TREND_COMPETITOR_LINES = 2
+const MAX_SNAPSHOT_COMPETITORS = 3
 const COMPETITOR_COLORS = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)"]
 const BRIEF_LIST_LIMIT = 5
-
-// First run, single data point: the chart still renders as a chart (axes, grid,
-// one dot) rather than swapping to a separate empty-state layout, with the
-// x-axis stretched one interval past the point so the shape reads as "day one
-// of a growing trend" rather than a dead end. The window doesn't assert an
-// actual next-run date (cadence is plan-driven, MVP is weekly-only) — the tick
-// is labeled "Next run" rather than a date for that reason.
-const PROJECTED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
 // GetOverviewResponse's fields are already the flat Overview shape (no
 // further response-wrapper unwrapping needed).
@@ -258,61 +265,401 @@ function VisibilityCard({
   onOpenResult: (ids: string[], context?: string) => void
   onSelectRun: (runID: string) => void
 }) {
-  const current = overview.visibility?.current
-  const delta = overview.visibility?.delta
   const trend = overview.visibility?.trend ?? []
   const latestPoint = trend[trend.length - 1]
-  const previousPoint = trend.length > 1 ? trend[trend.length - 2] : undefined
+  const defaultMode: ExplorerMode = trend.length === 1 ? "snapshot" : "trend"
+  const [modeOverride, setModeOverride] = useState<ExplorerMode>()
+  const [snapshotRunID, setSnapshotRunID] = useState<string>()
+  const [range, setRange] = useState<TrendRange>("last-12")
+  const [selectedTrendRunID, setSelectedTrendRunID] = useState<string>()
+  const mode = modeOverride ?? defaultMode
+  const effectiveRange: TrendRange =
+    trend.length <= 12 && range === "last-12" ? "all" : range
+  const snapshotPoint =
+    trend.find((point) => point.runId === snapshotRunID) ?? latestPoint
+  const visibleTrend =
+    effectiveRange === "all"
+      ? trend
+      : trend.slice(effectiveRange === "last-4" ? -4 : -12)
+  const selectedTrendPoint = visibleTrend.find(
+    (point) => point.runId === selectedTrendRunID
+  )
+
+  const changeMode = (values: string[]) => {
+    const next = values[0]
+    if (next === "snapshot" || next === "trend") setModeOverride(next)
+  }
+  const changeRange = (values: string[]) => {
+    const next = values[0]
+    if (next === "last-4" || next === "last-12" || next === "all") {
+      setRange(next)
+      setSelectedTrendRunID(undefined)
+    }
+  }
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="border-b bg-muted/20">
-        <CardDescription>AI visibility</CardDescription>
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div className="space-y-2">
-            <CardTitle className="text-5xl font-semibold tabular-nums sm:text-6xl">
-              {current === undefined ? "—" : formatPercent(current)}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Mentioned in{" "}
-              <span className="font-medium text-foreground">
-                {latestPoint.mentioned} of {latestPoint.analyzed}
-              </span>{" "}
-              analyzed responses on {longDate(latestPoint.scheduledFor)}
-            </p>
-            {delta !== undefined && previousPoint && (
-              <DeltaBadge
-                delta={delta}
-                previousDate={previousPoint.scheduledFor}
-              />
-            )}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span>AI visibility</span>
+          <span className="text-2xl font-semibold tabular-nums">
+            {formatPercent(latestPoint.percent)}
+          </span>
+        </CardTitle>
+        <CardDescription>
+          Latest: {longDate(latestPoint.scheduledFor)} · mentioned in{" "}
+          {latestPoint.mentioned} of {latestPoint.analyzed} analyzed responses
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1">
+          <ToggleGroup
+            value={[mode]}
+            onValueChange={changeMode}
+            size="sm"
+            aria-label="Visibility explorer mode"
+          >
+            <ToggleGroupItem value="snapshot" className="min-h-11">
+              Run snapshot
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="trend"
+              className="min-h-11"
+              disabled={trend.length < 2}
+              title={
+                trend.length < 2
+                  ? "Over time becomes available after a second analyzed run"
+                  : undefined
+              }
+            >
+              Over time
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {mode === "trend" && trend.length > 4 && (
+            <ToggleGroup
+              value={[effectiveRange]}
+              onValueChange={changeRange}
+              size="sm"
+              aria-label="Visibility trend range"
+            >
+              <ToggleGroupItem value="last-4" className="min-h-11">
+                Last 4
+              </ToggleGroupItem>
+              {trend.length > 12 && (
+                <ToggleGroupItem value="last-12" className="min-h-11">
+                  Last 12
+                </ToggleGroupItem>
+              )}
+              <ToggleGroupItem value="all" className="min-h-11">
+                All
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+        </div>
+
+        {mode === "snapshot" ? (
+          <SnapshotView
+            point={snapshotPoint}
+            trend={trend}
+            competitors={overview.topCompetitors}
+            onSelectRun={setSnapshotRunID}
+            onOpenResult={onOpenResult}
+            onOpenRun={onSelectRun}
+          />
+        ) : (
+          <TrendChart
+            trend={visibleTrend}
+            competitors={overview.topCompetitors}
+            promptChanges={overview.promptChanges}
+            selectedRunID={selectedTrendRunID}
+            onSelectPoint={setSelectedTrendRunID}
+            selectedPoint={selectedTrendPoint}
+            onOpenResult={onOpenResult}
+            onOpenRun={onSelectRun}
+          />
+        )}
+        <p className="text-xs text-muted-foreground">
+          Explorer choices stay within this card. Questions use their latest
+          analyzed response; sources, themes, and competitors summarize evidence
+          collected to date.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+type ExplorerMode = "snapshot" | "trend"
+type TrendRange = "last-4" | "last-12" | "all"
+
+interface SnapshotDatum {
+  key: string
+  name: string
+  percent: number
+  mentioned: number
+  analyzed: number
+  color: string
+  resultIds: string[]
+}
+
+function SnapshotView({
+  point,
+  trend,
+  competitors,
+  onSelectRun,
+  onOpenResult,
+  onOpenRun,
+}: {
+  point: VisibilityPoint
+  trend: VisibilityPoint[]
+  competitors: CompetitorSummary[]
+  onSelectRun: (runID: string) => void
+  onOpenResult: (ids: string[], context?: string) => void
+  onOpenRun: (runID: string) => void
+}) {
+  const pointIndex = trend.findIndex(
+    (candidate) => candidate.runId === point.runId
+  )
+  const previousPoint = pointIndex > 0 ? trend[pointIndex - 1] : undefined
+  const competitorData = competitors
+    .map((competitor) => {
+      const competitorPoint = competitor.trend.find(
+        (candidate) => candidate.runId === point.runId
+      )
+      return competitorPoint
+        ? { competitor, point: competitorPoint }
+        : undefined
+    })
+    .filter((candidate) => candidate !== undefined)
+    .slice(0, MAX_SNAPSHOT_COMPETITORS)
+    .map(({ competitor, point: competitorPoint }, index): SnapshotDatum => {
+      return {
+        key: competitor.id,
+        name: competitor.name,
+        percent: competitorPoint.percent,
+        mentioned: competitorPoint.mentioned,
+        analyzed: competitorPoint.analyzed,
+        color: COMPETITOR_COLORS[index],
+        resultIds: competitorPoint.resultIds,
+      }
+    })
+  const comparisonData: SnapshotDatum[] = [
+    {
+      key: "you",
+      name: "You",
+      percent: point.percent,
+      mentioned: point.mentioned,
+      analyzed: point.analyzed,
+      color: "var(--chart-1)",
+      resultIds: point.resultIds,
+    },
+    ...competitorData,
+  ]
+  const runItems = [...trend].reverse().map((candidate) => ({
+    value: candidate.runId,
+    label: `${longDate(candidate.scheduledFor)} · ${candidate.mentioned} of ${candidate.analyzed}`,
+  }))
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            Analyzed run
+          </span>
+          <Select
+            items={runItems}
+            value={point.runId}
+            onValueChange={(value) => {
+              if (value) onSelectRun(value)
+            }}
+          >
+            <SelectTrigger
+              className="min-h-11 w-full sm:w-72"
+              aria-label="Analyzed run"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {runItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1 sm:items-end">
+          <div className="text-2xl font-semibold tabular-nums">
+            {formatPercent(point.percent)}
           </div>
+          <div className="text-xs text-muted-foreground">
+            {point.mentioned} of {point.analyzed} ·{" "}
+            {shortDate(dateMs(point.scheduledFor))}
+          </div>
+        </div>
+      </div>
+
+      {competitorData.length > 0 ? (
+        <SnapshotComparison
+          data={comparisonData}
+          date={point.scheduledFor}
+          onOpenResult={onOpenResult}
+        />
+      ) : (
+        <MentionComposition point={point} />
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {previousPoint ? (
+          <DeltaBadge
+            delta={point.percent - previousPoint.percent}
+            previousDate={previousPoint.scheduledFor}
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            First analyzed run
+          </span>
+        )}
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
-            disabled={latestPoint.resultIds.length === 0}
+            className="min-h-11"
+            disabled={point.resultIds.length === 0}
             onClick={() =>
               onOpenResult(
-                latestPoint.resultIds,
-                "Responses behind your current visibility"
+                point.resultIds,
+                `Visibility responses from ${longDate(point.scheduledFor)}`
               )
             }
           >
-            View {latestPoint.resultIds.length}{" "}
-            {pluralize(latestPoint.resultIds.length, "response")}
-            <ArrowRight data-icon="inline-end" />
+            View responses
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => onOpenRun(point.runId)}
+          >
+            Open run
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        <TrendChart
-          trend={trend}
-          competitors={overview.topCompetitors}
-          promptChanges={overview.promptChanges}
-          onSelectRun={onSelectRun}
-        />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
+  )
+}
+
+function SnapshotComparison({
+  data,
+  date,
+  onOpenResult,
+}: {
+  data: SnapshotDatum[]
+  date: string
+  onOpenResult: (ids: string[], context?: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <ChartContainer config={chartConfig} className="h-64 w-full sm:h-72">
+        <BarChart
+          accessibilityLayer
+          data={data}
+          layout="vertical"
+          margin={{ left: 8, right: 44 }}
+        >
+          <CartesianGrid horizontal={false} />
+          <XAxis type="number" domain={[0, 100]} hide />
+          <YAxis
+            dataKey="name"
+            type="category"
+            width={96}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(name: string) =>
+              name.length > 14 ? `${name.slice(0, 13)}…` : name
+            }
+          />
+          <ChartTooltip content={<SnapshotTooltip />} />
+          <Bar dataKey="percent" radius={[0, 6, 6, 0]} barSize={22}>
+            {data.map((datum) => (
+              <Cell key={datum.key} fill={datum.color} />
+            ))}
+            <LabelList
+              dataKey="percent"
+              position="right"
+              className="fill-foreground"
+              formatter={(value) =>
+                typeof value === "number" ? formatPercent(value) : ""
+              }
+            />
+          </Bar>
+        </BarChart>
+      </ChartContainer>
+      <nav
+        className="flex gap-2 overflow-x-auto pb-1"
+        aria-label="View snapshot comparison responses"
+      >
+        {data.map((datum) => (
+          <Button
+            key={datum.key}
+            type="button"
+            size="xs"
+            variant="ghost"
+            className="min-h-11 shrink-0"
+            disabled={datum.resultIds.length === 0}
+            onClick={() =>
+              onOpenResult(
+                datum.resultIds,
+                `${datum.name} visibility responses from ${longDate(date)}`
+              )
+            }
+          >
+            {datum.name}: {formatPercent(datum.percent)}
+          </Button>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
+function SnapshotTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: { payload: SnapshotDatum }[]
+}) {
+  if (!active || !payload?.length) return null
+  const datum = payload[0].payload
+  return (
+    <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
+      <div className="font-medium">{datum.name}</div>
+      <div className="text-muted-foreground">
+        {formatPercent(datum.percent)} · {datum.mentioned} of {datum.analyzed}
+      </div>
+    </div>
+  )
+}
+
+function MentionComposition({ point }: { point: VisibilityPoint }) {
+  const absent = Math.max(0, point.analyzed - point.mentioned)
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-sm font-medium">Response composition</h3>
+      <div
+        role="img"
+        aria-label={`${point.mentioned} responses mentioned you and ${absent} did not`}
+        className="flex h-8 overflow-hidden rounded-full bg-muted"
+      >
+        <div className="bg-primary" style={{ width: `${point.percent}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+        <span>{point.mentioned} mentioned you</span>
+        <span>{absent} did not mention you</span>
+      </div>
+    </div>
   )
 }
 
@@ -329,15 +676,29 @@ function TrendChart({
   trend,
   competitors,
   promptChanges,
-  onSelectRun,
+  selectedRunID,
+  onSelectPoint,
+  selectedPoint,
+  onOpenResult,
+  onOpenRun,
 }: {
   trend: VisibilityPoint[]
   competitors: CompetitorSummary[]
   promptChanges: PromptChange[]
-  onSelectRun: (runID: string) => void
+  selectedRunID?: string
+  onSelectPoint: (runID: string) => void
+  selectedPoint?: VisibilityPoint
+  onOpenResult: (ids: string[], context?: string) => void
+  onOpenRun: (runID: string) => void
 }) {
   const competitorSeries: Series[] = competitors
-    .slice(0, MAX_COMPETITOR_LINES)
+    .filter(
+      (competitor) =>
+        competitor.trend.filter((point) =>
+          trend.some((visible) => visible.runId === point.runId)
+        ).length >= 2
+    )
+    .slice(0, MAX_TREND_COMPETITOR_LINES)
     .map((c, i) => ({
       key: c.id,
       name: c.name,
@@ -370,30 +731,28 @@ function TrendChart({
     return row
   })
   const minX = data[0].x as number
-  // With only one run so far, stretch the axis one interval past the point so
-  // the chart still reads as a chart — a dot at the left with room to grow —
-  // instead of collapsing to a zero-width domain.
-  const maxX =
-    data.length > 1
-      ? (data[data.length - 1].x as number)
-      : minX + PROJECTED_WINDOW_MS
-  // Markers only make sense inside the plotted window; a prompt change before the
-  // first run or after the last has nothing to sit against.
+  const maxX = data[data.length - 1].x as number
+  const tickStep = Math.max(1, Math.ceil((data.length - 1) / 4))
+  const xTicks = data
+    .filter(
+      (_, index) =>
+        index === 0 || index === data.length - 1 || index % tickStep === 0
+    )
+    .map((datum) => datum.x as number)
+  // A change is meaningful only between observed points in this window: exclude
+  // anything on/before its first run and anything after its last.
   const markers = promptChanges
     .map((change) => ({
       ms: dateMs(change.date),
+      date: change.date,
       text: describeChange(change),
     }))
-    .filter((m) => m.ms >= minX && m.ms <= maxX)
-  // Recharts ReferenceLine has no built-in hover tooltip, so a marker reports its
-  // pixel position and description up here; a single HTML tip is drawn over the
-  // chart at that x. Tap toggles it too (mobile has no hover).
-  const [marker, setMarker] = useState<{ x: number; text: string } | null>(null)
+    .filter((marker) => marker.ms > minX && marker.ms <= maxX)
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative">
-        <ChartContainer config={chartConfig} className="h-56 w-full">
+      <div>
+        <ChartContainer config={chartConfig} className="h-64 w-full sm:h-72">
           <LineChart
             accessibilityLayer
             data={data}
@@ -404,7 +763,7 @@ function TrendChart({
                   activePayload?: { payload: { point: VisibilityPoint } }[]
                 }
               ).activePayload?.[0]?.payload.point
-              if (point) onSelectRun(point.runId)
+              if (point) onSelectPoint(point.runId)
             }}
           >
             <CartesianGrid vertical={false} />
@@ -413,15 +772,11 @@ function TrendChart({
               type="number"
               scale="time"
               domain={[minX, maxX]}
-              ticks={
-                data.length > 1 ? data.map((d) => d.x as number) : [minX, maxX]
-              }
+              ticks={xTicks}
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(ms: number) =>
-                data.length === 1 && ms === maxX ? "Next run" : shortDate(ms)
-              }
+              tickFormatter={(ms: number) => shortDate(ms)}
             />
             <YAxis
               domain={[0, 100]}
@@ -437,12 +792,6 @@ function TrendChart({
                 x={m.ms}
                 stroke="var(--muted-foreground)"
                 strokeDasharray="4 4"
-                label={
-                  <MarkerLabel
-                    onEnter={(x) => setMarker({ x, text: m.text })}
-                    onLeave={() => setMarker(null)}
-                  />
-                }
               />
             ))}
             {/* Competitors first, then "You" — later marks render on top, so the
@@ -452,18 +801,17 @@ function TrendChart({
                 key={s.key}
                 dataKey={s.key}
                 name={s.name}
-                type="monotone"
+                type="linear"
                 stroke={s.color}
                 strokeWidth={s.width}
                 dot={false}
                 activeDot={{ r: 4 }}
-                connectNulls
               />
             ))}
             <Line
               dataKey="you"
               name="You"
-              type="monotone"
+              type="linear"
               stroke="var(--chart-1)"
               strokeWidth={2.5}
               dot={{ r: 3 }}
@@ -471,38 +819,92 @@ function TrendChart({
             />
           </LineChart>
         </ChartContainer>
-        {marker && (
-          <div
-            className="pointer-events-none absolute top-0 z-10 max-w-40 -translate-x-1/2 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium shadow-md"
-            style={{ left: marker.x }}
-          >
-            {marker.text}
-          </div>
-        )}
       </div>
+      {markers.length > 0 && (
+        <details>
+          <summary className="flex min-h-11 cursor-pointer items-center text-xs font-medium text-muted-foreground">
+            Prompt changes in this range ({markers.length})
+          </summary>
+          <ul className="flex flex-col gap-1 pb-2 text-xs text-muted-foreground">
+            {markers.map((marker) => (
+              <li key={marker.ms}>
+                <span className="font-medium text-foreground">
+                  {longDate(marker.date)}:
+                </span>{" "}
+                {marker.text}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {trend.length === 2 && (
+        <p className="text-sm font-medium">
+          Before: {shortDate(dateMs(trend[0].scheduledFor))}{" "}
+          {formatPercent(trend[0].percent)} → After:{" "}
+          {shortDate(dateMs(trend[1].scheduledFor))}{" "}
+          {formatPercent(trend[1].percent)}
+        </p>
+      )}
       {competitorSeries.length > 0 && <ChartLegend series={series} />}
       <nav
         className="flex gap-2 overflow-x-auto pb-1"
-        aria-label="Open visibility evidence by monitoring run"
+        aria-label="Select visibility point by monitoring run"
       >
         {trend.map((point) => (
           <Button
             key={point.runId}
             type="button"
             size="xs"
-            variant="outline"
+            variant={selectedRunID === point.runId ? "secondary" : "ghost"}
             className="min-h-11 shrink-0"
-            onClick={() => onSelectRun(point.runId)}
+            aria-pressed={selectedRunID === point.runId}
+            onClick={() => onSelectPoint(point.runId)}
           >
             {shortDate(dateMs(point.scheduledFor))} ·{" "}
             {formatPercent(point.percent)}
           </Button>
         ))}
       </nav>
+      {selectedPoint && (
+        <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="font-medium">
+              {longDate(selectedPoint.scheduledFor)} ·{" "}
+              {formatPercent(selectedPoint.percent)}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Mentioned in {selectedPoint.mentioned} of {selectedPoint.analyzed}{" "}
+              analyzed responses
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              disabled={selectedPoint.resultIds.length === 0}
+              onClick={() =>
+                onOpenResult(
+                  selectedPoint.resultIds,
+                  `Visibility responses from ${longDate(selectedPoint.scheduledFor)}`
+                )
+              }
+            >
+              View responses
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => onOpenRun(selectedPoint.runId)}
+            >
+              Open run
+            </Button>
+          </div>
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">
-        {trend.length === 1
-          ? "This is your starting point. The line grows as each run completes."
-          : "Select a dated run to open its evidence."}
+        Select a point or dated run to inspect it before opening its evidence.
         {markers.length > 0 &&
           " Dashed lines mark weeks where the prompt set changed."}
       </p>
@@ -534,38 +936,6 @@ function ChartLegend({ series }: { series: Series[] }) {
         </span>
       ))}
     </div>
-  )
-}
-
-// MarkerLabel is a ReferenceLine label (recharts injects viewBox): a small glyph
-// at the top plus a full-height transparent hit target so hovering or tapping
-// anywhere on the dashed line surfaces the change description.
-function MarkerLabel({
-  viewBox,
-  onEnter,
-  onLeave,
-}: {
-  viewBox?: { x?: number; y?: number; height?: number }
-  onEnter: (x: number) => void
-  onLeave: () => void
-}) {
-  if (!viewBox || viewBox.x == null) return null
-  const x = viewBox.x
-  const y = viewBox.y ?? 0
-  const height = viewBox.height ?? 0
-  return (
-    <g
-      className="cursor-pointer"
-      onMouseEnter={() => onEnter(x)}
-      onMouseLeave={onLeave}
-      onClick={(e) => {
-        e.stopPropagation()
-        onEnter(x)
-      }}
-    >
-      <rect x={x - 6} y={y} width={12} height={height} fill="transparent" />
-      <circle cx={x} cy={y} r={3} fill="var(--muted-foreground)" />
-    </g>
   )
 }
 
@@ -739,7 +1109,10 @@ function WhatChanged({
   ]
 
   return (
-    <section className="space-y-3" aria-labelledby="what-changed-title">
+    <section
+      className="flex flex-col gap-3"
+      aria-labelledby="what-changed-title"
+    >
       <div>
         <h2 id="what-changed-title" className="text-xl font-semibold">
           What changed
@@ -814,7 +1187,10 @@ function WhereToFocus({
     (prompt) => prompt.latestResultId !== undefined && !prompt.mentioned
   )
   return (
-    <section className="space-y-3" aria-labelledby="where-to-focus-title">
+    <section
+      className="flex flex-col gap-3"
+      aria-labelledby="where-to-focus-title"
+    >
       <div>
         <h2 id="where-to-focus-title" className="text-xl font-semibold">
           Where to focus
