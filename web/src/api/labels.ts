@@ -12,6 +12,7 @@ import {
   PromptStatus,
   ResultStatus,
   RunStatus,
+  RunTrigger,
   Sentiment,
 } from "@/gen/opensight/v1/common_pb"
 
@@ -23,6 +24,17 @@ const runStatusLabels: Record<number, string> = {
 }
 export function runStatusLabel(status: RunStatus): string {
   return runStatusLabels[status] ?? "unknown"
+}
+
+// runTriggerLabel is only rendered for INITIAL/MANUAL — SCHEDULED shows no
+// badge at all (RUNS-4: a scheduled run is the unmarked default, so calling
+// this out would be noise on every row).
+const runTriggerLabels: Record<number, string> = {
+  [RunTrigger.INITIAL]: "First run",
+  [RunTrigger.MANUAL]: "Manual",
+}
+export function runTriggerLabel(trigger: RunTrigger): string | undefined {
+  return runTriggerLabels[trigger]
 }
 
 const resultStatusLabels: Record<number, string> = {
