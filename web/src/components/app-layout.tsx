@@ -1,10 +1,7 @@
-import { useQuery } from "@connectrpc/connect-query"
 import { Link, Navigate, Outlet, useLocation } from "react-router"
 
 import { isUnauthenticated } from "@/api/errors"
-import { useMe } from "@/api/hooks"
-import { RunStatus } from "@/gen/opensight/v1/common_pb"
-import { listRuns } from "@/gen/opensight/v1/result-ResultService_connectquery"
+import { useCurrentBusiness, useMe, useRuns } from "@/api/hooks"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -20,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function AppLayout() {
   const location = useLocation()
   const me = useMe()
+  const { business } = useCurrentBusiness()
 
   if (me.isLoading) {
     return <AppSkeleton />
@@ -34,8 +32,6 @@ export function AppLayout() {
       </div>
     )
   }
-
-  const business = me.data.businesses[0]
 
   return (
     <SidebarProvider>
@@ -64,22 +60,7 @@ export function AppLayout() {
 }
 
 function RunProgressBadge({ businessId }: { businessId: string }) {
-  // Re-created at this call site and in responses-page.tsx: the old REST
-  // client centralized this poll-while-running behavior in one useRuns hook,
-  // but connect-query's listRuns is a bare descriptor, not a custom hook.
-  const runs = useQuery(
-    listRuns,
-    { businessId },
-    {
-      refetchInterval: (query) =>
-        query.state.data?.runs.some((run) => run.status === RunStatus.RUNNING)
-          ? 5000
-          : false,
-    }
-  )
-  const hasRunningRun = runs.data?.runs.some(
-    (run) => run.status === RunStatus.RUNNING
-  )
+  const { hasRunningRun } = useRuns(businessId)
 
   if (!hasRunningRun) return null
   return (

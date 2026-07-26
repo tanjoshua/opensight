@@ -16,13 +16,15 @@ import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "react-router"
 
 import { resultStatusLabel, runStatusLabel } from "@/api/labels"
-import { useMe } from "@/api/hooks"
+import {
+  RUN_POLL_INTERVAL_MS,
+  isRunning,
+  useCurrentBusiness,
+  useRuns,
+} from "@/api/hooks"
 import { ResultStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { PromptResult, Run } from "@/gen/opensight/v1/result_pb"
-import {
-  listResults,
-  listRuns,
-} from "@/gen/opensight/v1/result-ResultService_connectquery"
+import { listResults } from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -55,8 +57,7 @@ const PAGE_SIZE = 20
 const ALL_FILTER_VALUE = "all"
 
 export function ResponsesPage() {
-  const me = useMe()
-  const business = me.data?.businesses[0]
+  const { business, isError, isReady } = useCurrentBusiness()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedResultID, setSelectedResultID] = useState<string>()
 
@@ -65,21 +66,8 @@ export function ResponsesPage() {
   const status = resultStatusFromParam(searchParams.get("status"))
   const offset = Math.max(0, Number(searchParams.get("offset")) || 0)
 
-  // Re-created here and in app-layout.tsx's RunProgressBadge: the old REST
-  // client centralized this poll-while-running behavior in one useRuns hook.
-  const runsQuery = useQuery(
-    listRuns,
-    business === undefined ? skipToken : { businessId: business.id },
-    {
-      refetchInterval: (query) =>
-        query.state.data?.runs.some((item) => item.status === RunStatus.RUNNING)
-          ? 5000
-          : false,
-    }
-  )
-  const hasRunningRun =
-    runsQuery.data?.runs.some((item) => item.status === RunStatus.RUNNING) ??
-    false
+  const runsQuery = useRuns(business?.id)
+  const hasRunningRun = runsQuery.hasRunningRun
   const resultsQuery = useQuery(
     listResults,
     business === undefined
@@ -94,7 +82,7 @@ export function ResponsesPage() {
         },
     {
       placeholderData: keepPreviousData,
-      refetchInterval: hasRunningRun ? 5000 : false,
+      refetchInterval: hasRunningRun ? RUN_POLL_INTERVAL_MS : false,
     }
   )
   const refetchResults = resultsQuery.refetch
@@ -122,7 +110,7 @@ export function ResponsesPage() {
     setSearchParams(next)
   }
 
-  if (me.isError) {
+  if (isError) {
     return (
       <SectionMessage
         title="Something went wrong"
@@ -130,7 +118,7 @@ export function ResponsesPage() {
       />
     )
   }
-  if (!me.data) {
+  if (!isReady) {
     return <ListSkeleton />
   }
   if (!business) {
@@ -165,7 +153,7 @@ export function ResponsesPage() {
 
   const results = resultsQuery.data?.results ?? []
   const runsById = new Map(runs.map((r) => [r.id, r]))
-  const runningRuns = runs.filter((item) => item.status === RunStatus.RUNNING)
+  const runningRuns = runs.filter(isRunning)
   // The prompt filter is applied from a row (there is no prompts endpoint yet),
   // so label the chip from any loaded row of that prompt.
   const promptFilterText =

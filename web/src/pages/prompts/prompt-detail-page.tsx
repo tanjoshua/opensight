@@ -15,7 +15,7 @@ import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 
 import { errorMessage } from "@/api/errors"
-import { useMe } from "@/api/hooks"
+import { useCurrentBusiness } from "@/api/hooks"
 import { promptStatusLabel, resultStatusLabel } from "@/api/labels"
 import { PromptStatus, ResultStatus } from "@/gen/opensight/v1/common_pb"
 import type { Prompt } from "@/gen/opensight/v1/prompt_pb"
@@ -50,8 +50,7 @@ import {
 export function PromptDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const me = useMe()
-  const businessId = me.data?.businesses[0]?.id
+  const { businessId } = useCurrentBusiness()
   const queryClient = useQueryClient()
   const promptQuery = useQuery(getPrompt, id === undefined ? skipToken : { promptId: id })
   const [selectedResultID, setSelectedResultID] = useState<string>()

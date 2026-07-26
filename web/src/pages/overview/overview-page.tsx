@@ -16,7 +16,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { useMe } from "@/api/hooks"
+import { pollWhileRunning, useCurrentBusiness } from "@/api/hooks"
 import { CompetitorStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
 import type {
   CompetitorSummary,
@@ -78,19 +78,17 @@ const PROJECTED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 type Overview = GetOverviewResponse
 
 export function OverviewPage() {
-  const me = useMe()
-  const business = me.data?.businesses[0]
+  const { business, isError, isReady } = useCurrentBusiness()
   const navigate = useNavigate()
-  // Re-created here as in Responses/app-layout: poll while the latest run is
-  // still executing (first-run-in-progress, design 06).
+  // Overview polls off its own latest_run rather than the runs list, but with
+  // the shared poll-while-running cadence (first-run-in-progress, design 06).
   const overview = useQuery(
     getOverview,
     business === undefined ? skipToken : { businessId: business.id },
     {
-      refetchInterval: (query) =>
-        query.state.data?.latestRun?.status === RunStatus.RUNNING
-          ? 5000
-          : false,
+      refetchInterval: pollWhileRunning(
+        (data: Overview) => data.latestRun?.status === RunStatus.RUNNING
+      ),
     }
   )
   // Opening the drawer is the shared "every number is a door" action: a stat's
@@ -101,7 +99,7 @@ export function OverviewPage() {
     if (ids.length > 0) setSelectedResultID(ids[0])
   }
 
-  if (me.isError) {
+  if (isError) {
     return (
       <SectionMessage
         title="Something went wrong"
@@ -109,7 +107,7 @@ export function OverviewPage() {
       />
     )
   }
-  if (!me.data) {
+  if (!isReady) {
     return <OverviewSkeleton />
   }
   if (!business) {

@@ -5,7 +5,11 @@ import { useNavigate, useSearchParams } from "react-router"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
 import { errorMessage } from "@/api/errors"
-import { useAllCompetitors, useInvalidateCompetitorViews, useMe } from "@/api/hooks"
+import {
+  useAllCompetitors,
+  useCurrentBusiness,
+  useInvalidateCompetitorViews,
+} from "@/api/hooks"
 import { competitorStatusLabel } from "@/api/labels"
 import { AliasDecision } from "@/gen/opensight/v1/competitor_pb"
 import type {
@@ -66,8 +70,7 @@ interface AddCompetitorInput {
 }
 
 export function CompetitorsPage() {
-  const me = useMe()
-  const business = me.data?.businesses[0]
+  const { business, isError, isReady } = useCurrentBusiness()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const focus = statusParam(searchParams.get("status"))
@@ -88,7 +91,7 @@ export function CompetitorsPage() {
     if (ids.length > 0) setSelectedResultID(ids[0])
   }
 
-  if (me.isError || competitorsQuery.isError) {
+  if (isError || competitorsQuery.isError) {
     return (
       <SectionMessage
         title="Something went wrong"
@@ -96,7 +99,7 @@ export function CompetitorsPage() {
       />
     )
   }
-  if (!me.data) {
+  if (!isReady) {
     return <ListSkeleton />
   }
   if (!business) {

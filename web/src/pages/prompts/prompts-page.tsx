@@ -14,7 +14,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router"
 
 import { errorMessage } from "@/api/errors"
-import { useMe } from "@/api/hooks"
+import { useCurrentBusiness } from "@/api/hooks"
 import { sentimentLabel } from "@/api/labels"
 import { Sentiment } from "@/gen/opensight/v1/common_pb"
 import type {
@@ -47,8 +47,7 @@ import {
 } from "@/components/ui/table"
 
 export function PromptsPage() {
-  const me = useMe()
-  const business = me.data?.businesses[0]
+  const { business, isError, isReady } = useCurrentBusiness()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const promptsQuery = useQuery(
@@ -69,7 +68,7 @@ export function PromptsPage() {
     },
   })
 
-  if (me.isError || promptsQuery.isError) {
+  if (isError || promptsQuery.isError) {
     return (
       <SectionMessage
         title="Something went wrong"
@@ -77,7 +76,7 @@ export function PromptsPage() {
       />
     )
   }
-  if (!me.data) {
+  if (!isReady) {
     return <ListSkeleton />
   }
   if (!business) {

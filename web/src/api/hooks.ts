@@ -7,6 +7,12 @@
 //   - useInvalidateCompetitorViews: the shared invalidation used by every
 //     competitor-mutating page — service-level keys so it also catches
 //     useAllCompetitors's hand-written query key below.
+//   - useRuns / pollWhileRunning: the "poll while a run is in progress"
+//     behavior the shell badge, Responses and Overview all need.
+//   - useCurrentBusiness: the useMe projection every section reads its
+//     business from (MVP is one business per tenant). onboarding-page is the
+//     one deliberate exception — it needs the full businesses list to tell
+//     draft-resume apart from already-onboarded, so it stays on useMe().
 import { Code, createClient } from "@connectrpc/connect"
 import {
   createConnectQueryKey,
@@ -19,12 +25,16 @@ import {
 } from "@tanstack/react-query"
 
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
+import type { BusinessSummary } from "@/gen/opensight/v1/common_pb"
+import { RunStatus } from "@/gen/opensight/v1/common_pb"
 import {
   CompetitorService,
   type Competitor,
   type CompetitorSelf,
 } from "@/gen/opensight/v1/competitor_pb"
 import { OverviewService } from "@/gen/opensight/v1/overview_pb"
+import { listRuns } from "@/gen/opensight/v1/result-ResultService_connectquery"
+import type { ListRunsResponse, Run } from "@/gen/opensight/v1/result_pb"
 import { transport } from "./transport"
 
 // getMe's request is an empty message: useQuery(getMe) (no input) and
@@ -37,6 +47,27 @@ export function useMe() {
     retry: (failureCount, error) =>
       error.code !== Code.Unauthenticated && failureCount < 2,
   })
+}
+
+export interface CurrentBusiness {
+  business: BusinessSummary | undefined
+  businessId: string | undefined
+  isLoading: boolean
+  isError: boolean
+  // Distinguishes "still loading" from "loaded, but there's no business yet".
+  isReady: boolean
+}
+
+export function useCurrentBusiness(): CurrentBusiness {
+  const me = useMe()
+  const business = me.data?.businesses[0]
+  return {
+    business,
+    businessId: business?.id,
+    isLoading: me.isLoading,
+    isError: me.isError,
+    isReady: me.data !== undefined,
+  }
 }
 
 const competitorClient = createClient(CompetitorService, transport)
@@ -86,6 +117,40 @@ export function useAllCompetitors(businessId: string | undefined) {
         ? skipToken
         : ({ signal }) => listAll(businessId, signal),
   })
+}
+
+// A run in progress is the one thing the UI polls for (design 06): refetch
+// every few seconds while one is executing, and stop as soon as none is.
+export const RUN_POLL_INTERVAL_MS = 5000
+
+export const isRunning = (run: Run) => run.status === RunStatus.RUNNING
+
+// refetchInterval for any query whose data can say "a run is still executing".
+// Used by useRuns below and by Overview, whose own poll keys off GetOverview's
+// latest_run rather than the runs list.
+export function pollWhileRunning<T>(running: (data: T) => boolean) {
+  return (query: { state: { data: T | undefined } }) =>
+    query.state.data !== undefined && running(query.state.data)
+      ? RUN_POLL_INTERVAL_MS
+      : false
+}
+
+// Runs for a business, polling while any of them is in progress. hasRunningRun
+// is returned alongside so call sites don't re-derive it.
+export function useRuns(businessId: string | undefined) {
+  const query = useQuery(
+    listRuns,
+    businessId === undefined ? skipToken : { businessId },
+    {
+      refetchInterval: pollWhileRunning((data: ListRunsResponse) =>
+        data.runs.some(isRunning)
+      ),
+    }
+  )
+  return {
+    ...query,
+    hasRunningRun: query.data?.runs.some(isRunning) ?? false,
+  }
 }
 
 export function useInvalidateCompetitorViews() {

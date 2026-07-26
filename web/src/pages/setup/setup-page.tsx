@@ -9,7 +9,11 @@ import { useState, type FormEvent } from "react"
 import { Link, Navigate } from "react-router"
 
 import { errorMessage } from "@/api/errors"
-import { useAllCompetitors, useInvalidateCompetitorViews, useMe } from "@/api/hooks"
+import {
+  useAllCompetitors,
+  useCurrentBusiness,
+  useInvalidateCompetitorViews,
+} from "@/api/hooks"
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import type { BusinessProfile } from "@/gen/opensight/v1/business_pb"
@@ -41,18 +45,18 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function SetupPage() {
-  const me = useMe()
-  const summary = me.data?.businesses[0]
+  const current = useCurrentBusiness()
+  const summary = current.business
   const business = useQuery(
     getBusiness,
     summary === undefined ? skipToken : { businessId: summary.id }
   )
   const competitors = useAllCompetitors(summary?.id)
 
-  if (me.isLoading || business.isLoading || competitors.isLoading) {
+  if (current.isLoading || business.isLoading || competitors.isLoading) {
     return <SetupSkeleton />
   }
-  if (me.isError || business.isError || competitors.isError || !me.data) {
+  if (current.isError || business.isError || competitors.isError || !current.isReady) {
     return (
       <p role="alert">Setup could not be loaded. Try reloading the page.</p>
     )
