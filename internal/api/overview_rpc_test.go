@@ -60,11 +60,11 @@ func TestRPCGetOverviewShapesPayload(t *testing.T) {
 			{Date: time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), Replaced: 1},
 		},
 	}
-	runs := &fakeRunStore{runs: []store.Run{{
+	runs := &fakeRunStore{runs: []store.RunListItem{{Run: store.Run{
 		ID: runID, BusinessID: businessID, Platform: "chatgpt", Trigger: store.RunTriggerScheduled,
 		ScheduledFor: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC), Status: store.RunStatusCompleted,
 		WorkflowID: "run-" + runIDForTest, StartedAt: time.Date(2026, 7, 13, 11, 0, 0, 0, time.UTC),
-	}}}
+	}}}}
 
 	srv := newOverviewRPCServer(runs, m)
 	resp, err := srv.GetOverview(businessRPCContext(t), connect.NewRequest(&opensightv1.GetOverviewRequest{BusinessId: businessIDForTest}))
@@ -142,7 +142,7 @@ func TestRPCGetOverviewNotFoundForCrossTenant(t *testing.T) {
 // runs yet returns a null latest_run and empty aggregates (the first-run
 // state), not an error.
 func TestRPCGetOverviewEmptyBeforeFirstRun(t *testing.T) {
-	srv := newOverviewRPCServer(&fakeRunStore{runs: []store.Run{}}, &fakeOverviewMetrics{})
+	srv := newOverviewRPCServer(&fakeRunStore{runs: []store.RunListItem{}}, &fakeOverviewMetrics{})
 	resp, err := srv.GetOverview(businessRPCContext(t), connect.NewRequest(&opensightv1.GetOverviewRequest{BusinessId: businessIDForTest}))
 	if err != nil {
 		t.Fatalf("GetOverview: %v", err)

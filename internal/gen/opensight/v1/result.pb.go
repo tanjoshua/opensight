@@ -42,9 +42,18 @@ type Run struct {
 	// visibility is the run's visibility % (self-mentions / analyzed results).
 	// Absent for a run with no analyzed results — distinct from 0%. Only
 	// ListRuns populates it.
-	Visibility    *float64 `protobuf:"fixed64,11,opt,name=visibility,proto3,oneof" json:"visibility,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Visibility *float64 `protobuf:"fixed64,11,opt,name=visibility,proto3,oneof" json:"visibility,omitempty"`
+	// expected_results is optional because monitoring_runs.expected_results is
+	// nullable for runs created before RUNS-1 — absent means "unknown," which is
+	// not the same as a zero-prompt run. The three counts below are populated
+	// only by ListRuns and GetOverview.latest_run; GetResult's embedded run
+	// leaves them zero.
+	ExpectedResults  *int32 `protobuf:"varint,12,opt,name=expected_results,json=expectedResults,proto3,oneof" json:"expected_results,omitempty"`
+	SucceededResults int32  `protobuf:"varint,13,opt,name=succeeded_results,json=succeededResults,proto3" json:"succeeded_results,omitempty"`
+	FailedResults    int32  `protobuf:"varint,14,opt,name=failed_results,json=failedResults,proto3" json:"failed_results,omitempty"`
+	AnalyzedResults  int32  `protobuf:"varint,15,opt,name=analyzed_results,json=analyzedResults,proto3" json:"analyzed_results,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Run) Reset() {
@@ -150,6 +159,34 @@ func (x *Run) GetAnalysisCompletedAt() *timestamppb.Timestamp {
 func (x *Run) GetVisibility() float64 {
 	if x != nil && x.Visibility != nil {
 		return *x.Visibility
+	}
+	return 0
+}
+
+func (x *Run) GetExpectedResults() int32 {
+	if x != nil && x.ExpectedResults != nil {
+		return *x.ExpectedResults
+	}
+	return 0
+}
+
+func (x *Run) GetSucceededResults() int32 {
+	if x != nil {
+		return x.SucceededResults
+	}
+	return 0
+}
+
+func (x *Run) GetFailedResults() int32 {
+	if x != nil {
+		return x.FailedResults
+	}
+	return 0
+}
+
+func (x *Run) GetAnalyzedResults() int32 {
+	if x != nil {
+		return x.AnalyzedResults
 	}
 	return 0
 }
@@ -715,8 +752,11 @@ func (x *ListRunsRequest) GetBusinessId() string {
 }
 
 type ListRunsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Runs          []*Run                 `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Runs  []*Run                 `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
+	// next_run_at is the next scheduled run's fire time, best-effort: unset
+	// when the schedule is missing or Temporal is unreachable, never an error.
+	NextRunAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=next_run_at,json=nextRunAt,proto3" json:"next_run_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -754,6 +794,13 @@ func (*ListRunsResponse) Descriptor() ([]byte, []int) {
 func (x *ListRunsResponse) GetRuns() []*Run {
 	if x != nil {
 		return x.Runs
+	}
+	return nil
+}
+
+func (x *ListRunsResponse) GetNextRunAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.NextRunAt
 	}
 	return nil
 }
@@ -1005,7 +1052,7 @@ var File_opensight_v1_result_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_result_proto_rawDesc = "" +
 	"\n" +
-	"\x19opensight/v1/result.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19opensight/v1/common.proto\"\xfb\x03\n" +
+	"\x19opensight/v1/result.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19opensight/v1/common.proto\"\xbf\x05\n" +
 	"\x03Run\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vbusiness_id\x18\x02 \x01(\tR\n" +
@@ -1023,8 +1070,13 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\x13analysisCompletedAt\x12#\n" +
 	"\n" +
 	"visibility\x18\v \x01(\x01H\x00R\n" +
-	"visibility\x88\x01\x01B\r\n" +
-	"\v_visibility\"/\n" +
+	"visibility\x88\x01\x01\x12.\n" +
+	"\x10expected_results\x18\f \x01(\x05H\x01R\x0fexpectedResults\x88\x01\x01\x12+\n" +
+	"\x11succeeded_results\x18\r \x01(\x05R\x10succeededResults\x12%\n" +
+	"\x0efailed_results\x18\x0e \x01(\x05R\rfailedResults\x12)\n" +
+	"\x10analyzed_results\x18\x0f \x01(\x05R\x0fanalyzedResultsB\r\n" +
+	"\v_visibilityB\x13\n" +
+	"\x11_expected_results\"/\n" +
 	"\tPromptRef\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\"6\n" +
@@ -1077,9 +1129,10 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"\x06_error\"2\n" +
 	"\x0fListRunsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"9\n" +
+	"businessId\"u\n" +
 	"\x10ListRunsResponse\x12%\n" +
-	"\x04runs\x18\x01 \x03(\v2\x11.opensight.v1.RunR\x04runs\"\xfc\x01\n" +
+	"\x04runs\x18\x01 \x03(\v2\x11.opensight.v1.RunR\x04runs\x12:\n" +
+	"\vnext_run_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tnextRunAt\"\xfc\x01\n" +
 	"\x12ListResultsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
 	"businessId\x12\x15\n" +
@@ -1163,21 +1216,22 @@ var file_opensight_v1_result_proto_depIdxs = []int32{
 	0,  // 16: opensight.v1.PromptResult.run:type_name -> opensight.v1.Run
 	5,  // 17: opensight.v1.PromptResult.analysis:type_name -> opensight.v1.ResultAnalysis
 	0,  // 18: opensight.v1.ListRunsResponse.runs:type_name -> opensight.v1.Run
-	20, // 19: opensight.v1.ListResultsRequest.status:type_name -> opensight.v1.ResultStatus
-	6,  // 20: opensight.v1.ListResultsResponse.results:type_name -> opensight.v1.PromptResult
-	21, // 21: opensight.v1.ListResultsResponse.paging:type_name -> opensight.v1.Paging
-	6,  // 22: opensight.v1.GetResultResponse.result:type_name -> opensight.v1.PromptResult
-	7,  // 23: opensight.v1.ResultService.ListRuns:input_type -> opensight.v1.ListRunsRequest
-	9,  // 24: opensight.v1.ResultService.ListResults:input_type -> opensight.v1.ListResultsRequest
-	11, // 25: opensight.v1.ResultService.GetResult:input_type -> opensight.v1.GetResultRequest
-	8,  // 26: opensight.v1.ResultService.ListRuns:output_type -> opensight.v1.ListRunsResponse
-	10, // 27: opensight.v1.ResultService.ListResults:output_type -> opensight.v1.ListResultsResponse
-	12, // 28: opensight.v1.ResultService.GetResult:output_type -> opensight.v1.GetResultResponse
-	26, // [26:29] is the sub-list for method output_type
-	23, // [23:26] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	15, // 19: opensight.v1.ListRunsResponse.next_run_at:type_name -> google.protobuf.Timestamp
+	20, // 20: opensight.v1.ListResultsRequest.status:type_name -> opensight.v1.ResultStatus
+	6,  // 21: opensight.v1.ListResultsResponse.results:type_name -> opensight.v1.PromptResult
+	21, // 22: opensight.v1.ListResultsResponse.paging:type_name -> opensight.v1.Paging
+	6,  // 23: opensight.v1.GetResultResponse.result:type_name -> opensight.v1.PromptResult
+	7,  // 24: opensight.v1.ResultService.ListRuns:input_type -> opensight.v1.ListRunsRequest
+	9,  // 25: opensight.v1.ResultService.ListResults:input_type -> opensight.v1.ListResultsRequest
+	11, // 26: opensight.v1.ResultService.GetResult:input_type -> opensight.v1.GetResultRequest
+	8,  // 27: opensight.v1.ResultService.ListRuns:output_type -> opensight.v1.ListRunsResponse
+	10, // 28: opensight.v1.ResultService.ListResults:output_type -> opensight.v1.ListResultsResponse
+	12, // 29: opensight.v1.ResultService.GetResult:output_type -> opensight.v1.GetResultResponse
+	27, // [27:30] is the sub-list for method output_type
+	24, // [24:27] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_result_proto_init() }

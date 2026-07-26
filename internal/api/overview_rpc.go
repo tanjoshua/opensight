@@ -77,7 +77,7 @@ func (s *Server) GetOverview(ctx context.Context, req *connect.Request[opensight
 		DiscoveredTotal: int32(discoveredTotal),
 	}
 	if len(runs) > 0 {
-		resp.LatestRun = runToProto(runs[0])
+		resp.LatestRun = runListItemToProto(runs[0])
 	}
 	return connect.NewResponse(resp), nil
 }

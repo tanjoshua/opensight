@@ -340,3 +340,136 @@ VALUES ($1, $2, 'cheapest clinic near me', 'active')`,
 		t.Fatalf("status = %q, want %q (2 succeeded of 3 expected)", finalized.Status, RunStatusPartial)
 	}
 }
+
+// TestListRunsAggregatesResultCounts is RUNS-2's reason for existing: the
+// LEFT JOIN LATERAL in listRunsSQL must count succeeded/failed/analyzed
+// per run, scoped to that run (not the whole business) — SQL no unit test
+// reaches.
+func TestListRunsAggregatesResultCounts(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	planID := mustNewID(t)
+	tenantID := mustNewID(t)
+	businessID := mustNewID(t)
+	promptA := mustNewID(t)
+	promptB := mustNewID(t)
+	promptC := mustNewID(t)
+	runWithResultsID := mustNewID(t)
+	runWithNoResultsID := mustNewID(t)
+	succeededAnalyzedID := mustNewID(t)
+	succeededUnanalyzedID := mustNewID(t)
+	failedID := mustNewID(t)
+	slug := "list-runs-counts-" + planID.String()
+
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE run_id IN (SELECT id FROM monitoring_runs WHERE business_id = $1)", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
+	})
+
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
+VALUES ($1, $2, 5, 'test', ARRAY['chatgpt']::text[])`,
+		planID, slug,
+	); err != nil {
+		t.Fatalf("insert test plan: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'List Runs Counts Tenant', $2)`,
+		tenantID, planID,
+	); err != nil {
+		t.Fatalf("insert test tenant: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+VALUES ($1, $2, 'active', 'List Runs Counts Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`,
+		businessID, tenantID,
+	); err != nil {
+		t.Fatalf("insert test business: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompts (id, business_id, text, status)
+VALUES ($1, $4, 'a', 'active'), ($2, $4, 'b', 'active'), ($3, $4, 'c', 'active')`,
+		promptA, promptB, promptC, businessID,
+	); err != nil {
+		t.Fatalf("insert test prompts: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, expected_results, completed_at)
+VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'partial', 'run-with-results', 3, now()),
+       ($3, $2, 'chatgpt', 'scheduled', '2026-07-13', 'running', 'run-with-no-results', 2, NULL)`,
+		runWithResultsID, businessID, runWithNoResultsID,
+	); err != nil {
+		t.Fatalf("insert test runs: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
+VALUES ($1, $3, $4, 'succeeded', 'gpt-5-mini-2026-07-01', '{}'::jsonb, '{}'::jsonb, 'ok'),
+       ($2, $3, $5, 'succeeded', 'gpt-5-mini-2026-07-01', '{}'::jsonb, '{}'::jsonb, 'ok')`,
+		succeededAnalyzedID, succeededUnanalyzedID, runWithResultsID, promptA, promptB,
+	); err != nil {
+		t.Fatalf("insert succeeded results: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO prompt_results (id, run_id, prompt_id, status, request, error)
+VALUES ($1, $2, $3, 'failed', '{}'::jsonb, 'openai: timeout')`,
+		failedID, runWithResultsID, promptC,
+	); err != nil {
+		t.Fatalf("insert failed result: %v", err)
+	}
+	if _, err := db.ExecContext(
+		ctx,
+		`INSERT INTO result_analyses (prompt_result_id, analysis_model, extraction_version)
+VALUES ($1, 'gpt-5-mini-2026-07-01', 1)`,
+		succeededAnalyzedID,
+	); err != nil {
+		t.Fatalf("insert result analysis: %v", err)
+	}
+
+	runs := NewRunStore(db)
+	list, err := runs.ListRuns(ctx, tenantID, businessID)
+	if err != nil {
+		t.Fatalf("ListRuns: %v", err)
+	}
+	if len(list) != 2 {
+		t.Fatalf("ListRuns = %d runs, want 2", len(list))
+	}
+
+	// Newest scheduled_for first: runWithResultsID (07-20) then runWithNoResultsID (07-13).
+	withResults, empty := list[0], list[1]
+	if withResults.ID != runWithResultsID {
+		t.Fatalf("list[0].ID = %s, want the run with results", withResults.ID)
+	}
+	if withResults.SucceededResults != 2 || withResults.FailedResults != 1 || withResults.AnalyzedResults != 1 {
+		t.Fatalf("counts = %+v, want succeeded=2 failed=1 analyzed=1", withResults)
+	}
+
+	if empty.ID != runWithNoResultsID {
+		t.Fatalf("list[1].ID = %s, want the run with no results", empty.ID)
+	}
+	if empty.SucceededResults != 0 || empty.FailedResults != 0 || empty.AnalyzedResults != 0 {
+		t.Fatalf("counts = %+v, want all zero for a run with no results", empty)
+	}
+}

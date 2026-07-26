@@ -108,18 +108,43 @@ func (f *fakeTemporalClient) ScheduleClient() client.ScheduleClient {
 	return f.schedule
 }
 
-// fakeScheduleClient records Create calls and can inject an error. Only Create is
-// exercised; the embedded nil client.ScheduleClient satisfies the rest of the
-// interface (never called in these tests).
+// fakeScheduleClient records Create calls and can inject an error, and hands
+// out a fakeScheduleHandle for GetHandle (RUNS-2's next_run_at lookup). The
+// embedded nil client.ScheduleClient satisfies the rest of the interface
+// (never called in these tests).
 type fakeScheduleClient struct {
 	client.ScheduleClient
-	creates int
-	err     error
+	creates      int
+	err          error
+	describeErr  error
+	nextActionAt []time.Time
 }
 
 func (f *fakeScheduleClient) Create(context.Context, client.ScheduleOptions) (client.ScheduleHandle, error) {
 	f.creates++
 	return nil, f.err
+}
+
+func (f *fakeScheduleClient) GetHandle(context.Context, string) client.ScheduleHandle {
+	return &fakeScheduleHandle{describeErr: f.describeErr, nextActionAt: f.nextActionAt}
+}
+
+// fakeScheduleHandle implements just Describe; the embedded nil
+// client.ScheduleHandle satisfies the rest of the interface.
+type fakeScheduleHandle struct {
+	client.ScheduleHandle
+	describeErr  error
+	nextActionAt []time.Time
+}
+
+func (f *fakeScheduleHandle) Describe(context.Context) (*client.ScheduleDescription, error) {
+	if f.describeErr != nil {
+		return nil, f.describeErr
+	}
+	return &client.ScheduleDescription{
+		Schedule: client.Schedule{},
+		Info:     client.ScheduleInfo{NextActionTimes: f.nextActionAt},
+	}, nil
 }
 
 type fakeApplyStore struct {
@@ -413,14 +438,14 @@ func (f *fakePromptsMetrics) PromptTrends(context.Context, domain.ID, domain.ID)
 // -- ResultService fakes (overview_rpc_test.go, prompt_rpc_test.go, result_rpc_test.go) --
 
 type fakeRunStore struct {
-	runs        []store.Run
+	runs        []store.RunListItem
 	err         error
 	gotTenant   domain.ID
 	gotBusiness domain.ID
 	called      int
 }
 
-func (f *fakeRunStore) ListRuns(_ context.Context, tenantID, businessID domain.ID) ([]store.Run, error) {
+func (f *fakeRunStore) ListRuns(_ context.Context, tenantID, businessID domain.ID) ([]store.RunListItem, error) {
 	f.called++
 	f.gotTenant = tenantID
 	f.gotBusiness = businessID

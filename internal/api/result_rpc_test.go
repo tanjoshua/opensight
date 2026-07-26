@@ -25,7 +25,7 @@ func TestRPCListRunsShapesPayload(t *testing.T) {
 	runID := mustHashV7(t, runIDForTest)
 	businessID := mustHashV7(t, businessIDForTest)
 	completedAt := time.Date(2026, 7, 13, 12, 0, 0, 0, time.UTC)
-	runs := &fakeRunStore{runs: []store.Run{{
+	runs := &fakeRunStore{runs: []store.RunListItem{{Run: store.Run{
 		ID:           runID,
 		BusinessID:   businessID,
 		Platform:     "chatgpt",
@@ -35,7 +35,7 @@ func TestRPCListRunsShapesPayload(t *testing.T) {
 		WorkflowID:   "run-" + runIDForTest,
 		StartedAt:    time.Date(2026, 7, 13, 11, 0, 0, 0, time.UTC),
 		CompletedAt:  &completedAt,
-	}}}
+	}}}}
 	srv := newResultRPCServer(runs, &fakeResultStore{}, &fakeRunsMetrics{})
 
 	resp, err := srv.ListRuns(businessRPCContext(t), connect.NewRequest(&opensightv1.ListRunsRequest{BusinessId: businessIDForTest}))
@@ -66,9 +66,9 @@ func TestRPCListRunsPopulatesVisibility(t *testing.T) {
 	runID := mustHashV7(t, runIDForTest)
 	businessID := mustHashV7(t, businessIDForTest)
 	unanalyzedRunID := mustHashV7(t, promptIDForTest) // reuse a distinct valid v7 id
-	runs := &fakeRunStore{runs: []store.Run{
-		{ID: runID, BusinessID: businessID, Platform: "chatgpt", Trigger: store.RunTriggerScheduled, ScheduledFor: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC), Status: store.RunStatusCompleted, WorkflowID: "run-a", StartedAt: time.Date(2026, 7, 13, 11, 0, 0, 0, time.UTC)},
-		{ID: unanalyzedRunID, BusinessID: businessID, Platform: "chatgpt", Trigger: store.RunTriggerScheduled, ScheduledFor: time.Date(2026, 7, 6, 0, 0, 0, 0, time.UTC), Status: store.RunStatusCompleted, WorkflowID: "run-b", StartedAt: time.Date(2026, 7, 6, 11, 0, 0, 0, time.UTC)},
+	runs := &fakeRunStore{runs: []store.RunListItem{
+		{Run: store.Run{ID: runID, BusinessID: businessID, Platform: "chatgpt", Trigger: store.RunTriggerScheduled, ScheduledFor: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC), Status: store.RunStatusCompleted, WorkflowID: "run-a", StartedAt: time.Date(2026, 7, 13, 11, 0, 0, 0, time.UTC)}},
+		{Run: store.Run{ID: unanalyzedRunID, BusinessID: businessID, Platform: "chatgpt", Trigger: store.RunTriggerScheduled, ScheduledFor: time.Date(2026, 7, 6, 0, 0, 0, 0, time.UTC), Status: store.RunStatusCompleted, WorkflowID: "run-b", StartedAt: time.Date(2026, 7, 6, 11, 0, 0, 0, time.UTC)}},
 	}}
 	m := &fakeRunsMetrics{trend: []metrics.VisibilityPoint{{RunID: runID, Percent: 42.5}}}
 	srv := newResultRPCServer(runs, &fakeResultStore{}, m)
@@ -99,6 +99,45 @@ func TestRPCListRunsNotFoundForCrossTenant(t *testing.T) {
 	if connect.CodeOf(err) != connect.CodeNotFound {
 		t.Fatalf("code = %v, want NotFound", connect.CodeOf(err))
 	}
+}
+
+// TestRPCListRunsPopulatesNextRunAt is RUNS-2's best-effort contract: a
+// successful schedule Describe populates next_run_at from
+// Info.NextActionTimes[0], and a Describe error leaves it nil while the runs
+// themselves still return normally (never s.rpcError, which would fail the
+// whole request over a hint field).
+func TestRPCListRunsPopulatesNextRunAt(t *testing.T) {
+	businessID := mustHashV7(t, businessIDForTest)
+	next := time.Date(2026, 7, 20, 2, 0, 0, 0, time.UTC)
+
+	t.Run("populated from the schedule", func(t *testing.T) {
+		temporal := &fakeTemporalClient{schedule: &fakeScheduleClient{nextActionAt: []time.Time{next}}}
+		srv := &Server{runs: &fakeRunStore{}, results: &fakeResultStore{}, runMetrics: &fakeRunsMetrics{}, temporal: temporal}
+		resp, err := srv.ListRuns(businessRPCContext(t), connect.NewRequest(&opensightv1.ListRunsRequest{BusinessId: businessIDForTest}))
+		if err != nil {
+			t.Fatalf("ListRuns: %v", err)
+		}
+		if resp.Msg.GetNextRunAt() == nil || !resp.Msg.GetNextRunAt().AsTime().Equal(next) {
+			t.Fatalf("next_run_at = %v, want %v", resp.Msg.GetNextRunAt(), next)
+		}
+	})
+
+	t.Run("describe error leaves it nil, runs still returned", func(t *testing.T) {
+		temporal := &fakeTemporalClient{schedule: &fakeScheduleClient{describeErr: errors.New("temporal unreachable")}}
+		runID := mustHashV7(t, runIDForTest)
+		runs := &fakeRunStore{runs: []store.RunListItem{{Run: store.Run{ID: runID, BusinessID: businessID}}}}
+		srv := &Server{runs: runs, results: &fakeResultStore{}, runMetrics: &fakeRunsMetrics{}, temporal: temporal}
+		resp, err := srv.ListRuns(businessRPCContext(t), connect.NewRequest(&opensightv1.ListRunsRequest{BusinessId: businessIDForTest}))
+		if err != nil {
+			t.Fatalf("ListRuns: %v", err)
+		}
+		if resp.Msg.GetNextRunAt() != nil {
+			t.Fatalf("next_run_at = %v, want nil on a describe error", resp.Msg.GetNextRunAt())
+		}
+		if len(resp.Msg.GetRuns()) != 1 {
+			t.Fatalf("runs = %d, want 1 (describe error must not fail the request)", len(resp.Msg.GetRuns()))
+		}
+	})
 }
 
 // TestRPCListResultsParsesFiltersAndPagination ports

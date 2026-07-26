@@ -125,11 +125,28 @@ RETURNING ` + runColumnsPrefixed
 	runColumnsPrefixed = `r.id, r.business_id, r.platform, r.trigger, r.scheduled_for, r.status,
        r.workflow_id, r.started_at, r.completed_at, r.analysis_completed_at, r.expected_results`
 
+	// listRunsSQL joins each run to its per-run result counts via a LATERAL
+	// subquery rather than a GROUP BY: a grouped subquery would aggregate every
+	// tenant's prompt_results before the business filter could apply, whereas
+	// the lateral is index-driven per run (prompt_results has a btree index
+	// from UNIQUE (run_id, prompt_id); result_analyses is PK'd on
+	// prompt_result_id) and needs no new index. It always returns exactly one
+	// row per run (counts are 0 for a run with no results yet), so no
+	// COALESCE is needed on the aggregate columns.
 	listRunsSQL = `
-SELECT ` + runColumns + `
-FROM monitoring_runs
-WHERE business_id = $1
-ORDER BY scheduled_for DESC`
+SELECT ` + runColumnsPrefixed + `,
+       c.succeeded, c.failed, c.analyzed
+FROM monitoring_runs r
+LEFT JOIN LATERAL (
+  SELECT count(*) FILTER (WHERE pr.status = 'succeeded') AS succeeded,
+         count(*) FILTER (WHERE pr.status = 'failed')    AS failed,
+         count(ra.prompt_result_id)                      AS analyzed
+  FROM prompt_results pr
+  LEFT JOIN result_analyses ra ON ra.prompt_result_id = pr.id
+  WHERE pr.run_id = r.id
+) c ON true
+WHERE r.business_id = $1
+ORDER BY r.scheduled_for DESC`
 )
 
 // UpsertRun idempotently creates (or converges on) the run for
@@ -208,10 +225,21 @@ func (s *RunStore) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (
 	return run, nil
 }
 
-// ListRuns returns the business's runs, newest scheduled first (WEB-2/WEB-5). It
-// enters through the tenant-checked business lookup so an empty result for a
-// business the tenant does not own is ErrNotFound, not an empty slice.
-func (s *RunStore) ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]Run, error) {
+// RunListItem is a run plus its per-run result counts (RUNS-2), mirroring
+// ResultListItem's shape (row + derived fields). Only ListRuns populates the
+// counts; other Run readers leave them zero.
+type RunListItem struct {
+	Run
+	SucceededResults int
+	FailedResults    int
+	AnalyzedResults  int
+}
+
+// ListRuns returns the business's runs with per-run result counts, newest
+// scheduled first (WEB-2/WEB-5, RUNS-2). It enters through the tenant-checked
+// business lookup so an empty result for a business the tenant does not own
+// is ErrNotFound, not an empty slice.
+func (s *RunStore) ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]RunListItem, error) {
 	if s == nil || s.db == nil {
 		return nil, errors.New("run store database is required")
 	}
@@ -229,13 +257,28 @@ func (s *RunStore) ListRuns(ctx context.Context, tenantID, businessID domain.ID)
 		_ = rows.Close()
 	}()
 
-	runs := []Run{}
+	runs := []RunListItem{}
 	for rows.Next() {
-		run, err := scanRun(rows)
-		if err != nil {
-			return nil, err
+		var item RunListItem
+		if err := rows.Scan(
+			&item.ID,
+			&item.BusinessID,
+			&item.Platform,
+			&item.Trigger,
+			&item.ScheduledFor,
+			&item.Status,
+			&item.WorkflowID,
+			&item.StartedAt,
+			&item.CompletedAt,
+			&item.AnalysisCompletedAt,
+			&item.ExpectedResults,
+			&item.SucceededResults,
+			&item.FailedResults,
+			&item.AnalyzedResults,
+		); err != nil {
+			return nil, fmt.Errorf("scan run list item: %w", err)
 		}
-		runs = append(runs, run)
+		runs = append(runs, item)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate runs: %w", err)

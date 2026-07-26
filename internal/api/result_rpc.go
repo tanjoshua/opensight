@@ -2,14 +2,18 @@ package api
 
 import (
 	"context"
+	"log/slog"
+	"time"
 
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
 	"opensight/internal/metrics"
 	"opensight/internal/store"
+	"opensight/internal/workflows"
 
 	connect "connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ opensightv1connect.ResultServiceHandler = (*Server)(nil)
@@ -20,7 +24,7 @@ const (
 )
 
 type runStore interface {
-	ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]store.Run, error)
+	ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]store.RunListItem, error)
 }
 
 // runsMetrics is the metrics seam for the Runs endpoint: per-run visibility %
@@ -67,13 +71,39 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 
 	resp := &opensightv1.ListRunsResponse{Runs: make([]*opensightv1.Run, 0, len(runs))}
 	for _, run := range runs {
-		row := runToProto(run)
+		row := runListItemToProto(run)
 		if pct, ok := visibility[run.ID]; ok {
 			row.Visibility = &pct
 		}
 		resp.Runs = append(resp.Runs, row)
 	}
+	resp.NextRunAt = s.nextRunAt(ctx, businessID)
 	return connect.NewResponse(resp), nil
+}
+
+// nextRunAt looks up the business's monitoring Schedule for its next fire
+// time (RUNS-2). It is best-effort: a nil temporal client (handler unit
+// tests that don't wire one), a missing schedule, or an unreachable Temporal
+// all return nil rather than failing the ListRuns request — this is a "next
+// run" hint, not a correctness-critical field. Given a short deadline so a
+// slow or unreachable Temporal cannot stall the poll, and logged at Warn
+// (not s.rpcError, which implies a failed request) on error.
+func (s *Server) nextRunAt(ctx context.Context, businessID domain.ID) *timestamppb.Timestamp {
+	if s.temporal == nil {
+		return nil
+	}
+	qctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	scheduleID := workflows.ScheduleID(businessID, store.PlatformChatGPT)
+	desc, err := s.temporal.ScheduleClient().GetHandle(qctx, scheduleID).Describe(qctx)
+	if err != nil {
+		slog.Warn("api: list runs: describe schedule", "error", err)
+		return nil
+	}
+	if len(desc.Info.NextActionTimes) == 0 {
+		return nil
+	}
+	return timestamppb.New(desc.Info.NextActionTimes[0])
 }
 
 // resultFilterFromProto parses ListResultsRequest into a store.ResultFilter

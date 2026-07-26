@@ -64,9 +64,20 @@ func timestampOrNil(t *time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(*t)
 }
 
+// int32OrNil converts an optional *int (e.g. Run.ExpectedResults, nullable
+// pre-RUNS-1) to a *int32, preserving nil.
+func int32OrNil(n *int) *int32 {
+	if n == nil {
+		return nil
+	}
+	v := int32(*n)
+	return &v
+}
+
 // runToProto mirrors runToResponse (responses.go) field-for-field.
-// Visibility is deliberately left nil here — only ListRuns populates it
-// (matches latestRunToResponse's REST behavior, which never sets it).
+// Visibility and the three result counts are deliberately left unset here —
+// only ListRuns/GetOverview populate them via runListItemToProto (matches
+// latestRunToResponse's REST behavior, which never set visibility).
 func runToProto(run store.Run) *opensightv1.Run {
 	return &opensightv1.Run{
 		Id:                  run.ID.String(),
@@ -79,7 +90,18 @@ func runToProto(run store.Run) *opensightv1.Run {
 		StartedAt:           timestamppb.New(run.StartedAt),
 		CompletedAt:         timestampOrNil(run.CompletedAt),
 		AnalysisCompletedAt: timestampOrNil(run.AnalysisCompletedAt),
+		ExpectedResults:     int32OrNil(run.ExpectedResults),
 	}
+}
+
+// runListItemToProto extends runToProto with the per-run result counts that
+// only ListRuns and GetOverview.latest_run populate (RUNS-2).
+func runListItemToProto(item store.RunListItem) *opensightv1.Run {
+	row := runToProto(item.Run)
+	row.SucceededResults = int32(item.SucceededResults)
+	row.FailedResults = int32(item.FailedResults)
+	row.AnalyzedResults = int32(item.AnalyzedResults)
+	return row
 }
 
 // promptResultToProto mirrors resultToResponse(result, includeRaw=false)

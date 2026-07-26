@@ -25,6 +25,15 @@ message Run {
   // Absent for a run with no analyzed results — distinct from 0%. Only
   // ListRuns populates it.
   optional double visibility = 11;
+  // expected_results is optional because monitoring_runs.expected_results is
+  // nullable for runs created before RUNS-1 — absent means "unknown," which is
+  // not the same as a zero-prompt run. The three counts below are populated
+  // only by ListRuns and GetOverview.latest_run; GetResult's embedded run
+  // leaves them zero.
+  optional int32 expected_results = 12;
+  int32 succeeded_results = 13;
+  int32 failed_results = 14;
+  int32 analyzed_results = 15;
 }
 
 // PromptRef is the minimal prompt reference embedded in a PromptResult (not
@@ -106,6 +115,9 @@ message ListRunsRequest {
 
 message ListRunsResponse {
   repeated Run runs = 1;
+  // next_run_at is the next scheduled run's fire time, best-effort: unset
+  // when the schedule is missing or Temporal is unreachable, never an error.
+  google.protobuf.Timestamp next_run_at = 2;
 }
 
 message ListResultsRequest {
