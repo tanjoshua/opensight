@@ -118,17 +118,21 @@ function buildStages(
   counts: RunProgress["counts"]
 ): RunStage[] {
   if (run.status === RunStatus.RUNNING) {
-    return STAGE_ORDER.map((id) => ({
-      id,
-      label: STAGE_LABELS[id],
-      detail:
-        id === "asking"
-          ? askingDetail(counts)
-          : id === "analyzing"
-            ? analyzingDetail(counts)
-            : "",
-      state: stateFor(STAGE_ORDER, id, stage),
-    }))
+    return STAGE_ORDER.map((id) => {
+      const state = stateFor(STAGE_ORDER, id, stage)
+      // A stage that hasn't started yet has nothing to report — showing its
+      // future count (e.g. "Analyzing 0 of 1" while still Asking) would read
+      // as progress that hasn't happened.
+      const detail =
+        state === "pending"
+          ? ""
+          : id === "asking"
+            ? askingDetail(counts)
+            : id === "analyzing"
+              ? analyzingDetail(counts)
+              : ""
+      return { id, label: STAGE_LABELS[id], detail, state }
+    })
   }
 
   // Terminal run: Preparing always completed. Asking/Analyzing carry a
