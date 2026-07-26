@@ -80,8 +80,8 @@ export function mentionSubjectLabel(subject: MentionSubject): string {
 }
 
 // competitorStatusLabel round-trips the Competitors page's ?status= URL param
-// (discovered|tracked|dismissed) the same way resultStatusLabel does for
-// Responses — see competitors-page.tsx's statusParam.
+// (discovered|tracked|dismissed) the same way resultStatusLabel does for run
+// detail — see competitors-page.tsx's statusParam.
 const competitorStatusLabels: Record<number, string> = {
   [CompetitorStatus.DISCOVERED]: "discovered",
   [CompetitorStatus.TRACKED]: "tracked",

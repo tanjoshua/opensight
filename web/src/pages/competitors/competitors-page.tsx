@@ -203,7 +203,7 @@ export function CompetitorsPage() {
         competitors={tracked}
         focus={focus === CompetitorStatus.TRACKED}
         onOpenResult={openResult}
-        onSelectRun={(runID) => navigate(`/responses?run=${runID}`)}
+        onSelectRun={(runID) => navigate(`/runs/${runID}`)}
         onStatusChange={changeStatus}
         pendingCompetitorID={pendingCompetitorID}
         onReviewAlias={changeAlias}
@@ -722,7 +722,7 @@ function TrendChart({
         </LineChart>
       </ChartContainer>
       <p className="text-xs text-muted-foreground">
-        Click a week to see its responses.
+        Click a week to see its run.
       </p>
     </div>
   )
@@ -983,7 +983,7 @@ function useScrollIntoView<T extends HTMLElement>(focus: boolean) {
 }
 
 // Round-trips the ?status= URL param the same way resultStatusFromParam does
-// for Responses (responses-page.tsx).
+// for run detail (runs/run-detail-page.tsx).
 function statusParam(raw: string | null): CompetitorStatus | undefined {
   if (raw === competitorStatusLabel(CompetitorStatus.DISCOVERED)) {
     return CompetitorStatus.DISCOVERED
@@ -1042,7 +1042,7 @@ function formatPercent(value: number): string {
 }
 
 // scheduled_for is a plain date (YYYY-MM-DD); parse as local midnight so trend
-// ticks land on the intended day (matching Overview/Responses).
+// ticks land on the intended day (matching Overview/Runs).
 function dateMs(scheduledFor: string): number {
   return new Date(`${scheduledFor}T00:00:00`).getTime()
 }

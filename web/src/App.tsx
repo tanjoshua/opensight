@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router"
+import { Navigate, Route, Routes, useSearchParams } from "react-router"
 
 import { AppLayout } from "@/components/app-layout"
 import { CompetitorsPage } from "@/pages/competitors/competitors-page"
@@ -9,8 +9,22 @@ import { MethodologyPage } from "@/pages/methodology/methodology-page"
 import { PrivacyPage } from "@/pages/privacy/privacy-page"
 import { PromptDetailPage } from "@/pages/prompts/prompt-detail-page"
 import { PromptsPage } from "@/pages/prompts/prompts-page"
-import { ResponsesPage } from "@/pages/responses/responses-page"
+import { RunDetailPage } from "@/pages/runs/run-detail-page"
+import { RunsPage } from "@/pages/runs/runs-page"
 import { SetupPage } from "@/pages/setup/setup-page"
+
+// ResponsesRedirect keeps the old /responses(?run=X) deep links working after
+// the RUNS-6 rename: a bare wildcard route would drop ?run=, so this reads it
+// explicitly and forwards the run-scoped filters (status/prompt) along.
+function ResponsesRedirect() {
+  const [searchParams] = useSearchParams()
+  const run = searchParams.get("run")
+  if (!run) return <Navigate to="/runs" replace />
+  const params = new URLSearchParams(searchParams)
+  params.delete("run")
+  const query = params.toString()
+  return <Navigate to={`/runs/${run}${query ? `?${query}` : ""}`} replace />
+}
 
 export function App() {
   return (
@@ -18,16 +32,18 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/responses" replace />} />
+        <Route index element={<Navigate to="/runs" replace />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/prompts/:id" element={<PromptDetailPage />} />
         <Route path="/competitors" element={<CompetitorsPage />} />
-        <Route path="/responses" element={<ResponsesPage />} />
+        <Route path="/runs" element={<RunsPage />} />
+        <Route path="/runs/:id" element={<RunDetailPage />} />
+        <Route path="/responses" element={<ResponsesRedirect />} />
         <Route path="/setup" element={<SetupPage />} />
         <Route path="/methodology" element={<MethodologyPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<Navigate to="/responses" replace />} />
+        <Route path="*" element={<Navigate to="/runs" replace />} />
       </Route>
     </Routes>
   )

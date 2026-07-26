@@ -358,9 +358,9 @@ function filterValueFromSelect(value: string | null | undefined) {
 }
 
 // resultStatusFromParam/resultStatusToParam round-trip the URL's ?status=
-// param through the same words resultStatusLabel renders (mirrors the former
-// responses-page.tsx), so the partial-run banner's status=failed deep link
-// keeps working. An unrecognized or absent param means "no filter".
+// param through the same words resultStatusLabel renders, so the
+// Overview partial-run banner's status=failed deep link keeps working. An
+// unrecognized or absent param means "no filter".
 function resultStatusFromParam(value: string | null): ResultStatus {
   if (value === resultStatusLabel(ResultStatus.SUCCEEDED)) {
     return ResultStatus.SUCCEEDED

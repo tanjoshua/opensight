@@ -17,13 +17,17 @@ Workflow id: `run-{business_id}-chatgpt-{scheduled_for}` — deterministic, so s
 ```
 RunWorkflow(businessID, platform, scheduledFor)
  ├─ LoadRunSpec        activity: resolve tenant via BusinessStore.ResolveTenantID,
- │                     then upsert monitoring_runs(status=running);
- │                     snapshot active prompts (already entitlement-bounded:
- │                     prompt_limit is enforced at prompt-write time)
+ │                     then upsert monitoring_runs(status=running,
+ │                     expected_results=len(prompts)); snapshot active prompts
+ │                     (already entitlement-bounded: prompt_limit is enforced
+ │                     at prompt-write time)
  ├─ ExecutePrompt ×N   activities, fan-out, max ~4 concurrent
  ├─ AnalyzeRun         child workflow (design 05) — independent retry budget,
  │                     a failed analysis never re-spends prompt executions
- └─ FinalizeRun        activity: set status completed | partial | failed
+ └─ FinalizeRun        activity: set status completed | partial | failed,
+                        reading expected_results back off the row (not a
+                        workflow-passed argument) so a later prompt
+                        replacement can't change a historical run's target
 ```
 
 Status rules: all prompts succeeded → `completed`; some → `partial`; none → `failed`. Analysis failure does not change run status (results exist and are viewable raw); it flags the run for re-analysis instead.
@@ -53,11 +57,12 @@ Per prompt: one Responses call with web search — tokens plus per-search-call f
 ## Operations
 
 - Temporal UI (already in the compose stack) is the ops surface: stuck runs, retry states, failure causes.
-- The app-facing view of health is `monitoring_runs.status` plus per-result `status`/`error` — PRD §5's "run status", shown in the Responses section (06).
+- The app-facing view of health is `monitoring_runs.status` plus per-result `status`/`error` — PRD §5's "run status", shown in the Runs section (06).
 - A `partial` run that stays partial after retries is acceptable and visible; there is no automatic re-run of individual failed prompts in MVP (manual re-trigger via Temporal UI if it ever matters).
+- **Run progress.** User-facing progress (the four-stage "Preparing / Asking ChatGPT / Analyzing / Done" strip, 06) is derived entirely from `monitoring_runs`/`prompt_results`/`result_analyses` counts on the existing poll — never from Temporal workflow history. Temporal history and the Temporal Web UI stay ops-only; there is no user-facing link into it.
 
 ## Open questions (owned by later increments)
 
 - **05**: AnalyzeRun internals — extraction calls, alias matching, competitor discovery writes, re-analysis flow.
-- **06**: how run status and partial results render in the Responses section.
+- **06**: how run status and partial results render in the Runs section.
 - **07**: OpenAI key management, spend alerting (a runaway loop is the main cost risk on a self-hosted stack with no cloud billing alarms).

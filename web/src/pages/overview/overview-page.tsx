@@ -2,7 +2,7 @@
 // what changed". Headline visibility stat + weekly trend line with prompt-set
 // change markers, then three compact panels (themes, cited domains, competitors).
 // Every number is a door — stats open the Response drawer via their result_ids,
-// and clicking a week on the trend deep-links to Responses filtered to that run.
+// and clicking a week on the trend deep-links to that run's detail page.
 import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { ArrowRight, LayoutDashboard, TriangleAlert } from "lucide-react"
 import { useState } from "react"
@@ -28,6 +28,7 @@ import type {
 import { getOverview } from "@/gen/opensight/v1/overview-OverviewService_connectquery"
 import { CitationSourcesDrilldown } from "@/components/citation-sources-drilldown"
 import { ResponseDrawer } from "@/components/response-drawer"
+import { RunStageStrip } from "@/components/run-stage-strip"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -159,7 +160,7 @@ export function OverviewPage() {
       <VisibilityCard
         overview={data}
         onOpenResult={openResult}
-        onSelectRun={(runID) => navigate(`/responses?run=${runID}`)}
+        onSelectRun={(runID) => navigate(`/runs/${runID}`)}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -598,7 +599,7 @@ function PartialRunBanner({ overview }: { overview: Overview }) {
       </AlertTitle>
       <AlertDescription>
         <Link
-          to={`/responses?run=${run.id}&status=failed`}
+          to={`/runs/${run.id}?status=failed`}
           className="underline underline-offset-2"
         >
           Review the failed responses
@@ -792,10 +793,19 @@ function NoDataState({ overview }: { overview: Overview }) {
   }
   if (run.status === RunStatus.RUNNING) {
     return (
-      <SectionMessage
-        title="First run in progress"
-        description="Your monitoring run is collecting responses. This page will fill in automatically once it finishes."
-      />
+      <Empty className="border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <LayoutDashboard />
+          </EmptyMedia>
+          <EmptyTitle>First run in progress</EmptyTitle>
+          <EmptyDescription>
+            <div className="w-full max-w-xs pt-2 text-left">
+              <RunStageStrip run={run} variant="full" />
+            </div>
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     )
   }
   return (
@@ -845,7 +855,7 @@ function formatPercent(value: number): string {
 }
 
 // scheduled_for is a plain date (YYYY-MM-DD); parse as local midnight, matching
-// the Responses page, so trend ticks land on the intended day.
+// the Runs page, so trend ticks land on the intended day.
 function dateMs(scheduledFor: string): number {
   return new Date(`${scheduledFor}T00:00:00`).getTime()
 }

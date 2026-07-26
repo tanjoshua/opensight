@@ -61,8 +61,12 @@ ReviewSuggestedAlias(competitor_id,         → decision APPROVE: remove suggest
 UpdateCompetitorAliases(competitor_id,      → replace approved aliases only
   aliases)
 
-# ResultService (Responses + Runs, feeds all trend charts)
-ListRuns(business_id)                       → run list: scheduled_for, status, visibility %
+# ResultService (Runs, feeds all trend charts)
+ListRuns(business_id)                       → run list: scheduled_for, status, visibility %,
+                                              per-run expected/succeeded/failed/analyzed counts,
+                                              plus a best-effort next_run_at from the business's
+                                              Temporal Schedule (unset if unreachable/missing —
+                                              never fails the request)
 ListResults(business_id, run_id?,           → filters: run, prompt, mentioned, status; paginated
   prompt_id?, status?, mentioned?,
   limit, offset)
@@ -80,14 +84,14 @@ GetResult(result_id, include_raw)           → full record: response text, anal
 
 ## The one UI contract: every number is a door
 
-PRD §6's "every metric links to the underlying response" is implemented as a single pattern, not per-feature plumbing: **every aggregate the API returns carries the `result_ids` behind it**, and every stat component in the UI is clickable → opens the **Response drawer** (a slide-over rendering `ResultService.GetResult`: answer text with business/competitor mentions highlighted and **inline citation markers rendered at their annotation spans**, sentiment + excerpts, the citation list, model + timestamp, raw JSON behind a toggle). Charts deep-link the same way: clicking a week on a trend line opens Responses filtered to that run. One drawer component, used everywhere, is the whole traceability story.
+PRD §6's "every metric links to the underlying response" is implemented as a single pattern, not per-feature plumbing: **every aggregate the API returns carries the `result_ids` behind it**, and every stat component in the UI is clickable → opens the **Response drawer** (a slide-over rendering `ResultService.GetResult`: answer text with business/competitor mentions highlighted and **inline citation markers rendered at their annotation spans**, sentiment + excerpts, the citation list, model + timestamp, raw JSON behind a toggle). Charts deep-link the same way: clicking a week on a trend line opens that run's detail page. One drawer component, used everywhere, is the whole traceability story.
 
 ## Section notes
 
 - **Overview** — headline visibility stat + weekly trend line, then three compact panels (themes, cited domains, competitors). The trend line plots the business's own visibility ("You", dominant) alongside its top few competitors as secondary lines in the same visibility-percent terms, so relative standing is legible at a glance; each competitor in `top_competitors` therefore carries its weekly `trend` (the same per-run mention-% series the Competitors section computes — MET-4), and the chart caps competitor lines to the top few with a legend. Each line — "You" plus up to 3 competitors — gets its own color from a fixed-order, colorblind-safe categorical palette (`--chart-1`…`--chart-4`); "You" stays visually dominant via line/dot weight rather than color alone, and a legend still names every line since not all slots clear contrast on a light card. Competitor panel shows tracked competitors plus top-3 discovered by coverage (the 05 display filter), with a "N discovered → triage" link into Competitors. The weekly trend renders **prompt-set-change markers** (derived from prompt created/retired dates) so a prompt change never reads as a visibility change. Its header always links to **How we measure**, including before any analyzed data exists.
 - **Prompts** — table of 20 with per-prompt: mentioned? order? sentiment, sparkline across runs. **Replace flow (PRD §4)**: modal states exactly what happens — "history for the old prompt stays viewable; the new prompt starts a fresh trend" — and the API requires `confirmed: true`, so the warning is structurally unskippable. Retired prompts remain reachable from a prompt's lineage ("replaced X on date").
 - **Competitors** — triage-first: discovered list ranked by response coverage ("in 7 of 20 responses") with one-click track/dismiss; tracked list with the PRD comparison stats vs self, prompt appearances, and weekly trend lines that include zero-mention analyzed weeks. A manual add starts tracked and remains visible with zero metrics and an empty prompt history until it is mentioned; its trend still carries zero points for analyzed runs. Dismissed collapsed but recoverable (data was never deleted, per 02). Every competitor status exposes pending LLM-`suggested_aliases` for one-click approval or rejection (05). Approval promotes that exact value to `aliases`; rejection removes the suggestion without creating a deny-list.
-- **Responses** — filterable list (by run, prompt, mention, status). Failed results show status + error; succeeded-but-unanalyzed show a "not yet analyzed" badge (05's soft-failure posture made visible instead of silently miscounted).
+- **Runs** — run-centric list, not a flat cross-run response list: one row per run (date, trigger badge for `initial`/`manual`, status badge, `N of N responses`, visibility %, a "not yet analyzed" badge when terminal but unanalyzed), plus a "Next run" line from `next_run_at`. A running run renders a compact four-stage strip (Preparing → Asking ChatGPT → Analyzing → Done, derived from `monitoring_runs`/`prompt_results`/`result_analyses` counts — never Temporal history, which stays ops-only) inline in its row. Opening a run drills into `/runs/:id`: the full stage strip plus that run's response table (by prompt, mention, status; the run filter is dropped since the route already scopes it). Failed results show status + error; succeeded-but-unanalyzed show a "not yet analyzed" badge (05's soft-failure posture made visible instead of silently miscounted).
 - **Setup** — active-business profile editor with dirty/save feedback, repeatable structured controls for aliases and services, a prompt-management entry point, approved competitor-alias editing across every status, and read-only plan display. Each alias occupies its own control, so punctuation such as commas remains part of the value. Draft businesses redirect to onboarding; there is no regenerate action after activation (03). The client sends only changed profile fields. `UpdateBusiness` merges omitted fields against the current tenant-owned row for validation, treats an omitted `website` as unchanged and an explicit empty `website` as clear, then atomically updates only the supplied columns so a concurrent disjoint edit cannot restore stale values. Competitor alias edits are trim-normalized and case-insensitively deduplicated; they never mutate suggestions or history.
 - **How we measure** — authenticated trust page explaining that OpenSight uses the OpenAI Responses API with web search and business-location context as a proxy, not a capture of chatgpt.com. API requests have no history, memory, or personalization and routing can differ; the API-reported model is stored per response. Visibility is mentions divided by analyzed valid responses, excluding failures and not-yet-analyzed responses. The page emphasizes traceability and that results are neither accuracy nor future-performance guarantees. It is linked from the Overview header, response-drawer model line, app footer, and Privacy.
 - **Privacy** — authenticated plain-language summary of actual stored account, profile, prompt, raw response, derived analysis, and operational configuration data; the patient-data usage boundary; qualified OpenAI processing; verified-vs-planned hosting; and retention. It is linked from the app footer and How we measure.
@@ -97,7 +101,7 @@ PRD §6's "every metric links to the underlying response" is implemented as a si
 Vite + React + TypeScript. Deliberately small kit, consistent with solo maintenance:
 
 - **TanStack Query**, via **connect-query** hooks generated from the proto schema, for all server state; no Redux/global store — server is the source of truth and the app is read-heavy. A single `createConnectTransport` instance (`web/src/api/transport.ts`), wrapped in `<TransportProvider>`, is shared app-wide — connect-query keys its cache by transport identity, so a second instance would silently split the cache.
-- **react-router** with routes mirroring the five sections: `/overview`, `/prompts`, `/competitors`, `/responses`, `/setup`, plus `/onboarding` for the draft flow.
+- **react-router** with routes mirroring the five sections: `/overview`, `/prompts`, `/competitors`, `/runs` (+ `/runs/:id`), `/setup`, plus `/onboarding` for the draft flow. `/responses(?run=X)` redirects to `/runs`/`/runs/:id` for old deep links.
 - **Tailwind + shadcn/ui** for components, initialized with preset `bLTjNXma` (style `rhea`, stone base + chart colors, Lucide icons, Roboto): `npx shadcn@latest init --preset bLTjNXma --template vite`. Charts use **shadcn's `Chart` component** (wraps Recharts, themed by the preset's chart-color variables) — no separately styled charting layer.
 
 ```
@@ -109,7 +113,7 @@ web/src/
 ├── components/     ResponseDrawer, TrendChart, StatCard, MentionBadge, …
 ├── gen/            generated Protobuf messages + connect-query method
 │                   descriptors (opensight/v1/**) — committed, never hand-edited
-├── pages/          overview/ prompts/ competitors/ responses/ setup/ onboarding/
+├── pages/          overview/ prompts/ competitors/ runs/ setup/ onboarding/
 └── lib/
 ```
 

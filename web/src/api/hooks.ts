@@ -8,7 +8,7 @@
 //     competitor-mutating page — service-level keys so it also catches
 //     useAllCompetitors's hand-written query key below.
 //   - useRuns / pollWhileRunning: the "poll while a run is in progress"
-//     behavior the shell badge, Responses and Overview all need.
+//     behavior the shell badge, Runs and Overview all need.
 //   - useCurrentBusiness: the useMe projection every section reads its
 //     business from (MVP is one business per tenant). onboarding-page is the
 //     one deliberate exception — it needs the full businesses list to tell

@@ -1,9 +1,9 @@
 import {
   Eye,
+  History,
   LayoutDashboard,
   LogOut,
   MessageSquareText,
-  MessagesSquare,
   Settings,
   Users,
 } from "lucide-react"
@@ -30,7 +30,7 @@ const sections = [
   { title: "Overview", to: "/overview", icon: LayoutDashboard },
   { title: "Prompts", to: "/prompts", icon: MessageSquareText },
   { title: "Competitors", to: "/competitors", icon: Users },
-  { title: "Responses", to: "/responses", icon: MessagesSquare },
+  { title: "Runs", to: "/runs", icon: History },
   { title: "Setup", to: "/setup", icon: Settings },
 ]
 

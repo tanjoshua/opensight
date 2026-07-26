@@ -105,6 +105,8 @@ monitoring_runs (
   started_at, completed_at,
   analysis_completed_at timestamptz NULL,  -- set when reconcile commits (05);
                                            -- the "analyzed" gate for all metrics
+  expected_results int NULL,   -- prompt-snapshot size at run start; the "N" in "k of N"
+                                -- (nullable, no backfill — null means "unknown", not zero)
   UNIQUE (business_id, platform, scheduled_for)   -- idempotency anchor for the workflow
 )
 

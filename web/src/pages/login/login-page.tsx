@@ -22,12 +22,12 @@ export function LoginPage() {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
       })
-      navigate("/responses", { replace: true })
+      navigate("/runs", { replace: true })
     },
   })
 
   if (me.data) {
-    return <Navigate to="/responses" replace />
+    return <Navigate to="/runs" replace />
   }
 
   const error = loginMutation.isError
