@@ -7,7 +7,6 @@ import (
 
 	"opensight/internal/llm"
 
-	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 )
 
@@ -77,7 +76,7 @@ func (a *Activities) ProposeProfile(ctx context.Context, in ProposeProfileInput)
 	if !result.Proposed {
 		// Never log SiteText or the raw model JSON (PII/scraped content) — only the
 		// business name and the deterministic failures.
-		activity.GetLogger(ctx).Warn("propose profile: proposal failed validation after retry",
+		actLogger(ctx).Warn("propose profile: proposal failed validation after retry",
 			"business_name", name, "validation_errors", result.ValidationErrs)
 		return ProposeProfileOutput{
 			Model:          result.Model,
@@ -104,7 +103,7 @@ func (a *Activities) ProposeProfile(ctx context.Context, in ProposeProfileInput)
 	for _, a := range actions {
 		actionCounts[a.Type]++
 	}
-	activity.GetLogger(ctx).Info("propose profile: generated",
+	actLogger(ctx).Info("propose profile: generated",
 		"business_name", name,
 		"model", result.Model,
 		"category", payload.Profile.Category,

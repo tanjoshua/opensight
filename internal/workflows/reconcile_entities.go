@@ -8,7 +8,6 @@ import (
 	"opensight/internal/llm"
 	"opensight/internal/store"
 
-	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 )
 
@@ -128,7 +127,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 			return ReconcileEntitiesOutput{}, err
 		}
 		for _, w := range warnings {
-			activity.GetLogger(ctx).Warn("llm match verdict warning", "run_id", in.RunID.String(), "warning", w)
+			actLogger(ctx).Warn("llm match verdict warning", "run_id", in.RunID.String(), "warning", w)
 		}
 		for i, key := range unmatchedOrder {
 			if ids[i] != (domain.ID{}) {

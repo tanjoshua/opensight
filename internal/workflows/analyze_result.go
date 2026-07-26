@@ -12,7 +12,6 @@ import (
 	"opensight/internal/llm"
 	"opensight/internal/store"
 
-	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 )
 
@@ -96,7 +95,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 		return AnalyzeResultOutput{}, err
 	}
 	if !result.Analyzed {
-		activity.GetLogger(ctx).Warn("extraction flagged after retries; no analysis written",
+		actLogger(ctx).Warn("extraction flagged after retries; no analysis written",
 			"result_id", in.ResultID.String(),
 			"validation_errors", result.ValidationErrs,
 		)
