@@ -133,7 +133,7 @@ Deps: BILL-1 · Phase 4 · Ref: design 08 (Operator comps; Signup — password r
 As the operator, I want the live Stripe account and the marketing funnel configured and rehearsed, so that the first real payment is not the first test.
 
 - [ ] Live Product + SGD 50.00/month Price created; restricted key minted with minimum scopes; webhook endpoint registered for the four subscription events; all ids/secrets in the VPS `.env`.
-- [ ] Dunning configured: smart retries on, retry window set explicitly to **two weeks**, end-of-dunning action **cancel the subscription**. Verified in the dashboard, not assumed from the default; never *leave past due*, under which Stripe never cancels. Recorded here because it is an account-level setting no one will otherwise remember choosing.
+- [ ] Dunning configured **by hand in the Dashboard** (Stripe exposes neither setting via API, so this step cannot be scripted or asserted in a test): Smart Retries on with a **2-week** window (`/revenue_recovery/retries`), end-of-dunning action **cancel the subscription** (`/settings/billing/automatic` → Manage failed payments). Never *leave past due*. Re-done separately for live mode — sandbox settings do not carry over.
 - [ ] `automatic_tax` stays **off**, with the switch-on procedure (GST registration → Tax Registration → enable → pricing-page presentation) recorded in the design doc, not in someone's head.
 - [ ] Marketing CTAs ("Check my AI visibility") point at `/signup`; pricing and FAQ copy match what is actually charged and what cancellation does.
 - [ ] Sandbox rehearsal passes end to end: signup → checkout → onboarding → first run → portal cancel → schedule paused + history readable → reactivate → schedule resumed.

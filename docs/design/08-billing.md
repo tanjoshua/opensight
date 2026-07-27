@@ -239,7 +239,11 @@ Added to 07's `.env` inventory and to the restic backup set by virtue of that fi
 1. Stripe account activated; SGD payouts configured.
 2. Product `OpenSight Starter` + monthly SGD 50.00 Price created; Price id in `.env`.
 3. Payment methods configured in the dashboard (dynamic — cards plus whatever converts in SG).
-4. Dunning: smart retries on, retry window set explicitly to **two weeks**; end-of-dunning action **cancel the subscription** — verify this in the dashboard rather than trusting the account's default, and never set it to *leave past due* (Stripe then never cancels). Changing the window is a spend decision, not a billing preference.
+4. Dunning — **Dashboard-only, both settings; Stripe exposes neither through the API**, so these cannot be scripted, reviewed, or asserted in a test, and must be set by hand per account (sandbox settings do not carry to live):
+   - Retry policy → [`/revenue_recovery/retries`](https://dashboard.stripe.com/revenue_recovery/retries): Smart Retries on, window **2 weeks**. Stripe's own recommended policy is 8 attempts within 2 weeks, so this is their default rather than a custom rule.
+   - End of dunning → [`/settings/billing/automatic`](https://dashboard.stripe.com/settings/billing/automatic) → *Manage failed payments for subscriptions*: **cancel the subscription**. Never *leave past due* — Stripe then never cancels, and the subscription sits in `past_due` forever. Invoice status alongside it: mark uncollectible (Stripe pairs this with cancellation anyway).
+
+   Both are the reason `past_due_since` exists: a setting that cannot be version-controlled or tested is a setting that will eventually be wrong.
 5. Customer Portal configured: payment method + invoice history + cancellation on, plan switching off, `return_url` to `/billing`.
 6. Webhook endpoint registered at `https://<app>/webhooks/stripe` for the four subscription events; signing secret in `.env`.
 7. Restricted API key minted with the minimum scopes; secret key never deployed.
