@@ -8,6 +8,7 @@ API_WAIT_ATTEMPTS="${API_WAIT_ATTEMPTS:-30}"
 FRONTEND_WAIT_ATTEMPTS="${FRONTEND_WAIT_ATTEMPTS:-30}"
 FRONTEND_HOST="${FRONTEND_HOST:-127.0.0.1}"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
+MARKETING_WAIT_ATTEMPTS="${MARKETING_WAIT_ATTEMPTS:-30}"
 
 cd "$ROOT_DIR"
 
@@ -103,6 +104,10 @@ frontend_enabled() {
   [ -f web/package.json ]
 }
 
+marketing_enabled() {
+  [ -f marketing/package.json ]
+}
+
 frontend_link_host() {
   case "$FRONTEND_HOST" in
     "" | 0.0.0.0 | "::" | "[::]")
@@ -116,6 +121,10 @@ frontend_link_host() {
 
 frontend_url() {
   printf 'http://%s:%s\n' "$(frontend_link_host)" "$FRONTEND_PORT"
+}
+
+marketing_url() {
+  printf 'http://127.0.0.1:8081\n'
 }
 
 check_processes_running() {
@@ -170,6 +179,26 @@ wait_for_frontend() {
   return 1
 }
 
+wait_for_marketing() {
+  if ! marketing_enabled; then
+    return 0
+  fi
+
+  url="$(marketing_url)"
+  log "waiting for marketing site at $url"
+
+  for _ in $(seq 1 "$MARKETING_WAIT_ATTEMPTS"); do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+    check_processes_running
+    sleep 1
+  done
+
+  printf 'Marketing site did not respond within %s seconds.\n' "$MARKETING_WAIT_ATTEMPTS" >&2
+  return 1
+}
+
 ensure_api_not_already_running() {
   health_url="$(api_health_url)"
   if curl -fsS "$health_url" >/dev/null 2>&1; then
@@ -209,6 +238,13 @@ start_processes() {
     (cd web && npm run dev -- --host "$FRONTEND_HOST" --port "$FRONTEND_PORT" --strictPort) &
     pids+=("$!")
   fi
+
+  if marketing_enabled; then
+    require_command npm
+    log "starting marketing dev server"
+    (cd marketing && npm run dev) &
+    pids+=("$!")
+  fi
 }
 
 print_service_links() {
@@ -219,6 +255,10 @@ print_service_links() {
 
   if frontend_enabled; then
     printf '  Frontend:    %s\n' "$(frontend_url)"
+  fi
+
+  if marketing_enabled; then
+    printf '  Marketing:   %s\n' "$(marketing_url)"
   fi
 
   printf '\n'
@@ -248,7 +288,8 @@ ensure_api_not_already_running
 start_processes
 wait_for_api
 wait_for_frontend
+wait_for_marketing
 print_service_links
 
-log "API is healthy; press Ctrl+C to stop API, worker, and frontend"
+log "API is healthy; press Ctrl+C to stop API, worker, frontend, and marketing"
 wait_for_process_exit

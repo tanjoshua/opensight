@@ -19,6 +19,8 @@ npm run dev       # watches CSS + serves on http://localhost:8081 with live relo
 
 `npm run dev` runs the Tailwind watcher and a static server (`live-server`) together. If you only need the CSS rebuilt, `npm run watch` alone works with any static server. Port 8081 (not 8080) so this can run alongside `make up`, whose Go API dev server listens on `:8080`.
 
+The marketing dev server is also started by `make up` from the repository root.
+
 ## Build
 
 ```sh
