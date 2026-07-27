@@ -1,16 +1,14 @@
 @import "tailwindcss";
 
-/* Neutrals match the app's shadcn stone theme (web/src/index.css);
-   marker yellow is the marketing site's one accent on top of it. */
 @theme {
-  --color-paper: #fafaf9;
-  --color-ink: #1c1917;
-  --color-moss: #57534e;
-  --color-pine: #292524;
-  --color-pinedeep: #1c1917;
-  --color-marker: #ffd98a;
-  --color-line: #e7e5e4;
-  --color-miss: #dc2626;
+  --color-paper: #f7f5ef;
+  --color-ink: #17201c;
+  --color-moss: #59635d;
+  --color-pine: #145c43;
+  --color-pinedeep: #0c3529;
+  --color-marker: #f4c95d;
+  --color-line: #dcded7;
+  --color-miss: #c84b3a;
 
   --font-display: "Bricolage Grotesque", system-ui, sans-serif;
   --font-body: "Instrument Sans", system-ui, sans-serif;
@@ -18,61 +16,159 @@
 }
 
 @layer base {
+  html {
+    @apply bg-paper;
+  }
+
   body {
     @apply bg-paper font-body text-ink antialiased;
   }
-  mark {
-    @apply bg-marker rounded-[3px] px-[0.15em] text-ink;
+
+  ::selection {
+    @apply bg-marker text-ink;
   }
+
+  a,
+  button,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a {
+    @apply transition-colors;
+  }
+
+  mark {
+    @apply bg-marker rounded-[0.2em] px-[0.14em] text-ink;
+  }
+
   :focus-visible {
     @apply outline-pine rounded-sm outline-3 outline-offset-3;
   }
 }
 
 @layer components {
-  /* highlighter sweep — the signature device */
+  .site-shell {
+    @apply mx-auto w-full max-w-[1200px] px-5 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply font-mono text-pine mb-4 text-[0.72rem] font-medium tracking-[0.16em] uppercase;
+  }
+
+  .display-title {
+    @apply font-display text-ink text-[clamp(2.65rem,6vw,5.65rem)] leading-[0.96] font-extrabold tracking-[-0.045em];
+  }
+
+  .section-title {
+    @apply font-display text-ink text-[clamp(2rem,4.2vw,3.55rem)] leading-[1.02] font-bold tracking-[-0.035em];
+  }
+
+  .button-primary {
+    @apply bg-pine inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.94rem] font-semibold text-white no-underline shadow-[0_8px_25px_-12px_rgba(20,92,67,0.9)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#0f4d38] hover:shadow-[0_14px_30px_-14px_rgba(20,92,67,0.9)];
+  }
+
+  .button-light {
+    @apply text-pinedeep inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-0.5 hover:bg-[#fff8e8];
+  }
+
+  .button-ghost {
+    @apply border-line inline-flex min-h-12 items-center justify-center gap-2 rounded-full border bg-white/60 px-6 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-0.5 hover:border-[#bcc4bd] hover:bg-white;
+  }
+
+  .logo-mark {
+    @apply bg-pine relative grid size-8 place-items-center overflow-hidden rounded-[0.65rem];
+  }
+
+  .logo-mark::before {
+    content: "";
+    @apply absolute size-3.5 rounded-full border-[3px] border-white;
+  }
+
+  .logo-mark::after {
+    content: "";
+    @apply bg-marker absolute right-[0.31rem] bottom-[0.31rem] size-1.5 rounded-full;
+  }
+
+  .noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+  }
+
+  .grid-field {
+    background-image:
+      linear-gradient(rgba(20, 92, 67, 0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 92, 67, 0.055) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
+  }
+
   .hl {
     background: linear-gradient(to right, var(--color-marker), var(--color-marker))
-      no-repeat 0 62%;
-    background-size: 100% 45%;
+      no-repeat 0 69%;
+    background-size: 100% 33%;
   }
-  @media (prefers-reduced-motion: no-preference) {
-    .hl-animate {
-      background-size: 0 45%;
-      animation: sweep 0.7s ease-out 0.9s forwards;
-    }
-  }
+
   .hl-under {
     background: linear-gradient(to right, var(--color-marker), var(--color-marker))
-      no-repeat 0 72%;
+      no-repeat 0 88%;
     background-size: 100% 0.18em;
   }
 
-  /* clinic mention in the hero chat demo — swept by JS via .lit */
   .mention {
     background: linear-gradient(to right, var(--color-marker), var(--color-marker))
-      no-repeat 0 55%;
-    background-size: 0 80%;
+      no-repeat 0 62%;
+    background-size: 0 55%;
     border-radius: 3px;
     transition: background-size 0.5s ease;
   }
+
   .mention.lit {
-    background-size: 100% 80%;
+    background-size: 100% 55%;
   }
 
   .caret {
     @apply bg-ink inline-block h-[1em] w-[2px] align-text-bottom;
   }
-  @media (prefers-reduced-motion: no-preference) {
-    .caret {
-      animation: blink 1s steps(1) infinite;
-    }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .faq-item[open] {
+    @apply bg-white;
   }
 }
 
-@keyframes sweep {
-  to { background-size: 100% 45%; }
+@media (prefers-reduced-motion: no-preference) {
+  .caret {
+    animation: blink 1s steps(1) infinite;
+  }
+
+  .hero-float {
+    animation: float 6s ease-in-out infinite;
+  }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-7px) rotate(-1deg); }
 }

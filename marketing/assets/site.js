@@ -1,77 +1,129 @@
-// Mobile nav toggle.
+// Shared navigation behavior.
 (function () {
-  const btn = document.getElementById("nav-toggle");
+  const header = document.getElementById("site-header");
+  const button = document.getElementById("nav-toggle");
   const menu = document.getElementById("nav-menu");
-  if (!btn || !menu) return;
-  btn.addEventListener("click", () => {
-    const open = menu.hidden;
+  const openIcon = button?.querySelector(".nav-open-icon");
+  const closeIcon = button?.querySelector(".nav-close-icon");
+
+  function setMenu(open) {
+    if (!button || !menu) return;
     menu.hidden = !open;
-    btn.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    openIcon?.classList.toggle("hidden", open);
+    closeIcon?.classList.toggle("hidden", !open);
+  }
+
+  button?.addEventListener("click", () => {
+    setMenu(button.getAttribute("aria-expanded") !== "true");
   });
+
+  menu?.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => setMenu(false));
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setMenu(false);
+  });
+
+  function updateHeader() {
+    const scrolled = window.scrollY > 8;
+    header?.classList.toggle("shadow-[0_8px_30px_-24px_rgba(23,32,28,.5)]", scrolled);
+    header?.classList.toggle("border-line", scrolled);
+    header?.classList.toggle("border-transparent", !scrolled);
+  }
+
+  updateHeader();
+  window.addEventListener("scroll", updateHeader, { passive: true });
 })();
 
-// Hero chat demo: cycles through customer questions and streams an answer,
-// highlighting the mentioned business — the product's premise in miniature.
+// Subtle entrance motion, disabled automatically when reduced motion is set.
 (function () {
-  const qEl = document.getElementById("q-text");
-  const aBlock = document.getElementById("a-block");
-  const aText = document.getElementById("a-text");
-  const aCites = document.getElementById("a-cites");
+  const elements = document.querySelectorAll(".reveal");
+  if (!elements.length) return;
+
+  if (
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    !("IntersectionObserver" in window)
+  ) {
+    elements.forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    },
+    { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
+  );
+
+  elements.forEach((element) => observer.observe(element));
+})();
+
+// Product premise in miniature: cycle through real customer-style questions,
+// then reveal the recommendation and its cited sources.
+(function () {
+  const question = document.getElementById("q-text");
+  const answerBlock = document.getElementById("a-block");
+  const answer = document.getElementById("a-text");
+  const citations = document.getElementById("a-cites");
   const data = document.getElementById("chat-scenarios");
-  if (!qEl || !aBlock || !aText || !aCites || !data) return;
+  if (!question || !answerBlock || !answer || !citations || !data) return;
 
   const scenarios = JSON.parse(data.textContent);
+  const citationClasses =
+    "font-mono text-[0.62rem] text-moss border border-line rounded-full px-2.5 py-1 bg-paper";
 
-  const citeClasses =
-    "font-mono text-[0.72rem] text-moss border border-line rounded-full px-2.5 py-0.5 bg-paper";
-
-  function render(s) {
-    aText.innerHTML = s.a;
-    aCites.innerHTML = "";
-    for (const c of s.cites) {
+  function render(scenario) {
+    answer.innerHTML = scenario.a;
+    citations.replaceChildren();
+    scenario.cites.forEach((citation) => {
       const chip = document.createElement("span");
-      chip.className = citeClasses;
-      chip.textContent = c;
-      aCites.appendChild(chip);
-    }
+      chip.className = citationClasses;
+      chip.textContent = citation;
+      citations.appendChild(chip);
+    });
   }
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduceMotion) {
-    qEl.textContent = scenarios[0].q;
+    question.textContent = scenarios[0].q;
     render(scenarios[0]);
-    aBlock.classList.add("opacity-100");
-    aBlock.querySelector(".mention").classList.add("lit");
-    const caret = document.querySelector(".caret");
-    if (caret) caret.remove();
+    answerBlock.classList.add("opacity-100");
+    answerBlock.querySelector(".mention")?.classList.add("lit");
+    document.querySelector(".caret")?.remove();
     return;
   }
 
-  let i = 0;
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let index = 0;
+  const wait = (milliseconds) =>
+    new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 
   async function type(text) {
-    qEl.textContent = "";
-    for (const ch of text) {
-      qEl.textContent += ch;
-      await wait(32);
+    question.textContent = "";
+    for (const character of text) {
+      question.textContent += character;
+      await wait(25);
     }
   }
 
   async function play() {
-    const s = scenarios[i % scenarios.length];
-    i += 1;
-
-    aBlock.classList.remove("opacity-100");
-    await wait(400);
-    await type(s.q);
-    await wait(500);
-
-    render(s);
-    aBlock.classList.add("opacity-100");
-    await wait(700);
-    aBlock.querySelector(".mention").classList.add("lit");
-    await wait(4200);
+    const scenario = scenarios[index % scenarios.length];
+    index += 1;
+    answerBlock.classList.remove("opacity-100");
+    await wait(350);
+    await type(scenario.q);
+    await wait(450);
+    render(scenario);
+    answerBlock.classList.add("opacity-100");
+    await wait(550);
+    answerBlock.querySelector(".mention")?.classList.add("lit");
+    await wait(3800);
     play();
   }
 

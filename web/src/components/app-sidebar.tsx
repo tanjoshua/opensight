@@ -1,5 +1,4 @@
 import {
-  Eye,
   FileSearch,
   Newspaper,
   LogOut,
@@ -50,7 +49,13 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <Eye className="size-5" />
+          <span
+            className="bg-primary relative grid size-6 place-items-center overflow-hidden rounded-md"
+            aria-hidden="true"
+          >
+            <span className="size-2.5 rounded-full border-2 border-primary-foreground" />
+            <span className="bg-marker absolute right-1 bottom-1 size-1 rounded-full" />
+          </span>
           <span className="font-heading text-base font-semibold tracking-tight">
             OpenSight
           </span>
