@@ -7,7 +7,7 @@
 
 ## Agent development process
 
-- This agent development process only applies for development of features that require careful thought. Do not use this if it is not suitable.
+- This agent development process only applies for development of well-scoped features that require careful thought. Do not use this if it is not suitable, and skip any agent if they are not necessary. For instance, this will not apply to UI improvements and refactoring tasks that already have a clear purpose.
 - A tech lead agent using a strong reasoning model should plan the technical implementation.
 - The plan can be handed off to an engineer agent for implementation.
 - After the engineer agent is done, the engineering manager agent should review the implementation. The engineering manager agent should not make any changes themselves.
