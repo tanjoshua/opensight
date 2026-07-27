@@ -29,9 +29,7 @@
 
   function updateHeader() {
     const scrolled = window.scrollY > 8;
-    header?.classList.toggle("shadow-[0_8px_30px_-24px_rgba(23,32,28,.5)]", scrolled);
-    header?.classList.toggle("border-line", scrolled);
-    header?.classList.toggle("border-transparent", !scrolled);
+    header?.classList.toggle("is-scrolled", scrolled);
   }
 
   updateHeader();

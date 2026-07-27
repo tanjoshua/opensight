@@ -22,6 +22,7 @@
 
   body {
     @apply bg-paper font-body text-ink antialiased;
+    text-wrap: pretty;
   }
 
   ::selection {
@@ -49,7 +50,15 @@
 
 @layer components {
   .site-shell {
-    @apply mx-auto w-full max-w-[1200px] px-5 sm:px-8;
+    @apply mx-auto w-full max-w-[1180px] px-5 sm:px-8;
+  }
+
+  .site-header {
+    @apply bg-paper/90 sticky top-0 z-50 border-b border-transparent backdrop-blur-xl transition-[border-color,box-shadow,background-color];
+  }
+
+  .site-header.is-scrolled {
+    @apply border-line bg-paper/95 shadow-[0_10px_35px_-30px_rgba(28,25,23,.5)];
   }
 
   .eyebrow {
@@ -65,15 +74,15 @@
   }
 
   .button-primary {
-    @apply bg-pine inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.94rem] font-semibold text-white no-underline shadow-[0_8px_25px_-12px_rgba(28,25,23,0.45)] transition duration-200 hover:-translate-y-0.5 hover:bg-pinedeep hover:shadow-[0_14px_30px_-14px_rgba(28,25,23,0.55)];
+    @apply bg-pine inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-5 py-3 text-[0.94rem] font-semibold text-white no-underline shadow-[0_8px_25px_-16px_rgba(28,25,23,0.5)] transition duration-200 hover:-translate-y-px hover:bg-pinedeep hover:shadow-[0_14px_30px_-17px_rgba(28,25,23,0.6)];
   }
 
   .button-light {
-    @apply text-pinedeep inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-0.5 hover:bg-stone-100;
+    @apply text-pinedeep inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-px hover:bg-stone-100;
   }
 
   .button-ghost {
-    @apply border-line inline-flex min-h-12 items-center justify-center gap-2 rounded-full border bg-white/60 px-6 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-0.5 hover:border-[#bcc4bd] hover:bg-white;
+    @apply border-line inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border bg-white/60 px-5 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-px hover:border-stone-400 hover:bg-white;
   }
 
   .logo-mark {
@@ -96,10 +105,22 @@
 
   .grid-field {
     background-image:
-      linear-gradient(rgba(41, 37, 36, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(41, 37, 36, 0.05) 1px, transparent 1px);
-    background-size: 42px 42px;
-    mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
+      linear-gradient(rgba(41, 37, 36, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(41, 37, 36, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, black 4%, transparent 82%);
+  }
+
+  .metric-rule {
+    @apply border-line border-t pt-4;
+  }
+
+  .feature-index {
+    @apply font-mono text-moss text-[0.65rem] tracking-[0.12em] uppercase;
+  }
+
+  .footer-link {
+    @apply text-moss hover:text-ink w-fit no-underline;
   }
 
   .mention {
@@ -138,10 +159,6 @@
   .caret {
     animation: blink 1s steps(1) infinite;
   }
-
-  .hero-float {
-    animation: float 6s ease-in-out infinite;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -154,9 +171,4 @@
 
 @keyframes blink {
   50% { opacity: 0; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-7px) rotate(-1deg); }
 }

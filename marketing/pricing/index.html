@@ -20,13 +20,13 @@
 </head>
 <body class="overflow-x-hidden text-[1.0625rem] leading-relaxed">
 
-<header class="bg-paper/85 sticky top-0 z-50 border-b border-transparent backdrop-blur-xl transition-shadow" id="site-header">
-  <div class="site-shell flex h-[4.5rem] items-center justify-between gap-5">
+<header class="site-header" id="site-header">
+  <div class="site-shell flex h-16 items-center justify-between gap-5">
     <a href="/" aria-label="OpenSight home" class="flex items-center gap-2.5 no-underline"><span class="logo-mark" aria-hidden="true"></span><span class="font-display text-[1.18rem] font-extrabold tracking-[-0.035em]">OpenSight</span></a>
     <nav class="hidden items-center gap-7 text-[0.92rem] font-medium md:flex" aria-label="Main navigation">
       <a href="/#product" class="text-moss hover:text-ink no-underline">Product</a><a href="/#how" class="text-moss hover:text-ink no-underline">How it works</a><a href="/pricing/" class="text-ink no-underline" aria-current="page">Pricing</a><a href="/faq/" class="text-moss hover:text-ink no-underline">FAQ</a>
     </nav>
-    <div class="hidden items-center gap-4 md:flex"><a href="https://app.opensight.app" class="text-moss hover:text-ink text-[0.92rem] font-medium no-underline">Sign in</a><a href="https://app.opensight.app/signup" class="button-primary min-h-10 px-5 py-2 text-[0.88rem]">Check my visibility <span aria-hidden="true">↗</span></a></div>
+    <div class="hidden items-center gap-4 md:flex"><a href="https://app.opensight.app" class="text-moss hover:text-ink text-[0.92rem] font-medium no-underline">Sign in</a><a href="https://app.opensight.app/signup" class="button-primary min-h-10 px-4 py-2 text-[0.88rem]">Check my visibility <span aria-hidden="true">↗</span></a></div>
     <button id="nav-toggle" type="button" class="border-line grid size-10 place-items-center rounded-full border bg-white md:hidden" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
       <svg class="nav-open-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 16h14"/></svg><svg class="nav-close-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
     </button>
@@ -37,17 +37,17 @@
 </header>
 
 <main>
-  <section class="relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-32">
+  <section class="relative overflow-hidden pt-14 pb-20 md:pt-20 md:pb-24">
     <div class="grid-field pointer-events-none absolute inset-0" aria-hidden="true"></div>
     <div class="site-shell relative">
       <div class="reveal mx-auto max-w-[50rem] text-center">
-        <p class="eyebrow">Simple by design</p>
-        <h1 class="font-display text-[clamp(2.35rem,5vw,4.25rem)] leading-[1] font-extrabold tracking-[-0.04em]">One plan.<br>Nothing held back.</h1>
+        <p class="eyebrow">Simple pricing</p>
+        <h1 class="font-display text-[clamp(2.35rem,5vw,4.25rem)] leading-[1] font-extrabold tracking-[-0.04em]">Everything you need.<br>One clear price.</h1>
         <p class="text-moss mx-auto mt-6 max-w-[38rem] text-lg md:text-xl">No feature maze, seat calculator, or sales call. Everything you need to understand your AI visibility for S$50 a month.</p>
       </div>
 
-      <div class="mt-14 grid items-stretch gap-5 lg:grid-cols-[1.05fr_.95fr]">
-        <article class="reveal bg-pinedeep noise flex flex-col rounded-[2rem] p-7 text-white md:p-10">
+      <div class="mt-14 grid items-stretch gap-4 lg:grid-cols-[1.05fr_.95fr]">
+        <article class="reveal bg-pinedeep noise flex flex-col rounded-2xl p-7 text-white md:p-10">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <span class="rounded-full border border-white/20 px-3 py-1 font-mono text-[0.66rem] tracking-wider uppercase">OpenSight Starter</span>
             <span class="text-sm text-white/60">Everything included</span>
@@ -61,7 +61,7 @@
           <p class="mt-4 text-xs text-white/50">Setup takes 2 minutes. First results the same day.</p>
         </article>
 
-        <article class="reveal border-line rounded-[2rem] border bg-white p-7 md:p-10">
+        <article class="reveal border-line rounded-2xl border bg-white p-7 md:p-10">
           <p class="font-mono text-pine text-[0.68rem] tracking-[0.14em] uppercase">Your plan includes</p>
           <ul class="mt-8 grid list-none gap-5 p-0">
             <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">20 tracked customer questions</strong><span class="text-moss text-sm">Tailored to your services, location, and customers. Edit them anytime.</span></span></li>
@@ -101,7 +101,7 @@
   </section>
 
   <section class="site-shell py-24 md:py-32">
-    <div class="reveal grid items-center gap-10 rounded-[2rem] bg-[#f0efec] p-7 md:p-12 lg:grid-cols-[1fr_auto]">
+    <div class="reveal border-line grid items-center gap-10 rounded-2xl border bg-stone-100 p-7 md:p-12 lg:grid-cols-[1fr_auto]">
       <div>
         <p class="eyebrow">Still deciding?</p>
         <h2 class="font-display max-w-[22ch] text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">Straight answers, before you spend a dollar.</h2>
@@ -112,11 +112,11 @@
   </section>
 </main>
 
-<footer class="border-line border-t bg-[#eeece5]">
+<footer class="border-line border-t bg-stone-100">
   <div class="site-shell grid gap-12 py-14 md:grid-cols-[1.4fr_.6fr_.6fr] md:py-16">
     <div><a href="/" aria-label="OpenSight home" class="inline-flex items-center gap-2.5 no-underline"><span class="logo-mark" aria-hidden="true"></span><span class="font-display text-[1.18rem] font-extrabold tracking-[-0.035em]">OpenSight</span></a><p class="text-moss mt-5 max-w-[21rem] text-sm">Know where your business stands in the answers that increasingly shape customer decisions.</p></div>
-    <div><p class="font-mono text-[0.65rem] tracking-wider uppercase">Explore</p><nav class="text-moss mt-4 grid gap-2.5 text-sm" aria-label="Footer navigation"><a href="/#product" class="hover:text-ink">Product</a><a href="/#how" class="hover:text-ink">How it works</a><a href="/pricing/" class="hover:text-ink">Pricing</a><a href="/faq/" class="hover:text-ink">FAQ</a></nav></div>
-    <div><p class="font-mono text-[0.65rem] tracking-wider uppercase">Get in touch</p><div class="text-moss mt-4 grid gap-2.5 text-sm"><a href="mailto:hello@opensight.app" class="hover:text-ink">hello@opensight.app</a><a href="https://app.opensight.app" class="hover:text-ink">Sign in to OpenSight</a></div></div>
+    <div><p class="font-mono text-[0.65rem] tracking-wider uppercase">Explore</p><nav class="mt-4 grid gap-2.5 text-sm" aria-label="Footer navigation"><a href="/#product" class="footer-link">Product</a><a href="/#how" class="footer-link">How it works</a><a href="/pricing/" class="footer-link">Pricing</a><a href="/faq/" class="footer-link">FAQ</a></nav></div>
+    <div><p class="font-mono text-[0.65rem] tracking-wider uppercase">Get in touch</p><div class="mt-4 grid gap-2.5 text-sm"><a href="mailto:hello@opensight.app" class="footer-link">hello@opensight.app</a><a href="https://app.opensight.app" class="footer-link">Sign in to OpenSight</a></div></div>
   </div>
   <div class="border-line border-t"><div class="site-shell text-moss flex flex-col gap-2 py-5 text-xs sm:flex-row sm:items-center sm:justify-between"><span>© 2026 OpenSight</span><span>Made with care in Singapore.</span></div></div>
 </footer>
