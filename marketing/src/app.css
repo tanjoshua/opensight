@@ -57,11 +57,11 @@
   }
 
   .display-title {
-    @apply font-display text-ink text-[clamp(2.65rem,6vw,5.65rem)] leading-[0.96] font-extrabold tracking-[-0.045em];
+    @apply font-display text-ink text-[clamp(2.3rem,5vw,4.65rem)] leading-[1] font-extrabold tracking-[-0.04em];
   }
 
   .section-title {
-    @apply font-display text-ink text-[clamp(2rem,4.2vw,3.55rem)] leading-[1.02] font-bold tracking-[-0.035em];
+    @apply font-display text-ink text-[clamp(1.8rem,3.5vw,3rem)] leading-[1.06] font-bold tracking-[-0.03em];
   }
 
   .button-primary {
@@ -100,18 +100,6 @@
       linear-gradient(90deg, rgba(41, 37, 36, 0.05) 1px, transparent 1px);
     background-size: 42px 42px;
     mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
-  }
-
-  .hl {
-    background: linear-gradient(to right, currentColor, currentColor)
-      no-repeat 0 96%;
-    background-size: 100% 2px;
-  }
-
-  .hl-under {
-    background: linear-gradient(to right, currentColor, currentColor)
-      no-repeat 0 96%;
-    background-size: 100% 1px;
   }
 
   .mention {
