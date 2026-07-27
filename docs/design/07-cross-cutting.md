@@ -4,30 +4,33 @@ Depends on: all previous designs; closes their open questions.
 
 ## Auth and accounts
 
-**Email + password with server-side sessions, hand-rolled in Go. Invite-only signup for MVP.**
+**Email + password with server-side sessions, hand-rolled in Go. Self-serve signup, gated on payment (08).**
 
 - Passwords hashed with argon2id; sessions are random tokens, stored hashed, in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
-- Rationale: a managed provider (Clerk/Auth0) adds an external dependency and an eventual cost floor for what is, at invite-only scale, ~200 lines of well-trodden Go. Self-hosted identity servers (Keycloak/Ory) are overkill on a 4GB VPS. Revisit only when self-serve signup + password reset + email verification become real needs — that is the point where a managed provider starts paying for itself.
-- **Invite-only**: accounts are created by an admin CLI command (`opensight user create --tenant …`), matching founder-led sales for SG clinics. The PRD's self-serve success criteria all happen *after* login (onboarding flow, 03), so this doesn't compromise them. Self-serve signup + billing arrive together post-MVP.
+- Rationale: a managed provider (Clerk/Auth0) adds an external dependency and an eventual cost floor for what is, at this scale, ~200 lines of well-trodden Go. Self-hosted identity servers (Keycloak/Ory) are overkill on a 4GB VPS. Revisit when password reset, email verification, SSO or multi-user tenants stack up — that is the point where a managed provider starts paying for itself.
+- **Signup** creates a tenant, a user and a subscription row in one transaction, then requires Stripe Checkout before any app surface opens (08). Taking the card first is what lets MVP ship without email verification: a completed charge is a stronger intent signal than a verified mailbox, and it removes the free-resource abuse that verification exists to stop.
+- **Password reset is operator-run** (`opensight user set-password`) until a transactional email provider exists. This is the one knowingly incomplete part of self-serve; reset volume is the trigger to add one.
+- Admin CLI account creation (`opensight user create --tenant …`) remains for operator-provisioned and comped tenants (08).
 - CSRF: every RPC handler requires the Connect protocol header (`connect.WithRequireConnectProtocolHeader()`, `internal/api/rpc.go`) — a header a cross-origin form or bare browser navigation cannot set — combined with SameSite=Lax cookies this is sufficient for an RPC-only API. This guarantee depends on no method ever being declared `idempotency_level = NO_SIDE_EFFECTS`: Connect treats such a method as safe to accept over a header-less GET with the request encoded in the query string, which would bypass the header check entirely. `TestNoRPCIsSideEffectFree` (`internal/api/rpc_test.go`) walks the compiled proto descriptors and fails if any method is ever annotated that way, so this can't regress silently as new RPCs are added.
 - API rate limiting: Caddy-level per-IP limit on `/rpc/`; nothing fancier until abuse exists.
 
 ## Secrets and config
 
 - Twelve-factor env vars, loaded from an `.env` file on the VPS (mode 600, outside the repo) referenced by docker-compose. No secret manager at this scale.
-- Inventory: Postgres passwords, OpenAI API key, healthcheck ping URLs. The OpenAI key is a **project-scoped key** with a monthly budget cap set in the OpenAI dashboard — the hard backstop (see spend guardrails).
+- Inventory: Postgres passwords, OpenAI API key, Stripe restricted API key and webhook signing secret (08), healthcheck ping URLs. The OpenAI key is a **project-scoped key** with a monthly budget cap set in the OpenAI dashboard — the hard backstop (see spend guardrails).
 - App config (model ids, extraction version, concurrency caps) also env-driven, with defaults in code; no config service.
 
 ## Database migrations
 
-`goose` migrations embedded in the binary, run explicitly via `opensight migrate` during deploy (not on startup — a bad migration shouldn't crash-loop the API). Both the app schema and the seeded `starter` plan row live in migrations.
+`goose` migrations embedded in the binary, run explicitly via `opensight migrate` during deploy (not on startup — a bad migration shouldn't crash-loop the API).
 
 ## Local development
 
 - `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/rpc`.
 - `docker compose -f compose.dev.yml up`: still available for infrastructure-only debugging.
 - **`PromptRunner` stub mode** (env-selected): development and tests must not spend OpenAI money or wait on real searches. Two flavors: `stub` (canned, deterministic fixtures — a fake clinic-recommendation response with citations) and `replay` (recorded real `raw_response` payloads checked into `testdata/`). The analysis pipeline (05) develops almost entirely against replay data — real responses, zero cost, deterministic tests.
-- Seed command: `opensight seed dev` creates only a tenant and login account. The developer completes the normal onboarding flow to create the business profile and initial prompts, keeping the end-to-end onboarding path exercised during local development.
+- **Stripe stub mode** (`BILLING_PROVIDER=stub`, 08): the same instinct as the runner stub — dev and tests never call Stripe. The real loop uses `stripe sandbox create` plus `stripe listen --forward-to localhost:8080/webhooks/stripe`.
+- Seed command: `opensight seed dev` creates only a comped tenant and login account. The developer completes the normal onboarding flow to create the business profile and initial prompts, keeping the end-to-end onboarding path exercised during local development.
 
 ## Deployment
 
@@ -52,7 +55,7 @@ Kept deliberately minimal for MVP:
 
 ## Data protection (light-touch, noted not lawyered)
 
-The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, password verifier and session records; business profile data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration.
+The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, password verifier and session records; business profile data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration. Payment is processed by Stripe: the product stores subscription state and Stripe identifiers, never card numbers or any payment credential.
 
 **Hard usage boundary: users must never enter patient-identifiable data.** Prompts are generic consumer queries rather than patient cases; generation rules and review copy reinforce this boundary. The product does not claim automatic detection or prevention of every prohibited entry.
 
@@ -62,4 +65,4 @@ The service is pre-production. Singapore hosting is planned before production, b
 
 ## Open items deliberately left post-MVP
 
-Self-serve signup, password reset emails (invite-only sidesteps both), billing (Stripe, per 01's billing-ready entitlements), competitor merge (05), metrics/Prometheus, multi-VPS.
+Email verification and password reset emails (08 — no transactional email provider yet), competitor merge (05), metrics/Prometheus, multi-VPS.

@@ -1,6 +1,6 @@
 # Epic 03 — Auth & Accounts (AUTH)
 
-Hand-rolled email+password sessions, invite-only. Phase 1.
+Hand-rolled email+password sessions. Phase 1 — operator-provisioned accounts; self-serve signup arrives in [epic 14](14-billing.md).
 
 ---
 

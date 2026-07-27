@@ -1,19 +1,19 @@
 # Design 02 — Data Model
 
-Depends on: [01 Architecture](01-architecture.md) (Postgres, tenant scoping, billing-ready requirement)
+Depends on: [01 Architecture](01-architecture.md) (Postgres, tenant scoping, billing)
 
 ## Principles
 
 - **Immutable facts, derived insights.** Prompt executions and raw responses are append-only. Everything the user sees (visibility %, sentiment, competitor stats) is derived from them and can be recomputed. Analysis tables can be wiped and rebuilt; results tables cannot.
 - **New measurement = new identity.** A prompt's text is immutable. Changing it creates a new prompt row — that is what makes "replacement starts a new trend, old history remains" (PRD §4) fall out of the schema instead of being special-cased.
-- **Entitlements over constants.** Nothing reads "20" or "weekly" from code; limits come from the tenant's plan row (01, billing-ready requirement).
+- **Entitlements over constants.** Nothing reads a bare "20" or "weekly" at a use site; limits come from the tenant's plan entitlements, resolved through `subscriptions.plan_code` against the plan catalog (08).
 - **No pre-aggregation.** At ≤20 results/business/week, every chart is a live query. Rollup tables are a future optimization, not a schema concern.
 
 ## Entity overview
 
 ```mermaid
 erDiagram
-    plans ||--o{ tenants : ""
+    tenants ||--|| subscriptions : ""
     tenants ||--o{ users : ""
     tenants ||--o{ businesses : ""
     businesses ||--o{ profile_proposals : ""
@@ -32,23 +32,28 @@ All IDs are UUIDv7 (time-ordered, index-friendly). `tenant_id` lives on `busines
 
 ## Tables
 
-### Plans and tenancy
+### Tenancy and subscription
 
 ```sql
-plans (
-  id            uuid PK,
-  slug          text UNIQUE,          -- 'starter'
-  prompt_limit  int,                  -- 20
-  run_interval  text,                 -- 'weekly' (Temporal schedule spec derived from this)
-  platforms     text[]                -- {'chatgpt'}
-)
-
-tenants  ( id uuid PK, name text, plan_id uuid FK, created_at )
+tenants  ( id uuid PK, name text, created_at )
 users    ( id uuid PK, tenant_id uuid FK, email citext UNIQUE, created_at )
--- auth mechanics (password/OAuth/sessions) owned by design 07
+-- auth mechanics (password/sessions) owned by design 07
+
+subscriptions (
+  tenant_id              uuid PK FK,   -- one permanent billing record per tenant
+  plan_code              text,         -- 'starter' — resolves against the code catalog (08)
+  stripe_customer_id     text UNIQUE NULL,
+  stripe_subscription_id text UNIQUE NULL,
+  stripe_status          text NULL,    -- verbatim Stripe status; never invented locally
+  past_due_since         timestamptz NULL,  -- bounds how long dunning retains access (08)
+  comped                 boolean,      -- operator-granted access, no Stripe objects
+  current_period_end     timestamptz NULL,
+  cancel_at_period_end   boolean,
+  created_at, updated_at
+)
 ```
 
-MVP ships with one seeded `starter` row. Billing later = point the tenant at a different plan row.
+**There is no `plans` table.** Entitlements — prompt limit, run interval, platforms — are a versioned catalog in code (design 08), because a limit and the Stripe Price it is sold against must ship as one unit rather than as two independently seeded systems. The database stores only what code cannot: this tenant's Stripe state. `plan_code` is the join between them, and an unknown code is an error, never a silent default.
 
 ### Businesses and profile
 

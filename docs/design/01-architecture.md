@@ -22,6 +22,7 @@ Depends on: [PRD](../prd.md)
 | D6 | Analysis LLM | OpenAI (structured outputs) for MVP — one vendor, one key; keep behind an interface |
 | D7 | Repo layout | Monorepo |
 | D8 | Deployment | Single VPS, Docker Compose |
+| D9 | Billing | Stripe Checkout + Customer Portal; entitlements as a code catalog (08) |
 
 ## D1 — ChatGPT data source
 
@@ -104,9 +105,14 @@ opensight/
 
 A single **Hetzner VPS** running Docker Compose: `app` (serve), `worker` (work), `postgres`, `temporal`, `temporal-ui`, and Caddy (or similar) for TLS. Total footprint fits ~4GB. Hetzner's Singapore location is a nice-to-have for the target market. The Compose setup is provider-agnostic, so this is reversible. Nightly `pg_dump` of both databases shipped off-box. Remaining details (backup destination, secrets) land in the cross-cutting doc.
 
+## D9 — Billing
+
+Self-serve signup takes payment before the first LLM call: Stripe Checkout for subscription creation, Customer Portal for cancellation, card updates and invoices, webhooks for state. No payment UI, stored card data or PCI surface is ours. Entitlements (prompt limit, run interval, platforms) live in a **code catalog**, not a database table — the limit and the Stripe Price it is sold against must be deployed as one unit. The database holds only Stripe state, one row per tenant. Full design in [08 Billing](08-billing.md).
+
+Because payment precedes every prompt execution, profile generation and analysis call, there is no free-spend surface and no in-app spend circuit breaker to build (07's OpenAI budget cap remains the backstop against our own bugs).
+
 ## Out of scope for MVP (explicit)
 
-- Billing/payments — but the design must stay **billing-ready**: tenants reference a plan row carrying entitlements (prompt limit, run frequency, platforms) instead of hardcoding "20 prompts, weekly" anywhere. MVP ships with a single "starter" plan row; adding Stripe later is webhook → change tenant's plan → entitlements take effect. This is a hard requirement on the 02 data model.
 - Platforms beyond ChatGPT; daily monitoring; alerts (PRD §9).
 - RLS / per-tenant databases; horizontal scaling concerns.
 

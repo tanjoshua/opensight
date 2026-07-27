@@ -22,8 +22,9 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 11 | [Self-serve polish](11-selfserve-polish.md) | POL | 7 | 3 |
 | 12 | [Protobuf/Connect RPC migration](12-rpc-migration.md) | RPC | 9 | 3 |
 | 13 | [Runs UI](13-runs-ui.md) | RUNS | 6 | 3 |
+| 14 | [Self-serve signup & billing](14-billing.md) | BILL | 12 | 4 |
 
-**75 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 28.**
+**87 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 28, Phase 4 = 12.**
 
 ## Phases and milestones
 
@@ -34,6 +35,8 @@ There are **no users until the full MVP is complete** — phase milestones are i
   🎯 Milestone: mentions, sentiment, citations, and competitors are derived from stored responses; Overview, Prompts, and Competitors sections show visibility metrics where every number opens the underlying response. Extraction quality gate (ANA-2) passed before the phase is called done.
 - **Phase 3 — Self-serve polish (epics 10–11).**
   🎯 Milestone: all PRD §8 success criteria pass without operator involvement — enter name + website, review generated setup, approve prompts, manage prompts/competitors, methodology + privacy pages live. **This is the MVP; the first real users onboard after this point.**
+- **Phase 4 — Commercial launch (epic 14).**
+  🎯 Milestone: a stranger signs up from the marketing site, pays S$50/month, onboards and sees their first run — with no operator involved and no free LLM spend. Cancellation pauses monitoring and leaves history readable; reactivation resumes it.
 
 ## Execution order
 
@@ -43,4 +46,10 @@ Epic 12 (RPC) is infra work independent of the product epics — it can run any 
 existing, stable API surface to migrate) and before no particular milestone; it does not gate the
 Phase 3 MVP milestone.
 
-Explicitly **not** in this backlog (post-MVP, per design 07): billing/Stripe, self-serve signup, password reset, additional platforms, alerts, competitor merge, Prometheus/metrics, multi-VPS.
+Epic 14 (billing) runs after the Phase 3 MVP milestone: it takes payment for a product that must
+already be worth paying for. BILL-1 (schema) and BILL-2 (Stripe adapter) gate the rest of the epic;
+BILL-7 (spend backstop) must land before any real card is charged.
+
+Explicitly **not** in this backlog: email verification and password-reset emails (design 08 — no
+transactional email provider yet), additional platforms, alerts, competitor merge,
+Prometheus/metrics, multi-VPS.

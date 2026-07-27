@@ -13,9 +13,16 @@ Initial market: specialist clinics in Singapore. First design-partner customer a
 * Weekly monitoring
 * Historical results
 
+S$50 per month, billed monthly. One plan, no seats, no contract, cancel anytime.
+
+If a subscription ends, monitoring stops but everything already collected stays viewable. Reactivating resumes weekly monitoring against the same profile and prompts; the period without a subscription shows as a gap in the history, never as an estimate.
+
 ## 3. Onboarding
 
-The user enters:
+The user signs up with an email and password and pays before the first monitoring run. Payment,
+cancellation, card changes and invoices are self-serve.
+
+The user then enters:
 
 * Business name
 * Website
@@ -135,13 +142,14 @@ Business profile, prompts, and competitor configuration.
 
 A user can:
 
-1. Enter a business name and website.
-2. Review an automatically generated setup.
-3. Approve 20 prompts.
-4. View the first ChatGPT results.
-5. Understand where the business appears, how it is described, which sources are cited, and which competitors appear instead.
-6. Compare visibility with relevant competitors.
-7. Compare results across weekly runs.
+1. Sign up and subscribe without contacting anyone.
+2. Enter a business name and website.
+3. Review an automatically generated setup.
+4. Approve 20 prompts.
+5. View the first ChatGPT results.
+6. Understand where the business appears, how it is described, which sources are cited, and which competitors appear instead.
+7. Compare visibility with relevant competitors.
+8. Compare results across weekly runs.
 
 ## 9. Future Plans
 

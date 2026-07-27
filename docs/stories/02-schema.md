@@ -12,7 +12,7 @@ As the developer, I want `plans`, `tenants`, and `users` migrated with a seeded 
 - [x] `starter` plan row (20 prompts, weekly, `{chatgpt}`) seeded **in a migration**.
 - [x] No code path reads a hardcoded "20" or "weekly" — grep-verifiable.
 
-Deps: FND-3 · Phase 1 · Ref: design 02 (Plans and tenancy), 01 (billing-ready requirement)
+Deps: FND-3 · Phase 1 · Ref: design 02 (Tenancy and subscription) — the `plans` table this story created is superseded by the entitlement catalog in design 08 (BILL-1)
 
 ## SCH-2 — Business, proposal, and prompt tables
 
