@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #f7f5ef;
-  --color-ink: #17201c;
-  --color-moss: #59635d;
-  --color-pine: #145c43;
-  --color-pinedeep: #0c3529;
-  --color-marker: #f4c95d;
-  --color-line: #dcded7;
+  --color-paper: #fafaf9;
+  --color-ink: #1c1917;
+  --color-moss: #57534e;
+  --color-pine: #292524;
+  --color-pinedeep: #1c1917;
+  --color-marker: #d6d3d1;
+  --color-line: #e7e5e4;
   --color-miss: #c84b3a;
 
   --font-display: "Bricolage Grotesque", system-ui, sans-serif;
@@ -65,11 +65,11 @@
   }
 
   .button-primary {
-    @apply bg-pine inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.94rem] font-semibold text-white no-underline shadow-[0_8px_25px_-12px_rgba(20,92,67,0.9)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#0f4d38] hover:shadow-[0_14px_30px_-14px_rgba(20,92,67,0.9)];
+    @apply bg-pine inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-[0.94rem] font-semibold text-white no-underline shadow-[0_8px_25px_-12px_rgba(28,25,23,0.45)] transition duration-200 hover:-translate-y-0.5 hover:bg-pinedeep hover:shadow-[0_14px_30px_-14px_rgba(28,25,23,0.55)];
   }
 
   .button-light {
-    @apply text-pinedeep inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-0.5 hover:bg-[#fff8e8];
+    @apply text-pinedeep inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.94rem] font-semibold no-underline transition duration-200 hover:-translate-y-0.5 hover:bg-stone-100;
   }
 
   .button-ghost {
@@ -77,17 +77,17 @@
   }
 
   .logo-mark {
-    @apply bg-pine relative grid size-8 place-items-center overflow-hidden rounded-[0.65rem];
+    @apply relative block size-7 shrink-0;
   }
 
   .logo-mark::before {
     content: "";
-    @apply absolute size-3.5 rounded-full border-[3px] border-white;
+    @apply border-ink absolute top-[0.15rem] left-[0.15rem] size-[1.05rem] rounded-full border-[2px];
   }
 
   .logo-mark::after {
     content: "";
-    @apply bg-marker absolute right-[0.31rem] bottom-[0.31rem] size-1.5 rounded-full;
+    @apply bg-ink absolute top-[1.12rem] left-[1.08rem] h-[2px] w-[0.68rem] origin-left rotate-45 rounded-full;
   }
 
   .noise {
@@ -96,34 +96,34 @@
 
   .grid-field {
     background-image:
-      linear-gradient(rgba(20, 92, 67, 0.055) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(20, 92, 67, 0.055) 1px, transparent 1px);
+      linear-gradient(rgba(41, 37, 36, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(41, 37, 36, 0.05) 1px, transparent 1px);
     background-size: 42px 42px;
     mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
   }
 
   .hl {
-    background: linear-gradient(to right, var(--color-marker), var(--color-marker))
-      no-repeat 0 69%;
-    background-size: 100% 33%;
+    background: linear-gradient(to right, currentColor, currentColor)
+      no-repeat 0 96%;
+    background-size: 100% 2px;
   }
 
   .hl-under {
-    background: linear-gradient(to right, var(--color-marker), var(--color-marker))
-      no-repeat 0 88%;
-    background-size: 100% 0.18em;
+    background: linear-gradient(to right, currentColor, currentColor)
+      no-repeat 0 96%;
+    background-size: 100% 1px;
   }
 
   .mention {
     background: linear-gradient(to right, var(--color-marker), var(--color-marker))
-      no-repeat 0 62%;
-    background-size: 0 55%;
+      no-repeat 0 90%;
+    background-size: 0 22%;
     border-radius: 3px;
     transition: background-size 0.5s ease;
   }
 
   .mention.lit {
-    background-size: 100% 55%;
+    background-size: 100% 22%;
   }
 
   .caret {

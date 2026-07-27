@@ -52,25 +52,25 @@
 }
 
 :root {
-  --background: #f7f5ef;
-  --foreground: #17201c;
+  --background: oklch(0.985 0.001 106.423);
+  --foreground: oklch(0.147 0.004 49.25);
   --card: oklch(1 0 0);
-  --card-foreground: #17201c;
+  --card-foreground: oklch(0.147 0.004 49.25);
   --popover: oklch(1 0 0);
-  --popover-foreground: #17201c;
-  --primary: #145c43;
-  --primary-foreground: #ffffff;
-  --secondary: #ecefe9;
-  --secondary-foreground: #17201c;
-  --muted: #eeeee9;
-  --muted-foreground: #59635d;
-  --accent: #e5ece7;
-  --accent-foreground: #123f30;
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.216 0.006 56.043);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.216 0.006 56.043);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.013 58.071);
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-foreground: oklch(0.216 0.006 56.043);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #dcded7;
-  --input: #d4d8d1;
-  --ring: #4d8d73;
-  --marker: #f4c95d;
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.709 0.01 56.259);
+  --marker: #d6d3d1;
   /* Categorical, CVD-safe fixed order (dataviz skill palette): 1 you, 2-4
        competitors. Validated as a set (adjacent-pair line-chart use): worst
        adjacent CVD dE 9.1, normal-vision dE 22.9 (both above the 8/15 floors). */
@@ -80,14 +80,14 @@
   --chart-4: #eda100;
   --chart-5: oklch(0.268 0.007 34.298);
   --radius: 0.625rem;
-  --sidebar: #f1f1eb;
-  --sidebar-foreground: #17201c;
-  --sidebar-primary: #145c43;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e2e8e3;
-  --sidebar-accent-foreground: #123f30;
-  --sidebar-border: #d8dad3;
-  --sidebar-ring: #4d8d73;
+  --sidebar: oklch(0.985 0.001 106.423);
+  --sidebar-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-primary: oklch(0.216 0.006 56.043);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.97 0.001 106.424);
+  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
+  --sidebar-border: oklch(0.923 0.003 48.717);
+  --sidebar-ring: oklch(0.709 0.01 56.259);
 }
 
 .dark {
@@ -109,7 +109,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.553 0.013 58.071);
-  --marker: #7a5b20;
+  --marker: #57534e;
   /* Dark step of the same 4-slot categorical set (see :root); worst adjacent
        CVD dE 8.4, normal-vision dE 19.8, all >=3:1 on the dark card surface. */
   --chart-1: #3987e5;
