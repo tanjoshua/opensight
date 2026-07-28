@@ -64,14 +64,12 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustID(t)
 	tenantID := mustID(t)
 	businessID := mustID(t)
 	promptID := mustID(t)
 	runID := mustID(t)
 	resultID := mustID(t)
 	bravoID := mustID(t)
-	slug := "reconcile-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM mentions WHERE prompt_result_id = $1", resultID)
@@ -80,15 +78,11 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 5, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Reconcile Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Reconcile Tenant")
 	mustExec(t, db, ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
 VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID)

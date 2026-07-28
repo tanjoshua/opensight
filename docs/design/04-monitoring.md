@@ -57,7 +57,7 @@ Retry policy: 4 Temporal activity attempts, exponential backoff starting 10s. SD
 Per prompt: one Responses call with web search — tokens plus per-search-call fees; ballpark **single-digit cents per prompt, so roughly $0.50–2 per tenant per week**. Two requirements fall out:
 
 1. **Measure, don't assume**: the Responses payload includes token usage; it lives inside `raw_response`, so per-tenant cost reporting is a query, no schema change. Build that query early and check the ballpark against reality in week one.
-2. Cost scales linearly with tenants and with `prompt_limit` — pricing of future tiers (PRD §9) must account for it, which is another reason limits live in `plans`.
+2. Cost scales linearly with tenants and with `prompt_limit` — pricing of future tiers (PRD §9) must account for it, which is another reason limits live in the `internal/billing` catalog (08), not a literal.
 
 ## Operations
 

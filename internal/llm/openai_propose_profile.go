@@ -170,7 +170,7 @@ func (r *OpenAIProposeProfileRunner) requestParams(in ProposeProfileInput) (resp
 }
 
 // marshalProposeProfileUserContent serialises the evidence the model reads.
-// prompt_count is in.PromptLimit (plan.prompt_limit — never hardcoded).
+// prompt_count is in.PromptLimit (billing.Plan.PromptLimit — never hardcoded).
 func marshalProposeProfileUserContent(in ProposeProfileInput) (string, error) {
 	payload := struct {
 		BusinessName string `json:"business_name"`

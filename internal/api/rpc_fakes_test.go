@@ -31,13 +31,13 @@ const (
 
 // -- BusinessService fakes (business_rpc_test.go) --
 
-type fakePlanStore struct {
-	plan store.Plan
-	err  error
+type fakeSubscriptionStore struct {
+	sub store.Subscription
+	err error
 }
 
-func (f *fakePlanStore) GetTenantPlan(context.Context, domain.ID) (store.Plan, error) {
-	return f.plan, f.err
+func (f *fakeSubscriptionStore) GetByTenant(context.Context, domain.ID) (store.Subscription, error) {
+	return f.sub, f.err
 }
 
 type fakeProposalStore struct {
@@ -177,9 +177,45 @@ func setupBusinessFixture(t *testing.T, status store.BusinessStatus) store.Busin
 }
 
 // validApplyPayload is a final review payload that passes ValidateProposal at
-// plan.prompt_limit == 4: required profile fields, a two-letter country, and
-// four varied prompts, none naming the business.
+// billing.Starter.PromptLimit == 20: required profile fields, a two-letter
+// country, and twenty varied prompts, none naming the business.
 const validApplyPayload = `{
+  "low_confidence": false,
+  "profile": {
+    "name": "Acme Clinic",
+    "aliases": [],
+    "category": "orthopaedic clinic",
+    "services": ["consultation"],
+    "location": {"address": "", "area": "Novena", "city": "Singapore", "country": "SG"}
+  },
+  "prompts": [
+    {"text": "best orthopaedic clinic in Singapore"},
+    {"text": "where can I get ACL reconstruction in Singapore"},
+    {"text": "knee pain that won't go away, who should I see in Singapore"},
+    {"text": "orthopaedic specialist near Novena"},
+    {"text": "top rated sports injury doctor in Singapore"},
+    {"text": "who treats a torn meniscus in Singapore"},
+    {"text": "shoulder pain specialist near Novena"},
+    {"text": "best physiotherapy clinic for runners in Singapore"},
+    {"text": "hip replacement surgeon recommendations Singapore"},
+    {"text": "where to get a second opinion on knee surgery in Singapore"},
+    {"text": "back pain specialist clinic Novena Singapore"},
+    {"text": "best clinic for tennis elbow treatment Singapore"},
+    {"text": "orthopaedic clinic with same day appointments Singapore"},
+    {"text": "who treats frozen shoulder in Singapore"},
+    {"text": "ankle sprain treatment clinic Singapore"},
+    {"text": "best doctor for arthritis management Singapore"},
+    {"text": "sports medicine clinic near Novena"},
+    {"text": "where to get an MRI referral for knee pain Singapore"},
+    {"text": "post surgery rehab clinic Singapore"},
+    {"text": "trusted orthopaedic surgeon reviews Singapore"}
+  ]
+}`
+
+// mismatchedCountApplyPayload has the same valid profile as validApplyPayload
+// but deliberately fewer prompts than billing.Starter.PromptLimit, for the
+// ApplyProposal count-mismatch test.
+const mismatchedCountApplyPayload = `{
   "low_confidence": false,
   "profile": {
     "name": "Acme Clinic",

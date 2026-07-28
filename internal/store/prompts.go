@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 
 	"github.com/google/uuid"
@@ -32,15 +33,16 @@ const (
 )
 
 const (
-	// lockBusinessPromptLimitSQL locks the business row and loads its plan
-	// prompt limit only when the business belongs to the given tenant. No rows
+	// lockBusinessPlanCodeSQL locks the business row and loads its tenant's
+	// plan_code only when the business belongs to the given tenant. No rows
 	// means the business is missing or owned by another tenant — either way
-	// ErrNotFound, with no cross-tenant existence oracle.
-	lockBusinessPromptLimitSQL = `
-SELECT p.prompt_limit
+	// ErrNotFound, with no cross-tenant existence oracle. The prompt limit
+	// itself is resolved from the catalog (billing.PlanFor) after this lock, not
+	// read from the database.
+	lockBusinessPlanCodeSQL = `
+SELECT s.plan_code
 FROM businesses b
-JOIN tenants t ON t.id = b.tenant_id
-JOIN plans p ON p.id = t.plan_id
+JOIN subscriptions s ON s.tenant_id = b.tenant_id
 WHERE b.id = $1 AND b.tenant_id = $2
 FOR UPDATE OF b`
 
@@ -128,7 +130,7 @@ func NewPromptStore(db *sql.DB) *PromptStore {
 }
 
 // CreateActivePrompt inserts an active prompt only if the business belongs to
-// params.TenantID and doing so keeps count(active prompts) <= plan.prompt_limit
+// params.TenantID and doing so keeps count(active prompts) <= billing.Plan.PromptLimit
 // for the business. It locks the business row (scoped by tenant) before counting
 // so concurrent prompt inserts for the same business serialize through this code
 // path. A missing or cross-tenant business returns ErrNotFound.
@@ -279,13 +281,18 @@ func createActivePromptInTx(ctx context.Context, q querier, params CreateActiveP
 		return Prompt{}, err
 	}
 
-	var promptLimit int
-	if err := q.queryRowContext(ctx, lockBusinessPromptLimitSQL, params.BusinessID, params.TenantID).Scan(&promptLimit); err != nil {
+	var planCode string
+	if err := q.queryRowContext(ctx, lockBusinessPlanCodeSQL, params.BusinessID, params.TenantID).Scan(&planCode); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Prompt{}, ErrNotFound
 		}
-		return Prompt{}, fmt.Errorf("load business prompt limit: %w", err)
+		return Prompt{}, fmt.Errorf("load business plan code: %w", err)
 	}
+	plan, err := billing.PlanFor(planCode)
+	if err != nil {
+		return Prompt{}, fmt.Errorf("resolve plan: %w", err)
+	}
+	promptLimit := plan.PromptLimit
 
 	var activePromptCount int
 	if err := q.queryRowContext(ctx, countActivePromptsSQL, params.BusinessID).Scan(&activePromptCount); err != nil {

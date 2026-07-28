@@ -28,7 +28,6 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		_ = db.Close()
 	})
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptID := mustNewID(t)
@@ -38,7 +37,6 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	selfMentionID := mustNewID(t)
 	competitorMentionID := mustNewID(t)
 	citationID := mustNewID(t)
-	slug := "analysis-" + planID.String()
 
 	t.Cleanup(func() {
 		// prompt_results / businesses cascades cover the derived rows, but delete
@@ -51,15 +49,11 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 5, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Analysis Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Analysis Tenant")
 	mustExec(t, db, ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
 VALUES ($1, $2, 'active', 'Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID)
@@ -153,7 +147,6 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	otherBusinessID := mustNewID(t)
@@ -161,20 +154,15 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 	trackedID := mustNewID(t)
 	dismissedID := mustNewID(t)
 	otherID := mustNewID(t)
-	slug := "competitors-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM competitors WHERE business_id IN ($1, $2)", businessID, otherBusinessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id IN ($1, $2)", businessID, otherBusinessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 5, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Competitors Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Competitors Tenant")
 	mustExec(t, db, ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
 	mustExec(t, db, ctx,

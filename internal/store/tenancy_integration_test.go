@@ -34,11 +34,9 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		_ = db.Close()
 	})
 
-	planID := mustNewID(t)
 	tenantA := mustNewID(t)
 	tenantB := mustNewID(t)
 	businessA := mustNewID(t)
-	slug := "tenancy-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE run_id IN (SELECT id FROM monitoring_runs WHERE business_id = $1)", businessA)
@@ -46,25 +44,12 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessA)
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", businessA)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessA)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = ANY($1)", []domain.ID{tenantA, tenantB})
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = ANY($1)", []domain.ID{tenantA, tenantB})
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
-		planID, slug,
-	); err != nil {
-		t.Fatalf("insert plan: %v", err)
-	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Tenant A', $2), ($3, 'Tenant B', $2)`,
-		tenantA, planID, tenantB,
-	); err != nil {
-		t.Fatalf("insert tenants: %v", err)
-	}
+	insertTenant(t, db, ctx, tenantA, "Tenant A")
+	insertTenant(t, db, ctx, tenantB, "Tenant B")
 
 	businesses := NewBusinessStore(db)
 	prompts := NewPromptStore(db)

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"opensight/internal/billing"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/llm"
 	"opensight/internal/store"
@@ -20,10 +21,10 @@ import (
 // newBusinessRPCServer builds a Server wired for direct BusinessService method
 // calls (no HTTP/session interceptor involved — the session user is injected
 // into ctx via businessRPCContext instead).
-func newBusinessRPCServer(businesses businessStore, plans planStore, proposals proposalStore, apply applyStore, temporal temporalClient) *Server {
+func newBusinessRPCServer(businesses businessStore, subscriptions subscriptionStore, proposals proposalStore, apply applyStore, temporal temporalClient) *Server {
 	return &Server{
 		businesses:        businesses,
-		plans:             plans,
+		subscriptions:     subscriptions,
 		proposals:         proposals,
 		apply:             apply,
 		temporal:          temporal,
@@ -45,23 +46,26 @@ func businessRPCContext(t *testing.T) context.Context {
 	})
 }
 
-// applyProposalPayloadProto decodes validApplyPayload (businesses_test.go)
-// into llm.ProposalPayload and converts it to proto, so Apply tests exercise
-// the real conversion path instead of hand-building a proto literal.
+// applyProposalPayloadProto decodes validApplyPayload (rpc_fakes_test.go) into
+// llm.ProposalPayload and converts it to proto, so Apply tests exercise the
+// real conversion path instead of hand-building a proto literal.
 func applyProposalPayloadProto(t *testing.T) *opensightv1.ProposalPayload {
 	t.Helper()
+	return decodeApplyPayloadProto(t, validApplyPayload)
+}
+
+func decodeApplyPayloadProto(t *testing.T, raw string) *opensightv1.ProposalPayload {
+	t.Helper()
 	var payload llm.ProposalPayload
-	if err := json.Unmarshal([]byte(validApplyPayload), &payload); err != nil {
-		t.Fatalf("decode validApplyPayload: %v", err)
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("decode payload: %v", err)
 	}
 	return proposalPayloadToProto(payload)
 }
 
 func TestRPCGetBusinessProfileAndPlan(t *testing.T) {
 	businesses := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusActive)}
-	plans := &fakePlanStore{plan: store.Plan{
-		Slug: "starter", PromptLimit: 20, RunInterval: "weekly", Platforms: []string{"chatgpt"},
-	}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 
 	resp, err := srv.GetBusiness(businessRPCContext(t), connect.NewRequest(&opensightv1.GetBusinessRequest{BusinessId: testBusinessID}))
@@ -77,7 +81,7 @@ func TestRPCGetBusinessProfileAndPlan(t *testing.T) {
 
 func TestRPCPatchBusinessMergesAndClearsWebsite(t *testing.T) {
 	businesses := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusActive)}
-	plans := &fakePlanStore{plan: store.Plan{Slug: "starter", PromptLimit: 20}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 
 	name := "New Clinic"
@@ -106,7 +110,7 @@ func TestRPCPatchBusinessMergesAndClearsWebsite(t *testing.T) {
 
 func TestRPCPatchBusinessLeavesOmittedFieldsOutOfStoreUpdate(t *testing.T) {
 	businesses := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusActive)}
-	plans := &fakePlanStore{plan: store.Plan{Slug: "starter", PromptLimit: 20}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 
 	name := "Concurrent Name"
@@ -134,7 +138,7 @@ func TestRPCPatchBusinessLeavesOmittedFieldsOutOfStoreUpdate(t *testing.T) {
 
 func TestRPCPatchBusinessRejectsDraftAndInvalidMergedProfile(t *testing.T) {
 	draftStore := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusDraft)}
-	srv := newBusinessRPCServer(draftStore, &fakePlanStore{}, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
+	srv := newBusinessRPCServer(draftStore, &fakeSubscriptionStore{}, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 	name := "New"
 	_, err := srv.UpdateBusiness(businessRPCContext(t), connect.NewRequest(&opensightv1.UpdateBusinessRequest{
 		BusinessId: testBusinessID, Name: &name,
@@ -144,7 +148,7 @@ func TestRPCPatchBusinessRejectsDraftAndInvalidMergedProfile(t *testing.T) {
 	}
 
 	activeStore := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusActive)}
-	srv = newBusinessRPCServer(activeStore, &fakePlanStore{}, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
+	srv = newBusinessRPCServer(activeStore, &fakeSubscriptionStore{}, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 	_, err = srv.UpdateBusiness(businessRPCContext(t), connect.NewRequest(&opensightv1.UpdateBusinessRequest{
 		BusinessId: testBusinessID,
 		Location:   &opensightv1.Location{Address: "", Area: "", City: "", Country: "Singapore"},
@@ -159,7 +163,7 @@ func TestRPCPatchBusinessRejectsDraftAndInvalidMergedProfile(t *testing.T) {
 
 func TestRPCCreateBusinessStartsGeneration(t *testing.T) {
 	businesses := &fakeBusinessStore{business: store.Business{ID: mustHashV7(t, testBusinessID)}}
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 20}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	temporal := &fakeTemporalClient{}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, temporal)
 
@@ -188,7 +192,7 @@ func TestRPCCreateBusinessStartsGeneration(t *testing.T) {
 }
 
 func TestRPCCreateBusinessMissingName(t *testing.T) {
-	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakePlanStore{}, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
+	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakeSubscriptionStore{}, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 	_, err := srv.CreateBusiness(businessRPCContext(t), connect.NewRequest(&opensightv1.CreateBusinessRequest{
 		Name: "  ", Website: "x.example",
 	}))
@@ -198,7 +202,7 @@ func TestRPCCreateBusinessMissingName(t *testing.T) {
 }
 
 func TestRPCCreateBusinessPlanLookupFails(t *testing.T) {
-	plans := &fakePlanStore{err: store.ErrNotFound}
+	plans := &fakeSubscriptionStore{err: store.ErrNotFound}
 	businesses := &fakeBusinessStore{}
 	temporal := &fakeTemporalClient{}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, temporal)
@@ -228,7 +232,7 @@ func TestRPCGetProposalReady(t *testing.T) {
 		"prompts": [{"text": "best clinic near me", "kind": "location"}]
 	}`)
 	proposals := &fakeProposalStore{proposal: store.ProfileProposal{Payload: payload}}
-	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, &fakeTemporalClient{})
+	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakeSubscriptionStore{}, proposals, &fakeApplyStore{}, &fakeTemporalClient{})
 
 	resp, err := srv.GetProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.GetProposalRequest{BusinessId: testBusinessID}))
 	if err != nil {
@@ -250,7 +254,7 @@ func TestRPCGetProposalGenerating(t *testing.T) {
 		describeStatus: enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING,
 		queryStage:     workflows.GenerationStageDrafting,
 	}
-	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
+	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakeSubscriptionStore{}, proposals, &fakeApplyStore{}, temporal)
 
 	resp, err := srv.GetProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.GetProposalRequest{BusinessId: testBusinessID}))
 	if err != nil {
@@ -273,7 +277,7 @@ func TestRPCGetProposalGeneratingDegradesOnQueryError(t *testing.T) {
 		describeStatus: enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING,
 		queryErr:       serviceerror.NewUnavailable("worker gone"),
 	}
-	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
+	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakeSubscriptionStore{}, proposals, &fakeApplyStore{}, temporal)
 
 	resp, err := srv.GetProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.GetProposalRequest{BusinessId: testBusinessID}))
 	if err != nil {
@@ -289,7 +293,7 @@ func TestRPCGetProposalGeneratingDegradesOnQueryError(t *testing.T) {
 func TestRPCGetProposalFailedWhenWorkflowNotFound(t *testing.T) {
 	proposals := &fakeProposalStore{getErr: store.ErrNotFound}
 	temporal := &fakeTemporalClient{describeErr: serviceerror.NewNotFound("no workflow")}
-	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
+	srv := newBusinessRPCServer(&fakeBusinessStore{}, &fakeSubscriptionStore{}, proposals, &fakeApplyStore{}, temporal)
 
 	resp, err := srv.GetProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.GetProposalRequest{BusinessId: testBusinessID}))
 	if err != nil {
@@ -304,7 +308,7 @@ func TestRPCGetProposalNotFoundBusiness(t *testing.T) {
 	// No pending proposal and the business is not owned/does not exist → NotFound.
 	proposals := &fakeProposalStore{getErr: store.ErrNotFound}
 	businesses := &fakeBusinessStore{getErr: store.ErrNotFound}
-	srv := newBusinessRPCServer(businesses, &fakePlanStore{}, proposals, &fakeApplyStore{}, &fakeTemporalClient{})
+	srv := newBusinessRPCServer(businesses, &fakeSubscriptionStore{}, proposals, &fakeApplyStore{}, &fakeTemporalClient{})
 
 	_, err := srv.GetProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.GetProposalRequest{BusinessId: testBusinessID}))
 	if connect.CodeOf(err) != connect.CodeNotFound {
@@ -315,7 +319,7 @@ func TestRPCGetProposalNotFoundBusiness(t *testing.T) {
 func TestRPCRegenProposalDiscardsAndStarts(t *testing.T) {
 	businesses := &fakeBusinessStore{business: store.Business{Status: store.BusinessStatusDraft, Name: "Acme"}}
 	proposals := &fakeProposalStore{}
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 20}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	temporal := &fakeTemporalClient{}
 	srv := newBusinessRPCServer(businesses, plans, proposals, &fakeApplyStore{}, temporal)
 
@@ -338,7 +342,7 @@ func TestRPCRegenProposalRejectedWhenNotDraft(t *testing.T) {
 	businesses := &fakeBusinessStore{business: store.Business{Status: store.BusinessStatusActive}}
 	proposals := &fakeProposalStore{}
 	temporal := &fakeTemporalClient{}
-	srv := newBusinessRPCServer(businesses, &fakePlanStore{}, proposals, &fakeApplyStore{}, temporal)
+	srv := newBusinessRPCServer(businesses, &fakeSubscriptionStore{}, proposals, &fakeApplyStore{}, temporal)
 
 	_, err := srv.RegenerateProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.RegenerateProposalRequest{BusinessId: testBusinessID}))
 	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
@@ -353,7 +357,7 @@ func TestRPCRegenProposalRejectedWhenNotDraft(t *testing.T) {
 
 func TestRPCRegenProposalAlreadyRunning(t *testing.T) {
 	businesses := &fakeBusinessStore{business: store.Business{Status: store.BusinessStatusDraft, Name: "Acme"}}
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 20}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	temporal := &fakeTemporalClient{execErr: serviceerror.NewWorkflowExecutionAlreadyStarted("already", "", "")}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, temporal)
 
@@ -364,7 +368,7 @@ func TestRPCRegenProposalAlreadyRunning(t *testing.T) {
 }
 
 func TestRPCApplyBusinessHappyPath(t *testing.T) {
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 4, RunInterval: "weekly"}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{result: applyResult(t)}
 	temporal := &fakeTemporalClient{}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, temporal)
@@ -388,8 +392,8 @@ func TestRPCApplyBusinessHappyPath(t *testing.T) {
 	if call.Category != "orthopaedic clinic" {
 		t.Fatalf("apply category = %q", call.Category)
 	}
-	if len(call.PromptTexts) != 4 {
-		t.Fatalf("apply prompt texts = %d, want 4", len(call.PromptTexts))
+	if len(call.PromptTexts) != billing.Starter.PromptLimit {
+		t.Fatalf("apply prompt texts = %d, want %d", len(call.PromptTexts), billing.Starter.PromptLimit)
 	}
 	if temporal.schedule == nil || temporal.schedule.creates != 1 {
 		t.Fatalf("schedule creates = %v, want 1", temporal.schedule)
@@ -404,14 +408,15 @@ func TestRPCApplyBusinessHappyPath(t *testing.T) {
 }
 
 func TestRPCApplyBusinessValidationFails(t *testing.T) {
-	// plan.prompt_limit 20 but the payload carries 4 prompts → count mismatch.
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 20, RunInterval: "weekly"}}
+	// billing.Starter.PromptLimit is 20 but the payload carries 4 prompts →
+	// count mismatch.
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{result: applyResult(t)}
 	temporal := &fakeTemporalClient{}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, temporal)
 
 	_, err := srv.ApplyProposal(businessRPCContext(t), connect.NewRequest(&opensightv1.ApplyProposalRequest{
-		BusinessId: testBusinessID, Payload: applyProposalPayloadProto(t),
+		BusinessId: testBusinessID, Payload: decodeApplyPayloadProto(t, mismatchedCountApplyPayload),
 	}))
 	if connect.CodeOf(err) != connect.CodeInvalidArgument {
 		t.Fatalf("code = %v, want InvalidArgument: %v", connect.CodeOf(err), err)
@@ -425,7 +430,7 @@ func TestRPCApplyBusinessValidationFails(t *testing.T) {
 }
 
 func TestRPCApplyBusinessNotDraft(t *testing.T) {
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 4, RunInterval: "weekly"}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{err: store.ErrBusinessNotDraft}
 	temporal := &fakeTemporalClient{}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, temporal)
@@ -442,7 +447,7 @@ func TestRPCApplyBusinessNotDraft(t *testing.T) {
 }
 
 func TestRPCApplyBusinessNotFound(t *testing.T) {
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 4, RunInterval: "weekly"}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{err: store.ErrNotFound}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, &fakeTemporalClient{})
 
@@ -455,7 +460,7 @@ func TestRPCApplyBusinessNotFound(t *testing.T) {
 }
 
 func TestRPCApplyBusinessScheduleError(t *testing.T) {
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 4, RunInterval: "weekly"}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{result: applyResult(t)}
 	temporal := &fakeTemporalClient{schedule: &fakeScheduleClient{err: errAny}}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, temporal)
@@ -474,7 +479,7 @@ func TestRPCApplyBusinessScheduleError(t *testing.T) {
 }
 
 func TestRPCApplyBusinessFirstRunAlreadyStarted(t *testing.T) {
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 4, RunInterval: "weekly"}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{result: applyResult(t)}
 	temporal := &fakeTemporalClient{execErr: serviceerror.NewWorkflowExecutionAlreadyStarted("already", "", "")}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, temporal)
@@ -525,7 +530,7 @@ func TestProposalPayloadRoundTrip(t *testing.T) {
 // the payload entirely: proposalPayloadFromProto(nil) must produce a
 // zero-value payload that fails llm.ValidateProposal naturally.
 func TestRPCApplyProposalNilPayload(t *testing.T) {
-	plans := &fakePlanStore{plan: store.Plan{PromptLimit: 4, RunInterval: "weekly"}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	apply := &fakeApplyStore{}
 	srv := newBusinessRPCServer(&fakeBusinessStore{}, plans, &fakeProposalStore{}, apply, &fakeTemporalClient{})
 
@@ -545,7 +550,7 @@ func TestRPCApplyProposalNilPayload(t *testing.T) {
 // clear the list to a non-nil empty slice/JSON array, not a nil/null.
 func TestRPCUpdateBusinessClearsListsWithEmptyStringList(t *testing.T) {
 	businesses := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusActive)}
-	plans := &fakePlanStore{plan: store.Plan{Slug: "starter", PromptLimit: 20}}
+	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
 
 	_, err := srv.UpdateBusiness(businessRPCContext(t), connect.NewRequest(&opensightv1.UpdateBusinessRequest{

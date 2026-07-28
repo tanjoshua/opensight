@@ -30,21 +30,16 @@ func TestPersistProposalIdempotent(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustID(t)
 	tenantID := mustID(t)
 	businessID := mustID(t)
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`, planID, "persist-"+planID.String())
-	mustExec(t, db, ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Persist Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Persist Tenant")
 	mustExec(t, db, ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Persist Clinic')`,
 		businessID, tenantID)

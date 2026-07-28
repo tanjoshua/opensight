@@ -31,13 +31,13 @@ func DecodeProposalPayload(raw json.RawMessage) (ProposalPayload, error) {
 // ValidateProposal runs every deterministic check on a decoded proposal before
 // a user sees it (design 03 step 3 and the "Prompt generation rules"): required
 // profile fields, a two-letter ISO country, no empty array entries, the exact
-// plan.prompt_limit prompt count, and no business-name leakage into any prompt.
+// billing.Plan.PromptLimit prompt count, and no business-name leakage into any prompt.
 // It returns one human-readable message per violation; an empty result means
 // valid. It is pure.
 func ValidateProposal(payload ProposalPayload, in ProposeProfileInput) []string {
 	errs := ValidateProfile(payload.Profile)
 	if len(payload.Prompts) != in.PromptLimit {
-		errs = append(errs, fmt.Sprintf("prompts has %d entries, want exactly %d (plan.prompt_limit)", len(payload.Prompts), in.PromptLimit))
+		errs = append(errs, fmt.Sprintf("prompts has %d entries, want exactly %d (billing.Plan.PromptLimit)", len(payload.Prompts), in.PromptLimit))
 	}
 	for i, pr := range payload.Prompts {
 		if strings.TrimSpace(pr.Text) == "" {

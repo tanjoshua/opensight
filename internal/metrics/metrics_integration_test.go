@@ -31,7 +31,6 @@ func TestGatingRules(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	rivalID := mustNewID(t)
@@ -45,17 +44,14 @@ func TestGatingRules(t *testing.T) {
 	a4 := mustNewID(t) // p4: failed — excluded
 	// Run B result: run not reconciled (analysis_completed_at NULL) — excluded.
 	b1 := mustNewID(t) // p1: has result_analyses + mentions, but run gate excludes it
-	slug := "metrics-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx, `INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Metrics Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Metrics Tenant")
 	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
 	for _, p := range []domain.ID{p1, p2, p3, p4} {
 		mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status, created_at) VALUES ($1, $2, 'q', 'active', '2026-07-06T00:00:00Z')`, p, businessID)
@@ -297,24 +293,20 @@ func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptID := mustNewID(t)
 	competitorID := mustNewID(t)
 	runA, runB := mustNewID(t), mustNewID(t)
 	resultA, resultB := mustNewID(t), mustNewID(t)
-	slug := "competitor-zero-trend-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx, `INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Competitor Trend Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Competitor Trend Tenant")
 	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
 	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')`, promptID, businessID)
 	mustExec(t, db, ctx, `INSERT INTO competitors (id, business_id, name, aliases, source, status)

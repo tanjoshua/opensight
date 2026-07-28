@@ -42,7 +42,7 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 	}
 	website := strings.TrimSpace(req.Msg.Website)
 
-	plan, err := s.plans.GetTenantPlan(ctx, su.TenantID)
+	plan, err := s.tenantPlan(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcInternal("create business: get tenant plan", err)
 	}
@@ -91,7 +91,7 @@ func (s *Server) GetBusiness(ctx context.Context, req *connect.Request[opensight
 	if err != nil {
 		return nil, s.rpcError("get business", err)
 	}
-	plan, err := s.plans.GetTenantPlan(ctx, su.TenantID)
+	plan, err := s.tenantPlan(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcError("get business: get tenant plan", err)
 	}
@@ -193,7 +193,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, s.rpcError("update business", err)
 	}
 
-	plan, err := s.plans.GetTenantPlan(ctx, su.TenantID)
+	plan, err := s.tenantPlan(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcError("update business: get tenant plan", err)
 	}
@@ -272,7 +272,7 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, s.rpcInternal("regen proposal: discard pending", err)
 	}
 
-	plan, err := s.plans.GetTenantPlan(ctx, su.TenantID)
+	plan, err := s.tenantPlan(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcInternal("regen proposal: get tenant plan", err)
 	}
@@ -307,7 +307,7 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 
 	payload := proposalPayloadFromProto(req.Msg.Payload)
 
-	plan, err := s.plans.GetTenantPlan(ctx, su.TenantID)
+	plan, err := s.tenantPlan(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcInternal("apply business: get tenant plan", err)
 	}

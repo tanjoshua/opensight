@@ -40,6 +40,7 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 
 	admin := store.NewAdminStore(db)
 	authStore := store.NewAuthStore(db)
+	subscriptions := store.NewSubscriptionStore(db)
 	if _, err := authStore.GetUserCredentials(ctx, seedEmail); err == nil {
 		_, err = fmt.Fprintln(out, "dev account already seeded; nothing to do")
 		return err
@@ -49,7 +50,7 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 
 	// If a previous attempt stopped after creating the tenant, reuse it and
 	// finish creating the account.
-	if _, err := admin.GetTenantPlan(ctx, seedTenantID); errors.Is(err, store.ErrNotFound) {
+	if _, err := subscriptions.GetByTenant(ctx, seedTenantID); errors.Is(err, store.ErrNotFound) {
 		if _, err := admin.CreateTenant(ctx, store.CreateTenantParams{ID: seedTenantID, Name: seedTenantName}); err != nil {
 			return err
 		}

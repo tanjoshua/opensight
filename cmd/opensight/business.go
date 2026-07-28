@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/config"
 	"opensight/internal/domain"
 	"opensight/internal/llm"
@@ -178,15 +179,19 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 	}
 	defer func() { _ = db.Close() }()
 
-	admin := store.NewAdminStore(db)
 	businesses := store.NewBusinessStore(db)
 	prompts := store.NewPromptStore(db)
+	subscriptions := store.NewSubscriptionStore(db)
 
 	// Fail fast on plan lookup: the schedule spec derives from run_interval, and a
-	// missing tenant/plan should stop us before we write a business.
-	plan, err := admin.GetTenantPlan(ctx, opts.TenantID)
+	// missing tenant/subscription should stop us before we write a business.
+	sub, err := subscriptions.GetByTenant(ctx, opts.TenantID)
 	if err != nil {
-		return fmt.Errorf("load tenant plan: %w", err)
+		return fmt.Errorf("load tenant subscription: %w", err)
+	}
+	plan, err := billing.PlanFor(sub.PlanCode)
+	if err != nil {
+		return fmt.Errorf("resolve plan: %w", err)
 	}
 
 	activatedAt := time.Now().UTC()

@@ -4,13 +4,31 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+// fillActivePrompts creates n active prompts with distinct text, up to (and
+// possibly at) the catalog's starter prompt limit, so limit-boundary tests
+// don't hardcode a literal.
+func fillActivePrompts(t *testing.T, ctx context.Context, promptStore *PromptStore, tenantID, businessID domain.ID, n int) {
+	t.Helper()
+	for i := 0; i < n; i++ {
+		if _, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
+			TenantID:   tenantID,
+			BusinessID: businessID,
+			Text:       fmt.Sprintf("filler prompt %d", i),
+		}); err != nil {
+			t.Fatalf("create filler prompt %d: %v", i, err)
+		}
+	}
+}
 
 func TestPromptStoreCreateActivePromptHonorsPlanLimit(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
@@ -27,35 +45,17 @@ func TestPromptStoreCreateActivePromptHonorsPlanLimit(t *testing.T) {
 		_ = db.Close()
 	})
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
-	slug := "prompt-limit-" + planID.String()
 
 	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 1, 'test', ARRAY['chatgpt']::text[])`,
-		planID,
-		slug,
-	); err != nil {
-		t.Fatalf("insert test plan: %v", err)
-	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO tenants (id, name, plan_id)
-VALUES ($1, 'Prompt Limit Tenant', $2)`,
-		tenantID,
-		planID,
-	); err != nil {
-		t.Fatalf("insert test tenant: %v", err)
-	}
+	insertTenant(t, db, ctx, tenantID, "Prompt Limit Tenant")
 	if _, err := db.ExecContext(
 		ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
@@ -67,13 +67,7 @@ VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::j
 	}
 
 	promptStore := NewPromptStore(db)
-	if _, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-		TenantID:   tenantID,
-		BusinessID: businessID,
-		Text:       "best clinic near me",
-	}); err != nil {
-		t.Fatalf("create first prompt: %v", err)
-	}
+	fillActivePrompts(t, ctx, promptStore, tenantID, businessID, billing.Starter.PromptLimit)
 
 	_, err = promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
 		TenantID:   tenantID,
@@ -81,7 +75,7 @@ VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::j
 		Text:       "where should I book a clinic appointment",
 	})
 	if !errors.Is(err, ErrPromptLimitExceeded) {
-		t.Fatalf("second prompt error = %v, want ErrPromptLimitExceeded", err)
+		t.Fatalf("prompt past the limit error = %v, want ErrPromptLimitExceeded", err)
 	}
 
 	var activePromptCount int
@@ -92,8 +86,8 @@ VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::j
 	).Scan(&activePromptCount); err != nil {
 		t.Fatalf("count active prompts: %v", err)
 	}
-	if activePromptCount != 1 {
-		t.Fatalf("active prompt count = %d, want 1", activePromptCount)
+	if activePromptCount != billing.Starter.PromptLimit {
+		t.Fatalf("active prompt count = %d, want %d", activePromptCount, billing.Starter.PromptLimit)
 	}
 }
 
@@ -114,35 +108,17 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
-	slug := "prompt-replace-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	// prompt_limit 1: the replace only fits because retiring the old prompt frees
-	// the single slot before the insert counts.
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 1, 'test', ARRAY['chatgpt']::text[])`,
-		planID, slug,
-	); err != nil {
-		t.Fatalf("insert test plan: %v", err)
-	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Replace Tenant', $2)`,
-		tenantID, planID,
-	); err != nil {
-		t.Fatalf("insert test tenant: %v", err)
-	}
+	insertTenant(t, db, ctx, tenantID, "Replace Tenant")
 	if _, err := db.ExecContext(
 		ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
@@ -153,6 +129,10 @@ VALUES ($1, $2, 'active', 'Replace Clinic', 'clinic', '{"country":"SG"}'::jsonb,
 	}
 
 	promptStore := NewPromptStore(db)
+	// Fill to the catalog's starter limit minus one, then create the original as
+	// the last slot: the replace below only fits because retiring the original
+	// frees its slot before the insert counts (at the limit boundary).
+	fillActivePrompts(t, ctx, promptStore, tenantID, businessID, billing.Starter.PromptLimit-1)
 	original, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
 		TenantID:   tenantID,
 		BusinessID: businessID,
@@ -198,8 +178,8 @@ VALUES ($1, $2, 'active', 'Replace Clinic', 'clinic', '{"country":"SG"}'::jsonb,
 	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM prompts WHERE business_id = $1 AND status = 'active'`, businessID).Scan(&activeCount); err != nil {
 		t.Fatalf("count active prompts: %v", err)
 	}
-	if activeCount != 1 {
-		t.Fatalf("active prompt count = %d, want 1", activeCount)
+	if activeCount != billing.Starter.PromptLimit {
+		t.Fatalf("active prompt count = %d, want %d", activeCount, billing.Starter.PromptLimit)
 	}
 }
 

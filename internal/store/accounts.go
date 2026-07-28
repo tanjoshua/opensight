@@ -8,18 +8,16 @@ import (
 	"strings"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 
 	"github.com/google/uuid"
 )
 
-const starterPlanSlug = "starter"
-
 // Tenant is a persisted tenants row used by admin CLI account creation.
 type Tenant struct {
 	ID        domain.ID
 	Name      string
-	PlanID    domain.ID
 	CreatedAt time.Time
 }
 
@@ -29,16 +27,6 @@ type User struct {
 	TenantID  domain.ID
 	Email     string
 	CreatedAt time.Time
-}
-
-// Plan is a persisted plans row: a tenant's entitlements. run_interval drives
-// the Temporal Schedule spec (RUN-5); prompt_limit bounds active prompts.
-type Plan struct {
-	ID          domain.ID
-	Slug        string
-	PromptLimit int
-	RunInterval string
-	Platforms   []string
 }
 
 // AdminStore owns invite-only account creation. It is intentionally
@@ -68,29 +56,20 @@ type CreateUserParams struct {
 }
 
 const (
-	starterPlanIDSQL = `SELECT id FROM plans WHERE slug = $1`
-
 	insertTenantSQL = `
-INSERT INTO tenants (id, name, plan_id)
-VALUES ($1, $2, $3)
+INSERT INTO tenants (id, name)
+VALUES ($1, $2)
 RETURNING created_at`
 
 	insertUserSQL = `
 INSERT INTO users (id, tenant_id, email, password_hash)
 VALUES ($1, $2, $3, $4)
 RETURNING created_at`
-
-	// tenantPlanSQL loads a tenant's plan entitlements through the plan FK.
-	// platforms is a text[]; it is read as JSON and unmarshalled (see stringSlice).
-	tenantPlanSQL = `
-SELECT p.id, p.slug, p.prompt_limit, p.run_interval, to_jsonb(p.platforms)
-FROM tenants t
-JOIN plans p ON p.id = t.plan_id
-WHERE t.id = $1`
 )
 
-// CreateTenant creates a tenant on the seeded starter plan. Plan entitlements
-// still come from the plans row; the CLI only chooses the starter slug.
+// CreateTenant creates a tenant and its subscription row, in one transaction.
+// CLI-provisioned tenants are operator tenants: comped = true, no Stripe
+// objects (design 08 "Operator comps").
 func (s *AdminStore) CreateTenant(ctx context.Context, params CreateTenantParams) (Tenant, error) {
 	if s == nil || s.db == nil {
 		return Tenant{}, errors.New("admin store database is required")
@@ -106,14 +85,11 @@ func (s *AdminStore) CreateTenant(ctx context.Context, params CreateTenantParams
 		Name: params.Name,
 	}
 	err = withTx(ctx, s.db, func(q querier) error {
-		if err := q.queryRowContext(ctx, starterPlanIDSQL, starterPlanSlug).Scan(&tenant.PlanID); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return fmt.Errorf("starter plan is missing; run migrations: %w", ErrNotFound)
-			}
-			return fmt.Errorf("load starter plan: %w", err)
-		}
-		if err := q.queryRowContext(ctx, insertTenantSQL, tenant.ID, tenant.Name, tenant.PlanID).Scan(&tenant.CreatedAt); err != nil {
+		if err := q.queryRowContext(ctx, insertTenantSQL, tenant.ID, tenant.Name).Scan(&tenant.CreatedAt); err != nil {
 			return fmt.Errorf("insert tenant: %w", err)
+		}
+		if err := CreateSubscriptionInTx(ctx, q, tenant.ID, billing.Starter.Code, true); err != nil {
+			return err
 		}
 		return nil
 	})
@@ -144,27 +120,6 @@ func (s *AdminStore) CreateUser(ctx context.Context, params CreateUserParams) (U
 		return User{}, fmt.Errorf("insert user: %w", err)
 	}
 	return user, nil
-}
-
-// GetTenantPlan loads the tenant's plan (RUN-5 schedule creation derives the run
-// interval from it). A missing tenant returns ErrNotFound.
-func (s *AdminStore) GetTenantPlan(ctx context.Context, tenantID domain.ID) (Plan, error) {
-	if s == nil || s.db == nil {
-		return Plan{}, errors.New("admin store database is required")
-	}
-
-	var plan Plan
-	var platforms stringSlice
-	if err := s.db.QueryRowContext(ctx, tenantPlanSQL, tenantID).Scan(
-		&plan.ID, &plan.Slug, &plan.PromptLimit, &plan.RunInterval, &platforms,
-	); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return Plan{}, ErrNotFound
-		}
-		return Plan{}, fmt.Errorf("get tenant plan: %w", err)
-	}
-	plan.Platforms = platforms
-	return plan, nil
 }
 
 func normalizeCreateTenantParams(params CreateTenantParams) (CreateTenantParams, error) {

@@ -24,7 +24,6 @@ type resultAnalysisFixture struct {
 func seedResultAnalysisBusiness(t *testing.T, db *sql.DB, ctx context.Context) resultAnalysisFixture {
 	t.Helper()
 
-	planID := mustNewID(t)
 	fx := resultAnalysisFixture{
 		tenantID:   mustNewID(t),
 		businessID: mustNewID(t),
@@ -32,7 +31,6 @@ func seedResultAnalysisBusiness(t *testing.T, db *sql.DB, ctx context.Context) r
 		promptID2:  mustNewID(t),
 		runID:      mustNewID(t),
 	}
-	slug := "result-analysis-" + planID.String()
 
 	t.Cleanup(func() {
 		child := `IN (SELECT pr.id FROM prompt_results pr
@@ -45,15 +43,11 @@ JOIN monitoring_runs r ON r.id = pr.run_id WHERE r.business_id = $1)`
 		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", fx.businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", fx.businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", fx.businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", fx.tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", fx.tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 5, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Result Analysis Tenant', $2)`, fx.tenantID, planID)
+	insertTenant(t, db, ctx, fx.tenantID, "Result Analysis Tenant")
 	mustExec(t, db, ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
 VALUES ($1, $2, 'active', 'Result Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, fx.businessID, fx.tenantID)

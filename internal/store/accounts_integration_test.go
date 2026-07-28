@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"opensight/internal/billing"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -29,6 +31,7 @@ func TestAdminStoreCreateTenantAndUser(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM users WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenant.ID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenant.ID)
 	})
 
@@ -36,12 +39,19 @@ func TestAdminStoreCreateTenantAndUser(t *testing.T) {
 		t.Fatalf("tenant name = %q, want trimmed name", tenant.Name)
 	}
 
-	var planSlug string
-	if err := db.QueryRowContext(ctx, "SELECT slug FROM plans WHERE id = $1", tenant.PlanID).Scan(&planSlug); err != nil {
-		t.Fatalf("load tenant plan: %v", err)
+	// CreateTenant inserts the subscription row in the same transaction: a
+	// CLI-provisioned tenant is comped on the starter plan (design 08 "Operator
+	// comps").
+	var planCode string
+	var comped bool
+	if err := db.QueryRowContext(ctx, "SELECT plan_code, comped FROM subscriptions WHERE tenant_id = $1", tenant.ID).Scan(&planCode, &comped); err != nil {
+		t.Fatalf("load tenant subscription: %v", err)
 	}
-	if planSlug != starterPlanSlug {
-		t.Fatalf("plan slug = %q, want %q", planSlug, starterPlanSlug)
+	if planCode != billing.Starter.Code {
+		t.Fatalf("plan code = %q, want %q", planCode, billing.Starter.Code)
+	}
+	if !comped {
+		t.Fatal("comped = false, want true for a CLI-provisioned tenant")
 	}
 
 	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
@@ -69,14 +79,19 @@ func TestAdminStoreCreateTenantAndUser(t *testing.T) {
 		t.Fatalf("stored password hash = %q, want provided hash", storedHash)
 	}
 
-	// GetTenantPlan resolves the seeded starter entitlements the RUN-5 schedule
-	// derives its interval from.
-	plan, err := admin.GetTenantPlan(ctx, tenant.ID)
+	// SubscriptionStore.GetByTenant plus the catalog resolves the entitlements
+	// the RUN-5 schedule derives its interval from.
+	subscriptions := NewSubscriptionStore(db)
+	sub, err := subscriptions.GetByTenant(ctx, tenant.ID)
 	if err != nil {
-		t.Fatalf("GetTenantPlan: %v", err)
+		t.Fatalf("GetByTenant: %v", err)
 	}
-	if plan.Slug != starterPlanSlug {
-		t.Fatalf("plan slug = %q, want %q", plan.Slug, starterPlanSlug)
+	plan, err := billing.PlanFor(sub.PlanCode)
+	if err != nil {
+		t.Fatalf("PlanFor: %v", err)
+	}
+	if plan.Code != billing.Starter.Code {
+		t.Fatalf("plan code = %q, want %q", plan.Code, billing.Starter.Code)
 	}
 	if plan.RunInterval != "weekly" {
 		t.Fatalf("run interval = %q, want weekly", plan.RunInterval)

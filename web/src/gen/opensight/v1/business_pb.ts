@@ -67,8 +67,8 @@ export type Plan = Message<"opensight.v1.Plan"> & {
   promptLimit: number;
 
   /**
-   * run_interval stays a plain string, not an enum: plans.run_interval is
-   * seeded config data, not a closed domain set.
+   * run_interval stays a plain string, not an enum: it comes from the
+   * versioned plan catalog (internal/billing), not a closed domain set.
    *
    * @generated from field: string run_interval = 3;
    */

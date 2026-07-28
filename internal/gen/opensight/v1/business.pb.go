@@ -96,8 +96,8 @@ type Plan struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Slug        string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
 	PromptLimit int32                  `protobuf:"varint,2,opt,name=prompt_limit,json=promptLimit,proto3" json:"prompt_limit,omitempty"`
-	// run_interval stays a plain string, not an enum: plans.run_interval is
-	// seeded config data, not a closed domain set.
+	// run_interval stays a plain string, not an enum: it comes from the
+	// versioned plan catalog (internal/billing), not a closed domain set.
 	RunInterval   string   `protobuf:"bytes,3,opt,name=run_interval,json=runInterval,proto3" json:"run_interval,omitempty"`
 	Platforms     []string `protobuf:"bytes,4,rep,name=platforms,proto3" json:"platforms,omitempty"`
 	unknownFields protoimpl.UnknownFields

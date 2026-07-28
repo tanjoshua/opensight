@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 
 	"github.com/google/uuid"
@@ -17,7 +18,7 @@ func TestCreateActivePromptInTxInsertsWhenBelowPlanLimit(t *testing.T) {
 	createdAt := time.Date(2026, 7, 18, 15, 30, 0, 0, time.UTC)
 	tx := &fakePromptTx{
 		rows: []rowScanner{
-			fakeRow{values: []any{2}},
+			fakeRow{values: []any{billing.Starter.Code}},
 			fakeRow{values: []any{1}},
 			fakeRow{values: []any{createdAt}},
 		},
@@ -51,8 +52,8 @@ func TestCreateActivePromptInTxInsertsWhenBelowPlanLimit(t *testing.T) {
 	if len(tx.queries) != 3 {
 		t.Fatalf("query count = %d, want 3", len(tx.queries))
 	}
-	if tx.queries[0] != lockBusinessPromptLimitSQL {
-		t.Fatalf("first query = %q, want prompt limit lock query", tx.queries[0])
+	if tx.queries[0] != lockBusinessPlanCodeSQL {
+		t.Fatalf("first query = %q, want plan code lock query", tx.queries[0])
 	}
 	if tx.queries[1] != countActivePromptsSQL {
 		t.Fatalf("second query = %q, want active prompt count query", tx.queries[1])
@@ -65,8 +66,8 @@ func TestCreateActivePromptInTxInsertsWhenBelowPlanLimit(t *testing.T) {
 func TestCreateActivePromptInTxRejectsPlanLimitExceeded(t *testing.T) {
 	tx := &fakePromptTx{
 		rows: []rowScanner{
-			fakeRow{values: []any{1}},
-			fakeRow{values: []any{1}},
+			fakeRow{values: []any{billing.Starter.Code}},
+			fakeRow{values: []any{billing.Starter.PromptLimit}},
 		},
 	}
 
@@ -150,8 +151,8 @@ func TestReplacePromptInTxRetiresThenInserts(t *testing.T) {
 		rows: []rowScanner{
 			// lock old prompt: id, business_id, text, status, replaces_prompt_id, created_at
 			fakeRow{values: []any{oldID, businessID, "old text", PromptStatusActive, (*domain.ID)(nil), createdAt}},
-			// createActivePromptInTx: prompt limit lock, active count, insert created_at
-			fakeRow{values: []any{5}},
+			// createActivePromptInTx: plan code lock, active count, insert created_at
+			fakeRow{values: []any{billing.Starter.Code}},
 			fakeRow{values: []any{0}},
 			fakeRow{values: []any{createdAt}},
 		},

@@ -6,9 +6,11 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	"opensight/internal/metrics"
 	"opensight/internal/store"
@@ -46,10 +48,12 @@ type businessStore interface {
 	UpdateActiveProfile(ctx context.Context, params store.UpdateBusinessProfileParams) (store.Business, error)
 }
 
-// planStore is the seam over *store.AdminStore's plan lookup. Onboarding sizes
-// the generated prompt count from plan.prompt_limit (never hardcoded — design 03).
-type planStore interface {
-	GetTenantPlan(ctx context.Context, tenantID domain.ID) (store.Plan, error)
+// subscriptionStore is the seam over *store.SubscriptionStore's tenant lookup.
+// Server.tenantPlan resolves the returned plan_code against the billing
+// catalog, so onboarding sizes the generated prompt count from
+// billing.Plan.PromptLimit (never hardcoded — design 03).
+type subscriptionStore interface {
+	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
 }
 
 // proposalStore is the seam over *store.ProfileProposalStore for the proposal
@@ -97,11 +101,11 @@ type Server struct {
 	competitorMetrics competitorsMetrics
 	// citationMetrics is a fourth seam for MET-6's citation-sources drill-down.
 	citationMetrics citationsMetrics
-	// plans, proposals, temporal, and temporalTaskQueue drive onboarding (ONB-4):
-	// create a draft business and start GenerateProfileWorkflow, poll its status,
-	// and regenerate. temporal is nil in handler unit tests that don't exercise
-	// these endpoints.
-	plans             planStore
+	// subscriptions, proposals, temporal, and temporalTaskQueue drive onboarding
+	// (ONB-4): create a draft business and start GenerateProfileWorkflow, poll
+	// its status, and regenerate. temporal is nil in handler unit tests that
+	// don't exercise these endpoints.
+	subscriptions     subscriptionStore
 	proposals         proposalStore
 	apply             applyStore
 	temporal          temporalClient
@@ -115,11 +119,11 @@ type Server struct {
 
 // New builds a Server. secureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, businesses *store.BusinessStore, plans *store.AdminStore, proposals *store.ProfileProposalStore, apply *store.ApplyProposalStore, prompts *store.PromptStore, competitors *store.CompetitorStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, temporal client.Client, temporalTaskQueue string, secureCookies bool) *Server {
+func New(auth *store.AuthStore, businesses *store.BusinessStore, subscriptions *store.SubscriptionStore, proposals *store.ProfileProposalStore, apply *store.ApplyProposalStore, prompts *store.PromptStore, competitors *store.CompetitorStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, temporal client.Client, temporalTaskQueue string, secureCookies bool) *Server {
 	return &Server{
 		auth:              auth,
 		businesses:        businesses,
-		plans:             plans,
+		subscriptions:     subscriptions,
 		proposals:         proposals,
 		apply:             apply,
 		prompts:           prompts,
@@ -158,6 +162,22 @@ func (s *Server) Routes() http.Handler {
 // nowUTC is the single clock source for session expiry, so it is trivial to
 // stub in a future test.
 func nowUTC() time.Time { return time.Now().UTC() }
+
+// tenantPlan loads the tenant's subscription and resolves its plan_code
+// against the billing catalog. Call sites that used to read s.plans.GetTenantPlan
+// call this one-liner instead (design 08 "Entitlements move from a table to
+// code").
+func (s *Server) tenantPlan(ctx context.Context, tenantID domain.ID) (billing.Plan, error) {
+	sub, err := s.subscriptions.GetByTenant(ctx, tenantID)
+	if err != nil {
+		return billing.Plan{}, err
+	}
+	plan, err := billing.PlanFor(sub.PlanCode)
+	if err != nil {
+		return billing.Plan{}, fmt.Errorf("resolve plan: %w", err)
+	}
+	return plan, nil
+}
 
 func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")

@@ -17,28 +17,17 @@ import (
 // tests and registers cleanup. It returns the tenant and business ids.
 func seedProposalBusiness(t *testing.T, ctx context.Context, db *sql.DB) (domain.ID, domain.ID) {
 	t.Helper()
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`,
-		planID, "proposal-"+planID.String()); err != nil {
-		t.Fatalf("insert plan: %v", err)
-	}
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Proposal Tenant', $2)`,
-		tenantID, planID); err != nil {
-		t.Fatalf("insert tenant: %v", err)
-	}
+	insertTenant(t, db, ctx, tenantID, "Proposal Tenant")
 	if _, err := db.ExecContext(ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Proposal Clinic')`,
 		businessID, tenantID); err != nil {

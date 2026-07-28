@@ -28,26 +28,20 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	manualBusinessID := mustNewID(t)
 	proposalID := mustNewID(t)
-	slug := "apply-proposal-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id IN ($1, $2)", businessID, manualBusinessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id IN ($1, $2)", businessID, manualBusinessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id IN ($1, $2)", businessID, manualBusinessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 2, 'weekly', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Apply Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Apply Tenant")
 	mustExec(t, db, ctx,
 		`INSERT INTO businesses (id, tenant_id, status, name, website)
 VALUES ($1, $2, 'draft', 'Draft Clinic', 'https://draft.example')`, businessID, tenantID)
@@ -58,15 +52,15 @@ VALUES ($1, $2, '{"low_confidence":false}'::jsonb, 'pending')`, proposalID, busi
 	applyStore := NewApplyProposalStore(db)
 
 	result, err := applyStore.Apply(ctx, ApplyProposalParams{
-		TenantID:      tenantID,
-		BusinessID:    businessID,
-		Name:          "Draft Clinic",
-		Aliases:       []string{"DC Ortho"},
-		Category:      "orthopaedic clinic",
-		Services:      json.RawMessage(`["ACL reconstruction"]`),
-		Location:      json.RawMessage(`{"city":"Singapore","country":"SG"}`),
-		PromptTexts:   []string{"best orthopaedic clinic in Singapore", "who fixes knees near Novena"},
-		ActivatedAt:   time.Now().UTC(),
+		TenantID:    tenantID,
+		BusinessID:  businessID,
+		Name:        "Draft Clinic",
+		Aliases:     []string{"DC Ortho"},
+		Category:    "orthopaedic clinic",
+		Services:    json.RawMessage(`["ACL reconstruction"]`),
+		Location:    json.RawMessage(`{"city":"Singapore","country":"SG"}`),
+		PromptTexts: []string{"best orthopaedic clinic in Singapore", "who fixes knees near Novena"},
+		ActivatedAt: time.Now().UTC(),
 	})
 	if err != nil {
 		t.Fatalf("apply: %v", err)

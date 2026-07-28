@@ -94,8 +94,8 @@ func (s *Server) Logout(ctx context.Context, req *connect.Request[opensightv1.Lo
 // GetMe returns the current session's user, tenant, businesses, and plan
 // prompt limit. It does not extend expiry.
 func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.GetMeRequest]) (*connect.Response[opensightv1.GetMeResponse], error) {
-	if s.businesses == nil || s.plans == nil {
-		return nil, s.rpcError("me: store missing", errors.New("business and plan stores are required"))
+	if s.businesses == nil || s.subscriptions == nil {
+		return nil, s.rpcError("me: store missing", errors.New("business and subscription stores are required"))
 	}
 
 	su, ok := sessionUserFromContext(ctx)
@@ -109,7 +109,7 @@ func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.Get
 	if err != nil {
 		return nil, s.rpcError("me: list businesses", err)
 	}
-	plan, err := s.plans.GetTenantPlan(ctx, su.TenantID)
+	plan, err := s.tenantPlan(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcError("me: get tenant plan", err)
 	}

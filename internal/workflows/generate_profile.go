@@ -47,8 +47,8 @@ func GenerateProfileWorkflowID(businessID domain.ID) string {
 }
 
 // GenerateProfileWorkflowInput starts profile generation for a freshly created
-// draft business. PromptLimit is plan.prompt_limit, resolved by the caller (the
-// count is never hardcoded — design 03).
+// draft business. PromptLimit is billing.Plan.PromptLimit, resolved by the
+// caller (the count is never hardcoded — design 03).
 type GenerateProfileWorkflowInput struct {
 	TenantID    domain.ID
 	BusinessID  domain.ID

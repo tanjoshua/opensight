@@ -10,8 +10,8 @@ import (
 // ProposeProfileInput is one ProposeProfile request: the user-entered
 // name/website plus the FetchSite text (primary evidence, "" when FetchSite
 // failed) the model researches and turns into a structured profile proposal, and
-// the number of monitoring prompts to generate (plan.prompt_limit — never
-// hardcoded). The model does its own web_search over the name/website; there is
+// the number of monitoring prompts to generate (billing.Plan.PromptLimit —
+// never hardcoded). The model does its own web_search over the name/website; there is
 // no separate research step.
 type ProposeProfileInput struct {
 	Name        string

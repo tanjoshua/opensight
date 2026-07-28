@@ -23,7 +23,6 @@ func TestCompetitorStoreTenantScopingAndHistoryPreservation(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	otherTenantID := mustNewID(t)
 	businessID := mustNewID(t)
@@ -31,17 +30,14 @@ func TestCompetitorStoreTenantScopingAndHistoryPreservation(t *testing.T) {
 	runID := mustNewID(t)
 	resultID := mustNewID(t)
 	mentionID := mustNewID(t)
-	slug := "competitors-" + planID.String()
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id IN ($1, $2)", tenantID, otherTenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id IN ($1, $2)", tenantID, otherTenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx, `INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id)
-VALUES ($1, 'Owner', $3), ($2, 'Other', $3)`, tenantID, otherTenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Owner")
+	insertTenant(t, db, ctx, otherTenantID, "Other")
 	mustExec(t, db, ctx, `INSERT INTO businesses
 (id, tenant_id, status, name, category, location, activated_at)
 VALUES ($1, $2, 'active', 'Owner Clinic', 'clinic', '{"country":"SG"}', now())`, businessID, tenantID)

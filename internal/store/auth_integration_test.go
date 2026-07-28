@@ -30,29 +30,19 @@ func TestAuthStore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	userID := mustNewID(t)
-	slug := "auth-" + planID.String()
 	const email = "Owner@Example.com" // mixed case; citext lookup must match
 	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'weekly', ARRAY['chatgpt']::text[])`, planID, slug); err != nil {
-		t.Fatalf("insert plan: %v", err)
-	}
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Auth Tenant', $2)`, tenantID, planID); err != nil {
-		t.Fatalf("insert tenant: %v", err)
-	}
+	insertTenant(t, db, ctx, tenantID, "Auth Tenant")
 	if _, err := db.ExecContext(ctx,
 		`INSERT INTO users (id, tenant_id, email, password_hash) VALUES ($1, $2, $3, $4)`,
 		userID, tenantID, email, passwordHash); err != nil {

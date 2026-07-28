@@ -24,7 +24,6 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	planID := mustNewID(t)
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 	otherBusinessID := mustNewID(t)
@@ -35,18 +34,15 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	a3 := mustNewID(t) // succeeded but unanalyzed, citation must be excluded
 	a4 := mustNewID(t) // malformed: run belongs to businessID, prompt belongs elsewhere
 	b1 := mustNewID(t) // analyzed row exists but run is unreconciled, excluded
-	slug := "citation-sources-" + planID.String()
 
 	t.Cleanup(func() {
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", otherBusinessID)
+		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
 		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM plans WHERE id = $1", planID)
 	})
 
-	mustExec(t, db, ctx, `INSERT INTO plans (id, slug, prompt_limit, run_interval, platforms)
-VALUES ($1, $2, 20, 'test', ARRAY['chatgpt']::text[])`, planID, slug)
-	mustExec(t, db, ctx, `INSERT INTO tenants (id, name, plan_id) VALUES ($1, 'Citation Tenant', $2)`, tenantID, planID)
+	insertTenant(t, db, ctx, tenantID, "Citation Tenant")
 	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
 	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')`, otherBusinessID, tenantID)
 	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'root canal clinic', 'active')`, p1, businessID)

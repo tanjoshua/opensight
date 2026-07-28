@@ -33,6 +33,7 @@ import (
 
 	"opensight/internal/api"
 	"opensight/internal/auth"
+	"opensight/internal/billing"
 	"opensight/internal/config"
 	"opensight/internal/domain"
 	"opensight/internal/llm"
@@ -51,7 +52,6 @@ const (
 	userCreateUsage     = "usage: opensight user create --tenant <tenant-id> --email <email> [--password-stdin]"
 	businessCreateUsage = "usage: opensight business create --tenant <tenant-id> --file <spec.yaml>"
 	seedUsage           = "usage: opensight seed dev"
-	accountPlanSlug     = "starter"
 )
 
 func main() {
@@ -334,7 +334,7 @@ func createTenantCLI(ctx context.Context, cfg config.Config, opts tenantCreateOp
 		return err
 	}
 
-	_, err = fmt.Fprintf(out, "tenant_id=%s\nname=%s\nplan=%s\n", tenant.ID, tenant.Name, accountPlanSlug)
+	_, err = fmt.Fprintf(out, "tenant_id=%s\nname=%s\nplan=%s\n", tenant.ID, tenant.Name, billing.Starter.Code)
 	return err
 }
 
@@ -416,7 +416,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 	apiServer := api.New(
 		store.NewAuthStore(db),
 		store.NewBusinessStore(db),
-		store.NewAdminStore(db),
+		store.NewSubscriptionStore(db),
 		store.NewProfileProposalStore(db),
 		store.NewApplyProposalStore(db),
 		store.NewPromptStore(db),

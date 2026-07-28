@@ -24,6 +24,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00007_add_mention_verbatim_name.sql",
 		"migrations/00008_drop_business_practitioners.sql",
 		"migrations/00009_add_run_expected_results.sql",
+		"migrations/00010_create_subscriptions_stripe_events.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -246,5 +247,33 @@ func TestTenancyMigrationCreatesTablesAndStarterPlan(t *testing.T) {
 	}
 	if starterID.Version() != uuid.Version(7) {
 		t.Fatalf("starter plan ID version = %s, want VERSION_7", starterID.Version())
+	}
+}
+
+func TestSubscriptionsStripeEventsMigrationDropsPlans(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00010_create_subscriptions_stripe_events.sql")
+	if err != nil {
+		t.Fatalf("read subscriptions/stripe_events migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"CREATE TABLE subscriptions",
+		"tenant_id uuid PRIMARY KEY REFERENCES tenants(id)",
+		"plan_code text NOT NULL CHECK (btrim(plan_code) <> '')",
+		"stripe_customer_id text UNIQUE",
+		"stripe_subscription_id text UNIQUE",
+		"comped boolean NOT NULL DEFAULT false",
+		"CREATE TABLE stripe_events",
+		"id text PRIMARY KEY CHECK (btrim(id) <> '')",
+		"payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object')",
+		"INSERT INTO subscriptions (tenant_id, plan_code, comped)",
+		"SELECT id, 'starter', true FROM tenants",
+		"ALTER TABLE tenants DROP COLUMN plan_id",
+		"DROP TABLE plans",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("subscriptions/stripe_events migration missing %q", marker)
+		}
 	}
 }

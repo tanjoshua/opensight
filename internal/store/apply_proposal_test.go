@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"opensight/internal/billing"
 )
 
 // fakeApplyTx is a querier fake for applyProposalInTx. Unlike fakePromptTx it
@@ -107,8 +109,8 @@ func TestApplyProposalInTxHappyPath(t *testing.T) {
 	tx := &fakeApplyTx{rows: []fakeApplyRow{
 		{values: []any{BusinessStatusDraft}}, // lock draft business
 		activeBusinessRow(businessID, tenantID),
-		{values: []any{4}}, {values: []any{0}}, {values: []any{createdAt}}, // prompt 1
-		{values: []any{4}}, {values: []any{1}}, {values: []any{createdAt}}, // prompt 2
+		{values: []any{billing.Starter.Code}}, {values: []any{0}}, {values: []any{createdAt}}, // prompt 1
+		{values: []any{billing.Starter.Code}}, {values: []any{1}}, {values: []any{createdAt}}, // prompt 2
 	}}
 
 	result, err := applyProposalInTx(context.Background(), tx, ApplyProposalParams{
@@ -132,8 +134,8 @@ func TestApplyProposalInTxHappyPath(t *testing.T) {
 	wantQueries := []string{
 		lockDraftBusinessSQL,
 		activateBusinessSQL,
-		lockBusinessPromptLimitSQL, countActivePromptsSQL, insertActivePromptSQL,
-		lockBusinessPromptLimitSQL, countActivePromptsSQL, insertActivePromptSQL,
+		lockBusinessPlanCodeSQL, countActivePromptsSQL, insertActivePromptSQL,
+		lockBusinessPlanCodeSQL, countActivePromptsSQL, insertActivePromptSQL,
 	}
 	if !reflect.DeepEqual(tx.queries, wantQueries) {
 		t.Fatalf("queries = %v, want %v", tx.queries, wantQueries)
@@ -195,7 +197,8 @@ func TestApplyProposalInTxPropagatesPromptLimit(t *testing.T) {
 	tx := &fakeApplyTx{rows: []fakeApplyRow{
 		{values: []any{BusinessStatusDraft}},
 		activeBusinessRow(businessID, tenantID),
-		{values: []any{1}}, {values: []any{1}}, // limit 1, already 1 active → exceeded
+		// starter's catalog limit, already at the limit → exceeded
+		{values: []any{billing.Starter.Code}}, {values: []any{billing.Starter.PromptLimit}},
 	}}
 
 	_, err := applyProposalInTx(context.Background(), tx, ApplyProposalParams{

@@ -8,10 +8,10 @@ Self-serve signup with payment taken up front, Stripe subscription lifecycle, an
 
 As the developer, I want entitlements in a versioned code catalog and Stripe state in one table, so that a plan's limits and the price it is sold against can never drift apart.
 
-- [ ] `internal/billing` catalog: `Starter` plan (`code`, `prompt_limit` 20, `run_interval` weekly, `platforms` chatgpt, price env key). Unknown `plan_code` is an error, never a default.
-- [ ] Migration creates `subscriptions` (tenant_id PK, plan_code, stripe_customer_id, stripe_subscription_id, stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end) and `stripe_events` (id PK, type, payload, received_at, processed_at).
-- [ ] Same migration backfills one `subscriptions` row per existing tenant with `comped = true`, then **drops `tenants.plan_id` and the `plans` table**.
-- [ ] `store.SubscriptionStore` with tenant-keyed read/upsert; `GetTenantPlan` and every `plans` reference removed app-wide (prompt limit, profile generation, schedule interval all read the catalog).
+- [x] `internal/billing` catalog: `Starter` plan (`code`, `prompt_limit` 20, `run_interval` weekly, `platforms` chatgpt, price env key). Unknown `plan_code` is an error, never a default.
+- [x] Migration creates `subscriptions` (tenant_id PK, plan_code, stripe_customer_id, stripe_subscription_id, stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end) and `stripe_events` (id PK, type, payload, received_at, processed_at).
+- [x] Same migration backfills one `subscriptions` row per existing tenant with `comped = true`, then **drops `tenants.plan_id` and the `plans` table**.
+- [x] `store.SubscriptionStore` with tenant-keyed read/upsert; `GetTenantPlan` and every `plans` reference removed app-wide (prompt limit, profile generation, schedule interval all read the catalog).
 
 Deps: — · Phase 4 · Ref: design 08 (Entitlements move from a table to code; Schema), 02 (Plans and tenancy)
 

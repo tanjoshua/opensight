@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"opensight/internal/auth"
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	"opensight/internal/store"
 
@@ -150,7 +151,7 @@ func newTestServer(f *fakeAuthStore) *Server {
 	return &Server{
 		auth:          f,
 		businesses:    &fakeBusinessStore{},
-		plans:         &fakePlanStore{plan: store.Plan{PromptLimit: 20}},
+		subscriptions: &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}},
 		secureCookies: false,
 		sessionTTL:    time.Hour,
 	}
