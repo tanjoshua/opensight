@@ -58,6 +58,13 @@ func PlanFor(code string) (Plan, error) {
 	}
 }
 
+// Plans returns every catalog plan, copies safe for a caller to hold onto.
+// Config (07) iterates this to build the price-id map from each plan's
+// PriceEnvKey, so a plan added to the catalog is required in config for free.
+func Plans() []Plan {
+	return []Plan{copyPlan(Starter)}
+}
+
 func copyPlan(p Plan) Plan {
 	platforms := make([]string, len(p.Platforms))
 	copy(platforms, p.Platforms)

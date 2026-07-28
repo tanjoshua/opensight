@@ -17,6 +17,7 @@ require (
 	github.com/openai/openai-go/v3 v3.42.0
 	github.com/pressly/goose/v3 v3.27.2
 	github.com/stretchr/testify v1.11.1
+	github.com/stripe/stripe-go/v86 v86.1.1
 	go.temporal.io/api v1.63.0
 	go.temporal.io/sdk v1.46.0
 	golang.org/x/crypto v0.54.0

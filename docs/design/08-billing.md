@@ -137,7 +137,7 @@ The prompt-limit check (02's `count(active) <= prompt_limit`) now reads the cata
 
 ## Stripe integration
 
-**Client.** `github.com/stripe/stripe-go/v86`, one shared adapter in `internal/billing`, behind a `Provider` interface — the same shape as the `PromptRunner` adapter (01). The adapter pins the API version explicitly (`2026-06-24.dahlia`) so a Stripe-side default change can never alter behavior between deploys, and authenticates with a **restricted API key** (`rk_`) scoped to write Checkout Sessions, Customers and Billing Portal Sessions and read Subscriptions — not a secret key.
+**Client.** `github.com/stripe/stripe-go/v86`, a `Provider` interface in `internal/billing` with a stub implementation and a real adapter in `internal/billing/stripe` — the same shape as the `PromptRunner` adapter (01). The adapter declares its own `APIVersion` constant (`2026-06-24.dahlia`) and asserts it matches the SDK's in a test, so a stripe-go upgrade that moves the API version fails CI rather than silently changing behavior between deploys (the SDK always sends its own `APIVersion` as `Stripe-Version`, with no per-request override — pinning is therefore a build-time guarantee, not a runtime one). Production authenticates with a **restricted API key** (`rk_`) scoped to write Checkout Sessions, Customers and Billing Portal Sessions and read Subscriptions — not a secret key. This is enforced by the go-live checklist, not by code: sandbox keys are `sk_test_`, so a `rk_` prefix check in `internal/config` would break local development against the Stripe sandbox.
 
 **Customer.** One Stripe Customer per **tenant** (the billing entity; users are post-MVP plural). Created lazily when the tenant's first Checkout Session is created, with `metadata.tenant_id`, and its id persisted immediately. It is never recreated — a lapsed tenant that resubscribes reuses the same Customer, keeping one invoice history per clinic.
 
@@ -226,7 +226,7 @@ Password reset stays deferred: with no transactional email provider, reset is an
 
 | Env var | Purpose |
 |---|---|
-| `STRIPE_SECRET_KEY` | Restricted key (`rk_`), scoped as above |
+| `STRIPE_SECRET_KEY` | Restricted key (`rk_`) in production, scoped as above; a sandbox key (`sk_test_`) locally. The `rk_` prefix is a go-live checklist item (12), not a code check — sandbox keys don't have it |
 | `STRIPE_WEBHOOK_SECRET` | Endpoint signing secret |
 | `STRIPE_PRICE_STARTER_MONTHLY` | Price id for the Starter monthly Price |
 | `APP_BASE_URL` | Absolute base for checkout/portal return URLs |

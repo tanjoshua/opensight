@@ -19,10 +19,10 @@ Deps: — · Phase 4 · Ref: design 08 (Entitlements move from a table to code; 
 
 As the developer, I want one Stripe adapter behind an interface with a stub mode, so that local dev and the whole test suite run without network or spend.
 
-- [ ] `github.com/stripe/stripe-go/v86` adapter pinning API version `2026-06-24.dahlia`; authenticates with a **restricted key** (`rk_`), never a secret key.
-- [ ] `billing.Provider` interface: create customer, create checkout session, get checkout session, get subscription, create portal session.
-- [ ] `BILLING_PROVIDER=stub` returns canned URLs and a locally driven subscription state — mirrors the `PROMPT_RUNNER_MODE` pattern; `make up` and integration tests hit no Stripe endpoint.
-- [ ] Config: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `APP_BASE_URL`, `BILLING_PROVIDER` loaded in `internal/config` with `stripe` mode failing fast on missing values.
+- [x] `github.com/stripe/stripe-go/v86` adapter declaring its own `APIVersion` constant (`2026-06-24.dahlia`), asserted equal to the SDK's in a test. Production authenticates with a **restricted key** (`rk_`), never a secret key — a go-live checklist item (BILL-12), not a code-enforced prefix check, since sandbox keys are `sk_test_` and a hard check would break local dev.
+- [x] `billing.Provider` interface: create customer, create checkout session, get checkout session, get subscription, create portal session.
+- [x] `BILLING_PROVIDER=stub` returns canned URLs and a locally driven subscription state — mirrors the `PROMPT_RUNNER_MODE` pattern; `make up` and integration tests hit no Stripe endpoint.
+- [x] Config: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `APP_BASE_URL`, `BILLING_PROVIDER` loaded in `internal/config` with `stripe` mode failing fast on missing values.
 
 Deps: BILL-1 · Phase 4 · Ref: design 08 (Stripe integration — Client; Local development), 07 (Secrets and config)
 

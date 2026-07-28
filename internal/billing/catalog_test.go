@@ -27,6 +27,19 @@ func TestPlanForStarter(t *testing.T) {
 	}
 }
 
+func TestPlansReturnsCatalog(t *testing.T) {
+	plans := Plans()
+	if len(plans) != 1 || plans[0].Code != "starter" {
+		t.Fatalf("Plans() = %+v, want a single starter plan", plans)
+	}
+
+	// The returned slice's Plan.Platforms must be a copy, same guarantee as PlanFor.
+	plans[0].Platforms[0] = "mutated"
+	if Starter.Platforms[0] != "chatgpt" {
+		t.Fatalf("catalog mutated via Plans(): Starter.Platforms = %v", Starter.Platforms)
+	}
+}
+
 func TestPlanForUnknownCode(t *testing.T) {
 	_, err := PlanFor("enterprise")
 	if !errors.Is(err, ErrUnknownPlanCode) {

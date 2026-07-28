@@ -3,10 +3,14 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
+
+	"opensight/internal/billing"
 )
 
 type PromptRunnerMode string
@@ -15,6 +19,15 @@ const (
 	PromptRunnerStub   PromptRunnerMode = "stub"
 	PromptRunnerReplay PromptRunnerMode = "replay"
 	PromptRunnerOpenAI PromptRunnerMode = "openai"
+)
+
+// BillingProvider selects the billing.Provider implementation (design 08
+// "Local development"), the same stub/real split as PromptRunnerMode.
+type BillingProvider string
+
+const (
+	BillingProviderStub   BillingProvider = "stub"
+	BillingProviderStripe BillingProvider = "stripe"
 )
 
 const (
@@ -32,6 +45,9 @@ const (
 	defaultPromptRunnerMode  = PromptRunnerStub
 	defaultDevPromptLimit    = 3
 	defaultPromptConcurrency = 2
+	defaultBillingProvider   = BillingProviderStub
+	// defaultAppBaseURL is the Vite dev server port (scripts/dev-up).
+	defaultAppBaseURL = "http://localhost:5173"
 )
 
 type Config struct {
@@ -50,6 +66,15 @@ type Config struct {
 	PromptRunnerMode      PromptRunnerMode
 	DevPromptLimit        int
 	PromptConcurrency     int
+	BillingProvider       BillingProvider
+	StripeSecretKey       string
+	StripeWebhookSecret   string
+	AppBaseURL            string
+	// StripePriceIDs maps a catalog plan code to its Stripe Price id,
+	// resolved by reading each billing.Plan's PriceEnvKey (design 08 "the
+	// pairing is one Go value"). A plan added to the catalog gets a required
+	// env var here for free.
+	StripePriceIDs map[string]string
 }
 
 // Load reads runtime settings from the process environment. It first loads a
@@ -88,6 +113,48 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 
+	billingProvider := BillingProvider(getenvString(getenv, "BILLING_PROVIDER", string(defaultBillingProvider)))
+	if !validBillingProvider(billingProvider) {
+		return Config{}, fmt.Errorf("BILLING_PROVIDER must be one of stub, stripe; got %q", billingProvider)
+	}
+
+	rawAppBaseURL := getenv("APP_BASE_URL")
+	appBaseURL, err := normalizeAppBaseURL(getenvString(getenv, "APP_BASE_URL", defaultAppBaseURL))
+	if err != nil {
+		return Config{}, err
+	}
+
+	stripeSecretKey := getenv("STRIPE_SECRET_KEY")
+	stripeWebhookSecret := getenv("STRIPE_WEBHOOK_SECRET")
+
+	// Built by iterating the catalog, not hardcoded to Starter, so a plan
+	// added later is required in config for free (design 08 "the pairing is
+	// one Go value").
+	stripePriceIDs := make(map[string]string)
+	for _, plan := range billing.Plans() {
+		stripePriceIDs[plan.Code] = getenv(plan.PriceEnvKey)
+	}
+
+	if billingProvider == BillingProviderStripe {
+		if stripeSecretKey == "" {
+			return Config{}, fmt.Errorf("STRIPE_SECRET_KEY is required when BILLING_PROVIDER=stripe")
+		}
+		if stripeWebhookSecret == "" {
+			return Config{}, fmt.Errorf("STRIPE_WEBHOOK_SECRET is required when BILLING_PROVIDER=stripe")
+		}
+		for _, plan := range billing.Plans() {
+			if stripePriceIDs[plan.Code] == "" {
+				return Config{}, fmt.Errorf("%s is required when BILLING_PROVIDER=stripe", plan.PriceEnvKey)
+			}
+		}
+		// An explicit APP_BASE_URL, not the localhost default: silently
+		// defaulting a production success_url would send paying customers
+		// nowhere (design 08).
+		if rawAppBaseURL == "" {
+			return Config{}, fmt.Errorf("APP_BASE_URL is required when BILLING_PROVIDER=stripe")
+		}
+	}
+
 	return Config{
 		Env:                   getenvString(getenv, "OPENSIGHT_ENV", defaultEnv),
 		HTTPAddr:              getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
@@ -104,6 +171,11 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		PromptRunnerMode:      mode,
 		DevPromptLimit:        devPromptLimit,
 		PromptConcurrency:     promptConcurrency,
+		BillingProvider:       billingProvider,
+		StripeSecretKey:       stripeSecretKey,
+		StripeWebhookSecret:   stripeWebhookSecret,
+		AppBaseURL:            appBaseURL,
+		StripePriceIDs:        stripePriceIDs,
 	}, nil
 }
 
@@ -114,6 +186,31 @@ func validPromptRunnerMode(mode PromptRunnerMode) bool {
 	default:
 		return false
 	}
+}
+
+func validBillingProvider(provider BillingProvider) bool {
+	switch provider {
+	case BillingProviderStub, BillingProviderStripe:
+		return true
+	default:
+		return false
+	}
+}
+
+// normalizeAppBaseURL validates raw as an absolute http(s) URL with no query
+// string, fragment, or userinfo (design 08 "Config and secrets") — any of
+// those would otherwise survive into AppBaseURL and corrupt a path appended
+// to it later (e.g. /checkout/return). It returns the string rebuilt from the
+// parsed URL, with a trailing slash trimmed, so the guarantee is enforced by
+// the parse rather than by accident of what the caller typed.
+func normalizeAppBaseURL(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil || !u.IsAbs() || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") ||
+		u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+		return "", fmt.Errorf("APP_BASE_URL must be an absolute http(s) URL with no query string, fragment, or userinfo; got %q", raw)
+	}
+	u.Path = strings.TrimSuffix(u.Path, "/")
+	return u.String(), nil
 }
 
 func getenvString(getenv func(string) string, key, fallback string) string {

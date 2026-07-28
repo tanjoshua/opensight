@@ -130,5 +130,10 @@ Runtime config is env-driven with development-safe defaults:
 - `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
 - `DEV_PROMPT_LIMIT` defaults to `3` for real-call smoke tests
 - `PROMPT_CONCURRENCY` defaults to `2`
+- `BILLING_PROVIDER` defaults to `stub`; valid values are `stub`, `stripe`
+- `APP_BASE_URL` defaults to `http://localhost:5173` (the Vite dev port); must be an absolute `http`/`https` URL
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY` have no default and are only required when `BILLING_PROVIDER=stripe`
 
 Local development should use `stub` or `replay` unless a story explicitly requires a real OpenAI smoke test. For a low-cost real test, set `PROMPT_RUNNER_MODE=openai`, lower `DEV_PROMPT_LIMIT`, and override `OPENAI_RESPONSES_MODEL` to a cheaper web-search-capable model. `OPENAI_API_KEY` has no default and must stay in local uncommitted env only.
+
+`BILLING_PROVIDER=stub` (the default) costs nothing and makes no network call: `make up` and the whole test suite run against an in-memory Stripe stand-in (`internal/billing`). To exercise real Stripe locally, run `stripe sandbox create` for sandbox keys, set `BILLING_PROVIDER=stripe` with the resulting `STRIPE_SECRET_KEY`/`STRIPE_PRICE_STARTER_MONTHLY`, and forward webhooks with `stripe listen --forward-to localhost:8080/webhooks/stripe` (its output is `STRIPE_WEBHOOK_SECRET`). Production authenticates with a restricted key (`rk_`), never a secret key — see the go-live checklist in design 08.
