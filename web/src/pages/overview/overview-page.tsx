@@ -9,7 +9,6 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  CircleMinus,
   LayoutDashboard,
   TriangleAlert,
 } from "lucide-react"
@@ -55,6 +54,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -123,6 +123,8 @@ export function OverviewPage() {
   // the complete ordered evidence set behind a metric.
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()
   const [selectedCitationDomain, setSelectedCitationDomain] = useState<string>()
+  const [explorerModeOverride, setExplorerModeOverride] =
+    useState<ExplorerMode>()
   const openResult = (ids: string[], context?: string) =>
     setSelectedEvidence(
       evidenceSelection(ids, context ?? "Responses behind this overview metric")
@@ -162,12 +164,15 @@ export function OverviewPage() {
 
   const data = overview.data
   const promptSummaries = prompts.data.prompts
+  const trendLength = data.visibility?.trend.length ?? 0
+  const explorerMode: ExplorerMode =
+    trendLength < 2 ? "snapshot" : (explorerModeOverride ?? "trend")
 
   // No analyzed history yet: either no run has happened, the first run is still
   // in flight, or results are awaiting analysis (design 06 degraded states).
-  if ((data.visibility?.trend.length ?? 0) === 0) {
+  if (trendLength === 0) {
     return (
-      <OverviewFrame overview={data}>
+      <OverviewFrame>
         <NoDataState overview={data} />
       </OverviewFrame>
     )
@@ -175,29 +180,31 @@ export function OverviewPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <OverviewHeader overview={data} />
+      <OverviewHeader />
 
       <PartialRunBanner overview={data} />
 
       <VisibilityCard
         overview={data}
+        mode={explorerMode}
+        onModeChange={setExplorerModeOverride}
         onOpenResult={openResult}
         onSelectRun={(runID) => navigate(`/runs/${runID}`)}
       />
 
-      <WhatChanged
-        prompts={promptSummaries}
-        onOpenResult={(id, context) => openResult([id], context)}
-      />
+      {explorerMode === "trend" && (
+        <WhatChanged
+          prompts={promptSummaries}
+          onOpenResult={(id, context) => openResult([id], context)}
+        />
+      )}
 
-      <WhereToFocus
+      <EvidenceOverview
         overview={data}
         prompts={promptSummaries}
         onOpenResult={openResult}
         onOpenDomain={(domain) => setSelectedCitationDomain(domain.domain)}
       />
-
-      <ThemesPanel overview={data} onOpenResult={openResult} />
 
       <CitationSourcesDrilldown
         businessId={business.id}
@@ -218,32 +225,20 @@ export function OverviewPage() {
   )
 }
 
-function OverviewFrame({
-  children,
-  overview,
-}: {
-  children: React.ReactNode
-  overview?: Overview
-}) {
+function OverviewFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <OverviewHeader overview={overview} />
+      <OverviewHeader />
       {children}
     </div>
   )
 }
 
-function OverviewHeader({ overview }: { overview?: Overview }) {
-  const trend = overview?.visibility?.trend ?? []
-  const latest = trend[trend.length - 1]
+function OverviewHeader() {
   return (
     <PageHeader
       title="Your visibility brief"
-      description={
-        latest
-          ? `Latest analyzed run: ${longDate(latest.scheduledFor)} · ${latest.analyzed} ${pluralize(latest.analyzed, "response")} analyzed`
-          : "Your latest AI visibility signals and what changed."
-      }
+      description="Your latest AI visibility signals and what changed."
       actions={
         <Link
           className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
@@ -258,25 +253,31 @@ function OverviewHeader({ overview }: { overview?: Overview }) {
 
 function VisibilityCard({
   overview,
+  mode,
+  onModeChange,
   onOpenResult,
   onSelectRun,
 }: {
   overview: Overview
+  mode: ExplorerMode
+  onModeChange: (mode: ExplorerMode) => void
   onOpenResult: (ids: string[], context?: string) => void
   onSelectRun: (runID: string) => void
 }) {
   const trend = overview.visibility?.trend ?? []
   const latestPoint = trend[trend.length - 1]
-  const defaultMode: ExplorerMode = trend.length === 1 ? "snapshot" : "trend"
-  const [modeOverride, setModeOverride] = useState<ExplorerMode>()
   const [snapshotRunID, setSnapshotRunID] = useState<string>()
   const [range, setRange] = useState<TrendRange>("last-12")
   const [selectedTrendRunID, setSelectedTrendRunID] = useState<string>()
-  const mode = modeOverride ?? defaultMode
   const effectiveRange: TrendRange =
     trend.length <= 12 && range === "last-12" ? "all" : range
   const snapshotPoint =
     trend.find((point) => point.runId === snapshotRunID) ?? latestPoint
+  const snapshotPointIndex = trend.findIndex(
+    (point) => point.runId === snapshotPoint.runId
+  )
+  const previousSnapshotPoint =
+    snapshotPointIndex > 0 ? trend[snapshotPointIndex - 1] : undefined
   const visibleTrend =
     effectiveRange === "all"
       ? trend
@@ -284,10 +285,11 @@ function VisibilityCard({
   const selectedTrendPoint = visibleTrend.find(
     (point) => point.runId === selectedTrendRunID
   )
+  const headlinePoint = mode === "snapshot" ? snapshotPoint : latestPoint
 
   const changeMode = (values: string[]) => {
     const next = values[0]
-    if (next === "snapshot" || next === "trend") setModeOverride(next)
+    if (next === "snapshot" || next === "trend") onModeChange(next)
   }
   const changeRange = (values: string[]) => {
     const next = values[0]
@@ -299,43 +301,43 @@ function VisibilityCard({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span>AI visibility</span>
-          <span className="text-2xl font-semibold tabular-nums">
-            {formatPercent(latestPoint.percent)}
-          </span>
-        </CardTitle>
-        <CardDescription>
-          Latest: {longDate(latestPoint.scheduledFor)} · mentioned in{" "}
-          {latestPoint.mentioned} of {latestPoint.analyzed} analyzed responses
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <CardTitle>AI visibility</CardTitle>
+          <div className="font-heading text-5xl font-semibold tracking-tight tabular-nums sm:text-6xl">
+            {formatPercent(headlinePoint.percent)}
+          </div>
+          <CardDescription>
+            {mode === "snapshot" ? "Analyzed run" : "Latest"} ·{" "}
+            {longDate(headlinePoint.scheduledFor)}
+          </CardDescription>
+        </div>
+        <ToggleGroup
+          value={[mode]}
+          onValueChange={changeMode}
+          size="sm"
+          aria-label="Visibility explorer mode"
+        >
+          <ToggleGroupItem value="snapshot" className="min-h-11">
+            Run snapshot
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="trend"
+            className="min-h-11"
+            disabled={trend.length < 2}
+            title={
+              trend.length < 2
+                ? "Over time becomes available after a second analyzed run"
+                : undefined
+            }
+          >
+            Over time
+          </ToggleGroupItem>
+        </ToggleGroup>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1">
-          <ToggleGroup
-            value={[mode]}
-            onValueChange={changeMode}
-            size="sm"
-            aria-label="Visibility explorer mode"
-          >
-            <ToggleGroupItem value="snapshot" className="min-h-11">
-              Run snapshot
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="trend"
-              className="min-h-11"
-              disabled={trend.length < 2}
-              title={
-                trend.length < 2
-                  ? "Over time becomes available after a second analyzed run"
-                  : undefined
-              }
-            >
-              Over time
-            </ToggleGroupItem>
-          </ToggleGroup>
-          {mode === "trend" && trend.length > 4 && (
+        {mode === "trend" && trend.length > 4 && (
+          <div className="flex justify-end overflow-x-auto pb-1">
             <ToggleGroup
               value={[effectiveRange]}
               onValueChange={changeRange}
@@ -354,8 +356,8 @@ function VisibilityCard({
                 All
               </ToggleGroupItem>
             </ToggleGroup>
-          )}
-        </div>
+          </div>
+        )}
 
         {mode === "snapshot" ? (
           <SnapshotView
@@ -364,7 +366,6 @@ function VisibilityCard({
             competitors={overview.topCompetitors}
             onSelectRun={setSnapshotRunID}
             onOpenResult={onOpenResult}
-            onOpenRun={onSelectRun}
           />
         ) : (
           <TrendChart
@@ -378,12 +379,40 @@ function VisibilityCard({
             onOpenRun={onSelectRun}
           />
         )}
-        <p className="text-xs text-muted-foreground">
-          Explorer choices stay within this card. Questions use their latest
-          analyzed response; sources, themes, and competitors summarize evidence
-          collected to date.
-        </p>
       </CardContent>
+      {mode === "snapshot" && (
+        <CardFooter className="flex-col items-stretch gap-3 border-t sm:flex-row sm:items-center">
+          {previousSnapshotPoint && (
+            <DeltaBadge
+              delta={snapshotPoint.percent - previousSnapshotPoint.percent}
+              previousDate={previousSnapshotPoint.scheduledFor}
+            />
+          )}
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
+            <Button
+              type="button"
+              className="min-h-11"
+              disabled={snapshotPoint.resultIds.length === 0}
+              onClick={() =>
+                onOpenResult(
+                  snapshotPoint.resultIds,
+                  `Visibility responses from ${longDate(snapshotPoint.scheduledFor)}`
+                )
+              }
+            >
+              View responses
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => onSelectRun(snapshotPoint.runId)}
+            >
+              Open run
+            </Button>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   )
 }
@@ -407,19 +436,13 @@ function SnapshotView({
   competitors,
   onSelectRun,
   onOpenResult,
-  onOpenRun,
 }: {
   point: VisibilityPoint
   trend: VisibilityPoint[]
   competitors: CompetitorSummary[]
   onSelectRun: (runID: string) => void
   onOpenResult: (ids: string[], context?: string) => void
-  onOpenRun: (runID: string) => void
 }) {
-  const pointIndex = trend.findIndex(
-    (candidate) => candidate.runId === point.runId
-  )
-  const previousPoint = pointIndex > 0 ? trend[pointIndex - 1] : undefined
   const competitorData = competitors
     .map((competitor) => {
       const competitorPoint = competitor.trend.find(
@@ -456,49 +479,38 @@ function SnapshotView({
   ]
   const runItems = [...trend].reverse().map((candidate) => ({
     value: candidate.runId,
-    label: `${longDate(candidate.scheduledFor)} · ${candidate.mentioned} of ${candidate.analyzed}`,
+    label: longDate(candidate.scheduledFor),
   }))
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            Analyzed run
-          </span>
-          <Select
-            items={runItems}
-            value={point.runId}
-            onValueChange={(value) => {
-              if (value) onSelectRun(value)
-            }}
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">
+          Choose run
+        </span>
+        <Select
+          items={runItems}
+          value={point.runId}
+          onValueChange={(value) => {
+            if (value) onSelectRun(value)
+          }}
+        >
+          <SelectTrigger
+            className="min-h-11 w-full sm:w-72"
+            aria-label="Analyzed run"
           >
-            <SelectTrigger
-              className="min-h-11 w-full sm:w-72"
-              aria-label="Analyzed run"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {runItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-1 sm:items-end">
-          <div className="text-2xl font-semibold tabular-nums">
-            {formatPercent(point.percent)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {point.mentioned} of {point.analyzed} ·{" "}
-            {shortDate(dateMs(point.scheduledFor))}
-          </div>
-        </div>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {runItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
       {competitorData.length > 0 ? (
@@ -510,43 +522,6 @@ function SnapshotView({
       ) : (
         <MentionComposition point={point} />
       )}
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {previousPoint ? (
-          <DeltaBadge
-            delta={point.percent - previousPoint.percent}
-            previousDate={previousPoint.scheduledFor}
-          />
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            First analyzed run
-          </span>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            disabled={point.resultIds.length === 0}
-            onClick={() =>
-              onOpenResult(
-                point.resultIds,
-                `Visibility responses from ${longDate(point.scheduledFor)}`
-              )
-            }
-          >
-            View responses
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => onOpenRun(point.runId)}
-          >
-            Open run
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -1061,14 +1036,12 @@ function PartialRunBanner({ overview }: { overview: Overview }) {
   )
 }
 
-type PromptChangeState = "gained" | "lost" | "still-absent"
+type PromptChangeState = "gained" | "lost"
 
 interface LatestPromptChange {
   prompt: PromptSummary
   state: PromptChangeState
   resultId: string
-  currentDate: string
-  previousDate: string
 }
 
 function WhatChanged({
@@ -1082,97 +1055,105 @@ function WhatChanged({
   const withoutBaseline = prompts.filter(
     (prompt) => prompt.trend.length < 2
   ).length
-  const groups: {
-    state: PromptChangeState
-    title: string
-    empty: string
-    icon: React.ReactNode
-  }[] = [
-    {
-      state: "gained",
-      title: "Now visible",
-      empty: "No questions gained visibility.",
-      icon: <ArrowUpRight className="size-4 text-emerald-700" />,
-    },
-    {
-      state: "lost",
-      title: "No longer visible",
-      empty: "No questions lost visibility.",
-      icon: <ArrowDownRight className="size-4 text-destructive" />,
-    },
-    {
-      state: "still-absent",
-      title: "Still absent",
-      empty: "No questions stayed absent.",
-      icon: <CircleMinus className="size-4 text-muted-foreground" />,
-    },
-  ]
+  const lost = changes.filter((change) => change.state === "lost")
+  const gained = changes.filter((change) => change.state === "gained")
 
   return (
-    <section
-      className="flex flex-col gap-3"
-      aria-labelledby="what-changed-title"
-    >
-      <div>
-        <h2 id="what-changed-title" className="text-xl font-semibold">
-          What changed
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Each question compares its two latest analyzed responses.
-          {withoutBaseline > 0 &&
-            ` ${withoutBaseline} ${pluralize(withoutBaseline, "question")} ${withoutBaseline === 1 ? "has" : "have"} no baseline yet.`}
-        </p>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {groups.map((group) => {
-          const items = changes.filter((change) => change.state === group.state)
-          return (
-            <Card key={group.state} className="gap-3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  {group.icon}
-                  {group.title}
-                  <Badge variant="outline" className="ml-auto tabular-nums">
-                    {items.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-1">
-                {items.length === 0 ? (
-                  <PanelEmpty>{group.empty}</PanelEmpty>
-                ) : (
-                  items.map((item) => (
-                    <button
-                      key={item.prompt.id}
-                      type="button"
-                      className="rounded-md px-2 py-2 text-left hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      onClick={() =>
-                        onOpenResult(
-                          item.resultId,
-                          `Latest response for “${item.prompt.text}”`
-                        )
-                      }
-                    >
-                      <span className="line-clamp-2 text-sm font-medium">
-                        {item.prompt.text}
-                      </span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {shortDate(dateMs(item.previousDate))} →{" "}
-                        {shortDate(dateMs(item.currentDate))}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+    <section aria-labelledby="what-changed-title">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 id="what-changed-title">What changed</h2>
+          </CardTitle>
+          <CardDescription>
+            Each question compares its two latest analyzed responses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {changes.length === 0 ? (
+            <PanelEmpty>
+              No questions gained or lost visibility in the latest comparison.
+            </PanelEmpty>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              <ChangeGroup
+                title="No longer visible"
+                items={lost}
+                badgeVariant="destructive"
+                icon={<ArrowDownRight data-icon="inline-start" />}
+                empty="No questions lost visibility."
+                onOpenResult={onOpenResult}
+              />
+              <ChangeGroup
+                title="Now visible"
+                items={gained}
+                badgeVariant="secondary"
+                icon={<ArrowUpRight data-icon="inline-start" />}
+                empty="No questions gained visibility."
+                onOpenResult={onOpenResult}
+              />
+            </div>
+          )}
+        </CardContent>
+        {withoutBaseline > 0 && (
+          <CardFooter className="border-t text-sm text-muted-foreground">
+            {withoutBaseline} {pluralize(withoutBaseline, "question")}{" "}
+            {withoutBaseline === 1 ? "needs" : "need"} another analyzed response
+            before a change can be measured.
+          </CardFooter>
+        )}
+      </Card>
     </section>
   )
 }
 
-function WhereToFocus({
+function ChangeGroup({
+  title,
+  items,
+  badgeVariant,
+  icon,
+  empty,
+  onOpenResult,
+}: {
+  title: string
+  items: LatestPromptChange[]
+  badgeVariant: "destructive" | "secondary"
+  icon: React.ReactNode
+  empty: string
+  onOpenResult: (id: string, context: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-medium">{title}</h3>
+        <Badge variant={badgeVariant} className="tabular-nums">
+          {icon}
+          {items.length}
+        </Badge>
+      </div>
+      {items.length === 0 ? (
+        <PanelEmpty>{empty}</PanelEmpty>
+      ) : (
+        <div className="flex flex-col gap-0.5">
+          {items.map((item) => (
+            <QuestionRow
+              key={item.prompt.id}
+              prompt={item.prompt}
+              onClick={() =>
+                onOpenResult(
+                  item.resultId,
+                  `Latest response for “${item.prompt.text}”`
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EvidenceOverview({
   overview,
   prompts,
   onOpenResult,
@@ -1189,28 +1170,27 @@ function WhereToFocus({
   return (
     <section
       className="flex flex-col gap-3"
-      aria-labelledby="where-to-focus-title"
+      aria-labelledby="evidence-overview-title"
     >
       <div>
-        <h2 id="where-to-focus-title" className="text-xl font-semibold">
-          Where to focus
+        <h2 id="evidence-overview-title" className="text-xl font-semibold">
+          Explore the evidence
         </h2>
         <p className="text-sm text-muted-foreground">
-          Questions reflect the latest analyzed response. Sources and
-          competitors reflect evidence collected to date.
+          Open any item to see the responses behind it.
         </p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Panel
-          title="Questions where you’re absent"
-          description="Latest analyzed response"
+          title="Questions to review"
+          description={`${absent.length} latest ${pluralize(absent.length, "response")} ${absent.length === 1 ? "does" : "do"} not mention you`}
           footer={
             <Link
               to="/prompts"
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
               View all questions
-              <ArrowRight className="size-3.5" />
+              <ArrowRight className="size-4" />
             </Link>
           }
         >
@@ -1233,8 +1213,9 @@ function WhereToFocus({
               ))
           )}
         </Panel>
-        <DomainsPanel overview={overview} onOpenDomain={onOpenDomain} />
         <CompetitorsPanel overview={overview} onOpenResult={onOpenResult} />
+        <DomainsPanel overview={overview} onOpenDomain={onOpenDomain} />
+        <ThemesPanel overview={overview} onOpenResult={onOpenResult} />
       </div>
     </section>
   )
@@ -1248,14 +1229,15 @@ function QuestionRow({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      className="h-auto min-h-11 w-full justify-between gap-3 px-2 py-2 text-left whitespace-normal"
     >
       <span className="line-clamp-2">{prompt.text}</span>
-      <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
-    </button>
+      <ArrowRight data-icon="inline-end" />
+    </Button>
   )
 }
 
@@ -1267,15 +1249,12 @@ function latestPromptChanges(prompts: PromptSummary[]): LatestPromptChange[] {
     let state: PromptChangeState | undefined
     if (!previous.mentioned && current.mentioned) state = "gained"
     if (previous.mentioned && !current.mentioned) state = "lost"
-    if (!previous.mentioned && !current.mentioned) state = "still-absent"
     if (!state) return []
     return [
       {
         prompt,
         state,
         resultId: current.resultId,
-        currentDate: current.scheduledFor,
-        previousDate: previous.scheduledFor,
       },
     ]
   })
@@ -1291,7 +1270,7 @@ function ThemesPanel({
   return (
     <Panel
       title="Common themes"
-      description="A secondary view of keywords across your responses"
+      description="Keywords recurring across analyzed responses"
     >
       {overview.topKeywords.length === 0 ? (
         <PanelEmpty>No keywords yet.</PanelEmpty>
@@ -1302,7 +1281,8 @@ function ThemesPanel({
             <StatRow
               key={keyword.keyword}
               label={keyword.keyword}
-              count={keyword.resultIds.length}
+              value={`${keyword.resultIds.length} ${pluralize(keyword.resultIds.length, "response")}`}
+              disabled={keyword.resultIds.length === 0}
               onClick={() =>
                 onOpenResult(
                   keyword.resultIds,
@@ -1325,8 +1305,8 @@ function DomainsPanel({
 }) {
   return (
     <Panel
-      title="Top cited domains"
-      description="Sources cited in evidence collected to date"
+      title="Cited sources"
+      description="Domains ranked by the responses citing them"
     >
       {overview.topCitedDomains.length === 0 ? (
         <PanelEmpty>No citations yet.</PanelEmpty>
@@ -1337,7 +1317,8 @@ function DomainsPanel({
             <StatRow
               key={domain.domain}
               label={domain.domain}
-              count={domain.resultIds.length}
+              value={`${domain.resultIds.length} ${pluralize(domain.resultIds.length, "response")}`}
+              disabled={domain.resultIds.length === 0}
               onClick={() => onOpenDomain(domain)}
             />
           ))
@@ -1358,8 +1339,8 @@ function CompetitorsPanel({
   const discovered = overview.discoveredTotal
   return (
     <Panel
-      title="Leading competitors"
-      description="Who appears in evidence collected to date"
+      title="Competitors appearing"
+      description="Ranked by coverage across analyzed responses"
       footer={
         <Link
           to={
@@ -1368,9 +1349,9 @@ function CompetitorsPanel({
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           {discovered > 0
-            ? `${discovered} discovered — triage`
+            ? `${discovered} discovered to review`
             : "View all competitors"}
-          <ArrowRight className="size-3.5" />
+          <ArrowRight className="size-4" />
         </Link>
       }
     >
@@ -1405,11 +1386,12 @@ function CompetitorRow({
 }) {
   const disabled = competitor.resultIds.length === 0
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       disabled={disabled}
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:opacity-70"
+      className="h-auto min-h-11 w-full justify-between gap-2 px-2 py-2 text-left whitespace-normal"
     >
       <span className="flex min-w-0 items-center gap-2">
         <span className="truncate">{competitor.name}</span>
@@ -1420,7 +1402,7 @@ function CompetitorRow({
       <span className="shrink-0 text-muted-foreground tabular-nums">
         {formatPercent(competitor.mentionPercent)}
       </span>
-    </button>
+    </Button>
   )
 }
 
@@ -1436,43 +1418,54 @@ function Panel({
   children: React.ReactNode
 }) {
   return (
-    <Card className="gap-3">
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-0.5">{children}</CardContent>
-      {footer && <div className="border-t px-6 pt-3">{footer}</div>}
+      <CardContent className="flex flex-1 flex-col gap-0.5">
+        {children}
+      </CardContent>
+      {footer && <CardFooter className="border-t">{footer}</CardFooter>}
     </Card>
   )
 }
 
 function StatRow({
   label,
-  count,
+  value,
+  disabled,
   onClick,
 }: {
   label: string
-  count: number
+  value: string
+  disabled?: boolean
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
-      disabled={count === 0}
+      variant="ghost"
+      disabled={disabled}
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:opacity-70"
+      className="h-auto min-h-11 w-full justify-between gap-2 px-2 py-2 text-left whitespace-normal"
     >
       <span className="truncate">{label}</span>
       <span className="shrink-0 text-muted-foreground tabular-nums">
-        {count}
+        {value}
       </span>
-    </button>
+    </Button>
   )
 }
 
 function PanelEmpty({ children }: { children: React.ReactNode }) {
-  return <p className="px-2 py-1.5 text-sm text-muted-foreground">{children}</p>
+  return (
+    <Empty className="min-h-24 p-4">
+      <EmptyHeader>
+        <EmptyDescription>{children}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  )
 }
 
 // Trend is empty: no analyzed results exist yet. Distinguish "no run", "run in
