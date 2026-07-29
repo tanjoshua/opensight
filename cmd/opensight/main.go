@@ -34,6 +34,8 @@ import (
 	"opensight/internal/api"
 	"opensight/internal/auth"
 	"opensight/internal/billing"
+	"opensight/internal/billing/reconcile"
+	"opensight/internal/billing/stripe"
 	"opensight/internal/config"
 	"opensight/internal/domain"
 	"opensight/internal/llm"
@@ -323,13 +325,13 @@ func createTenantCLI(ctx context.Context, cfg config.Config, opts tenantCreateOp
 		return nil
 	}
 
-	admin, closeStore, err := openAdminStore(cfg)
+	account, closeStore, err := openAccountStore(cfg)
 	if err != nil {
 		return err
 	}
 	defer closeStore()
 
-	tenant, err := admin.CreateTenant(ctx, store.CreateTenantParams{Name: opts.Name})
+	tenant, err := account.CreateTenant(ctx, store.CreateTenantParams{Name: opts.Name})
 	if err != nil {
 		return err
 	}
@@ -348,13 +350,13 @@ func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOption
 		return err
 	}
 
-	admin, closeStore, err := openAdminStore(cfg)
+	account, closeStore, err := openAccountStore(cfg)
 	if err != nil {
 		return err
 	}
 	defer closeStore()
 
-	user, err := admin.CreateUser(ctx, store.CreateUserParams{
+	user, err := account.CreateUser(ctx, store.CreateUserParams{
 		TenantID:     opts.TenantID,
 		Email:        opts.Email,
 		PasswordHash: passwordHash,
@@ -373,12 +375,12 @@ func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOption
 	return nil
 }
 
-func openAdminStore(cfg config.Config) (*store.AdminStore, func(), error) {
+func openAccountStore(cfg config.Config) (*store.AccountStore, func(), error) {
 	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
 	if err != nil {
 		return nil, nil, err
 	}
-	return store.NewAdminStore(db), func() { _ = db.Close() }, nil
+	return store.NewAccountStore(db), func() { _ = db.Close() }, nil
 }
 
 func generatePassword() (string, error) {
@@ -411,23 +413,40 @@ func serve(ctx context.Context, cfg config.Config) error {
 	}
 	defer temporalClient.Close()
 
+	// Built before api.New so a misconfigured BILLING_PROVIDER=stripe fails at
+	// startup, not at the first customer's checkout.
+	billingProvider, err := newBillingProvider(cfg)
+	if err != nil {
+		return err
+	}
+
+	// Shared between Deps.Subscriptions and the Reconciler, same store, no
+	// duplicate connection pooling.
+	subscriptions := store.NewSubscriptionStore(db)
+	reconciler := reconcile.New(subscriptions, billingProvider, nil)
+
 	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
 	// behind Caddy TLS, where Secure must be set.
-	apiServer := api.New(
-		store.NewAuthStore(db),
-		store.NewBusinessStore(db),
-		store.NewSubscriptionStore(db),
-		store.NewProfileProposalStore(db),
-		store.NewApplyProposalStore(db),
-		store.NewPromptStore(db),
-		store.NewCompetitorStore(db),
-		store.NewRunStore(db),
-		store.NewResultStore(db),
-		metrics.New(db),
-		temporalClient,
-		cfg.TemporalTaskQueue,
-		cfg.Env != "dev",
-	)
+	apiServer := api.New(api.Deps{
+		Auth:              store.NewAuthStore(db),
+		Accounts:          store.NewAccountStore(db),
+		Businesses:        store.NewBusinessStore(db),
+		Subscriptions:     subscriptions,
+		Proposals:         store.NewProfileProposalStore(db),
+		Apply:             store.NewApplyProposalStore(db),
+		Prompts:           store.NewPromptStore(db),
+		Competitors:       store.NewCompetitorStore(db),
+		Runs:              store.NewRunStore(db),
+		Results:           store.NewResultStore(db),
+		Metrics:           metrics.New(db),
+		Temporal:          temporalClient,
+		TemporalTaskQueue: cfg.TemporalTaskQueue,
+		SecureCookies:     cfg.Env != "dev",
+		Billing:           billingProvider,
+		Reconciler:        reconciler,
+		StripePriceIDs:    cfg.StripePriceIDs,
+		AppBaseURL:        cfg.AppBaseURL,
+	})
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -577,6 +596,23 @@ func work(ctx context.Context, cfg config.Config) error {
 
 	<-ctx.Done()
 	return nil
+}
+
+// newBillingProvider builds the billing.Provider for cfg.BillingProvider
+// (design 08 "Local development"). It lives in the composition root, not
+// internal/billing, because internal/billing/stripe imports internal/billing
+// — a factory inside internal/billing would cycle. StubProvider is
+// per-process in-memory; serve is its only consumer, so its state never
+// crosses the serve/work process boundary.
+func newBillingProvider(cfg config.Config) (billing.Provider, error) {
+	switch cfg.BillingProvider {
+	case config.BillingProviderStub:
+		return billing.NewStubProvider(), nil
+	case config.BillingProviderStripe:
+		return stripe.New(stripe.Config{APIKey: cfg.StripeSecretKey})
+	default:
+		return nil, fmt.Errorf("unknown billing provider %q", cfg.BillingProvider)
+	}
 }
 
 // dialTemporal connects to the Temporal frontend with a bounded dial timeout.

@@ -109,6 +109,8 @@ ORDER BY created_at`
 
 	resolveTenantIDSQL = `SELECT tenant_id FROM businesses WHERE id = $1`
 
+	renameTenantSQL = `UPDATE tenants SET name = $2 WHERE id = $1`
+
 	updateActiveBusinessProfileSQL = `
 UPDATE businesses
 SET name = CASE WHEN $3 THEN $4 ELSE name END,
@@ -122,7 +124,11 @@ RETURNING ` + businessColumns
 )
 
 // CreateBusiness inserts a business owned by params.TenantID (RUN-5 CLI
-// `opensight business create`). Tenant existence is enforced by the FK.
+// `opensight business create`). Tenant existence is enforced by the FK. In
+// the same transaction it renames the tenant to the business name: signup
+// seeds tenants.name from the email local part (AccountStore.CreateAccount),
+// and onboarding's first business is what replaces that placeholder with the
+// real name (design 08 "Signup").
 func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusinessParams) (Business, error) {
 	if s == nil || s.db == nil {
 		return Business{}, errors.New("business store database is required")
@@ -145,21 +151,30 @@ func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusines
 		Location:    params.Location,
 		ActivatedAt: params.ActivatedAt,
 	}
-	if err := s.db.QueryRowContext(
-		ctx,
-		insertBusinessSQL,
-		params.ID,
-		params.TenantID,
-		string(params.Status),
-		params.Name,
-		params.Website,
-		params.Aliases,
-		params.Category,
-		string(params.Services),
-		jsonbArg(params.Location),
-		params.ActivatedAt,
-	).Scan(&business.CreatedAt); err != nil {
-		return Business{}, fmt.Errorf("insert business: %w", err)
+	err = withTx(ctx, s.db, func(q querier) error {
+		if err := q.queryRowContext(
+			ctx,
+			insertBusinessSQL,
+			params.ID,
+			params.TenantID,
+			string(params.Status),
+			params.Name,
+			params.Website,
+			params.Aliases,
+			params.Category,
+			string(params.Services),
+			jsonbArg(params.Location),
+			params.ActivatedAt,
+		).Scan(&business.CreatedAt); err != nil {
+			return fmt.Errorf("insert business: %w", err)
+		}
+		if _, err := q.execContext(ctx, renameTenantSQL, params.TenantID, params.Name); err != nil {
+			return fmt.Errorf("rename tenant: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return Business{}, err
 	}
 	return business, nil
 }

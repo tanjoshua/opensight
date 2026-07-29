@@ -125,6 +125,116 @@ func TestRPCSessionLifecycle(t *testing.T) {
 	}
 }
 
+// TestRPCSignupRoundTrip is the BILL-3 AC1/AC4 acceptance test: a successful
+// signup lands authenticated (Set-Cookie with the right flags, GetMe succeeds
+// on the jar's cookie) with the Starter plan and no business. The created
+// row's plan_code/comped/Stripe-columns shape is asserted by the store
+// integration test (TestAccountStoreCreateAccount): the handler test has no
+// fake with columns to inspect, so it verifies the RPC contract instead.
+func TestRPCSignupRoundTrip(t *testing.T) {
+	f := &fakeAuthStore{}
+	srv := newTestServer(f)
+	_, client := newRPCTest(t, srv)
+	ctx := context.Background()
+
+	res, err := client.Signup(ctx, connect.NewRequest(&opensightv1.SignupRequest{
+		Email:    "new@example.com",
+		Password: "correct-horse-battery",
+	}))
+	if err != nil {
+		t.Fatalf("signup: %v", err)
+	}
+	setCookie := res.Header().Get("Set-Cookie")
+	if setCookie == "" {
+		t.Fatal("signup response missing Set-Cookie")
+	}
+	if !strings.Contains(setCookie, "HttpOnly") {
+		t.Errorf("signup Set-Cookie missing HttpOnly: %q", setCookie)
+	}
+	if !strings.Contains(setCookie, "SameSite=Lax") {
+		t.Errorf("signup Set-Cookie missing SameSite=Lax: %q", setCookie)
+	}
+	if res.Msg.GetUser().GetEmail() != "new@example.com" {
+		t.Errorf("signup user email = %q, want new@example.com", res.Msg.GetUser().GetEmail())
+	}
+	if res.Msg.GetTenant().GetName() != "new" {
+		t.Errorf("signup tenant name = %q, want the email local part %q", res.Msg.GetTenant().GetName(), "new")
+	}
+
+	meRes, err := client.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{}))
+	if err != nil {
+		t.Fatalf("GetMe after signup: %v", err)
+	}
+	if meRes.Msg.GetUser().GetEmail() != "new@example.com" {
+		t.Fatalf("GetMe user email = %q, want new@example.com", meRes.Msg.GetUser().GetEmail())
+	}
+	if len(meRes.Msg.GetBusinesses()) != 0 {
+		t.Fatalf("GetMe businesses = %d, want 0 (account survives with no business)", len(meRes.Msg.GetBusinesses()))
+	}
+	if meRes.Msg.GetPromptLimit() != 20 {
+		t.Errorf("GetMe prompt limit = %d, want 20 (Starter)", meRes.Msg.GetPromptLimit())
+	}
+}
+
+// TestRPCSignupDuplicateEmail is the BILL-3 AC2 acceptance test: signing up
+// twice with the same email is refused with a clear, specific reason (unlike
+// Login, Signup is knowingly an enumeration oracle — design 08).
+func TestRPCSignupDuplicateEmail(t *testing.T) {
+	f := &fakeAuthStore{}
+	srv := newTestServer(f)
+	_, client := newRPCTest(t, srv)
+	ctx := context.Background()
+
+	req := connect.NewRequest(&opensightv1.SignupRequest{Email: "taken@example.com", Password: "correct-horse-battery"})
+	if _, err := client.Signup(ctx, req); err != nil {
+		t.Fatalf("first signup: %v", err)
+	}
+
+	_, err := client.Signup(ctx, connect.NewRequest(&opensightv1.SignupRequest{
+		Email: "Taken@Example.com", Password: "another-long-password",
+	}))
+	if err == nil {
+		t.Fatal("second signup with the same email succeeded, want an error")
+	}
+	if connect.CodeOf(err) != connect.CodeAlreadyExists {
+		t.Fatalf("duplicate signup code = %v, want AlreadyExists", connect.CodeOf(err))
+	}
+}
+
+// TestRPCSignupValidation is the BILL-3 validation table: malformed input is
+// rejected before any account or session is created.
+func TestRPCSignupValidation(t *testing.T) {
+	cases := []struct {
+		name     string
+		email    string
+		password string
+	}{
+		{"empty email", "", "correct-horse-battery"},
+		{"malformed email", "not-an-email", "correct-horse-battery"},
+		{"11-char password", "short@example.com", "12345678901"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeAuthStore{}
+			srv := newTestServer(f)
+			_, client := newRPCTest(t, srv)
+
+			_, err := client.Signup(context.Background(), connect.NewRequest(&opensightv1.SignupRequest{
+				Email: tc.email, Password: tc.password,
+			}))
+			if err == nil {
+				t.Fatal("expected an error, got nil")
+			}
+			if connect.CodeOf(err) != connect.CodeInvalidArgument {
+				t.Fatalf("code = %v, want InvalidArgument", connect.CodeOf(err))
+			}
+			if len(f.created) != 0 {
+				t.Fatalf("created %d sessions, want 0", len(f.created))
+			}
+		})
+	}
+}
+
 // TestRPCPaging has no REST analogue: positiveIntParam/nonNegativeIntParam
 // errored on a bad value, but proto3 can't distinguish an omitted int32 from
 // an explicit 0/-1, so rpcPaging normalizes instead of erroring.
@@ -326,6 +436,20 @@ func TestRPCLoginFailuresAreUniform(t *testing.T) {
 	wrongPwBody := doRawLogin(t, ts.URL, "real@example.com", "wrong-password")
 	if unknownBody != wrongPwBody {
 		t.Fatalf("unknown-email body %q != wrong-password body %q", unknownBody, wrongPwBody)
+	}
+
+	// Signup is knowingly an email-enumeration oracle (design 08), but that
+	// must not leak into Login: a wrong password against a just-signed-up
+	// email must still be byte-identical to an unknown email.
+	signupClient := opensightv1connect.NewAuthServiceClient(http.DefaultClient, ts.URL+"/rpc")
+	if _, err := signupClient.Signup(ctx, connect.NewRequest(&opensightv1.SignupRequest{
+		Email: "signed-up@example.com", Password: "correct-horse-battery",
+	})); err != nil {
+		t.Fatalf("signup: %v", err)
+	}
+	signedUpWrongPwBody := doRawLogin(t, ts.URL, "signed-up@example.com", "wrong-password")
+	if signedUpWrongPwBody != unknownBody {
+		t.Fatalf("post-signup wrong-password body %q != unknown-email body %q; signup's enumeration oracle leaked into login", signedUpWrongPwBody, unknownBody)
 	}
 }
 

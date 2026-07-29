@@ -74,6 +74,16 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	if len(created.Aliases) != 2 {
 		t.Fatalf("created aliases = %v, want 2 elements", created.Aliases)
 	}
+	// CreateBusiness renames the owning tenant atomically with the business
+	// insert (BILL-3): onboarding's first business replaces signup's
+	// email-local-part placeholder name with the real business name.
+	var tenantAName string
+	if err := db.QueryRowContext(ctx, "SELECT name FROM tenants WHERE id = $1", tenantA).Scan(&tenantAName); err != nil {
+		t.Fatalf("load tenant name: %v", err)
+	}
+	if tenantAName != "Acme Clinic" {
+		t.Fatalf("tenant name after CreateBusiness = %q, want %q", tenantAName, "Acme Clinic")
+	}
 	updatedName, updatedCategory := "Updated Clinic", "clinic"
 	updatedAliases := []string{"Updated"}
 	updatedServices := json.RawMessage(`["screening"]`)

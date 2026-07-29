@@ -94,11 +94,23 @@ Two deliberate shapes:
 
 ## Access: one derived authorization primitive
 
-Every gate in the system asks one question, answered by one pure function over the `subscriptions` row and the current time:
+Every gate in the system asks one question, answered by one pure function, `billing.DeriveAccess` (`internal/billing/access.go`, BILL-4):
 
 ```go
 type Access int // AccessNever | AccessFull | AccessLapsed
+
+// State is the access-relevant slice of a subscriptions row.
+type State struct {
+    Comped               bool
+    StripeSubscriptionID string
+    StripeStatus         string
+    PastDueSince         time.Time
+}
+
+func DeriveAccess(st State, now time.Time) Access
 ```
+
+`DeriveAccess` takes the primitives `State`, never `store.Subscription`: `internal/store` imports `internal/billing` for the plan catalog, so the reverse dependency would cycle. `store.Subscription.AccessState()` is the single adapter that bridges the two, dereferencing the row's nullable Stripe columns into `State`'s plain fields. The wire enum lives in `common.proto`, not `billing.proto`, because `AuthService.GetMe` (BILL-6) carries the same `Access` value the checkout RPCs do.
 
 | Condition | Access | Meaning |
 |---|---|---|
@@ -125,11 +137,11 @@ Because the pause happens when the webhook lands, a schedule firing in the same 
 
 ## Enforcement: three gates, one of them authoritative
 
-**1. Write gate (RPC interceptor).** A Connect interceptor classifies every procedure and rejects writes when access is not `full`, with `CodeFailedPrecondition` and an error detail the SPA renders as the billing state. Classification is an explicit map keyed by generated procedure constants — the same default-deny pattern as `publicProcedures` — plus a descriptor-walking test (`TestEveryRPCHasAccessClass`) that fails when a new RPC is added without a class, so the map cannot rot silently. Three classes: `billing` (reachable at any access), `read` (needs `full` or `lapsed`), `write` (needs `full`).
+**1. Write gate (RPC).** Every procedure carries one of three access classes — `billing` (reachable at any access), `read` (needs `full` or `lapsed`), `write` (needs `full`) — and a request below the required access is rejected with `CodeFailedPrecondition` plus an error detail the SPA renders as the billing state. Classification is **default-deny and non-rotting**: an unclassified procedure must be unreachable rather than open, and adding an RPC without classifying it must fail the build or the test suite rather than silently admitting it. `publicProcedures` is the existing precedent for the shape.
 
 **2. Schedule gate (Temporal).** Reconcile pauses the business's monitoring Schedule when access leaves `full` and unpauses it when access returns. This is the mechanism that actually stops recurring spend, and it is *an optimization*: a paused schedule costs nothing to be slightly late.
 
-**3. Spend backstop (RunWorkflow).** `RunWorkflow`'s first activity resolves the business's tenant and its access, and returns immediately without creating a `monitoring_runs` row if access is not `full`. This is the authoritative gate, because gates 1 and 2 both depend on a webhook that may be delayed, dropped, or processed after a schedule has already fired. **A missed webhook must never cost money.** Everything else can be eventually consistent; this cannot.
+**3. Spend backstop (RunWorkflow).** `RunWorkflow` resolves the business's tenant access before anything that costs money or writes history, and returns immediately — no `monitoring_runs` row, no prompt executed — if access is not `full`. This is the authoritative gate, because gates 1 and 2 both depend on a webhook that may be delayed, dropped, or processed after a schedule has already fired. **A missed webhook must never cost money.** Everything else can be eventually consistent; this cannot.
 
 A run already in flight when a cancellation lands is allowed to finish. It is one run's worth of cost inside a period the customer paid for, and killing it would leave a partial run in the history the product is built on.
 
@@ -139,14 +151,18 @@ The prompt-limit check (02's `count(active) <= prompt_limit`) now reads the cata
 
 **Client.** `github.com/stripe/stripe-go/v86`, a `Provider` interface in `internal/billing` with a stub implementation and a real adapter in `internal/billing/stripe` — the same shape as the `PromptRunner` adapter (01). The adapter declares its own `APIVersion` constant (`2026-06-24.dahlia`) and asserts it matches the SDK's in a test, so a stripe-go upgrade that moves the API version fails CI rather than silently changing behavior between deploys (the SDK always sends its own `APIVersion` as `Stripe-Version`, with no per-request override — pinning is therefore a build-time guarantee, not a runtime one). Production authenticates with a **restricted API key** (`rk_`) scoped to write Checkout Sessions, Customers and Billing Portal Sessions and read Subscriptions — not a secret key. This is enforced by the go-live checklist, not by code: sandbox keys are `sk_test_`, so a `rk_` prefix check in `internal/config` would break local development against the Stripe sandbox.
 
-**Customer.** One Stripe Customer per **tenant** (the billing entity; users are post-MVP plural). Created lazily when the tenant's first Checkout Session is created, with `metadata.tenant_id`, and its id persisted immediately. It is never recreated — a lapsed tenant that resubscribes reuses the same Customer, keeping one invoice history per clinic.
+**Customer.** One Stripe Customer per **tenant** (the billing entity; users are post-MVP plural). Created lazily when the tenant's first Checkout Session is created, with `metadata.tenant_id`. It is never recreated — a lapsed tenant that resubscribes reuses the same Customer, keeping one invoice history per clinic.
+
+The id is persisted **write-once**: `SubscriptionStore.SetStripeCustomerID` (BILL-4) is `UPDATE subscriptions SET stripe_customer_id = COALESCE(stripe_customer_id, $2) WHERE tenant_id = $1 RETURNING stripe_customer_id`, touching no other column. This is deliberately not the full-row `Upsert`, for two independent reasons: `Upsert` is built from a row read before the network round trip to Stripe, so a concurrent reconcile write (BILL-5's webhook) would have its `stripe_status`/`stripe_subscription_id`/`past_due_since` clobbered back to stale values; and `Upsert` cannot express write-once at all — two tabs both starting checkout would create two Customers, and whichever `Upsert` lands second wins, silently detaching the row from whichever Customer the customer actually paid on.
+
+**Accepted crash window:** a crash between creating the Customer at Stripe and persisting its id leaves an orphan Customer — `metadata.tenant_id` set, no subscription, no invoice, no charge, nothing customer-visible. The retry creates a second Customer and persists that one. This is accepted, not engineered around: nothing bills a Customer with no subscription, the orphan is traceable by metadata and deletable from the dashboard, and "permanent" is a guarantee about the *persisted* id, which `COALESCE` enforces at the database regardless of how many orphans preceded it. See the go-live checklist for the operational sweep this implies.
 
 **Checkout Session** (`mode: subscription`):
 
 - `customer` — the persisted Customer id.
 - `line_items: [{price: <starter monthly price id>, quantity: 1}]`.
 - `client_reference_id: <tenant_id>` and `subscription_data.metadata.tenant_id` — belt and braces alongside the Customer lookup.
-- `integration_identifier` — a stable label with a random 8-letter suffix (e.g. `opensight-signup-vqmzhrtk`) so checkout performance is comparable in the dashboard.
+- `integration_identifier` — a stable label, generated once by a developer and committed as a constant (e.g. `opensight-signup-vqmzhrtk`), so checkout performance is comparable in the dashboard. The 8-letter suffix exists only to avoid collision with other integrations, not to vary per session — a per-request random suffix would produce a population of one and defeat the purpose.
 - `success_url: {APP_BASE_URL}/checkout/return?session_id={CHECKOUT_SESSION_ID}`, `cancel_url: {APP_BASE_URL}/billing`.
 - **No `payment_method_types`.** Omitted entirely so eligible methods are configured in the dashboard and chosen dynamically per customer. Hardcoding `['card']` would lock out methods that convert.
 
@@ -159,7 +175,9 @@ The prompt-limit check (02's `count(active) <= prompt_limit`) now reads the cata
 
 Subscribed events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`. Invoice events are not subscribed: Stripe's own emails handle receipts and dunning notification, and every state we care about is reachable from the subscription.
 
-**Reconcile** is a single function — `Reconcile(ctx, stripeCustomerID)` — that fetches the current subscription, writes the `subscriptions` row, and pauses or unpauses the monitoring Schedule if access changed. The webhook calls it. The checkout return page calls it. There is exactly one code path that can change billing state, so the two entry points cannot disagree.
+**Reconcile** is one path, keyed by the Stripe Customer: fetch the current subscription, write the `subscriptions` row, and pause or unpause the monitoring Schedule if access changed. The webhook calls it. The checkout return calls it. There is exactly one code path that can change billing state, so the two entry points cannot disagree.
+
+It lives in its own package, `internal/billing/reconcile` (BILL-4), not as a method on `api.Server` and not as a file in `internal/billing` itself: `internal/billing` cannot host it without a cycle (its seam would need to speak `store.Subscription`, and `internal/store` already imports `internal/billing`), and hanging it off `api.Server` would make it untestable without a full `Server` and would force a future CLI comp command to reach into `internal/api`. The single writer is an unexported `apply(ctx, sub store.Subscription) (store.Subscription, error)`, reached through per-source entry points: `Reconciler.Tenant(ctx, tenantID)` for the checkout return (BILL-4, keyed by the id already on the session), and `Reconciler.ByCustomer(ctx, customerID)` for the webhook (BILL-5, which only ever carries a Stripe Customer id). Both funnel into the same `apply`, which is what makes "exactly one code path" a checkable claim rather than a convention.
 
 **Checkout return.** `success_url` lands on `/checkout/return`, which calls `BillingService.ConfirmCheckout(session_id)`; that retrieves the session server-side, confirms it belongs to this tenant, and runs the same reconcile. Without this, a customer whose webhook is delayed by seconds stares at a page telling them they haven't paid, immediately after paying. The webhook remains the source of truth; this is the latency fix, not a second implementation.
 
@@ -169,16 +187,18 @@ Subscribed events: `checkout.session.completed`, `customer.subscription.created`
 
 ```proto
 service BillingService {
-  rpc GetBilling(GetBillingRequest) returns (GetBillingResponse);
-  rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);      // → checkout_url
-  rpc ConfirmCheckout(ConfirmCheckoutRequest) returns (ConfirmCheckoutResponse);
-  rpc CreatePortalSession(CreatePortalSessionRequest) returns (CreatePortalSessionResponse); // → portal_url
+  rpc GetBilling(GetBillingRequest) returns (GetBillingResponse);                            // BILL-9
+  rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);                    // BILL-4, → checkout_url
+  rpc ConfirmCheckout(ConfirmCheckoutRequest) returns (ConfirmCheckoutResponse);               // BILL-4
+  rpc CreatePortalSession(CreatePortalSessionRequest) returns (CreatePortalSessionResponse);  // BILL-8, → portal_url
 }
 ```
 
+Only `StartCheckout` and `ConfirmCheckout` exist today, in their own `proto/opensight/v1/billing.proto` — `GetBilling` and `CreatePortalSession` are declared here as the target shape but not yet in the `.proto` file, so an unimplemented method reads as "not yet built" rather than a regression. Adding methods to an existing service is backward-compatible; declaring them ahead of the story that implements them would force `Unimplemented` stubs and dead generated TS hooks.
+
 `AuthService.Signup` joins `Login` in `publicProcedures`. `GetMeResponse` drops the bare `prompt_limit` int in favour of an `access` enum plus a `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`), so the SPA renders entitlements and billing state from one authoritative payload. No method is ever declared `idempotency_level = NO_SIDE_EFFECTS` (07's CSRF guarantee).
 
-Access is resolved in the same query that resolves the session, extending `store.SessionUser` — one round trip per request, and entitlements are available anywhere a session is.
+Access is resolved alongside the session rather than by a second lookup — one round trip per request, and entitlements are available anywhere a session is.
 
 ## Lapse and reactivation
 
@@ -248,6 +268,7 @@ Added to 07's `.env` inventory and to the restic backup set by virtue of that fi
 6. Webhook endpoint registered at `https://<app>/webhooks/stripe` for the four subscription events; signing secret in `.env`.
 7. Restricted API key minted with the minimum scopes; secret key never deployed.
 8. End-to-end rehearsal in the sandbox: signup → checkout → onboarding → first run → portal cancel → verify schedule paused and history readable → reactivate → verify schedule resumed.
+9. Sweep Stripe for Customers with no subscription older than a day — the accepted crash-window orphans (see "Customer") — and delete them. An eyeball check, not automated: they cost nothing and never bill, but a growing pile is a signal something upstream is failing repeatedly rather than the rare crash this accepts.
 
 ## Deliberately deferred
 

@@ -78,6 +78,48 @@ func (f *fakeAuthStore) DeleteSession(_ context.Context, tokenHash []byte) error
 	return nil
 }
 
+// fakeAccountStore is an in-memory accountStore for handler tests. It writes
+// into the same fakeAuthStore.credsByEmail the login path reads, so Signup and
+// Login share state the way they share a database.
+type fakeAccountStore struct {
+	auth *fakeAuthStore
+	err  error
+}
+
+func (f *fakeAccountStore) CreateAccount(_ context.Context, params store.CreateAccountParams) (store.Tenant, store.User, error) {
+	if f.err != nil {
+		return store.Tenant{}, store.User{}, f.err
+	}
+
+	email := strings.ToLower(strings.TrimSpace(params.Email))
+	if f.auth.credsByEmail == nil {
+		f.auth.credsByEmail = map[string]store.UserCredentials{}
+	}
+	if _, exists := f.auth.credsByEmail[email]; exists {
+		return store.Tenant{}, store.User{}, store.ErrEmailTaken
+	}
+
+	userID, err := domain.NewID()
+	if err != nil {
+		return store.Tenant{}, store.User{}, err
+	}
+	tenantID, err := domain.NewID()
+	if err != nil {
+		return store.Tenant{}, store.User{}, err
+	}
+	local, _, _ := strings.Cut(email, "@")
+
+	passwordHash := params.PasswordHash
+	f.auth.credsByEmail[email] = store.UserCredentials{
+		UserID:       userID,
+		TenantID:     tenantID,
+		Email:        email,
+		TenantName:   local,
+		PasswordHash: &passwordHash,
+	}
+	return store.Tenant{ID: tenantID, Name: local}, store.User{ID: userID, TenantID: tenantID, Email: email}, nil
+}
+
 // fakeBusinessStore is an in-memory businessStore for handler tests.
 type fakeBusinessStore struct {
 	businesses []store.Business
@@ -150,6 +192,7 @@ func (f *fakeBusinessStore) UpdateActiveProfile(_ context.Context, params store.
 func newTestServer(f *fakeAuthStore) *Server {
 	return &Server{
 		auth:          f,
+		accounts:      &fakeAccountStore{auth: f},
 		businesses:    &fakeBusinessStore{},
 		subscriptions: &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}},
 		secureCookies: false,

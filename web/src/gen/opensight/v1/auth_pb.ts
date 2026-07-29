@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/auth.proto.
  */
 export const file_opensight_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChdvcGVuc2lnaHQvdjEvYXV0aC5wcm90bxIMb3BlbnNpZ2h0LnYxIiEKBFVzZXISCgoCaWQYASABKAkSDQoFZW1haWwYAiABKAkiIgoGVGVuYW50EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkiLwoMTG9naW5SZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIlcKDUxvZ2luUmVzcG9uc2USIAoEdXNlchgBIAEoCzISLm9wZW5zaWdodC52MS5Vc2VyEiQKBnRlbmFudBgCIAEoCzIULm9wZW5zaWdodC52MS5UZW5hbnQiDwoNTG9nb3V0UmVxdWVzdCIQCg5Mb2dvdXRSZXNwb25zZSIOCgxHZXRNZVJlcXVlc3QioAEKDUdldE1lUmVzcG9uc2USIAoEdXNlchgBIAEoCzISLm9wZW5zaWdodC52MS5Vc2VyEiQKBnRlbmFudBgCIAEoCzIULm9wZW5zaWdodC52MS5UZW5hbnQSMQoKYnVzaW5lc3NlcxgDIAMoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1N1bW1hcnkSFAoMcHJvbXB0X2xpbWl0GAQgASgFMtYBCgtBdXRoU2VydmljZRJACgVMb2dpbhIaLm9wZW5zaWdodC52MS5Mb2dpblJlcXVlc3QaGy5vcGVuc2lnaHQudjEuTG9naW5SZXNwb25zZRJDCgZMb2dvdXQSGy5vcGVuc2lnaHQudjEuTG9nb3V0UmVxdWVzdBocLm9wZW5zaWdodC52MS5Mb2dvdXRSZXNwb25zZRJACgVHZXRNZRIaLm9wZW5zaWdodC52MS5HZXRNZVJlcXVlc3QaGy5vcGVuc2lnaHQudjEuR2V0TWVSZXNwb25zZUKfAQoQY29tLm9wZW5zaWdodC52MUIJQXV0aFByb3RvUAFaL29wZW5zaWdodC9pbnRlcm5hbC9nZW4vb3BlbnNpZ2h0L3YxO29wZW5zaWdodHYxogIDT1hYqgIMT3BlbnNpZ2h0LlYxygIMT3BlbnNpZ2h0XFYx4gIYT3BlbnNpZ2h0XFYxXEdQQk1ldGFkYXRh6gINT3BlbnNpZ2h0OjpWMWIGcHJvdG8z", [file_opensight_v1_common]);
+  fileDesc("ChdvcGVuc2lnaHQvdjEvYXV0aC5wcm90bxIMb3BlbnNpZ2h0LnYxIiEKBFVzZXISCgoCaWQYASABKAkSDQoFZW1haWwYAiABKAkiIgoGVGVuYW50EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkiLwoMTG9naW5SZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIlcKDUxvZ2luUmVzcG9uc2USIAoEdXNlchgBIAEoCzISLm9wZW5zaWdodC52MS5Vc2VyEiQKBnRlbmFudBgCIAEoCzIULm9wZW5zaWdodC52MS5UZW5hbnQiMAoNU2lnbnVwUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIQCghwYXNzd29yZBgCIAEoCSJYCg5TaWdudXBSZXNwb25zZRIgCgR1c2VyGAEgASgLMhIub3BlbnNpZ2h0LnYxLlVzZXISJAoGdGVuYW50GAIgASgLMhQub3BlbnNpZ2h0LnYxLlRlbmFudCIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIg4KDEdldE1lUmVxdWVzdCKgAQoNR2V0TWVSZXNwb25zZRIgCgR1c2VyGAEgASgLMhIub3BlbnNpZ2h0LnYxLlVzZXISJAoGdGVuYW50GAIgASgLMhQub3BlbnNpZ2h0LnYxLlRlbmFudBIxCgpidXNpbmVzc2VzGAMgAygLMh0ub3BlbnNpZ2h0LnYxLkJ1c2luZXNzU3VtbWFyeRIUCgxwcm9tcHRfbGltaXQYBCABKAUymwIKC0F1dGhTZXJ2aWNlEkAKBUxvZ2luEhoub3BlbnNpZ2h0LnYxLkxvZ2luUmVxdWVzdBobLm9wZW5zaWdodC52MS5Mb2dpblJlc3BvbnNlEkMKBlNpZ251cBIbLm9wZW5zaWdodC52MS5TaWdudXBSZXF1ZXN0Ghwub3BlbnNpZ2h0LnYxLlNpZ251cFJlc3BvbnNlEkMKBkxvZ291dBIbLm9wZW5zaWdodC52MS5Mb2dvdXRSZXF1ZXN0Ghwub3BlbnNpZ2h0LnYxLkxvZ291dFJlc3BvbnNlEkAKBUdldE1lEhoub3BlbnNpZ2h0LnYxLkdldE1lUmVxdWVzdBobLm9wZW5zaWdodC52MS5HZXRNZVJlc3BvbnNlQp8BChBjb20ub3BlbnNpZ2h0LnYxQglBdXRoUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_opensight_v1_common]);
 
 /**
  * @generated from message opensight.v1.User
@@ -106,6 +106,53 @@ export const LoginResponseSchema: GenMessage<LoginResponse> = /*@__PURE__*/
   messageDesc(file_opensight_v1_auth, 3);
 
 /**
+ * SignupRequest carries a credential (password) and must never be logged in
+ * full — relevant to any future logging/observability interceptor.
+ *
+ * @generated from message opensight.v1.SignupRequest
+ */
+export type SignupRequest = Message<"opensight.v1.SignupRequest"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * @generated from field: string password = 2;
+   */
+  password: string;
+};
+
+/**
+ * Describes the message opensight.v1.SignupRequest.
+ * Use `create(SignupRequestSchema)` to create a new message.
+ */
+export const SignupRequestSchema: GenMessage<SignupRequest> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_auth, 4);
+
+/**
+ * @generated from message opensight.v1.SignupResponse
+ */
+export type SignupResponse = Message<"opensight.v1.SignupResponse"> & {
+  /**
+   * @generated from field: opensight.v1.User user = 1;
+   */
+  user?: User | undefined;
+
+  /**
+   * @generated from field: opensight.v1.Tenant tenant = 2;
+   */
+  tenant?: Tenant | undefined;
+};
+
+/**
+ * Describes the message opensight.v1.SignupResponse.
+ * Use `create(SignupResponseSchema)` to create a new message.
+ */
+export const SignupResponseSchema: GenMessage<SignupResponse> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_auth, 5);
+
+/**
  * @generated from message opensight.v1.LogoutRequest
  */
 export type LogoutRequest = Message<"opensight.v1.LogoutRequest"> & {
@@ -116,7 +163,7 @@ export type LogoutRequest = Message<"opensight.v1.LogoutRequest"> & {
  * Use `create(LogoutRequestSchema)` to create a new message.
  */
 export const LogoutRequestSchema: GenMessage<LogoutRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 4);
+  messageDesc(file_opensight_v1_auth, 6);
 
 /**
  * @generated from message opensight.v1.LogoutResponse
@@ -129,7 +176,7 @@ export type LogoutResponse = Message<"opensight.v1.LogoutResponse"> & {
  * Use `create(LogoutResponseSchema)` to create a new message.
  */
 export const LogoutResponseSchema: GenMessage<LogoutResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 5);
+  messageDesc(file_opensight_v1_auth, 7);
 
 /**
  * @generated from message opensight.v1.GetMeRequest
@@ -142,7 +189,7 @@ export type GetMeRequest = Message<"opensight.v1.GetMeRequest"> & {
  * Use `create(GetMeRequestSchema)` to create a new message.
  */
 export const GetMeRequestSchema: GenMessage<GetMeRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 6);
+  messageDesc(file_opensight_v1_auth, 8);
 
 /**
  * @generated from message opensight.v1.GetMeResponse
@@ -174,7 +221,7 @@ export type GetMeResponse = Message<"opensight.v1.GetMeResponse"> & {
  * Use `create(GetMeResponseSchema)` to create a new message.
  */
 export const GetMeResponseSchema: GenMessage<GetMeResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 7);
+  messageDesc(file_opensight_v1_auth, 9);
 
 /**
  * @generated from service opensight.v1.AuthService
@@ -187,6 +234,14 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof LoginRequestSchema;
     output: typeof LoginResponseSchema;
+  },
+  /**
+   * @generated from rpc opensight.v1.AuthService.Signup
+   */
+  signup: {
+    methodKind: "unary";
+    input: typeof SignupRequestSchema;
+    output: typeof SignupResponseSchema;
   },
   /**
    * @generated from rpc opensight.v1.AuthService.Logout

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 )
 
@@ -27,6 +28,27 @@ type Subscription struct {
 	CancelAtPeriodEnd bool
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+}
+
+// AccessState projects a Subscription onto the primitives billing.State takes
+// (internal/store imports internal/billing for the plan catalog, so the
+// derivation cannot take a Subscription directly without an import cycle;
+// this is the one adapter). A nil *string/*time.Time dereferences to its zero
+// value, which billing.DeriveAccess treats correctly (empty StripeStatus
+// falls through to the never/lapsed arms; a zero PastDueSince is handled
+// explicitly).
+func (s Subscription) AccessState() billing.State {
+	st := billing.State{Comped: s.Comped}
+	if s.StripeSubscriptionID != nil {
+		st.StripeSubscriptionID = *s.StripeSubscriptionID
+	}
+	if s.StripeStatus != nil {
+		st.StripeStatus = *s.StripeStatus
+	}
+	if s.PastDueSince != nil {
+		st.PastDueSince = *s.PastDueSince
+	}
+	return st
 }
 
 // UpsertSubscriptionParams are every subscriptions column. The param struct is
@@ -88,6 +110,17 @@ ON CONFLICT (tenant_id) DO UPDATE SET
 	insertSubscriptionSQL = `
 INSERT INTO subscriptions (tenant_id, plan_code, comped)
 VALUES ($1, $2, $3)`
+
+	// setStripeCustomerIDSQL writes stripe_customer_id write-once and touches
+	// no other column, so it cannot race a concurrent reconcile write (unlike
+	// Upsert, a full-row overwrite built from a row read before a network
+	// round trip).
+	setStripeCustomerIDSQL = `
+UPDATE subscriptions
+SET stripe_customer_id = COALESCE(stripe_customer_id, $2),
+    updated_at         = CASE WHEN stripe_customer_id IS NULL THEN now() ELSE updated_at END
+WHERE tenant_id = $1
+RETURNING stripe_customer_id`
 )
 
 // GetByTenant loads a tenant's subscription row. A missing row (no tenant, or
@@ -126,10 +159,37 @@ func (s *SubscriptionStore) Upsert(ctx context.Context, params UpsertSubscriptio
 	return nil
 }
 
+// SetStripeCustomerID persists a tenant's Stripe Customer id write-once and
+// returns the id that won. A tenant that already has a Customer keeps it —
+// the id is permanent (design 08 "Customer"), enforced by this statement
+// rather than by every caller remembering to check first. Touches no other
+// column, so it cannot race a concurrent reconcile write.
+//
+// Zero rows (unknown tenant) returns ErrNotFound. The UNIQUE constraint on
+// stripe_customer_id can only be violated across tenants, which needs Stripe
+// to have reissued an id already assigned to another tenant — that is our
+// bug, not the caller's, and is left to the generic rpcError→CodeInternal
+// mapping rather than a dedicated sentinel.
+func (s *SubscriptionStore) SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error) {
+	if s == nil || s.db == nil {
+		return "", errors.New("subscription store database is required")
+	}
+
+	var won string
+	err := s.db.QueryRowContext(ctx, setStripeCustomerIDSQL, tenantID, customerID).Scan(&won)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", fmt.Errorf("set stripe customer id: %w", err)
+	}
+	return won, nil
+}
+
 // CreateSubscriptionInTx inserts a starter subscription row for a
 // just-created tenant, in the same transaction as the tenant insert
-// (AdminStore.CreateTenant, and later signup). Every Stripe column stays
-// null.
+// (AccountStore.CreateTenant and AccountStore.CreateAccount). Every Stripe
+// column stays null.
 func CreateSubscriptionInTx(ctx context.Context, q querier, tenantID domain.ID, planCode string, comped bool) error {
 	if _, err := q.execContext(ctx, insertSubscriptionSQL, tenantID, planCode, comped); err != nil {
 		return fmt.Errorf("insert subscription: %w", err)

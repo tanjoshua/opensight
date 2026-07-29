@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "opensight/v1/common.proto";
+
+// StartCheckoutRequest is deliberately empty. The plan being paid for is the
+// one already on the tenant's subscriptions row, and its Price id is resolved
+// from the code catalog plus config — a client-supplied plan or price would be
+// a way to buy something we never offered.
+message StartCheckoutRequest {}
+
+message StartCheckoutResponse {
+  // checkout_url is the Stripe-hosted Checkout page. The SPA navigates to it;
+  // it is never fetched or framed.
+  string checkout_url = 1;
+}
+
+message ConfirmCheckoutRequest {
+  // session_id is the value Stripe substituted for {CHECKOUT_SESSION_ID} in
+  // success_url. It is proof of nothing on its own: the server retrieves the
+  // session and confirms it belongs to the calling tenant.
+  string session_id = 1;
+}
+
+message ConfirmCheckoutResponse {
+  // access after the same reconcile the webhook runs (design 08 "Checkout
+  // return") — so a customer who just paid is never told they haven't while a
+  // webhook is in flight.
+  Access access = 1;
+}
+
+service BillingService {
+  // BILL-4
+  rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);
+  // BILL-4
+  rpc ConfirmCheckout(ConfirmCheckoutRequest) returns (ConfirmCheckoutResponse);
+}

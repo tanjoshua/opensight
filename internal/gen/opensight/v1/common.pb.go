@@ -699,6 +699,60 @@ func (GenerationStage) EnumDescriptor() ([]byte, []int) {
 	return file_opensight_v1_common_proto_rawDescGZIP(), []int{12}
 }
 
+// Access is the tenant's derived billing authorization (design 08 "Access").
+// Derived from the subscriptions row and the current time, never stored.
+type Access int32
+
+const (
+	Access_ACCESS_UNSPECIFIED Access = 0
+	Access_ACCESS_NEVER       Access = 1
+	Access_ACCESS_FULL        Access = 2
+	Access_ACCESS_LAPSED      Access = 3
+)
+
+// Enum value maps for Access.
+var (
+	Access_name = map[int32]string{
+		0: "ACCESS_UNSPECIFIED",
+		1: "ACCESS_NEVER",
+		2: "ACCESS_FULL",
+		3: "ACCESS_LAPSED",
+	}
+	Access_value = map[string]int32{
+		"ACCESS_UNSPECIFIED": 0,
+		"ACCESS_NEVER":       1,
+		"ACCESS_FULL":        2,
+		"ACCESS_LAPSED":      3,
+	}
+)
+
+func (x Access) Enum() *Access {
+	p := new(Access)
+	*p = x
+	return p
+}
+
+func (x Access) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Access) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_common_proto_enumTypes[13].Descriptor()
+}
+
+func (Access) Type() protoreflect.EnumType {
+	return &file_opensight_v1_common_proto_enumTypes[13]
+}
+
+func (x Access) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Access.Descriptor instead.
+func (Access) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{13}
+}
+
 // Paging is the response-side pagination info for a limit/offset list RPC.
 type Paging struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -949,7 +1003,12 @@ const file_opensight_v1_common_proto_rawDesc = "" +
 	"\x0fGenerationStage\x12 \n" +
 	"\x1cGENERATION_STAGE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eGENERATION_STAGE_FETCHING_SITE\x10\x01\x12\x1d\n" +
-	"\x19GENERATION_STAGE_DRAFTING\x10\x02B\xa1\x01\n" +
+	"\x19GENERATION_STAGE_DRAFTING\x10\x02*V\n" +
+	"\x06Access\x12\x16\n" +
+	"\x12ACCESS_UNSPECIFIED\x10\x00\x12\x10\n" +
+	"\fACCESS_NEVER\x10\x01\x12\x0f\n" +
+	"\vACCESS_FULL\x10\x02\x12\x11\n" +
+	"\rACCESS_LAPSED\x10\x03B\xa1\x01\n" +
 	"\x10com.opensight.v1B\vCommonProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
 
 var (
@@ -964,7 +1023,7 @@ func file_opensight_v1_common_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_common_proto_rawDescData
 }
 
-var file_opensight_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
+var file_opensight_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 14)
 var file_opensight_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_opensight_v1_common_proto_goTypes = []any{
 	(BusinessStatus)(0),     // 0: opensight.v1.BusinessStatus
@@ -980,9 +1039,10 @@ var file_opensight_v1_common_proto_goTypes = []any{
 	(CitationSubject)(0),    // 10: opensight.v1.CitationSubject
 	(ProposalStatus)(0),     // 11: opensight.v1.ProposalStatus
 	(GenerationStage)(0),    // 12: opensight.v1.GenerationStage
-	(*Paging)(nil),          // 13: opensight.v1.Paging
-	(*StringList)(nil),      // 14: opensight.v1.StringList
-	(*BusinessSummary)(nil), // 15: opensight.v1.BusinessSummary
+	(Access)(0),             // 13: opensight.v1.Access
+	(*Paging)(nil),          // 14: opensight.v1.Paging
+	(*StringList)(nil),      // 15: opensight.v1.StringList
+	(*BusinessSummary)(nil), // 16: opensight.v1.BusinessSummary
 }
 var file_opensight_v1_common_proto_depIdxs = []int32{
 	0, // 0: opensight.v1.BusinessSummary.status:type_name -> opensight.v1.BusinessStatus
@@ -1003,7 +1063,7 @@ func file_opensight_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_common_proto_rawDesc), len(file_opensight_v1_common_proto_rawDesc)),
-			NumEnums:      13,
+			NumEnums:      14,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

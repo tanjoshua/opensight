@@ -26,6 +26,18 @@ message LoginResponse {
   Tenant tenant = 2;
 }
 
+// SignupRequest carries a credential (password) and must never be logged in
+// full — relevant to any future logging/observability interceptor.
+message SignupRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message SignupResponse {
+  User user = 1;
+  Tenant tenant = 2;
+}
+
 message LogoutRequest {}
 
 message LogoutResponse {}
@@ -41,6 +53,7 @@ message GetMeResponse {
 
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Signup(SignupRequest) returns (SignupResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetMe(GetMeRequest) returns (GetMeResponse);
 }

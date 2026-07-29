@@ -21,7 +21,8 @@ const maxRPCRequestBytes = 64 << 10
 // here requires a live session. Keyed by generated procedure constants so a
 // renamed/removed RPC breaks the build instead of silently changing access.
 var publicProcedures = map[string]struct{}{
-	opensightv1connect.AuthServiceLoginProcedure: {},
+	opensightv1connect.AuthServiceLoginProcedure:  {},
+	opensightv1connect.AuthServiceSignupProcedure: {},
 }
 
 // sessionInterceptor resolves the session cookie into store.SessionUser and
@@ -53,6 +54,7 @@ func (s *Server) rpcHandler() http.Handler {
 	}
 	mux := http.NewServeMux()
 	mux.Handle(opensightv1connect.NewAuthServiceHandler(s, opts...))
+	mux.Handle(opensightv1connect.NewBillingServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewBusinessServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewOverviewServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewCitationServiceHandler(s, opts...))

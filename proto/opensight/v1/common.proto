@@ -143,3 +143,12 @@ enum GenerationStage {
   GENERATION_STAGE_FETCHING_SITE = 1;
   GENERATION_STAGE_DRAFTING = 2;
 }
+
+// Access is the tenant's derived billing authorization (design 08 "Access").
+// Derived from the subscriptions row and the current time, never stored.
+enum Access {
+  ACCESS_UNSPECIFIED = 0;
+  ACCESS_NEVER = 1;
+  ACCESS_FULL = 2;
+  ACCESS_LAPSED = 3;
+}

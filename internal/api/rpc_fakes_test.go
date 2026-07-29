@@ -31,13 +31,55 @@ const (
 
 // -- BusinessService fakes (business_rpc_test.go) --
 
+// fakeSubscriptionStore is a recording fake: SetStripeCustomerID mutates
+// sub.StripeCustomerID write-once, same as the real store's COALESCE, and
+// Upsert overwrites sub in full, same as the real store — good enough to
+// double as reconcile's subscriptionStore seam too, so billing_rpc_test.go
+// can drive a real reconcile.Reconciler over this same fake.
+// setCustomerIDCalls counts every SetStripeCustomerID call so tests can
+// assert a second StartCheckout for an already-Customer'd tenant makes no
+// new one.
 type fakeSubscriptionStore struct {
-	sub store.Subscription
-	err error
+	sub                store.Subscription
+	err                error
+	setCustomerIDErr   error
+	setCustomerIDCalls int
+	upsertErr          error
+	upsertCalls        []store.UpsertSubscriptionParams
 }
 
 func (f *fakeSubscriptionStore) GetByTenant(context.Context, domain.ID) (store.Subscription, error) {
 	return f.sub, f.err
+}
+
+func (f *fakeSubscriptionStore) SetStripeCustomerID(_ context.Context, _ domain.ID, customerID string) (string, error) {
+	f.setCustomerIDCalls++
+	if f.setCustomerIDErr != nil {
+		return "", f.setCustomerIDErr
+	}
+	if f.sub.StripeCustomerID == nil {
+		f.sub.StripeCustomerID = &customerID
+	}
+	return *f.sub.StripeCustomerID, nil
+}
+
+func (f *fakeSubscriptionStore) Upsert(_ context.Context, params store.UpsertSubscriptionParams) error {
+	f.upsertCalls = append(f.upsertCalls, params)
+	if f.upsertErr != nil {
+		return f.upsertErr
+	}
+	f.sub = store.Subscription{
+		TenantID:             params.TenantID,
+		PlanCode:             params.PlanCode,
+		StripeCustomerID:     params.StripeCustomerID,
+		StripeSubscriptionID: params.StripeSubscriptionID,
+		StripeStatus:         params.StripeStatus,
+		PastDueSince:         params.PastDueSince,
+		Comped:               params.Comped,
+		CurrentPeriodEnd:     params.CurrentPeriodEnd,
+		CancelAtPeriodEnd:    params.CancelAtPeriodEnd,
+	}
+	return nil
 }
 
 type fakeProposalStore struct {

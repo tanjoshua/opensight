@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"opensight/internal/billing"
+	"opensight/internal/billing/reconcile"
 	"opensight/internal/domain"
 	"opensight/internal/metrics"
 	"opensight/internal/store"
@@ -36,6 +37,15 @@ type authStore interface {
 	DeleteSession(ctx context.Context, tokenHash []byte) error
 }
 
+// accountStore is the consumer-side seam over *store.AccountStore's signup
+// method. It is a separate seam from authStore rather than a fifth method
+// bolted on there: AuthStore's doc comment (internal/store/auth.go) pins that
+// type to exactly its four session/credential methods, and CreateAccount is a
+// tenant-creation write, not a credential read.
+type accountStore interface {
+	CreateAccount(ctx context.Context, params store.CreateAccountParams) (store.Tenant, store.User, error)
+}
+
 // businessStore is the consumer-side seam over *store.BusinessStore. /me lists
 // the tenant's businesses so the SPA can bootstrap section URLs (design 06:
 // URLs carry businessID; MVP has one business per tenant). GetBusiness is the
@@ -48,12 +58,29 @@ type businessStore interface {
 	UpdateActiveProfile(ctx context.Context, params store.UpdateBusinessProfileParams) (store.Business, error)
 }
 
-// subscriptionStore is the seam over *store.SubscriptionStore's tenant lookup.
-// Server.tenantPlan resolves the returned plan_code against the billing
-// catalog, so onboarding sizes the generated prompt count from
-// billing.Plan.PromptLimit (never hardcoded — design 03).
+// subscriptionStore is the seam over *store.SubscriptionStore. Server.tenantPlan
+// resolves the returned plan_code against the billing catalog, so onboarding
+// sizes the generated prompt count from billing.Plan.PromptLimit (never
+// hardcoded — design 03). SetStripeCustomerID (BILL-4) is StartCheckout's
+// write-once Customer id persistence.
 type subscriptionStore interface {
 	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
+	SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error)
+}
+
+// billingProvider is the slice of billing.Provider the RPC layer needs.
+// GetSubscriptionForCustomer belongs to reconcile, not here; CreatePortalSession
+// arrives with BILL-8.
+type billingProvider interface {
+	CreateCustomer(ctx context.Context, params billing.CreateCustomerParams) (billing.Customer, error)
+	CreateCheckoutSession(ctx context.Context, params billing.CreateCheckoutSessionParams) (billing.CheckoutSession, error)
+	GetCheckoutSession(ctx context.Context, sessionID string) (billing.CheckoutSession, error)
+}
+
+// billingReconciler is the seam over *reconcile.Reconciler: ConfirmCheckout's
+// one write path (design 08 "Reconcile").
+type billingReconciler interface {
+	Tenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
 }
 
 // proposalStore is the seam over *store.ProfileProposalStore for the proposal
@@ -83,6 +110,7 @@ type applyStore interface {
 // Server holds the API dependencies and configuration.
 type Server struct {
 	auth        authStore
+	accounts    accountStore
 	businesses  businessStore
 	prompts     promptStore
 	competitors competitorStore
@@ -115,30 +143,69 @@ type Server struct {
 	secureCookies bool
 	// sessionTTL is a field (not a bare const) so tests can shrink it.
 	sessionTTL time.Duration
+	// billing, reconciler, stripePriceIDs, and appBaseURL drive checkout
+	// (BILL-4): create/reuse the tenant's Stripe Customer, start a Checkout
+	// Session against the plan's Price, and reconcile on return.
+	billing        billingProvider
+	reconciler     billingReconciler
+	stripePriceIDs map[string]string
+	appBaseURL     string
 }
 
-// New builds a Server. secureCookies should be true everywhere except
+// Deps are api.New's dependencies. A struct rather than a positional argument
+// list: the billing stories add several more dependencies, and two adjacent
+// same-typed strings (temporalTaskQueue, appBaseURL, and BILL-5's
+// stripeWebhookSecret) can silently swap at a positional call site.
+type Deps struct {
+	Auth              *store.AuthStore
+	Accounts          *store.AccountStore
+	Businesses        *store.BusinessStore
+	Subscriptions     *store.SubscriptionStore
+	Proposals         *store.ProfileProposalStore
+	Apply             *store.ApplyProposalStore
+	Prompts           *store.PromptStore
+	Competitors       *store.CompetitorStore
+	Runs              *store.RunStore
+	Results           *store.ResultStore
+	Metrics           *metrics.Metrics
+	Temporal          client.Client
+	TemporalTaskQueue string
+	SecureCookies     bool
+
+	// Billing (BILL-4).
+	Billing        billing.Provider
+	Reconciler     *reconcile.Reconciler
+	StripePriceIDs map[string]string
+	AppBaseURL     string
+}
+
+// New builds a Server from d. SecureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
-func New(auth *store.AuthStore, businesses *store.BusinessStore, subscriptions *store.SubscriptionStore, proposals *store.ProfileProposalStore, apply *store.ApplyProposalStore, prompts *store.PromptStore, competitors *store.CompetitorStore, runs *store.RunStore, results *store.ResultStore, metrics *metrics.Metrics, temporal client.Client, temporalTaskQueue string, secureCookies bool) *Server {
+func New(d Deps) *Server {
 	return &Server{
-		auth:              auth,
-		businesses:        businesses,
-		subscriptions:     subscriptions,
-		proposals:         proposals,
-		apply:             apply,
-		prompts:           prompts,
-		competitors:       competitors,
-		runs:              runs,
-		results:           results,
-		metrics:           metrics,
-		promptMetrics:     metrics,
-		competitorMetrics: metrics,
-		citationMetrics:   metrics,
-		runMetrics:        metrics,
-		temporal:          temporal,
-		temporalTaskQueue: temporalTaskQueue,
-		secureCookies:     secureCookies,
+		auth:              d.Auth,
+		accounts:          d.Accounts,
+		businesses:        d.Businesses,
+		subscriptions:     d.Subscriptions,
+		proposals:         d.Proposals,
+		apply:             d.Apply,
+		prompts:           d.Prompts,
+		competitors:       d.Competitors,
+		runs:              d.Runs,
+		results:           d.Results,
+		metrics:           d.Metrics,
+		promptMetrics:     d.Metrics,
+		competitorMetrics: d.Metrics,
+		citationMetrics:   d.Metrics,
+		runMetrics:        d.Metrics,
+		temporal:          d.Temporal,
+		temporalTaskQueue: d.TemporalTaskQueue,
+		secureCookies:     d.SecureCookies,
 		sessionTTL:        defaultSessionTTL,
+		billing:           d.Billing,
+		reconciler:        d.Reconciler,
+		stripePriceIDs:    d.StripePriceIDs,
+		appBaseURL:        d.AppBaseURL,
 	}
 }
 
