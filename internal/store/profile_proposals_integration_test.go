@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"os"
@@ -10,27 +9,26 @@ import (
 
 	"opensight/internal/domain"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 // seedProposalBusiness inserts a plan, tenant, and draft business for proposal
 // tests and registers cleanup. It returns the tenant and business ids.
-func seedProposalBusiness(t *testing.T, ctx context.Context, db *sql.DB) (domain.ID, domain.ID) {
+func seedProposalBusiness(t *testing.T, ctx context.Context, db *pgxpool.Pool) (domain.ID, domain.ID) {
 	t.Helper()
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query131, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query132, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query133, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query134, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Proposal Tenant")
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Proposal Clinic')`,
-		businessID, tenantID); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query135, businessID, tenantID); err != nil {
 		t.Fatalf("insert business: %v", err)
 	}
 	return tenantID, businessID
@@ -47,11 +45,11 @@ func TestProfileProposalStoreDiscardPending(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID, businessID := seedProposalBusiness(t, ctx, db)
 	proposals := NewProfileProposalStore(db)

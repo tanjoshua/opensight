@@ -2,13 +2,16 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // AnalysisStore performs the wipe half of the derived-analysis tables'
@@ -23,134 +26,13 @@ import (
 // writes) is owned by the later analysis stories that define it — ANA-2 through
 // ANA-6 — and deliberately not built here.
 type AnalysisStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewAnalysisStore returns an AnalysisStore backed by db.
-func NewAnalysisStore(db *sql.DB) *AnalysisStore {
+func NewAnalysisStore(db *pgxpool.Pool) *AnalysisStore {
 	return &AnalysisStore{db: db}
 }
-
-const (
-	// The IN-subquery scopes each delete to the tenant through
-	// prompt_results -> monitoring_runs -> businesses, so a cross-tenant caller
-	// deletes nothing rather than acting as an existence oracle (design 01/02).
-
-	deleteResultAnalysisSQL = `
-DELETE FROM result_analyses
-WHERE prompt_result_id = $1
-  AND prompt_result_id IN (
-    SELECT pr.id
-    FROM prompt_results pr
-    JOIN monitoring_runs r ON r.id = pr.run_id
-    JOIN businesses b ON b.id = r.business_id
-    WHERE b.tenant_id = $2
-  )`
-
-	deleteResultCitationsSQL = `
-DELETE FROM citations
-WHERE prompt_result_id = $1
-  AND prompt_result_id IN (
-    SELECT pr.id
-    FROM prompt_results pr
-    JOIN monitoring_runs r ON r.id = pr.run_id
-    JOIN businesses b ON b.id = r.business_id
-    WHERE b.tenant_id = $2
-  )`
-
-	deleteRunMentionsSQL = `
-DELETE FROM mentions
-WHERE prompt_result_id IN (
-  SELECT pr.id
-  FROM prompt_results pr
-  JOIN monitoring_runs r ON r.id = pr.run_id
-  JOIN businesses b ON b.id = r.business_id
-  WHERE r.id = $1 AND b.tenant_id = $2
-)`
-
-	// resultOwnedSQL scopes a prompt_result to tenantID through
-	// prompt_results -> monitoring_runs -> businesses, the same join the deletes
-	// above use. It deliberately does NOT check status='succeeded': that
-	// precondition is the activity's, not the store's.
-	resultOwnedSQL = `
-SELECT 1
-FROM prompt_results pr
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2`
-
-	upsertResultAnalysisSQL = `
-INSERT INTO result_analyses (
-  prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version, analyzed_at
-) VALUES ($1, $2, $3, $4::jsonb, $5, $6, now())
-ON CONFLICT (prompt_result_id) DO UPDATE SET
-  sentiment = EXCLUDED.sentiment,
-  keywords = EXCLUDED.keywords,
-  excerpts = EXCLUDED.excerpts,
-  analysis_model = EXCLUDED.analysis_model,
-  extraction_version = EXCLUDED.extraction_version,
-  analyzed_at = now()`
-
-	deleteCitationsByResultSQL = `DELETE FROM citations WHERE prompt_result_id = $1`
-
-	insertCitationSQL = `
-INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject)
-VALUES ($1, $2, $3, $4, $5, $6, $7)`
-
-	// listCompetitorsSQL loads every competitor of a business regardless of
-	// status: dismissed competitors still accrue mentions, so the exact pass must
-	// match against them too (design 05 Phase 2 step 2, 02: dismissal is a
-	// display filter). Tenant-scoped through the businesses IN-subquery like the
-	// deletes above. aliases is read as JSON (see businesses.go stringSlice).
-	// website feeds the LLM match pass's candidate list (ANA-5).
-	listCompetitorsSQL = `
-SELECT id, name, website, to_jsonb(aliases) AS aliases, status
-FROM competitors
-WHERE business_id = $1
-  AND business_id IN (SELECT id FROM businesses WHERE tenant_id = $2)
-ORDER BY created_at`
-
-	// runBusinessOwnedSQL resolves a run's owning business, tenant-scoped through
-	// monitoring_runs -> businesses. A missing or cross-tenant run yields no row.
-	runBusinessOwnedSQL = `
-SELECT b.id
-FROM monitoring_runs r
-JOIN businesses b ON b.id = r.business_id
-WHERE r.id = $1 AND b.tenant_id = $2`
-
-	// listSucceededResultIDsSQL lists a run's succeeded results in first-appearance
-	// order for the AnalyzeRun fan-out (ANA-7). Ordered by requested_at so the fan
-	// out is deterministic; failed results are excluded (never analyzed).
-	listSucceededResultIDsSQL = `
-SELECT id FROM prompt_results
-WHERE run_id = $1 AND status = 'succeeded'
-ORDER BY requested_at, id`
-
-	// insertDiscoveredCompetitorSQL mints a discovered competitor with the verbatim
-	// name as its sole (approved) alias, so a future run's exact pass keys off it.
-	insertDiscoveredCompetitorSQL = `
-INSERT INTO competitors (id, business_id, name, aliases, source, status)
-VALUES ($1, $2, $3, ARRAY[$3]::text[], 'discovered', 'discovered')`
-
-	// appendSuggestedAliasSQL idempotently records an LLM-proposed variant on a
-	// competitor without promoting it to an approved alias (design 05 step 3): the
-	// variant is skipped if it is already suggested or already an approved alias.
-	// business-scoped so a cross-business competitor id is a no-op.
-	appendSuggestedAliasSQL = `
-UPDATE competitors
-SET suggested_aliases = array_append(suggested_aliases, $3)
-WHERE id = $1 AND business_id = $2
-  AND NOT ($3 = ANY(suggested_aliases))
-  AND NOT ($3 = ANY(aliases))`
-
-	insertMentionSQL = `
-INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, verbatim_name, excerpt)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-
-	setAnalysisCompletedSQL = `
-UPDATE monitoring_runs SET analysis_completed_at = now()
-WHERE id = $1 AND business_id = $2`
-)
 
 // CitationWrite is one citation row for SaveResultAnalysis, already normalized
 // (URL cleaned, domain extracted) and ordered by first appearance.
@@ -208,27 +90,25 @@ func (s *AnalysisStore) SaveResultAnalysis(ctx context.Context, tenantID domain.
 		return fmt.Errorf("marshal excerpts: %w", err)
 	}
 
-	return withTx(ctx, s.db, func(q querier) error {
-		var one int
-		if err := q.queryRowContext(ctx, resultOwnedSQL, params.PromptResultID, tenantID).Scan(&one); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		if _, err := q.ResultOwned(ctx, storesqlc.ResultOwnedParams{
+			ID: params.PromptResultID, TenantID: tenantID,
+		}); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
 			}
 			return fmt.Errorf("verify result ownership: %w", err)
 		}
 
-		if _, err := q.execContext(ctx, upsertResultAnalysisSQL,
-			params.PromptResultID,
-			params.Sentiment,
-			keywords,
-			string(excerptsJSON),
-			params.AnalysisModel,
-			params.ExtractionVersion,
-		); err != nil {
+		if err := q.UpsertResultAnalysis(ctx, storesqlc.UpsertResultAnalysisParams{
+			PromptResultID: params.PromptResultID, Sentiment: params.Sentiment, Keywords: keywords,
+			Excerpts: excerptsJSON, AnalysisModel: params.AnalysisModel,
+			ExtractionVersion: int32(params.ExtractionVersion),
+		}); err != nil {
 			return fmt.Errorf("upsert result analysis: %w", err)
 		}
 
-		if _, err := q.execContext(ctx, deleteCitationsByResultSQL, params.PromptResultID); err != nil {
+		if err := q.DeleteCitationsByResult(ctx, params.PromptResultID); err != nil {
 			return fmt.Errorf("delete citations: %w", err)
 		}
 		for _, c := range params.Citations {
@@ -236,15 +116,10 @@ func (s *AnalysisStore) SaveResultAnalysis(ctx context.Context, tenantID domain.
 			if err != nil {
 				return err
 			}
-			if _, err := q.execContext(ctx, insertCitationSQL,
-				id,
-				params.PromptResultID,
-				c.URL,
-				c.Domain,
-				c.Title,
-				c.CiteOrder,
-				c.Subject,
-			); err != nil {
+			if err := q.InsertCitation(ctx, storesqlc.InsertCitationParams{
+				ID: id, PromptResultID: params.PromptResultID, Url: c.URL, Domain: c.Domain,
+				Title: c.Title, CiteOrder: int32(c.CiteOrder), Subject: c.Subject,
+			}); err != nil {
 				return fmt.Errorf("insert citation: %w", err)
 			}
 		}
@@ -268,11 +143,15 @@ func (s *AnalysisStore) DeleteResultAnalysis(ctx context.Context, tenantID, resu
 		return err
 	}
 
-	return withTx(ctx, s.db, func(q querier) error {
-		if _, err := q.execContext(ctx, deleteResultAnalysisSQL, resultID, tenantID); err != nil {
+	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		if err := q.DeleteResultAnalysis(ctx, storesqlc.DeleteResultAnalysisParams{
+			PromptResultID: resultID, TenantID: tenantID,
+		}); err != nil {
 			return fmt.Errorf("delete result analysis: %w", err)
 		}
-		if _, err := q.execContext(ctx, deleteResultCitationsSQL, resultID, tenantID); err != nil {
+		if err := q.DeleteResultCitations(ctx, storesqlc.DeleteResultCitationsParams{
+			PromptResultID: resultID, TenantID: tenantID,
+		}); err != nil {
 			return fmt.Errorf("delete result citations: %w", err)
 		}
 		return nil
@@ -305,26 +184,17 @@ func (s *AnalysisStore) ListCompetitors(ctx context.Context, tenantID, businessI
 		return nil, err
 	}
 
-	rows, err := s.db.QueryContext(ctx, listCompetitorsSQL, businessID, tenantID)
+	rows, err := queries(ctx, s.db).ListAnalysisCompetitors(ctx, storesqlc.ListAnalysisCompetitorsParams{
+		BusinessID: businessID, TenantID: tenantID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list competitors: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	competitors := []Competitor{}
-	for rows.Next() {
-		var c Competitor
-		var aliases stringSlice
-		if err := rows.Scan(&c.ID, &c.Name, &c.Website, &aliases, &c.Status); err != nil {
-			return nil, fmt.Errorf("scan competitor: %w", err)
-		}
-		c.Aliases = aliases
-		competitors = append(competitors, c)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate competitors: %w", err)
+	competitors := make([]Competitor, 0, len(rows))
+	for _, row := range rows {
+		competitors = append(competitors, Competitor{
+			ID: row.ID, Name: row.Name, Website: row.Website, Aliases: row.Aliases, Status: row.Status,
+		})
 	}
 	return competitors, nil
 }
@@ -345,7 +215,9 @@ func (s *AnalysisStore) DeleteRunMentions(ctx context.Context, tenantID, runID d
 		return err
 	}
 
-	if _, err := s.db.ExecContext(ctx, deleteRunMentionsSQL, runID, tenantID); err != nil {
+	if err := queries(ctx, s.db).DeleteRunMentions(ctx, storesqlc.DeleteRunMentionsParams{
+		ID: runID, TenantID: tenantID,
+	}); err != nil {
 		return fmt.Errorf("delete run mentions: %w", err)
 	}
 	return nil
@@ -375,34 +247,20 @@ func (s *AnalysisStore) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID 
 		return AnalyzeRunSpec{}, err
 	}
 
-	var businessID domain.ID
-	if err := s.db.QueryRowContext(ctx, runBusinessOwnedSQL, runID, tenantID).Scan(&businessID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	businessID, err := queries(ctx, s.db).RunBusinessOwned(ctx, storesqlc.RunBusinessOwnedParams{
+		ID: runID, TenantID: tenantID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return AnalyzeRunSpec{}, ErrNotFound
 		}
 		return AnalyzeRunSpec{}, fmt.Errorf("resolve run business: %w", err)
 	}
 
-	rows, err := s.db.QueryContext(ctx, listSucceededResultIDsSQL, runID)
+	resultIDs, err := queries(ctx, s.db).ListSucceededResultIDs(ctx, runID)
 	if err != nil {
 		return AnalyzeRunSpec{}, fmt.Errorf("list succeeded results: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	resultIDs := []domain.ID{}
-	for rows.Next() {
-		var id domain.ID
-		if err := rows.Scan(&id); err != nil {
-			return AnalyzeRunSpec{}, fmt.Errorf("scan result id: %w", err)
-		}
-		resultIDs = append(resultIDs, id)
-	}
-	if err := rows.Err(); err != nil {
-		return AnalyzeRunSpec{}, fmt.Errorf("iterate result ids: %w", err)
-	}
-
 	return AnalyzeRunSpec{BusinessID: businessID, ResultIDs: resultIDs}, nil
 }
 
@@ -472,18 +330,17 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 		return err
 	}
 
-	return withTx(ctx, s.db, func(q querier) error {
+	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 			return err
 		}
 
 		// The run must belong to the same business, or a caller could stamp a run
 		// they resolved for a different business.
-		var one int
-		if err := q.queryRowContext(ctx,
-			`SELECT 1 FROM monitoring_runs WHERE id = $1 AND business_id = $2`,
-			params.RunID, businessID).Scan(&one); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+		if _, err := q.RunOwnedByBusiness(ctx, storesqlc.RunOwnedByBusinessParams{
+			ID: params.RunID, BusinessID: businessID,
+		}); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
 			}
 			return fmt.Errorf("verify run ownership: %w", err)
@@ -495,7 +352,9 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 			if err != nil {
 				return err
 			}
-			if _, err := q.execContext(ctx, insertDiscoveredCompetitorSQL, id, businessID, d.VerbatimName); err != nil {
+			if err := q.InsertDiscoveredCompetitor(ctx, storesqlc.InsertDiscoveredCompetitorParams{
+				ID: id, BusinessID: businessID, Name: d.VerbatimName,
+			}); err != nil {
 				return fmt.Errorf("insert discovered competitor: %w", err)
 			}
 			discoveredIDs[d.Key] = id
@@ -506,12 +365,16 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 			if variant == "" {
 				continue
 			}
-			if _, err := q.execContext(ctx, appendSuggestedAliasSQL, sa.CompetitorID, businessID, variant); err != nil {
+			if err := q.AppendSuggestedAlias(ctx, storesqlc.AppendSuggestedAliasParams{
+				ID: sa.CompetitorID, BusinessID: businessID, ArrayAppend: variant,
+			}); err != nil {
 				return fmt.Errorf("append suggested alias: %w", err)
 			}
 		}
 
-		if _, err := q.execContext(ctx, deleteRunMentionsSQL, params.RunID, tenantID); err != nil {
+		if err := q.DeleteRunMentions(ctx, storesqlc.DeleteRunMentionsParams{
+			ID: params.RunID, TenantID: tenantID,
+		}); err != nil {
 			return fmt.Errorf("delete run mentions: %w", err)
 		}
 
@@ -520,7 +383,7 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 			if err != nil {
 				return err
 			}
-			var competitorID any
+			var competitorID *domain.ID
 			if m.Subject == "competitor" {
 				cid := m.CompetitorID
 				if m.DiscoveredKey != "" {
@@ -530,16 +393,20 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 					}
 					cid = mapped
 				}
-				competitorID = cid
+				competitorID = &cid
 			}
-			if _, err := q.execContext(ctx, insertMentionSQL,
-				id, m.PromptResultID, m.Subject, competitorID, m.MatchedBy, m.MentionOrder, m.VerbatimName, m.Excerpt,
-			); err != nil {
+			if err := q.InsertMention(ctx, storesqlc.InsertMentionParams{
+				ID: id, PromptResultID: m.PromptResultID, Subject: m.Subject, CompetitorID: competitorID,
+				MatchedBy: m.MatchedBy, MentionOrder: int32(m.MentionOrder),
+				VerbatimName: &m.VerbatimName, Excerpt: m.Excerpt,
+			}); err != nil {
 				return fmt.Errorf("insert mention: %w", err)
 			}
 		}
 
-		if _, err := q.execContext(ctx, setAnalysisCompletedSQL, params.RunID, businessID); err != nil {
+		if err := q.SetAnalysisCompleted(ctx, storesqlc.SetAnalysisCompletedParams{
+			ID: params.RunID, BusinessID: businessID,
+		}); err != nil {
 			return fmt.Errorf("set analysis completed: %w", err)
 		}
 		return nil

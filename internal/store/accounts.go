@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,8 +9,10 @@ import (
 
 	"opensight/internal/billing"
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Tenant is a persisted tenants row used by admin CLI account creation.
@@ -34,11 +35,11 @@ type User struct {
 // tenant-unscoped because these commands create the tenant context that normal
 // repositories later require.
 type AccountStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewAccountStore returns an AccountStore backed by db.
-func NewAccountStore(db *sql.DB) *AccountStore {
+func NewAccountStore(db *pgxpool.Pool) *AccountStore {
 	return &AccountStore{db: db}
 }
 
@@ -59,18 +60,6 @@ type CreateUserParams struct {
 	PasswordHash string
 }
 
-const (
-	insertTenantSQL = `
-INSERT INTO tenants (id, name)
-VALUES ($1, $2)
-RETURNING created_at`
-
-	insertUserSQL = `
-INSERT INTO users (id, tenant_id, email, password_hash)
-VALUES ($1, $2, $3, $4)
-RETURNING created_at`
-)
-
 // CreateTenant creates a tenant and its subscription row, in one transaction.
 // CLI-provisioned tenants are operator tenants: comped = true, no Stripe
 // objects (design 08 "Operator comps").
@@ -88,8 +77,9 @@ func (s *AccountStore) CreateTenant(ctx context.Context, params CreateTenantPara
 		ID:   params.ID,
 		Name: params.Name,
 	}
-	err = withTx(ctx, s.db, func(q querier) error {
-		if err := q.queryRowContext(ctx, insertTenantSQL, tenant.ID, tenant.Name).Scan(&tenant.CreatedAt); err != nil {
+	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		tenant.CreatedAt, err = q.InsertTenant(ctx, storesqlc.InsertTenantParams{ID: tenant.ID, Name: tenant.Name})
+		if err != nil {
 			return fmt.Errorf("insert tenant: %w", err)
 		}
 		if err := CreateSubscriptionInTx(ctx, q, tenant.ID, billing.Starter.Code, true); err != nil {
@@ -120,7 +110,10 @@ func (s *AccountStore) CreateUser(ctx context.Context, params CreateUserParams) 
 		TenantID: params.TenantID,
 		Email:    params.Email,
 	}
-	if err := s.db.QueryRowContext(ctx, insertUserSQL, user.ID, user.TenantID, user.Email, params.PasswordHash).Scan(&user.CreatedAt); err != nil {
+	user.CreatedAt, err = queries(ctx, s.db).InsertUser(ctx, storesqlc.InsertUserParams{
+		ID: user.ID, TenantID: user.TenantID, Email: user.Email, PasswordHash: &params.PasswordHash,
+	})
+	if err != nil {
 		return User{}, fmt.Errorf("insert user: %w", err)
 	}
 	return user, nil
@@ -153,14 +146,18 @@ func (s *AccountStore) CreateAccount(ctx context.Context, params CreateAccountPa
 	tenant := Tenant{ID: params.TenantID, Name: tenantName}
 	user := User{ID: params.UserID, TenantID: params.TenantID, Email: params.Email}
 
-	err = withTx(ctx, s.db, func(q querier) error {
-		if err := q.queryRowContext(ctx, insertTenantSQL, tenant.ID, tenant.Name).Scan(&tenant.CreatedAt); err != nil {
+	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		tenant.CreatedAt, err = q.InsertTenant(ctx, storesqlc.InsertTenantParams{ID: tenant.ID, Name: tenant.Name})
+		if err != nil {
 			return fmt.Errorf("insert tenant: %w", err)
 		}
 		if err := CreateSubscriptionInTx(ctx, q, tenant.ID, billing.Starter.Code, false); err != nil {
 			return err
 		}
-		if err := q.queryRowContext(ctx, insertUserSQL, user.ID, user.TenantID, user.Email, params.PasswordHash).Scan(&user.CreatedAt); err != nil {
+		user.CreatedAt, err = q.InsertUser(ctx, storesqlc.InsertUserParams{
+			ID: user.ID, TenantID: user.TenantID, Email: user.Email, PasswordHash: &params.PasswordHash,
+		})
+		if err != nil {
 			if isUniqueViolation(err) {
 				return ErrEmailTaken
 			}

@@ -2,14 +2,14 @@ package workflows
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"testing"
 
 	"opensight/internal/llm"
 	"opensight/internal/store"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 // TestPersistProposalIdempotent proves PersistProposal survives Temporal's
@@ -24,27 +24,25 @@ func TestPersistProposalIdempotent(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustID(t)
 	businessID := mustID(t)
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query255, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query256, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query257, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query258, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Persist Tenant")
-	mustExec(t, db, ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Persist Clinic')`,
-		businessID, tenantID)
+	mustExec(t, db, ctx, testdb.Query259, businessID, tenantID)
 
-	acts := NewActivities(nil, nil, nil, nil, nil, nil, nil, nil, nil, store.NewProfileProposalStore(db))
+	acts := &Activities{Proposals: store.NewProfileProposalStore(db)}
 	in := PersistProposalInput{
 		TenantID:   tenantID,
 		BusinessID: businessID,

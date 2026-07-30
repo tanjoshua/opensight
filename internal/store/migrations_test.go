@@ -26,6 +26,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00009_add_run_expected_results.sql",
 		"migrations/00010_create_subscriptions_stripe_events.sql",
 		"migrations/00011_drop_stripe_events.sql",
+		"migrations/00012_create_analyzed_results_view.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -265,6 +266,27 @@ func TestTenancyMigrationCreatesTablesAndStarterPlan(t *testing.T) {
 	}
 	if starterID.Version() != uuid.Version(7) {
 		t.Fatalf("starter plan ID version = %s, want VERSION_7", starterID.Version())
+	}
+}
+
+func TestAnalyzedResultsViewMigration(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00012_create_analyzed_results_view.sql")
+	if err != nil {
+		t.Fatalf("read analyzed_results view migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"CREATE VIEW analyzed_results AS",
+		"JOIN monitoring_runs r ON r.id = pr.run_id",
+		"JOIN businesses b ON b.id = r.business_id",
+		"JOIN result_analyses ra ON ra.prompt_result_id = pr.id",
+		"WHERE r.analysis_completed_at IS NOT NULL",
+		"DROP VIEW IF EXISTS analyzed_results",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("analyzed_results view migration missing %q", marker)
+		}
 	}
 }
 

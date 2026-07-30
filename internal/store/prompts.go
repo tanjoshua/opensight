@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,8 +9,11 @@ import (
 
 	"opensight/internal/billing"
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrPromptLimitExceeded is returned when adding an active prompt would exceed
@@ -30,63 +32,6 @@ const (
 	PromptStatusActive PromptStatus = "active"
 	// PromptStatusRetired means a prompt is excluded from future runs.
 	PromptStatusRetired PromptStatus = "retired"
-)
-
-const (
-	// lockBusinessPlanCodeSQL locks the business row and loads its tenant's
-	// plan_code only when the business belongs to the given tenant. No rows
-	// means the business is missing or owned by another tenant — either way
-	// ErrNotFound, with no cross-tenant existence oracle. The prompt limit
-	// itself is resolved from the catalog (billing.PlanFor) after this lock, not
-	// read from the database.
-	lockBusinessPlanCodeSQL = `
-SELECT s.plan_code
-FROM businesses b
-JOIN subscriptions s ON s.tenant_id = b.tenant_id
-WHERE b.id = $1 AND b.tenant_id = $2
-FOR UPDATE OF b`
-
-	// countActivePromptsSQL is tenant-safe because it always runs after
-	// lockBusinessPromptLimitSQL has proven, in the same transaction, that the
-	// business belongs to the tenant.
-	countActivePromptsSQL = `
-SELECT count(*)
-FROM prompts
-WHERE business_id = $1
-  AND status = 'active'`
-
-	insertActivePromptSQL = `
-INSERT INTO prompts (id, business_id, text, status, replaces_prompt_id)
-VALUES ($1, $2, $3, 'active', $4)
-RETURNING created_at`
-
-	listActivePromptsSQL = `
-SELECT id, business_id, text, status, replaces_prompt_id, created_at
-FROM prompts
-WHERE business_id = $1
-  AND status = 'active'
-ORDER BY created_at`
-
-	getPromptSQL = `
-SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
-FROM prompts pr
-JOIN businesses b ON b.id = pr.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2`
-
-	// lockPromptForReplaceSQL loads and row-locks the prompt to be replaced,
-	// scoped to the tenant via the business join in one statement. FOR UPDATE OF
-	// pr serializes concurrent replaces on the same prompt: the second waits, then
-	// sees status = 'retired' and is rejected. A missing or cross-tenant prompt
-	// returns no rows → ErrNotFound.
-	lockPromptForReplaceSQL = `
-SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
-FROM prompts pr
-JOIN businesses b ON b.id = pr.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2
-FOR UPDATE OF pr`
-
-	retirePromptSQL = `
-UPDATE prompts SET status = 'retired', retired_at = now() WHERE id = $1`
 )
 
 // Prompt is a persisted prompt row.
@@ -121,11 +66,11 @@ type ReplacePromptParams struct {
 
 // PromptStore writes prompt rows while enforcing prompt-specific invariants.
 type PromptStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewPromptStore returns a PromptStore backed by db.
-func NewPromptStore(db *sql.DB) *PromptStore {
+func NewPromptStore(db *pgxpool.Pool) *PromptStore {
 	return &PromptStore{db: db}
 }
 
@@ -140,7 +85,7 @@ func (s *PromptStore) CreateActivePrompt(ctx context.Context, params CreateActiv
 	}
 
 	var prompt Prompt
-	err := withTx(ctx, s.db, func(q querier) error {
+	err := withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		created, err := createActivePromptInTx(ctx, q, params)
 		if err != nil {
 			return err
@@ -168,7 +113,7 @@ func (s *PromptStore) ReplacePrompt(ctx context.Context, params ReplacePromptPar
 	}
 
 	var prompt Prompt
-	err := withTx(ctx, s.db, func(q querier) error {
+	err := withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		created, err := replacePromptInTx(ctx, q, params)
 		if err != nil {
 			return err
@@ -182,19 +127,20 @@ func (s *PromptStore) ReplacePrompt(ctx context.Context, params ReplacePromptPar
 	return prompt, nil
 }
 
-func replacePromptInTx(ctx context.Context, q querier, params ReplacePromptParams) (Prompt, error) {
-	old, err := scanPrompt(q.queryRowContext(ctx, lockPromptForReplaceSQL, params.OldPromptID, params.TenantID))
+func replacePromptInTx(ctx context.Context, q *storesqlc.Queries, params ReplacePromptParams) (Prompt, error) {
+	row, err := q.LockPromptForReplace(ctx, storesqlc.LockPromptForReplaceParams{ID: params.OldPromptID, TenantID: params.TenantID})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound
 		}
 		return Prompt{}, fmt.Errorf("lock prompt for replace: %w", err)
 	}
+	old := promptFromRow(row.ID, row.BusinessID, row.Text, row.Status, row.ReplacesPromptID, row.CreatedAt)
 	if old.Status != PromptStatusActive {
 		return Prompt{}, ErrPromptNotActive
 	}
 
-	if _, err := q.execContext(ctx, retirePromptSQL, old.ID); err != nil {
+	if err := q.RetirePrompt(ctx, old.ID); err != nil {
 		return Prompt{}, fmt.Errorf("retire prompt: %w", err)
 	}
 
@@ -215,29 +161,18 @@ func (s *PromptStore) ListActivePrompts(ctx context.Context, tenantID, businessI
 		return nil, errors.New("prompt store database is required")
 	}
 
-	q := sqlQuerier{q: s.db}
+	q := queries(ctx, s.db)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return nil, err
 	}
 
-	rows, err := q.queryContext(ctx, listActivePromptsSQL, businessID)
+	rows, err := q.ListActivePrompts(ctx, businessID)
 	if err != nil {
 		return nil, fmt.Errorf("list active prompts: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	prompts := []Prompt{}
-	for rows.Next() {
-		prompt, err := scanPrompt(rows)
-		if err != nil {
-			return nil, err
-		}
-		prompts = append(prompts, prompt)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate active prompts: %w", err)
+	prompts := make([]Prompt, 0, len(rows))
+	for _, row := range rows {
+		prompts = append(prompts, promptFromRow(row.ID, row.BusinessID, row.Text, row.Status, row.ReplacesPromptID, row.CreatedAt))
 	}
 	return prompts, nil
 }
@@ -250,40 +185,29 @@ func (s *PromptStore) GetPrompt(ctx context.Context, tenantID, promptID domain.I
 		return Prompt{}, errors.New("prompt store database is required")
 	}
 
-	prompt, err := scanPrompt(s.db.QueryRowContext(ctx, getPromptSQL, promptID, tenantID))
+	row, err := queries(ctx, s.db).GetPrompt(ctx, storesqlc.GetPromptParams{ID: promptID, TenantID: tenantID})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound
 		}
 		return Prompt{}, fmt.Errorf("get prompt: %w", err)
 	}
-	return prompt, nil
+	return promptFromRow(row.ID, row.BusinessID, row.Text, row.Status, row.ReplacesPromptID, row.CreatedAt), nil
 }
 
-func scanPrompt(row rowScanner) (Prompt, error) {
-	var prompt Prompt
-	if err := row.Scan(
-		&prompt.ID,
-		&prompt.BusinessID,
-		&prompt.Text,
-		&prompt.Status,
-		&prompt.ReplacesPromptID,
-		&prompt.CreatedAt,
-	); err != nil {
-		return Prompt{}, err
-	}
-	return prompt, nil
+func promptFromRow(id, businessID domain.ID, text, status string, replaces *domain.ID, created time.Time) Prompt {
+	return Prompt{ID: id, BusinessID: businessID, Text: text, Status: PromptStatus(status), ReplacesPromptID: replaces, CreatedAt: created}
 }
 
-func createActivePromptInTx(ctx context.Context, q querier, params CreateActivePromptParams) (Prompt, error) {
+func createActivePromptInTx(ctx context.Context, q *storesqlc.Queries, params CreateActivePromptParams) (Prompt, error) {
 	params, err := normalizeCreateActivePromptParams(params)
 	if err != nil {
 		return Prompt{}, err
 	}
 
-	var planCode string
-	if err := q.queryRowContext(ctx, lockBusinessPlanCodeSQL, params.BusinessID, params.TenantID).Scan(&planCode); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	planCode, err := q.LockBusinessPlanCode(ctx, storesqlc.LockBusinessPlanCodeParams{ID: params.BusinessID, TenantID: params.TenantID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound
 		}
 		return Prompt{}, fmt.Errorf("load business plan code: %w", err)
@@ -294,22 +218,17 @@ func createActivePromptInTx(ctx context.Context, q querier, params CreateActiveP
 	}
 	promptLimit := plan.PromptLimit
 
-	var activePromptCount int
-	if err := q.queryRowContext(ctx, countActivePromptsSQL, params.BusinessID).Scan(&activePromptCount); err != nil {
+	activePromptCount, err := q.CountActivePrompts(ctx, params.BusinessID)
+	if err != nil {
 		return Prompt{}, fmt.Errorf("count active prompts: %w", err)
 	}
-	if activePromptCount >= promptLimit {
+	if activePromptCount >= int64(promptLimit) {
 		return Prompt{}, fmt.Errorf(
 			"%w: active prompts %d >= plan limit %d",
 			ErrPromptLimitExceeded,
 			activePromptCount,
 			promptLimit,
 		)
-	}
-
-	var replacesPromptID any
-	if params.ReplacesPromptID != nil {
-		replacesPromptID = *params.ReplacesPromptID
 	}
 
 	prompt := Prompt{
@@ -319,14 +238,10 @@ func createActivePromptInTx(ctx context.Context, q querier, params CreateActiveP
 		Status:           PromptStatusActive,
 		ReplacesPromptID: params.ReplacesPromptID,
 	}
-	if err := q.queryRowContext(
-		ctx,
-		insertActivePromptSQL,
-		params.ID,
-		params.BusinessID,
-		params.Text,
-		replacesPromptID,
-	).Scan(&prompt.CreatedAt); err != nil {
+	prompt.CreatedAt, err = q.InsertActivePrompt(ctx, storesqlc.InsertActivePromptParams{
+		ID: params.ID, BusinessID: params.BusinessID, Text: params.Text, ReplacesPromptID: params.ReplacesPromptID,
+	})
+	if err != nil {
 		return Prompt{}, fmt.Errorf("insert active prompt: %w", err)
 	}
 

@@ -21,7 +21,6 @@ var embeddedMigrations embed.FS
 type MigrationConfig struct {
 	DatabaseURL    string
 	MaxOpenConns   int
-	MaxIdleConns   int
 	ConnectTimeout time.Duration
 }
 
@@ -38,9 +37,6 @@ func Migrate(ctx context.Context, cfg MigrationConfig) (int, error) {
 	if cfg.MaxOpenConns < 1 {
 		return 0, fmt.Errorf("max open connections must be positive")
 	}
-	if cfg.MaxIdleConns < 1 {
-		return 0, fmt.Errorf("max idle connections must be positive")
-	}
 	if cfg.ConnectTimeout <= 0 {
 		cfg.ConnectTimeout = 10 * time.Second
 	}
@@ -54,7 +50,6 @@ func Migrate(ctx context.Context, cfg MigrationConfig) (int, error) {
 	}()
 
 	db.SetMaxOpenConns(cfg.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.MaxIdleConns)
 
 	connectCtx, cancel := context.WithTimeout(ctx, cfg.ConnectTimeout)
 	defer cancel()

@@ -2,12 +2,11 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestAdvisoryLockerSerializesSameKey(t *testing.T) {
@@ -16,30 +15,23 @@ func TestAdvisoryLockerSerializesSameKey(t *testing.T) {
 		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
 	}
 
-	db, err := sql.Open("pgx", dbURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
-	// Prove callback store work reuses the locked session rather than waiting
-	// forever for a second pooled connection.
-	db.SetMaxOpenConns(1)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	t.Cleanup(db.Close)
 
 	key := "test-advisory-lock:" + mustNewID(t).String()
 	firstEntered := make(chan struct{})
 	releaseFirst := make(chan struct{})
 	secondEntered := make(chan struct{})
+	pool := db
 	errs := make(chan error, 2)
 
 	go func() {
-		errs <- NewAdvisoryLocker(db).WithLock(ctx, key, func(lockedCtx context.Context) error {
-			var one int
-			if err := dbFromContext(lockedCtx, db).QueryRowContext(lockedCtx, `SELECT 1`).Scan(&one); err != nil {
-				return err
-			}
+		errs <- NewAdvisoryLocker(pool).WithLock(ctx, key, func(lockedCtx context.Context) error {
 			close(firstEntered)
 			<-releaseFirst
 			return nil
@@ -48,7 +40,7 @@ func TestAdvisoryLockerSerializesSameKey(t *testing.T) {
 	<-firstEntered
 
 	go func() {
-		errs <- NewAdvisoryLocker(db).WithLock(ctx, key, func(context.Context) error {
+		errs <- NewAdvisoryLocker(pool).WithLock(ctx, key, func(context.Context) error {
 			close(secondEntered)
 			return nil
 		})

@@ -2,15 +2,17 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CompetitorStatus string
@@ -61,66 +63,12 @@ type UpdateCompetitorAliasesParams struct {
 }
 
 type CompetitorStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewCompetitorStore(db *sql.DB) *CompetitorStore {
+func NewCompetitorStore(db *pgxpool.Pool) *CompetitorStore {
 	return &CompetitorStore{db: db}
 }
-
-const competitorRecordColumns = `co.id, co.business_id, co.name, co.website,
-       to_jsonb(co.aliases), to_jsonb(co.suggested_aliases),
-       co.source, co.status, co.created_at`
-
-const createManualCompetitorSQL = `
-INSERT INTO competitors (id, business_id, name, website, aliases, source, status)
-SELECT $1, b.id, $4, $5, $6, 'manual', 'tracked'
-FROM businesses b
-WHERE b.id = $2 AND b.tenant_id = $3
-RETURNING id, business_id, name, website, to_jsonb(aliases),
-          to_jsonb(suggested_aliases), source, status, created_at`
-
-const setCompetitorStatusSQL = `
-UPDATE competitors co
-SET status = $3
-FROM businesses b
-WHERE co.id = $1
-  AND co.business_id = b.id
-  AND b.tenant_id = $2
-RETURNING ` + competitorRecordColumns
-
-const approveSuggestedAliasSQL = `
-UPDATE competitors co
-SET suggested_aliases = array_remove(co.suggested_aliases, $3),
-    aliases = CASE
-      WHEN $3 = ANY(co.aliases) THEN co.aliases
-      ELSE array_append(co.aliases, $3)
-    END
-FROM businesses b
-WHERE co.id = $1
-  AND co.business_id = b.id
-  AND b.tenant_id = $2
-  AND $3 = ANY(co.suggested_aliases)
-RETURNING ` + competitorRecordColumns
-
-const rejectSuggestedAliasSQL = `
-UPDATE competitors co
-SET suggested_aliases = array_remove(co.suggested_aliases, $3)
-FROM businesses b
-WHERE co.id = $1
-  AND co.business_id = b.id
-  AND b.tenant_id = $2
-  AND $3 = ANY(co.suggested_aliases)
-RETURNING ` + competitorRecordColumns
-
-const updateCompetitorAliasesSQL = `
-UPDATE competitors co
-SET aliases = $3
-FROM businesses b
-WHERE co.id = $1
-  AND co.business_id = b.id
-  AND b.tenant_id = $2
-RETURNING ` + competitorRecordColumns
 
 func (s *CompetitorStore) CreateManual(ctx context.Context, params CreateManualCompetitorParams) (CompetitorRecord, error) {
 	if s == nil || s.db == nil {
@@ -132,23 +80,17 @@ func (s *CompetitorStore) CreateManual(ctx context.Context, params CreateManualC
 		return CompetitorRecord{}, err
 	}
 
-	record, err := scanCompetitorRecord(s.db.QueryRowContext(
-		ctx,
-		createManualCompetitorSQL,
-		params.ID,
-		params.BusinessID,
-		params.TenantID,
-		params.Name,
-		params.Website,
-		params.Aliases,
-	))
+	row, err := queries(ctx, s.db).CreateManualCompetitor(ctx, storesqlc.CreateManualCompetitorParams{
+		ID: params.ID, ID_2: params.BusinessID, TenantID: params.TenantID,
+		Name: params.Name, Website: params.Website, Aliases: params.Aliases,
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return CompetitorRecord{}, ErrNotFound
 		}
 		return CompetitorRecord{}, fmt.Errorf("create manual competitor: %w", err)
 	}
-	return record, nil
+	return competitorFromSQLC(row), nil
 }
 
 func (s *CompetitorStore) SetStatus(ctx context.Context, params SetCompetitorStatusParams) (CompetitorRecord, error) {
@@ -165,28 +107,24 @@ func (s *CompetitorStore) SetStatus(ctx context.Context, params SetCompetitorSta
 		return CompetitorRecord{}, errors.New("competitor status must be tracked or dismissed")
 	}
 
-	record, err := scanCompetitorRecord(s.db.QueryRowContext(
-		ctx,
-		setCompetitorStatusSQL,
-		params.CompetitorID,
-		params.TenantID,
-		params.Status,
-	))
+	row, err := queries(ctx, s.db).SetCompetitorStatus(ctx, storesqlc.SetCompetitorStatusParams{
+		ID: params.CompetitorID, TenantID: params.TenantID, Status: string(params.Status),
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return CompetitorRecord{}, ErrNotFound
 		}
 		return CompetitorRecord{}, fmt.Errorf("set competitor status: %w", err)
 	}
-	return record, nil
+	return competitorFromSQLC(row), nil
 }
 
 func (s *CompetitorStore) ApproveSuggestedAlias(ctx context.Context, params SuggestedAliasParams) (CompetitorRecord, error) {
-	return s.updateSuggestedAlias(ctx, params, approveSuggestedAliasSQL, "approve")
+	return s.updateSuggestedAlias(ctx, params, true)
 }
 
 func (s *CompetitorStore) RejectSuggestedAlias(ctx context.Context, params SuggestedAliasParams) (CompetitorRecord, error) {
-	return s.updateSuggestedAlias(ctx, params, rejectSuggestedAliasSQL, "reject")
+	return s.updateSuggestedAlias(ctx, params, false)
 }
 
 func (s *CompetitorStore) UpdateAliases(ctx context.Context, params UpdateCompetitorAliasesParams) (CompetitorRecord, error) {
@@ -200,19 +138,19 @@ func (s *CompetitorStore) UpdateAliases(ctx context.Context, params UpdateCompet
 		return CompetitorRecord{}, err
 	}
 	params.Aliases = normalizeAliases(params.Aliases)
-	record, err := scanCompetitorRecord(s.db.QueryRowContext(
-		ctx, updateCompetitorAliasesSQL, params.CompetitorID, params.TenantID, params.Aliases,
-	))
+	row, err := queries(ctx, s.db).UpdateCompetitorAliases(ctx, storesqlc.UpdateCompetitorAliasesParams{
+		ID: params.CompetitorID, TenantID: params.TenantID, Aliases: params.Aliases,
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return CompetitorRecord{}, ErrNotFound
 		}
 		return CompetitorRecord{}, fmt.Errorf("update competitor aliases: %w", err)
 	}
-	return record, nil
+	return competitorFromSQLC(row), nil
 }
 
-func (s *CompetitorStore) updateSuggestedAlias(ctx context.Context, params SuggestedAliasParams, query, action string) (CompetitorRecord, error) {
+func (s *CompetitorStore) updateSuggestedAlias(ctx context.Context, params SuggestedAliasParams, approve bool) (CompetitorRecord, error) {
 	if s == nil || s.db == nil {
 		return CompetitorRecord{}, errors.New("competitor store database is required")
 	}
@@ -220,41 +158,36 @@ func (s *CompetitorStore) updateSuggestedAlias(ctx context.Context, params Sugge
 	if err != nil {
 		return CompetitorRecord{}, err
 	}
-	record, err := scanCompetitorRecord(s.db.QueryRowContext(
-		ctx,
-		query,
-		params.CompetitorID,
-		params.TenantID,
-		params.Alias,
-	))
+	q := queries(ctx, s.db)
+	var row storesqlc.Competitor
+	if approve {
+		row, err = q.ApproveSuggestedAlias(ctx, storesqlc.ApproveSuggestedAliasParams{
+			ID: params.CompetitorID, TenantID: params.TenantID, ArrayRemove: params.Alias,
+		})
+	} else {
+		row, err = q.RejectSuggestedAlias(ctx, storesqlc.RejectSuggestedAliasParams{
+			ID: params.CompetitorID, TenantID: params.TenantID, ArrayRemove: params.Alias,
+		})
+	}
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return CompetitorRecord{}, ErrNotFound
+		}
+		action := "reject"
+		if approve {
+			action = "approve"
 		}
 		return CompetitorRecord{}, fmt.Errorf("%s suggested competitor alias: %w", action, err)
 	}
-	return record, nil
+	return competitorFromSQLC(row), nil
 }
 
-func scanCompetitorRecord(row rowScanner) (CompetitorRecord, error) {
-	var record CompetitorRecord
-	var aliases, suggestedAliases stringSlice
-	if err := row.Scan(
-		&record.ID,
-		&record.BusinessID,
-		&record.Name,
-		&record.Website,
-		&aliases,
-		&suggestedAliases,
-		&record.Source,
-		&record.Status,
-		&record.CreatedAt,
-	); err != nil {
-		return CompetitorRecord{}, err
+func competitorFromSQLC(row storesqlc.Competitor) CompetitorRecord {
+	return CompetitorRecord{
+		ID: row.ID, BusinessID: row.BusinessID, Name: row.Name, Website: row.Website,
+		Aliases: emptyStrings(row.Aliases), SuggestedAliases: emptyStrings(row.SuggestedAliases),
+		Source: row.Source, Status: CompetitorStatus(row.Status), CreatedAt: row.CreatedAt,
 	}
-	record.Aliases = emptyIfNil(aliases)
-	record.SuggestedAliases = emptyIfNil(suggestedAliases)
-	return record, nil
 }
 
 func normalizeSuggestedAliasParams(params SuggestedAliasParams) (SuggestedAliasParams, error) {

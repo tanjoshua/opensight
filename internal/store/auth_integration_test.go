@@ -3,13 +3,13 @@ package store
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"errors"
 	"os"
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 // TestAuthStore exercises the AUTH-1 credential and session repository against a
@@ -24,11 +24,11 @@ func TestAuthStore(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	userID := mustNewID(t)
@@ -36,16 +36,14 @@ func TestAuthStore(t *testing.T) {
 	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query111, userID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query112, userID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query113, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query114, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Auth Tenant")
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO users (id, tenant_id, email, password_hash) VALUES ($1, $2, $3, $4)`,
-		userID, tenantID, email, passwordHash); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query115, userID, tenantID, email, passwordHash); err != nil {
 		t.Fatalf("insert user: %v", err)
 	}
 
@@ -88,9 +86,7 @@ func TestAuthStore(t *testing.T) {
 
 	// --- Expired session resolves as ErrNotFound. ---
 	expiredHash := tokenHashFor("expired-token")
-	if _, err := db.ExecContext(ctx,
-		`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() - interval '1 minute')`,
-		expiredHash, userID); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query116, expiredHash, userID); err != nil {
 		t.Fatalf("insert expired session: %v", err)
 	}
 	if _, err := auth.GetSession(ctx, expiredHash); !errors.Is(err, ErrNotFound) {
@@ -106,8 +102,7 @@ func TestAuthStore(t *testing.T) {
 		t.Fatalf("second CreateSession: %v", err)
 	}
 	var expiredCount int
-	if err := db.QueryRowContext(ctx,
-		`SELECT count(*) FROM sessions WHERE user_id = $1 AND expires_at <= now()`, userID).Scan(&expiredCount); err != nil {
+	if err := testdb.QueryRow(ctx, db, testdb.Query117, userID).Scan(&expiredCount); err != nil {
 		t.Fatalf("count expired: %v", err)
 	}
 	if expiredCount != 0 {
@@ -126,11 +121,11 @@ func TestAuthStore(t *testing.T) {
 	}
 
 	// --- FK cascade: deleting the user removes its remaining sessions. ---
-	if _, err := db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query118, userID); err != nil {
 		t.Fatalf("delete user: %v", err)
 	}
 	var remaining int
-	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM sessions WHERE user_id = $1", userID).Scan(&remaining); err != nil {
+	if err := testdb.QueryRow(ctx, db, testdb.Query119, userID).Scan(&remaining); err != nil {
 		t.Fatalf("count remaining sessions: %v", err)
 	}
 	if remaining != 0 {

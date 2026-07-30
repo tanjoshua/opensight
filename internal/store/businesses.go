@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +9,11 @@ import (
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // BusinessStatus is the persisted lifecycle status for a business.
@@ -72,56 +74,13 @@ type UpdateBusinessProfileParams struct {
 // BusinessStore reads and writes business rows. It is the tenant-checked entry
 // point every deeper repository call funnels through.
 type BusinessStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewBusinessStore returns a BusinessStore backed by db.
-func NewBusinessStore(db *sql.DB) *BusinessStore {
+func NewBusinessStore(db *pgxpool.Pool) *BusinessStore {
 	return &BusinessStore{db: db}
 }
-
-const (
-	insertBusinessSQL = `
-INSERT INTO businesses (
-  id, tenant_id, status, name, website, aliases, category,
-  services, location, activated_at
-) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10
-)
-RETURNING created_at`
-
-	// aliases is a text[] column; pgx's database/sql driver encodes []string on
-	// insert but will not decode text[] back into []string, so it is read as
-	// JSON and unmarshalled (see stringSlice).
-	businessColumns = `id, tenant_id, status, name, website, to_jsonb(aliases) AS aliases, category,
-       services, location, created_at, activated_at`
-
-	getBusinessSQL = `
-SELECT ` + businessColumns + `
-FROM businesses
-WHERE id = $1 AND tenant_id = $2`
-
-	listBusinessesSQL = `
-SELECT ` + businessColumns + `
-FROM businesses
-WHERE tenant_id = $1
-ORDER BY created_at`
-
-	resolveTenantIDSQL = `SELECT tenant_id FROM businesses WHERE id = $1`
-
-	renameTenantSQL = `UPDATE tenants SET name = $2 WHERE id = $1`
-
-	updateActiveBusinessProfileSQL = `
-UPDATE businesses
-SET name = CASE WHEN $3 THEN $4 ELSE name END,
-    website = CASE WHEN $5 THEN $6 ELSE website END,
-    aliases = CASE WHEN $7 THEN $8 ELSE aliases END,
-    category = CASE WHEN $9 THEN $10 ELSE category END,
-    services = CASE WHEN $11 THEN $12::jsonb ELSE services END,
-    location = CASE WHEN $13 THEN $14::jsonb ELSE location END
-WHERE id = $1 AND tenant_id = $2 AND status = 'active'
-RETURNING ` + businessColumns
-)
 
 // CreateBusiness inserts a business owned by params.TenantID (RUN-5 CLI
 // `opensight business create`). Tenant existence is enforced by the FK. In
@@ -151,24 +110,20 @@ func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusines
 		Location:    params.Location,
 		ActivatedAt: params.ActivatedAt,
 	}
-	err = withTx(ctx, s.db, func(q querier) error {
-		if err := q.queryRowContext(
-			ctx,
-			insertBusinessSQL,
-			params.ID,
-			params.TenantID,
-			string(params.Status),
-			params.Name,
-			params.Website,
-			params.Aliases,
-			params.Category,
-			string(params.Services),
-			jsonbArg(params.Location),
-			params.ActivatedAt,
-		).Scan(&business.CreatedAt); err != nil {
+	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		var location *json.RawMessage
+		if len(params.Location) > 0 {
+			location = &params.Location
+		}
+		business.CreatedAt, err = q.InsertBusiness(ctx, storesqlc.InsertBusinessParams{
+			ID: params.ID, TenantID: params.TenantID, Status: string(params.Status), Name: params.Name,
+			Website: params.Website, Aliases: params.Aliases, Category: params.Category,
+			Services: params.Services, Location: location, ActivatedAt: params.ActivatedAt,
+		})
+		if err != nil {
 			return fmt.Errorf("insert business: %w", err)
 		}
-		if _, err := q.execContext(ctx, renameTenantSQL, params.TenantID, params.Name); err != nil {
+		if err := q.RenameTenant(ctx, storesqlc.RenameTenantParams{ID: params.TenantID, Name: params.Name}); err != nil {
 			return fmt.Errorf("rename tenant: %w", err)
 		}
 		return nil
@@ -186,14 +141,14 @@ func (s *BusinessStore) GetBusiness(ctx context.Context, tenantID, businessID do
 		return Business{}, errors.New("business store database is required")
 	}
 
-	business, err := scanBusiness(s.db.QueryRowContext(ctx, getBusinessSQL, businessID, tenantID))
+	row, err := queries(ctx, s.db).GetBusiness(ctx, storesqlc.GetBusinessParams{ID: businessID, TenantID: tenantID})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Business{}, ErrNotFound
 		}
 		return Business{}, fmt.Errorf("get business: %w", err)
 	}
-	return business, nil
+	return businessFromSQLC(row), nil
 }
 
 func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBusinessProfileParams) (Business, error) {
@@ -218,37 +173,31 @@ func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBu
 	if params.Aliases != nil {
 		aliases = *params.Aliases
 	}
-	jsonText := func(value *json.RawMessage) string {
-		if value == nil {
-			return "null"
-		}
-		return string(*value)
+	var name string
+	if params.Name != nil {
+		name = *params.Name
 	}
-	business, err := scanBusiness(s.db.QueryRowContext(
-		ctx,
-		updateActiveBusinessProfileSQL,
-		params.BusinessID,
-		params.TenantID,
-		params.Name != nil,
-		params.Name,
-		params.WebsiteSet,
-		params.Website,
-		params.Aliases != nil,
-		aliases,
-		params.Category != nil,
-		params.Category,
-		params.Services != nil,
-		jsonText(params.Services),
-		params.Location != nil,
-		jsonText(params.Location),
-	))
+	var services, location json.RawMessage
+	if params.Services != nil {
+		services = *params.Services
+	}
+	if params.Location != nil {
+		location = *params.Location
+	}
+	row, err := queries(ctx, s.db).UpdateActiveBusinessProfile(ctx, storesqlc.UpdateActiveBusinessProfileParams{
+		BusinessID: params.BusinessID, TenantID: params.TenantID,
+		NameSet: params.Name != nil, Name: name, WebsiteSet: params.WebsiteSet, Website: params.Website,
+		AliasesSet: params.Aliases != nil, Aliases: aliases, CategorySet: params.Category != nil,
+		Category: params.Category, ServicesSet: params.Services != nil, Services: services,
+		LocationSet: params.Location != nil, Location: location,
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Business{}, ErrNotFound
 		}
 		return Business{}, fmt.Errorf("update active business profile: %w", err)
 	}
-	return business, nil
+	return businessFromSQLC(row), nil
 }
 
 // ListBusinesses returns the tenant's businesses, oldest first (GET /me / SPA
@@ -258,24 +207,13 @@ func (s *BusinessStore) ListBusinesses(ctx context.Context, tenantID domain.ID) 
 		return nil, errors.New("business store database is required")
 	}
 
-	rows, err := dbFromContext(ctx, s.db).QueryContext(ctx, listBusinessesSQL, tenantID)
+	rows, err := queries(ctx, s.db).ListBusinesses(ctx, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("list businesses: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	businesses := []Business{}
-	for rows.Next() {
-		business, err := scanBusiness(rows)
-		if err != nil {
-			return nil, err
-		}
-		businesses = append(businesses, business)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate businesses: %w", err)
+	businesses := make([]Business, 0, len(rows))
+	for _, row := range rows {
+		businesses = append(businesses, businessFromSQLC(row))
 	}
 	return businesses, nil
 }
@@ -291,9 +229,9 @@ func (s *BusinessStore) ResolveTenantID(ctx context.Context, businessID domain.I
 		return uuid.Nil, errors.New("business store database is required")
 	}
 
-	var tenantID domain.ID
-	if err := s.db.QueryRowContext(ctx, resolveTenantIDSQL, businessID).Scan(&tenantID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	tenantID, err := queries(ctx, s.db).ResolveTenantID(ctx, businessID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return uuid.Nil, ErrNotFound
 		}
 		return uuid.Nil, fmt.Errorf("resolve tenant id: %w", err)
@@ -301,65 +239,16 @@ func (s *BusinessStore) ResolveTenantID(ctx context.Context, businessID domain.I
 	return tenantID, nil
 }
 
-func scanBusiness(row rowScanner) (Business, error) {
-	var business Business
-	var aliases stringSlice
-	if err := row.Scan(
-		&business.ID,
-		&business.TenantID,
-		&business.Status,
-		&business.Name,
-		&business.Website,
-		&aliases,
-		&business.Category,
-		&business.Services,
-		nullableJSON{&business.Location},
-		&business.CreatedAt,
-		&business.ActivatedAt,
-	); err != nil {
-		return Business{}, err
+func businessFromSQLC(row storesqlc.Business) Business {
+	var location json.RawMessage
+	if row.Location != nil {
+		location = *row.Location
 	}
-	business.Aliases = aliases
-	return business, nil
-}
-
-// nullableJSON scans a nullable jsonb column into a json.RawMessage.
-// database/sql maps NULL only into exactly *[]byte, not named byte-slice types
-// like json.RawMessage, so nullable jsonb needs this wrapper.
-type nullableJSON struct{ dst *json.RawMessage }
-
-func (n nullableJSON) Scan(src any) error {
-	switch v := src.(type) {
-	case nil:
-		*n.dst = nil
-	case []byte:
-		*n.dst = append(json.RawMessage(nil), v...)
-	case string:
-		*n.dst = json.RawMessage(v)
-	default:
-		return fmt.Errorf("unsupported source type %T for jsonb", src)
+	return Business{
+		ID: row.ID, TenantID: row.TenantID, Status: BusinessStatus(row.Status), Name: row.Name,
+		Website: row.Website, Aliases: row.Aliases, Category: row.Category, Services: row.Services,
+		Location: location, CreatedAt: row.CreatedAt, ActivatedAt: row.ActivatedAt,
 	}
-	return nil
-}
-
-// stringSlice scans a JSON array text (e.g. to_jsonb(text[])) into []string.
-type stringSlice []string
-
-func (s *stringSlice) Scan(src any) error {
-	if src == nil {
-		*s = nil
-		return nil
-	}
-	var raw []byte
-	switch v := src.(type) {
-	case []byte:
-		raw = v
-	case string:
-		raw = []byte(v)
-	default:
-		return fmt.Errorf("unsupported source type %T for string array", src)
-	}
-	return json.Unmarshal(raw, (*[]string)(s))
 }
 
 func normalizeCreateBusinessParams(params CreateBusinessParams) (CreateBusinessParams, error) {
@@ -393,9 +282,3 @@ func normalizeCreateBusinessParams(params CreateBusinessParams) (CreateBusinessP
 
 // jsonbArg passes a nullable jsonb column: an empty payload becomes SQL NULL,
 // otherwise the raw JSON text (cast to jsonb in the statement).
-func jsonbArg(raw json.RawMessage) any {
-	if len(raw) == 0 {
-		return nil
-	}
-	return string(raw)
-}

@@ -2,12 +2,15 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // AuthStore reads credentials and manages server-side sessions (design 07
@@ -18,11 +21,11 @@ import (
 // and a session token resolves to exactly one user/tenant. Keep the method set
 // to exactly these four; anything tenant-scoped belongs on a business store.
 type AuthStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewAuthStore returns an AuthStore backed by db.
-func NewAuthStore(db *sql.DB) *AuthStore {
+func NewAuthStore(db *pgxpool.Pool) *AuthStore {
 	return &AuthStore{db: db}
 }
 
@@ -53,31 +56,6 @@ type CreateSessionParams struct {
 	ExpiresAt time.Time
 }
 
-const (
-	getUserCredentialsSQL = `
-SELECT u.id, u.tenant_id, u.email, t.name, u.password_hash
-FROM users u
-JOIN tenants t ON t.id = u.tenant_id
-WHERE u.email = $1`
-
-	insertSessionSQL = `
-INSERT INTO sessions (token_hash, user_id, expires_at)
-VALUES ($1, $2, $3)`
-
-	deleteExpiredUserSessionsSQL = `
-DELETE FROM sessions
-WHERE user_id = $1 AND expires_at <= now()`
-
-	getSessionSQL = `
-SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at
-FROM sessions s
-JOIN users u ON u.id = s.user_id
-JOIN tenants t ON t.id = u.tenant_id
-WHERE s.token_hash = $1 AND s.expires_at > now()`
-
-	deleteSessionSQL = `DELETE FROM sessions WHERE token_hash = $1`
-)
-
 // GetUserCredentials loads a user's credentials by email. Matching is
 // case-insensitive because email is a citext column. An unknown email returns
 // ErrNotFound; the login handler makes that indistinguishable from a wrong
@@ -87,21 +65,14 @@ func (s *AuthStore) GetUserCredentials(ctx context.Context, email string) (UserC
 		return UserCredentials{}, errors.New("auth store database is required")
 	}
 
-	var creds UserCredentials
-	err := s.db.QueryRowContext(ctx, getUserCredentialsSQL, email).Scan(
-		&creds.UserID,
-		&creds.TenantID,
-		&creds.Email,
-		&creds.TenantName,
-		&creds.PasswordHash,
-	)
+	row, err := queries(ctx, s.db).GetUserCredentials(ctx, email)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return UserCredentials{}, ErrNotFound
 		}
 		return UserCredentials{}, fmt.Errorf("get user credentials: %w", err)
 	}
-	return creds, nil
+	return UserCredentials{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, PasswordHash: row.PasswordHash}, nil
 }
 
 // CreateSession inserts the session row and, in the same transaction, purges
@@ -121,11 +92,11 @@ func (s *AuthStore) CreateSession(ctx context.Context, params CreateSessionParam
 		return errors.New("session expiry is required")
 	}
 
-	return withTx(ctx, s.db, func(q querier) error {
-		if _, err := q.execContext(ctx, insertSessionSQL, params.TokenHash, params.UserID, params.ExpiresAt); err != nil {
+	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		if err := q.InsertSession(ctx, storesqlc.InsertSessionParams{TokenHash: params.TokenHash, UserID: params.UserID, ExpiresAt: params.ExpiresAt}); err != nil {
 			return fmt.Errorf("insert session: %w", err)
 		}
-		if _, err := q.execContext(ctx, deleteExpiredUserSessionsSQL, params.UserID); err != nil {
+		if err := q.DeleteExpiredUserSessions(ctx, params.UserID); err != nil {
 			return fmt.Errorf("purge expired sessions: %w", err)
 		}
 		return nil
@@ -143,21 +114,14 @@ func (s *AuthStore) GetSession(ctx context.Context, tokenHash []byte) (SessionUs
 		return SessionUser{}, ErrNotFound
 	}
 
-	var su SessionUser
-	err := s.db.QueryRowContext(ctx, getSessionSQL, tokenHash).Scan(
-		&su.UserID,
-		&su.TenantID,
-		&su.Email,
-		&su.TenantName,
-		&su.ExpiresAt,
-	)
+	row, err := queries(ctx, s.db).GetSession(ctx, tokenHash)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return SessionUser{}, ErrNotFound
 		}
 		return SessionUser{}, fmt.Errorf("get session: %w", err)
 	}
-	return su, nil
+	return SessionUser{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, ExpiresAt: row.ExpiresAt}, nil
 }
 
 // DeleteSession removes a session row by token hash. A missing row is not an
@@ -169,7 +133,7 @@ func (s *AuthStore) DeleteSession(ctx context.Context, tokenHash []byte) error {
 	if len(tokenHash) != 32 {
 		return nil
 	}
-	if _, err := s.db.ExecContext(ctx, deleteSessionSQL, tokenHash); err != nil {
+	if err := queries(ctx, s.db).DeleteSession(ctx, tokenHash); err != nil {
 		return fmt.Errorf("delete session: %w", err)
 	}
 	return nil

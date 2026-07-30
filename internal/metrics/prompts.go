@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"opensight/internal/domain"
+	db "opensight/internal/store/sqlc"
 )
 
 // PromptLatest is an active prompt's latest analyzed result — what drives its
@@ -20,22 +21,6 @@ type PromptLatest struct {
 	Sentiment    *string // nil when the business was not mentioned
 }
 
-// latestSelfMention keeps, per result, the earliest self mention order — the
-// business's rank in the response. A result has at most one self entity, but
-// DISTINCT ON is defensive against duplicates.
-const latestPromptSQL = `
-SELECT DISTINCT ON (pr.prompt_id)
-       pr.prompt_id, pr.id, ra.sentiment, sm.mention_order` +
-	analyzedJoin + `
-JOIN prompts p ON p.id = pr.prompt_id
-LEFT JOIN (
-  SELECT DISTINCT ON (prompt_result_id) prompt_result_id, mention_order
-  FROM mentions WHERE subject = 'self'
-  ORDER BY prompt_result_id, mention_order
-) sm ON sm.prompt_result_id = pr.id` + analyzedWhere + `
-  AND p.status = 'active'
-ORDER BY pr.prompt_id, pr.requested_at DESC, pr.id DESC`
-
 // PromptLatestStats returns, for every active prompt with at least one analyzed
 // result, that prompt's latest analyzed result and whether the business was
 // mentioned in it. Prompts whose latest results are all unanalyzed do not appear
@@ -45,23 +30,24 @@ func (m *Metrics) PromptLatestStats(ctx context.Context, tenantID, businessID do
 		return nil, err
 	}
 
-	rows, err := m.db.QueryContext(ctx, latestPromptSQL, businessID, tenantID)
+	rows, err := m.q.PromptLatestStats(ctx, db.PromptLatestStatsParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("prompt latest stats: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
-	stats := []PromptLatest{}
-	for rows.Next() {
-		var p PromptLatest
-		if err := rows.Scan(&p.PromptID, &p.ResultID, &p.Sentiment, &p.MentionOrder); err != nil {
-			return nil, fmt.Errorf("scan prompt latest: %w", err)
+	stats := make([]PromptLatest, 0, len(rows))
+	for _, r := range rows {
+		p := PromptLatest{
+			PromptID:  r.PromptID,
+			ResultID:  r.ResultID,
+			Mentioned: r.Mentioned,
+			Sentiment: r.Sentiment,
 		}
-		p.Mentioned = p.MentionOrder != nil
+		if r.Mentioned {
+			order := int(r.MentionOrder)
+			p.MentionOrder = &order
+		}
 		stats = append(stats, p)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate prompt latest: %w", err)
 	}
 	return stats, nil
 }
@@ -77,12 +63,6 @@ type PromptTrendPoint struct {
 	ResultID     domain.ID
 }
 
-const promptTrendsSQL = `
-SELECT pr.prompt_id, r.id, r.scheduled_for, pr.id,
-       sm.prompt_result_id IS NOT NULL AS mentioned` +
-	analyzedJoin + selfMentions + analyzedWhere + `
-ORDER BY pr.prompt_id, r.scheduled_for, pr.id`
-
 // PromptTrends returns, per prompt, its analyzed results over time — the
 // spark-trend series the Prompts section renders (design 06). Keyed by prompt id;
 // each series is oldest week first. Only analyzed results appear, on the same
@@ -94,23 +74,19 @@ func (m *Metrics) PromptTrends(ctx context.Context, tenantID, businessID domain.
 		return nil, err
 	}
 
-	rows, err := m.db.QueryContext(ctx, promptTrendsSQL, businessID, tenantID)
+	rows, err := m.q.PromptTrends(ctx, db.PromptTrendsParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("prompt trends: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
 	trends := map[domain.ID][]PromptTrendPoint{}
-	for rows.Next() {
-		var promptID domain.ID
-		var p PromptTrendPoint
-		if err := rows.Scan(&promptID, &p.RunID, &p.ScheduledFor, &p.ResultID, &p.Mentioned); err != nil {
-			return nil, fmt.Errorf("scan prompt trend: %w", err)
-		}
-		trends[promptID] = append(trends[promptID], p)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate prompt trends: %w", err)
+	for _, r := range rows {
+		trends[r.PromptID] = append(trends[r.PromptID], PromptTrendPoint{
+			RunID:        r.RunID,
+			ScheduledFor: r.ScheduledFor,
+			Mentioned:    r.Mentioned,
+			ResultID:     r.ResultID,
+		})
 	}
 	return trends, nil
 }
@@ -128,35 +104,6 @@ type PromptChange struct {
 	Replaced int
 }
 
-// promptChangesSQL classifies every prompt-lifecycle event into a per-day
-// (added, retired, replaced) tally. Creations split on replaces_prompt_id: NULL is
-// an add, non-NULL is a replace. Retirements count only when no same-day insert
-// names the retired prompt as its predecessor — that would be the replace already
-// counted on the creation side. Tenant-scoped via the businesses join.
-const promptChangesSQL = `
-SELECT d, sum(added)::int, sum(retired)::int, sum(replaced)::int
-FROM (
-  SELECT date_trunc('day', p.created_at) AS d,
-         CASE WHEN p.replaces_prompt_id IS NULL THEN 1 ELSE 0 END AS added,
-         0 AS retired,
-         CASE WHEN p.replaces_prompt_id IS NOT NULL THEN 1 ELSE 0 END AS replaced
-  FROM prompts p
-  JOIN businesses b ON b.id = p.business_id
-  WHERE b.id = $1 AND b.tenant_id = $2
-  UNION ALL
-  SELECT date_trunc('day', p.retired_at) AS d, 0 AS added, 1 AS retired, 0 AS replaced
-  FROM prompts p
-  JOIN businesses b ON b.id = p.business_id
-  WHERE b.id = $1 AND b.tenant_id = $2 AND p.retired_at IS NOT NULL
-    AND NOT EXISTS (
-      SELECT 1 FROM prompts r
-      WHERE r.replaces_prompt_id = p.id
-        AND date_trunc('day', r.created_at) = date_trunc('day', p.retired_at)
-    )
-) e
-GROUP BY d
-ORDER BY d`
-
 // PromptChanges returns, per day the business's prompt set changed, how many
 // prompts were added, retired, and replaced — oldest day first. These annotate the
 // visibility trend as prompt-set-change markers (design 06) so a prompt change
@@ -168,22 +115,19 @@ func (m *Metrics) PromptChanges(ctx context.Context, tenantID, businessID domain
 		return nil, err
 	}
 
-	rows, err := m.db.QueryContext(ctx, promptChangesSQL, businessID, tenantID)
+	rows, err := m.q.PromptChanges(ctx, db.PromptChangesParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("prompt changes: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
-	changes := []PromptChange{}
-	for rows.Next() {
-		var c PromptChange
-		if err := rows.Scan(&c.Date, &c.Added, &c.Retired, &c.Replaced); err != nil {
-			return nil, fmt.Errorf("scan prompt change: %w", err)
-		}
-		changes = append(changes, c)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate prompt changes: %w", err)
+	changes := make([]PromptChange, 0, len(rows))
+	for _, r := range rows {
+		changes = append(changes, PromptChange{
+			Date:     r.D,
+			Added:    int(r.Added),
+			Retired:  int(r.Retired),
+			Replaced: int(r.Replaced),
+		})
 	}
 	return changes, nil
 }

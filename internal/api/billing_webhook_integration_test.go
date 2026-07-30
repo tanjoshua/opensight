@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,7 +19,8 @@ import (
 	stripesdk "github.com/stripe/stripe-go/v86"
 	"github.com/stripe/stripe-go/v86/webhook"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 const webhookTestSecret = "whsec_integration_test"
@@ -71,25 +71,26 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustDomainID(t)
 	businessID := mustDomainID(t)
 	customerID := "cus_" + tenantID.String()
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query001, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query002, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query003, tenantID)
 	})
-	if _, err := db.ExecContext(ctx, `INSERT INTO tenants (id, name) VALUES ($1, 'Out Of Order Tenant')`, tenantID); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query004, tenantID); err != nil {
 		t.Fatalf("insert tenant: %v", err)
 	}
 
-	businesses := store.NewBusinessStore(db)
+	pool := db
+	businesses := store.NewBusinessStore(pool)
 	category := "clinic"
 	activatedAt := nowUTC()
 	if _, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
@@ -102,7 +103,7 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 		t.Fatalf("CreateBusiness: %v", err)
 	}
 
-	subscriptions := store.NewSubscriptionStore(db)
+	subscriptions := store.NewSubscriptionStore(pool)
 	subscriptionID := "sub_" + tenantID.String()
 	activeStatus := "active"
 	if err := subscriptions.Upsert(ctx, store.UpsertSubscriptionParams{
@@ -125,7 +126,7 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 
 	temporal := &fakeTemporalClient{}
 	monitoring := reconcile.NewMonitoring(businesses, temporal)
-	reconciler := reconcile.New(subscriptions, provider, monitoring, store.NewAdvisoryLocker(db), nil)
+	reconciler := reconcile.New(subscriptions, provider, monitoring, store.NewAdvisoryLocker(pool), nil)
 
 	srv := New(Deps{
 		Reconciler: reconciler,

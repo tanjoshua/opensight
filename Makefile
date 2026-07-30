@@ -7,7 +7,7 @@ GOLANGCI ?= $(shell command -v golangci-lint 2>/dev/null || echo ./bin/golangci-
 # from the dev database so a test run can't disturb local data.
 TEST_DATABASE_URL ?= postgres://opensight:opensight@localhost:5432/opensight_test?sslmode=disable
 
-.PHONY: build test test-integration lint proto up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db test-db
+.PHONY: build test test-integration lint proto sqlc check-sql up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db test-db
 
 build:
 	go build -o $(BIN) ./cmd/opensight
@@ -36,6 +36,23 @@ proto:
 	$(BUF) format -w
 	$(BUF) lint
 	$(BUF) generate
+
+# Regenerates internal/store/sqlc from internal/store/queries/*.sql against
+# the schema replayed from internal/store/migrations/*.sql (sqlc.yaml). CI
+# runs this and fails on any diff, same as proto.
+sqlc:
+	go tool sqlc generate
+
+# Application queries belong in sqlc catalogs. Goose's private adapter and
+# migration tests that inspect migration text are the only Go exceptions.
+check-sql:
+	@! rg -n 'database/sql' \
+		--glob '*.go' \
+		--glob '!internal/store/sqlc/**' --glob '!internal/store/testsql/**' \
+		--glob '!internal/store/migrations.go' .
+	@! rg -U -n '["`][[:space:]]*(SELECT|INSERT|UPDATE|DELETE|WITH)[[:space:]]' \
+		--glob '*.go' --glob '!internal/store/sqlc/**' --glob '!internal/store/testsql/**' \
+		--glob '!internal/store/migrations_test.go' .
 
 up:
 	./scripts/dev-up

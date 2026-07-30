@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,38 +9,15 @@ import (
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrBusinessNotDraft is returned when an apply-only operation targets a
 // business that is not in draft status (already applied, or never drafted).
 var ErrBusinessNotDraft = errors.New("business is not in draft status")
-
-const (
-	// lockDraftBusinessSQL locks the business row scoped by tenant so a concurrent
-	// double-submit serializes here. The status is read under the lock to reject a
-	// non-draft business before any write.
-	lockDraftBusinessSQL = `SELECT status FROM businesses WHERE id = $1 AND tenant_id = $2 FOR UPDATE`
-
-	// activateBusinessSQL writes the reviewed profile columns and flips the row to
-	// active in one statement. Setting status, category, location, and activated_at
-	// together satisfies businesses_active_profile_check in a single write. website
-	// is intentionally not touched — it is set at business creation and is not part
-	// of the proposal payload.
-	activateBusinessSQL = `
-UPDATE businesses
-SET name = $2, aliases = $3, category = $4,
-    services = $5::jsonb, location = $6::jsonb,
-    status = 'active', activated_at = $7
-WHERE id = $1
-RETURNING ` + businessColumns
-
-	// markProposalAppliedSQL resolves the pending proposal. Zero rows affected is
-	// legitimate: manual-setup businesses never had a pending proposal.
-	markProposalAppliedSQL = `
-UPDATE profile_proposals
-SET status = 'applied', resolved_at = now()
-WHERE business_id = $1 AND status = 'pending'`
-)
 
 // ApplyProposalParams are the reviewed, user-edited values written when a draft
 // business is activated (design 03, "Review and apply"). Nil Services default to
@@ -70,11 +46,11 @@ type ApplyProposalResult struct {
 // updates — prompt insertion delegates to createActivePromptInTx so the plan
 // prompt-limit invariant is enforced identically.
 type ApplyProposalStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewApplyProposalStore returns an ApplyProposalStore backed by db.
-func NewApplyProposalStore(db *sql.DB) *ApplyProposalStore {
+func NewApplyProposalStore(db *pgxpool.Pool) *ApplyProposalStore {
 	return &ApplyProposalStore{db: db}
 }
 
@@ -89,7 +65,7 @@ func (s *ApplyProposalStore) Apply(ctx context.Context, params ApplyProposalPara
 	}
 
 	var result ApplyProposalResult
-	err := withTx(ctx, s.db, func(q querier) error {
+	err := withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		applied, err := applyProposalInTx(ctx, q, params)
 		if err != nil {
 			return err
@@ -103,37 +79,34 @@ func (s *ApplyProposalStore) Apply(ctx context.Context, params ApplyProposalPara
 	return result, nil
 }
 
-func applyProposalInTx(ctx context.Context, q querier, params ApplyProposalParams) (ApplyProposalResult, error) {
+func applyProposalInTx(ctx context.Context, q *storesqlc.Queries, params ApplyProposalParams) (ApplyProposalResult, error) {
 	params, err := normalizeApplyProposalParams(params)
 	if err != nil {
 		return ApplyProposalResult{}, err
 	}
 
-	var status BusinessStatus
-	if err := q.queryRowContext(ctx, lockDraftBusinessSQL, params.BusinessID, params.TenantID).Scan(&status); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	status, err := q.LockDraftBusiness(ctx, storesqlc.LockDraftBusinessParams{ID: params.BusinessID, TenantID: params.TenantID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return ApplyProposalResult{}, ErrNotFound
 		}
 		return ApplyProposalResult{}, fmt.Errorf("lock draft business: %w", err)
 	}
-	if status != BusinessStatusDraft {
+	if BusinessStatus(status) != BusinessStatusDraft {
 		return ApplyProposalResult{}, ErrBusinessNotDraft
 	}
 
-	business, err := scanBusiness(q.queryRowContext(
-		ctx,
-		activateBusinessSQL,
-		params.BusinessID,
-		params.Name,
-		params.Aliases,
-		params.Category,
-		string(params.Services),
-		jsonbArg(params.Location),
-		params.ActivatedAt,
-	))
+	location := params.Location
+	category := params.Category
+	activatedAt := params.ActivatedAt
+	row, err := q.ActivateBusiness(ctx, storesqlc.ActivateBusinessParams{
+		ID: params.BusinessID, Name: params.Name, Aliases: params.Aliases, Category: &category,
+		Services: params.Services, Location: &location, ActivatedAt: &activatedAt,
+	})
 	if err != nil {
 		return ApplyProposalResult{}, fmt.Errorf("activate business: %w", err)
 	}
+	business := businessFromSQLC(row)
 
 	prompts := make([]Prompt, 0, len(params.PromptTexts))
 	for _, text := range params.PromptTexts {
@@ -148,7 +121,7 @@ func applyProposalInTx(ctx context.Context, q querier, params ApplyProposalParam
 		prompts = append(prompts, prompt)
 	}
 
-	if _, err := q.execContext(ctx, markProposalAppliedSQL, params.BusinessID); err != nil {
+	if err := q.MarkProposalApplied(ctx, params.BusinessID); err != nil {
 		return ApplyProposalResult{}, fmt.Errorf("mark proposal applied: %w", err)
 	}
 

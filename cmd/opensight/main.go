@@ -376,11 +376,11 @@ func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOption
 }
 
 func openAccountStore(cfg config.Config) (*store.AccountStore, func(), error) {
-	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	db, err := store.Open(context.Background(), cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
 		return nil, nil, err
 	}
-	return store.NewAccountStore(db), func() { _ = db.Close() }, nil
+	return store.NewAccountStore(db), db.Close, nil
 }
 
 func generatePassword() (string, error) {
@@ -397,13 +397,11 @@ func serve(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = db.Close()
-	}()
+	defer db.Close()
 
 	// serve starts GenerateProfileWorkflow on the same task queue the worker
 	// consumes (ONB-4), so it needs a Temporal client too.
@@ -510,13 +508,11 @@ func work(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = db.Close()
-	}()
+	defer db.Close()
 
 	runner, err := llm.NewPromptRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
 		APIKey: cfg.OpenAIAPIKey,
@@ -564,18 +560,18 @@ func work(ctx context.Context, cfg config.Config) error {
 		"temporal_task_queue", cfg.TemporalTaskQueue,
 	)
 
-	activities := workflows.NewActivities(
-		store.NewBusinessStore(db),
-		store.NewPromptStore(db),
-		store.NewRunStore(db),
-		store.NewResultStore(db),
-		runner,
-		store.NewAnalysisStore(db),
-		extractor,
-		matcher,
-		proposer,
-		store.NewProfileProposalStore(db),
-	)
+	activities := &workflows.Activities{
+		Businesses: store.NewBusinessStore(db),
+		Prompts:    store.NewPromptStore(db),
+		Runs:       store.NewRunStore(db),
+		Results:    store.NewResultStore(db),
+		Runner:     runner,
+		Analysis:   store.NewAnalysisStore(db),
+		Extractor:  extractor,
+		Matcher:    matcher,
+		Proposer:   proposer,
+		Proposals:  store.NewProfileProposalStore(db),
+	}
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
 		MaxConcurrentActivityExecutionSize: cfg.PromptConcurrency,
@@ -649,7 +645,6 @@ func migrate(ctx context.Context, cfg config.Config) error {
 	applied, err := store.Migrate(ctx, store.MigrationConfig{
 		DatabaseURL:  cfg.DatabaseURL,
 		MaxOpenConns: cfg.DBMaxOpenConns,
-		MaxIdleConns: cfg.DBMaxIdleConns,
 	})
 	if err != nil {
 		return err
@@ -660,7 +655,6 @@ func migrate(ctx context.Context, cfg config.Config) error {
 		"mode", "migrate",
 		"migrations_applied", applied,
 		"db_max_open_conns", cfg.DBMaxOpenConns,
-		"db_max_idle_conns", cfg.DBMaxIdleConns,
 	)
 	return nil
 }

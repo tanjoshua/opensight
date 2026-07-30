@@ -2,14 +2,14 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"os"
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 // TestApplyProposalStoreActivatesBusiness exercises Apply against real Postgres
@@ -22,11 +22,11 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
@@ -34,20 +34,16 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 	proposalID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id IN ($1, $2)", businessID, manualBusinessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM profile_proposals WHERE business_id IN ($1, $2)", businessID, manualBusinessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id IN ($1, $2)", businessID, manualBusinessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query103, businessID, manualBusinessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query104, businessID, manualBusinessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query105, businessID, manualBusinessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query106, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query107, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Apply Tenant")
-	mustExec(t, db, ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name, website)
-VALUES ($1, $2, 'draft', 'Draft Clinic', 'https://draft.example')`, businessID, tenantID)
-	mustExec(t, db, ctx,
-		`INSERT INTO profile_proposals (id, business_id, payload, status)
-VALUES ($1, $2, '{"low_confidence":false}'::jsonb, 'pending')`, proposalID, businessID)
+	mustExec(t, db, ctx, testdb.Query108, businessID, tenantID)
+	mustExec(t, db, ctx, testdb.Query109, proposalID, businessID)
 
 	applyStore := NewApplyProposalStore(db)
 
@@ -85,12 +81,12 @@ VALUES ($1, $2, '{"low_confidence":false}'::jsonb, 'pending')`, proposalID, busi
 	}
 
 	var activeCount int
-	mustScan(t, db, ctx, `SELECT count(*) FROM prompts WHERE business_id = $1 AND status = 'active'`, &activeCount, businessID)
+	mustScan(t, db, ctx, testdb.Query284, &activeCount, businessID)
 	if activeCount != 2 {
 		t.Fatalf("active prompts = %d, want 2", activeCount)
 	}
 	var proposalStatus string
-	mustScan(t, db, ctx, `SELECT status FROM profile_proposals WHERE id = $1`, &proposalStatus, proposalID)
+	mustScan(t, db, ctx, testdb.Query285, &proposalStatus, proposalID)
 	if proposalStatus != "applied" {
 		t.Fatalf("proposal status = %q, want applied", proposalStatus)
 	}
@@ -110,9 +106,7 @@ VALUES ($1, $2, '{"low_confidence":false}'::jsonb, 'pending')`, proposalID, busi
 	}
 
 	// Manual-setup path: a draft business with no pending proposal still applies.
-	mustExec(t, db, ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name)
-VALUES ($1, $2, 'draft', 'Manual Clinic')`, manualBusinessID, tenantID)
+	mustExec(t, db, ctx, testdb.Query110, manualBusinessID, tenantID)
 	manual, err := applyStore.Apply(ctx, ApplyProposalParams{
 		TenantID:    tenantID,
 		BusinessID:  manualBusinessID,
@@ -130,9 +124,9 @@ VALUES ($1, $2, 'draft', 'Manual Clinic')`, manualBusinessID, tenantID)
 	}
 }
 
-func mustScan(t *testing.T, db *sql.DB, ctx context.Context, query string, dest any, args ...any) {
+func mustScan(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, dest any, args ...any) {
 	t.Helper()
-	if err := db.QueryRowContext(ctx, query, args...).Scan(dest); err != nil {
-		t.Fatalf("scan %q: %v", query, err)
+	if err := testdb.QueryRow(ctx, db, query, args...).Scan(dest); err != nil {
+		t.Fatalf("scan test query %d: %v", query, err)
 	}
 }

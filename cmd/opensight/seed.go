@@ -32,11 +32,11 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 		return nil
 	}
 
-	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
 		return err
 	}
-	defer func() { _ = db.Close() }()
+	defer db.Close()
 
 	account := store.NewAccountStore(db)
 	authStore := store.NewAuthStore(db)

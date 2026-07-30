@@ -2,11 +2,11 @@ package metrics
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sort"
 
 	"opensight/internal/domain"
+	db "opensight/internal/store/sqlc"
 )
 
 // KeywordStat is one keyword and the analyzed results it was extracted from
@@ -81,58 +81,19 @@ type CitationPrompt struct {
 	ResultIDs []domain.ID
 }
 
-const keywordStatsSQL = `
-SELECT kw, to_jsonb(array_agg(DISTINCT pr.id)) AS result_ids` +
-	analyzedJoin + `
-CROSS JOIN LATERAL unnest(ra.keywords) AS kw` + analyzedWhere + `
-GROUP BY kw
-ORDER BY count(DISTINCT pr.id) DESC, kw`
-
-const sentimentStatsSQL = `
-SELECT ra.sentiment, to_jsonb(array_agg(pr.id ORDER BY pr.id)) AS result_ids` +
-	analyzedJoin + analyzedWhere + `
-  AND ra.sentiment IS NOT NULL
-GROUP BY ra.sentiment
-ORDER BY count(*) DESC, ra.sentiment`
-
-const citationDomainStatsSQL = `
-SELECT c.domain, to_jsonb(array_agg(DISTINCT pr.id)) AS result_ids` +
-	analyzedJoin + `
-JOIN citations c ON c.prompt_result_id = pr.id` + analyzedWhere + `
-GROUP BY c.domain
-ORDER BY count(DISTINCT pr.id) DESC, c.domain`
-
-const citationSourcesSQL = `
-SELECT c.domain, c.url, c.title, c.subject, pr.prompt_id, p.text, pr.id` +
-	analyzedJoin + `
-JOIN citations c ON c.prompt_result_id = pr.id
-JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = b.id` + analyzedWhere + `
-ORDER BY c.domain, c.url, c.cite_order, p.text`
-
 // KeywordStats returns the business's keywords by descending frequency across
 // all analyzed results.
 func (m *Metrics) KeywordStats(ctx context.Context, tenantID, businessID domain.ID) ([]KeywordStat, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.db.QueryContext(ctx, keywordStatsSQL, businessID, tenantID)
+	rows, err := m.q.KeywordStats(ctx, db.KeywordStatsParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("keyword stats: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	stats := []KeywordStat{}
-	for rows.Next() {
-		var s KeywordStat
-		var ids resultIDs
-		if err := rows.Scan(&s.Keyword, &ids); err != nil {
-			return nil, fmt.Errorf("scan keyword stat: %w", err)
-		}
-		s.ResultIDs = ids
-		stats = append(stats, s)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate keyword stats: %w", err)
+	stats := make([]KeywordStat, 0, len(rows))
+	for _, r := range rows {
+		stats = append(stats, KeywordStat{Keyword: r.Keyword, ResultIDs: r.ResultIds})
 	}
 	return stats, nil
 }
@@ -143,24 +104,13 @@ func (m *Metrics) SentimentStats(ctx context.Context, tenantID, businessID domai
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.db.QueryContext(ctx, sentimentStatsSQL, businessID, tenantID)
+	rows, err := m.q.SentimentStats(ctx, db.SentimentStatsParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("sentiment stats: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	stats := []SentimentStat{}
-	for rows.Next() {
-		var s SentimentStat
-		var ids resultIDs
-		if err := rows.Scan(&s.Sentiment, &ids); err != nil {
-			return nil, fmt.Errorf("scan sentiment stat: %w", err)
-		}
-		s.ResultIDs = ids
-		stats = append(stats, s)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate sentiment stats: %w", err)
+	stats := make([]SentimentStat, 0, len(rows))
+	for _, r := range rows {
+		stats = append(stats, SentimentStat{Sentiment: derefString(r.Sentiment), ResultIDs: r.ResultIds})
 	}
 	return stats, nil
 }
@@ -171,24 +121,13 @@ func (m *Metrics) CitationDomainStats(ctx context.Context, tenantID, businessID 
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.db.QueryContext(ctx, citationDomainStatsSQL, businessID, tenantID)
+	rows, err := m.q.CitationDomainStats(ctx, db.CitationDomainStatsParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("citation domain stats: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	stats := []DomainStat{}
-	for rows.Next() {
-		var s DomainStat
-		var ids resultIDs
-		if err := rows.Scan(&s.Domain, &ids); err != nil {
-			return nil, fmt.Errorf("scan domain stat: %w", err)
-		}
-		s.ResultIDs = ids
-		stats = append(stats, s)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate domain stats: %w", err)
+	stats := make([]DomainStat, 0, len(rows))
+	for _, r := range rows {
+		stats = append(stats, DomainStat{Domain: r.Domain, ResultIDs: r.ResultIds})
 	}
 	return stats, nil
 }
@@ -200,66 +139,55 @@ func (m *Metrics) CitationSources(ctx context.Context, tenantID, businessID doma
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.db.QueryContext(ctx, citationSourcesSQL, businessID, tenantID)
+	rows, err := m.q.CitationSources(ctx, db.CitationSourcesParams{BusinessID: businessID, TenantID: tenantID})
 	if err != nil {
 		return nil, fmt.Errorf("citation sources: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
 
 	byDomain := map[string]*citationSourceAgg{}
-	for rows.Next() {
-		var domainName, url, subject, promptText string
-		var title sql.NullString
-		var promptID, resultID domain.ID
-		if err := rows.Scan(&domainName, &url, &title, &subject, &promptID, &promptText, &resultID); err != nil {
-			return nil, fmt.Errorf("scan citation source: %w", err)
-		}
-
-		source := byDomain[domainName]
+	for _, r := range rows {
+		source := byDomain[r.Domain]
 		if source == nil {
 			source = &citationSourceAgg{
-				CitationSource: CitationSource{Domain: domainName},
+				CitationSource: CitationSource{Domain: r.Domain},
 				resultSeen:     map[domain.ID]bool{},
 				pages:          map[string]*citationPageAgg{},
 				prompts:        map[domain.ID]*citationPromptAgg{},
 			}
-			byDomain[domainName] = source
+			byDomain[r.Domain] = source
 		}
-		if appendUniqueID(&source.ResultIDs, source.resultSeen, resultID) {
+		if appendUniqueID(&source.ResultIDs, source.resultSeen, r.ResultID) {
 			source.Frequency = len(source.ResultIDs)
 		}
-		source.Subjects.add(subject, resultID)
+		source.Subjects.add(r.Subject, r.ResultID)
 
-		page := source.pages[url]
+		page := source.pages[r.Url]
 		if page == nil {
 			page = &citationPageAgg{
-				CitationPage: CitationPage{URL: url},
+				CitationPage: CitationPage{URL: r.Url},
 				resultSeen:   map[domain.ID]bool{},
 			}
-			source.pages[url] = page
+			source.pages[r.Url] = page
 		}
-		if page.Title == nil && title.Valid {
-			page.Title = ptr(title.String)
+		if page.Title == nil && r.Title != nil {
+			page.Title = r.Title
 		}
-		if appendUniqueID(&page.ResultIDs, page.resultSeen, resultID) {
+		if appendUniqueID(&page.ResultIDs, page.resultSeen, r.ResultID) {
 			page.Frequency = len(page.ResultIDs)
 		}
-		page.Subjects.add(subject, resultID)
+		page.Subjects.add(r.Subject, r.ResultID)
 
-		prompt := source.prompts[promptID]
+		prompt := source.prompts[r.PromptID]
 		if prompt == nil {
 			prompt = &citationPromptAgg{
-				CitationPrompt: CitationPrompt{PromptID: promptID, Text: promptText},
+				CitationPrompt: CitationPrompt{PromptID: r.PromptID, Text: r.PromptText},
 				resultSeen:     map[domain.ID]bool{},
 			}
-			source.prompts[promptID] = prompt
+			source.prompts[r.PromptID] = prompt
 		}
-		if appendUniqueID(&prompt.ResultIDs, prompt.resultSeen, resultID) {
+		if appendUniqueID(&prompt.ResultIDs, prompt.resultSeen, r.ResultID) {
 			prompt.Frequency = len(prompt.ResultIDs)
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate citation sources: %w", err)
 	}
 
 	sources := make([]CitationSource, 0, len(byDomain))
@@ -346,8 +274,4 @@ func appendUniqueIDByScan(ids *[]domain.ID, id domain.ID) bool {
 	}
 	*ids = append(*ids, id)
 	return true
-}
-
-func ptr(v string) *string {
-	return &v
 }

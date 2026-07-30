@@ -2,15 +2,17 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // RunStatus is the persisted status of a monitoring run.
@@ -74,80 +76,13 @@ type UpsertRunParams struct {
 
 // RunStore reads and writes monitoring_runs rows.
 type RunStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewRunStore returns a RunStore backed by db.
-func NewRunStore(db *sql.DB) *RunStore {
+func NewRunStore(db *pgxpool.Pool) *RunStore {
 	return &RunStore{db: db}
 }
-
-const (
-	runColumns = `id, business_id, platform, trigger, scheduled_for, status,
-       workflow_id, started_at, completed_at, analysis_completed_at, expected_results`
-
-	insertRunOnConflictNothingSQL = `
-INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, expected_results)
-VALUES ($1, $2, $3, $4, $5, 'running', $6, $7)
-ON CONFLICT (business_id, platform, scheduled_for) DO NOTHING`
-
-	selectRunByKeySQL = `
-SELECT ` + runColumns + `
-FROM monitoring_runs
-WHERE business_id = $1 AND platform = $2 AND scheduled_for = $3`
-
-	// finalizeRunSQL recomputes the terminal status from the run's succeeded
-	// result count (design 04): succeeded == 0 -> failed; succeeded == expected
-	// -> completed; else partial. expected_results is read from the row rather
-	// than passed in (RUNS-1); a legacy null row falls back to the observed
-	// total so an in-flight-at-deploy run still finalizes sensibly. The failed
-	// branch is checked first so a zero-prompt run (expected == succeeded == 0)
-	// is failed, not completed. It is tenant-scoped via the businesses join and
-	// safe to re-run under activity retry (a pure recomputation). 0 rows
-	// updated -> ErrNotFound.
-	finalizeRunSQL = `
-UPDATE monitoring_runs r
-SET status = CASE
-      WHEN sub.succeeded = 0 THEN 'failed'
-      WHEN sub.succeeded = COALESCE(r.expected_results, sub.total) THEN 'completed'
-      ELSE 'partial'
-    END,
-    completed_at = now()
-FROM businesses b,
-     (SELECT count(*) FILTER (WHERE status = 'succeeded') AS succeeded,
-             count(*) AS total
-      FROM prompt_results WHERE run_id = $1) sub
-WHERE r.id = $1
-  AND r.business_id = b.id
-  AND b.tenant_id = $2
-RETURNING ` + runColumnsPrefixed
-
-	runColumnsPrefixed = `r.id, r.business_id, r.platform, r.trigger, r.scheduled_for, r.status,
-       r.workflow_id, r.started_at, r.completed_at, r.analysis_completed_at, r.expected_results`
-
-	// listRunsSQL joins each run to its per-run result counts via a LATERAL
-	// subquery rather than a GROUP BY: a grouped subquery would aggregate every
-	// tenant's prompt_results before the business filter could apply, whereas
-	// the lateral is index-driven per run (prompt_results has a btree index
-	// from UNIQUE (run_id, prompt_id); result_analyses is PK'd on
-	// prompt_result_id) and needs no new index. It always returns exactly one
-	// row per run (counts are 0 for a run with no results yet), so no
-	// COALESCE is needed on the aggregate columns.
-	listRunsSQL = `
-SELECT ` + runColumnsPrefixed + `,
-       c.succeeded, c.failed, c.analyzed
-FROM monitoring_runs r
-LEFT JOIN LATERAL (
-  SELECT count(*) FILTER (WHERE pr.status = 'succeeded') AS succeeded,
-         count(*) FILTER (WHERE pr.status = 'failed')    AS failed,
-         count(ra.prompt_result_id)                      AS analyzed
-  FROM prompt_results pr
-  LEFT JOIN result_analyses ra ON ra.prompt_result_id = pr.id
-  WHERE pr.run_id = r.id
-) c ON true
-WHERE r.business_id = $1
-ORDER BY r.scheduled_for DESC`
-)
 
 // UpsertRun idempotently creates (or converges on) the run for
 // (business_id, platform, scheduled_for). It is LoadRunSpec's primitive
@@ -169,34 +104,25 @@ func (s *RunStore) UpsertRun(ctx context.Context, tenantID domain.ID, params Ups
 	}
 
 	var run Run
-	err = withTx(ctx, s.db, func(q querier) error {
+	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, params.BusinessID); err != nil {
 			return err
 		}
-		if _, err := q.execContext(
-			ctx,
-			insertRunOnConflictNothingSQL,
-			params.ID,
-			params.BusinessID,
-			params.Platform,
-			string(params.Trigger),
-			params.ScheduledFor,
-			params.WorkflowID,
-			params.ExpectedResults,
-		); err != nil {
+		expected := int32(params.ExpectedResults)
+		if err := q.InsertRunOnConflictNothing(ctx, storesqlc.InsertRunOnConflictNothingParams{
+			ID: params.ID, BusinessID: params.BusinessID, Platform: params.Platform,
+			Trigger: string(params.Trigger), ScheduledFor: params.ScheduledFor,
+			WorkflowID: params.WorkflowID, ExpectedResults: &expected,
+		}); err != nil {
 			return fmt.Errorf("insert monitoring run: %w", err)
 		}
-		loaded, err := scanRun(q.queryRowContext(
-			ctx,
-			selectRunByKeySQL,
-			params.BusinessID,
-			params.Platform,
-			params.ScheduledFor,
-		))
+		row, err := q.SelectRunByKey(ctx, storesqlc.SelectRunByKeyParams{
+			BusinessID: params.BusinessID, Platform: params.Platform, ScheduledFor: params.ScheduledFor,
+		})
 		if err != nil {
 			return fmt.Errorf("read back monitoring run: %w", err)
 		}
-		run = loaded
+		run = runFromSQLC(row)
 		return nil
 	})
 	if err != nil {
@@ -215,14 +141,14 @@ func (s *RunStore) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (
 		return Run{}, errors.New("run store database is required")
 	}
 
-	run, err := scanRun(s.db.QueryRowContext(ctx, finalizeRunSQL, runID, tenantID))
+	row, err := queries(ctx, s.db).FinalizeRun(ctx, storesqlc.FinalizeRunParams{ID: runID, TenantID: tenantID})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Run{}, ErrNotFound
 		}
 		return Run{}, fmt.Errorf("finalize run: %w", err)
 	}
-	return run, nil
+	return runFromSQLC(row), nil
 }
 
 // RunListItem is a run plus its per-run result counts (RUNS-2), mirroring
@@ -244,66 +170,40 @@ func (s *RunStore) ListRuns(ctx context.Context, tenantID, businessID domain.ID)
 		return nil, errors.New("run store database is required")
 	}
 
-	q := sqlQuerier{q: s.db}
+	q := queries(ctx, s.db)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return nil, err
 	}
 
-	rows, err := q.queryContext(ctx, listRunsSQL, businessID)
+	rows, err := q.ListRuns(ctx, businessID)
 	if err != nil {
 		return nil, fmt.Errorf("list runs: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	runs := []RunListItem{}
-	for rows.Next() {
-		var item RunListItem
-		if err := rows.Scan(
-			&item.ID,
-			&item.BusinessID,
-			&item.Platform,
-			&item.Trigger,
-			&item.ScheduledFor,
-			&item.Status,
-			&item.WorkflowID,
-			&item.StartedAt,
-			&item.CompletedAt,
-			&item.AnalysisCompletedAt,
-			&item.ExpectedResults,
-			&item.SucceededResults,
-			&item.FailedResults,
-			&item.AnalyzedResults,
-		); err != nil {
-			return nil, fmt.Errorf("scan run list item: %w", err)
-		}
+	runs := make([]RunListItem, 0, len(rows))
+	for _, row := range rows {
+		item := RunListItem{Run: runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
+			row.Status, row.WorkflowID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults),
+			SucceededResults: int(row.Succeeded), FailedResults: int(row.Failed), AnalyzedResults: int(row.Analyzed)}
 		runs = append(runs, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate runs: %w", err)
 	}
 	return runs, nil
 }
 
-func scanRun(row rowScanner) (Run, error) {
-	var run Run
-	if err := row.Scan(
-		&run.ID,
-		&run.BusinessID,
-		&run.Platform,
-		&run.Trigger,
-		&run.ScheduledFor,
-		&run.Status,
-		&run.WorkflowID,
-		&run.StartedAt,
-		&run.CompletedAt,
-		&run.AnalysisCompletedAt,
-		&run.ExpectedResults,
-	); err != nil {
-		return Run{}, err
+func runFromSQLC(row storesqlc.MonitoringRun) Run {
+	return runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
+		row.Status, row.WorkflowID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults)
+}
+
+func runFromFields(id, businessID domain.ID, platform, trigger string, scheduled time.Time, status, workflowID string,
+	started time.Time, completed, analysisCompleted *time.Time, expected *int32) Run {
+	var expectedResults *int
+	if expected != nil {
+		v := int(*expected)
+		expectedResults = &v
 	}
-	return run, nil
+	return Run{ID: id, BusinessID: businessID, Platform: platform, Trigger: RunTrigger(trigger),
+		ScheduledFor: scheduled, Status: RunStatus(status), WorkflowID: workflowID, StartedAt: started,
+		CompletedAt: completed, AnalysisCompletedAt: analysisCompleted, ExpectedResults: expectedResults}
 }
 
 func normalizeUpsertRunParams(params UpsertRunParams) (UpsertRunParams, error) {

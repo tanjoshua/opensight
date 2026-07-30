@@ -16,7 +16,10 @@ import (
 
 // Activities holds the dependencies for RunWorkflow's activities. Its methods
 // are registered on the worker off a real instance; the workflow refers to them
-// by function value for name resolution (see run_workflow.go).
+// by function value for name resolution (see run_workflow.go). Construct it
+// with a struct literal naming only the fields a given caller needs — tests
+// exercising one activity leave the rest at their nil zero value instead of
+// padding a long positional constructor call.
 type Activities struct {
 	Businesses *store.BusinessStore
 	Prompts    *store.PromptStore
@@ -28,33 +31,6 @@ type Activities struct {
 	Matcher    llm.MatchRunner
 	Proposer   llm.ProposeProfileRunner
 	Proposals  *store.ProfileProposalStore
-}
-
-// NewActivities returns an Activities with all dependencies wired.
-func NewActivities(
-	businesses *store.BusinessStore,
-	prompts *store.PromptStore,
-	runs *store.RunStore,
-	results *store.ResultStore,
-	runner llm.PromptRunner,
-	analysis *store.AnalysisStore,
-	extractor llm.ExtractionRunner,
-	matcher llm.MatchRunner,
-	proposer llm.ProposeProfileRunner,
-	proposals *store.ProfileProposalStore,
-) *Activities {
-	return &Activities{
-		Businesses: businesses,
-		Prompts:    prompts,
-		Runs:       runs,
-		Results:    results,
-		Runner:     runner,
-		Analysis:   analysis,
-		Extractor:  extractor,
-		Matcher:    matcher,
-		Proposer:   proposer,
-		Proposals:  proposals,
-	}
 }
 
 // PromptSnapshot is one active prompt captured at run start. The workflow

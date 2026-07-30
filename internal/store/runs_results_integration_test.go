@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"os"
 	"testing"
@@ -10,7 +9,8 @@ import (
 
 	"opensight/internal/domain"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) {
@@ -20,13 +20,11 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() {
-		_ = db.Close()
-	})
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
@@ -35,60 +33,31 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 	resultID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE id = $1", resultID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query171, resultID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query172, runID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query173, promptID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query174, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query175, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query176, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Runs Results Tenant")
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-VALUES ($1, $2, 'active', 'Runs Results Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`,
-		businessID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query177, businessID,
 		tenantID,
 	); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompts (id, business_id, text, status)
-VALUES ($1, $2, 'best clinic near me', 'active')`,
-		promptID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query178, promptID,
 		businessID,
 	); err != nil {
 		t.Fatalf("insert test prompt: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO monitoring_runs (
-  id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at
-) VALUES (
-  $1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'runs-results-workflow', now()
-)`,
-		runID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query179, runID,
 		businessID,
 	); err != nil {
 		t.Fatalf("insert test run: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompt_results (
-  id, run_id, prompt_id, status, model, request, raw_response, response_text
-) VALUES (
-  $1,
-  $2,
-  $3,
-  'succeeded',
-  'gpt-5-mini-2026-07-01',
-  '{"model":"gpt-5-mini","user_location":{"country":"SG"}}'::jsonb,
-  '{"id":"resp_1","model":"gpt-5-mini-2026-07-01"}'::jsonb,
-  'Runs Results Clinic is a good option.'
-)`,
-		resultID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query180, resultID,
 		runID,
 		promptID,
 	); err != nil {
@@ -96,46 +65,21 @@ VALUES ($1, $2, 'best clinic near me', 'active')`,
 	}
 
 	duplicateRunID := mustNewID(t)
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO monitoring_runs (
-  id, business_id, platform, trigger, scheduled_for, status, workflow_id
-) VALUES (
-  $1, $2, 'chatgpt', 'manual', '2026-07-13', 'running', 'runs-results-workflow-duplicate'
-)`,
-		duplicateRunID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query181, duplicateRunID,
 		businessID,
 	); err == nil {
 		t.Fatal("duplicate monitoring run insert succeeded; want unique constraint error")
 	}
 
 	duplicateResultID := mustNewID(t)
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompt_results (
-  id, run_id, prompt_id, status, model, request, raw_response, response_text
-) VALUES (
-  $1,
-  $2,
-  $3,
-  'succeeded',
-  'gpt-5-mini-2026-07-01',
-  '{"model":"gpt-5-mini"}'::jsonb,
-  '{"id":"resp_2"}'::jsonb,
-  'Duplicate response.'
-)`,
-		duplicateResultID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query182, duplicateResultID,
 		runID,
 		promptID,
 	); err == nil {
 		t.Fatal("duplicate prompt result insert succeeded; want unique constraint error")
 	}
 
-	if _, err := db.ExecContext(
-		ctx,
-		"UPDATE prompt_results SET response_text = 'Changed response.' WHERE id = $1",
-		resultID,
-	); err == nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query183, resultID); err == nil {
 		t.Fatal("prompt result update succeeded; want append-only trigger error")
 	}
 
@@ -145,23 +89,15 @@ VALUES ($1, $2, 'best clinic near me', 'active')`,
 	failedPromptID := mustNewID(t)
 	failedResultID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE id = $1", failedResultID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", failedPromptID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query184, failedResultID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query185, failedPromptID)
 	})
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompts (id, business_id, text, status)
-VALUES ($1, $2, 'cheapest clinic near me', 'active')`,
-		failedPromptID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query186, failedPromptID,
 		businessID,
 	); err != nil {
 		t.Fatalf("insert failed-case prompt: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, request, error)
-VALUES ($1, $2, $3, 'failed', '{"model":"gpt-5-mini"}'::jsonb, 'openai: timeout')`,
-		failedResultID,
+	if _, err := testdb.Exec(ctx, db, testdb.Query187, failedResultID,
 		runID,
 		failedPromptID,
 	); err != nil {
@@ -211,13 +147,11 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() {
-		_ = db.Close()
-	})
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
@@ -225,34 +159,25 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 	runID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE run_id = $1", runID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query188, runID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query189, runID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query190, promptID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query191, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query192, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query193, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Finalize Partial Tenant")
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-VALUES ($1, $2, 'active', 'Finalize Partial Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`,
-		businessID, tenantID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query194, businessID, tenantID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompts (id, business_id, text, status)
-VALUES ($1, $2, 'best clinic near me', 'active')`,
-		promptID, businessID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query195, promptID, businessID); err != nil {
 		t.Fatalf("insert test prompt: %v", err)
 	}
 
-	runs := NewRunStore(db)
-	results := NewResultStore(db)
+	pool := db
+	runs := NewRunStore(pool)
+	results := NewResultStore(pool)
 
 	run, err := runs.UpsertRun(ctx, tenantID, UpsertRunParams{
 		ID:              runID,
@@ -288,14 +213,9 @@ VALUES ($1, $2, 'best clinic near me', 'active')`,
 
 	secondPromptID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE id = $1", secondPromptID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query196, secondPromptID)
 	})
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompts (id, business_id, text, status)
-VALUES ($1, $2, 'cheapest clinic near me', 'active')`,
-		secondPromptID, businessID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query197, secondPromptID, businessID); err != nil {
 		t.Fatalf("insert second prompt: %v", err)
 	}
 	if _, err := results.CreateResult(ctx, tenantID, CreateResultParams{
@@ -333,13 +253,11 @@ func TestListRunsAggregatesResultCounts(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() {
-		_ = db.Close()
-	})
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
@@ -353,63 +271,31 @@ func TestListRunsAggregatesResultCounts(t *testing.T) {
 	failedID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE run_id IN (SELECT id FROM monitoring_runs WHERE business_id = $1)", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query198, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query199, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query200, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query201, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query202, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query203, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "List Runs Counts Tenant")
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-VALUES ($1, $2, 'active', 'List Runs Counts Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`,
-		businessID, tenantID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query204, businessID, tenantID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompts (id, business_id, text, status)
-VALUES ($1, $4, 'a', 'active'), ($2, $4, 'b', 'active'), ($3, $4, 'c', 'active')`,
-		promptA, promptB, promptC, businessID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query205, promptA, promptB, promptC, businessID); err != nil {
 		t.Fatalf("insert test prompts: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, expected_results, completed_at)
-VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'partial', 'run-with-results', 3, now()),
-       ($3, $2, 'chatgpt', 'scheduled', '2026-07-13', 'running', 'run-with-no-results', 2, NULL)`,
-		runWithResultsID, businessID, runWithNoResultsID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query206, runWithResultsID, businessID, runWithNoResultsID); err != nil {
 		t.Fatalf("insert test runs: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-VALUES ($1, $3, $4, 'succeeded', 'gpt-5-mini-2026-07-01', '{}'::jsonb, '{}'::jsonb, 'ok'),
-       ($2, $3, $5, 'succeeded', 'gpt-5-mini-2026-07-01', '{}'::jsonb, '{}'::jsonb, 'ok')`,
-		succeededAnalyzedID, succeededUnanalyzedID, runWithResultsID, promptA, promptB,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query207, succeededAnalyzedID, succeededUnanalyzedID, runWithResultsID, promptA, promptB); err != nil {
 		t.Fatalf("insert succeeded results: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, request, error)
-VALUES ($1, $2, $3, 'failed', '{}'::jsonb, 'openai: timeout')`,
-		failedID, runWithResultsID, promptC,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query208, failedID, runWithResultsID, promptC); err != nil {
 		t.Fatalf("insert failed result: %v", err)
 	}
-	if _, err := db.ExecContext(
-		ctx,
-		`INSERT INTO result_analyses (prompt_result_id, analysis_model, extraction_version)
-VALUES ($1, 'gpt-5-mini-2026-07-01', 1)`,
-		succeededAnalyzedID,
-	); err != nil {
+	if _, err := testdb.Exec(ctx, db, testdb.Query209, succeededAnalyzedID); err != nil {
 		t.Fatalf("insert result analysis: %v", err)
 	}
 

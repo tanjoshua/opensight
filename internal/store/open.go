@@ -2,34 +2,33 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Open returns a connection pool for the app database with the given pool caps.
-// It pings once (with a short timeout) so serve() fails fast on an unreachable
-// database rather than surfacing the error on the first request. The caller owns
-// closing the returned *sql.DB.
-func Open(databaseURL string, maxOpen, maxIdle int) (*sql.DB, error) {
+// Open returns the process-wide pgx connection pool. All repositories and
+// generated queries share it; the standard-library DB adapter is reserved for
+// Goose's private migration path.
+func Open(ctx context.Context, databaseURL string, maxConns int32) (*pgxpool.Pool, error) {
 	if databaseURL == "" {
 		return nil, fmt.Errorf("database URL is required")
 	}
-
-	db, err := sql.Open("pgx", databaseURL)
+	cfg, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("open database: %w", err)
+		return nil, fmt.Errorf("parse database URL: %w", err)
 	}
-	db.SetMaxOpenConns(maxOpen)
-	db.SetMaxIdleConns(maxIdle)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	cfg.MaxConns = maxConns
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("open database pool: %w", err)
+	}
+	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("connect database: %w", err)
+	if err := pool.Ping(pingCtx); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("connect database pool: %w", err)
 	}
-	return db, nil
+	return pool, nil
 }

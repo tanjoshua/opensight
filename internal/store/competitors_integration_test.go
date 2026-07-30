@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"os"
 	"testing"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 func TestCompetitorStoreTenantScopingAndHistoryPreservation(t *testing.T) {
@@ -17,11 +17,11 @@ func TestCompetitorStoreTenantScopingAndHistoryPreservation(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	otherTenantID := mustNewID(t)
@@ -31,16 +31,14 @@ func TestCompetitorStoreTenantScopingAndHistoryPreservation(t *testing.T) {
 	resultID := mustNewID(t)
 	mentionID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id IN ($1, $2)", tenantID, otherTenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id IN ($1, $2)", tenantID, otherTenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query120, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query121, tenantID, otherTenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query122, tenantID, otherTenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Owner")
 	insertTenant(t, db, ctx, otherTenantID, "Other")
-	mustExec(t, db, ctx, `INSERT INTO businesses
-(id, tenant_id, status, name, category, location, activated_at)
-VALUES ($1, $2, 'active', 'Owner Clinic', 'clinic', '{"country":"SG"}', now())`, businessID, tenantID)
+	mustExec(t, db, ctx, testdb.Query123, businessID, tenantID)
 
 	competitors := NewCompetitorStore(db)
 	created, err := competitors.CreateManual(ctx, CreateManualCompetitorParams{
@@ -59,20 +57,11 @@ VALUES ($1, $2, 'active', 'Owner Clinic', 'clinic', '{"country":"SG"}', now())`,
 		t.Fatalf("cross-tenant create error = %v, want ErrNotFound", err)
 	}
 
-	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status)
-VALUES ($1, $2, 'best clinic', 'active')`, promptID, businessID)
-	mustExec(t, db, ctx, `INSERT INTO monitoring_runs
-(id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'completed', 'competitor-history', now(), now())`, runID, businessID)
-	mustExec(t, db, ctx, `INSERT INTO prompt_results
-(id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
-VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}', '{}', 'text', now(), now())`, resultID, runID, promptID)
-	mustExec(t, db, ctx, `INSERT INTO result_analyses
-(prompt_result_id, analysis_model, extraction_version)
-VALUES ($1, 'gpt-5-mini', 1)`, resultID)
-	mustExec(t, db, ctx, `INSERT INTO mentions
-(id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
-VALUES ($1, $2, 'competitor', $3, 'exact', 0, 'Rival Clinic')`, mentionID, resultID, created.ID)
+	mustExec(t, db, ctx, testdb.Query124, promptID, businessID)
+	mustExec(t, db, ctx, testdb.Query125, runID, businessID)
+	mustExec(t, db, ctx, testdb.Query126, resultID, runID, promptID)
+	mustExec(t, db, ctx, testdb.Query127, resultID)
+	mustExec(t, db, ctx, testdb.Query128, mentionID, resultID, created.ID)
 
 	err = NewAnalysisStore(db).CommitReconcile(ctx, tenantID, businessID, ReconcileCommitParams{
 		RunID: runID,
@@ -120,9 +109,7 @@ VALUES ($1, $2, 'competitor', $3, 'exact', 0, 'Rival Clinic')`, mentionID, resul
 	}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("stale reject error = %v, want ErrNotFound", err)
 	}
-	mustExec(t, db, ctx, `UPDATE competitors
-SET suggested_aliases = ARRAY['Private Alias']::text[]
-WHERE id = $1`, created.ID)
+	mustExec(t, db, ctx, testdb.Query129, created.ID)
 	if _, err := competitors.ApproveSuggestedAlias(ctx, SuggestedAliasParams{
 		TenantID: otherTenantID, CompetitorID: created.ID, Alias: "Private Alias",
 	}); !errors.Is(err, ErrNotFound) {
@@ -166,7 +153,7 @@ WHERE id = $1`, created.ID)
 	}
 
 	var mentions int
-	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM mentions WHERE competitor_id = $1", created.ID).Scan(&mentions); err != nil {
+	if err := testdb.QueryRow(ctx, db, testdb.Query130, created.ID).Scan(&mentions); err != nil {
 		t.Fatalf("count mentions: %v", err)
 	}
 	if mentions != 1 {

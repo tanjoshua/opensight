@@ -2,13 +2,13 @@ package metrics
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"testing"
 
 	"opensight/internal/domain"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 func TestCitationSourcesGroupAndGate(t *testing.T) {
@@ -18,11 +18,11 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	businessID := mustNewID(t)
@@ -36,27 +36,24 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	b1 := mustNewID(t) // analyzed row exists but run is unreconciled, excluded
 
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", otherBusinessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query005, businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query006, otherBusinessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query007, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query008, tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Citation Tenant")
-	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')`, businessID, tenantID)
-	mustExec(t, db, ctx, `INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')`, otherBusinessID, tenantID)
-	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'root canal clinic', 'active')`, p1, businessID)
-	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best specialist near me', 'active')`, p2, businessID)
-	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'excluded prompt', 'active')`, p3, businessID)
-	mustExec(t, db, ctx, `INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'foreign prompt text', 'active')`, foreignPrompt, otherBusinessID)
-	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-cite-a', now(), now())`, runA, businessID)
-	mustExec(t, db, ctx, `INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-cite-b', now())`, runB, businessID)
+	mustExec(t, db, ctx, testdb.Query009, businessID, tenantID)
+	mustExec(t, db, ctx, testdb.Query010, otherBusinessID, tenantID)
+	mustExec(t, db, ctx, testdb.Query011, p1, businessID)
+	mustExec(t, db, ctx, testdb.Query012, p2, businessID)
+	mustExec(t, db, ctx, testdb.Query013, p3, businessID)
+	mustExec(t, db, ctx, testdb.Query014, foreignPrompt, otherBusinessID)
+	mustExec(t, db, ctx, testdb.Query015, runA, businessID)
+	mustExec(t, db, ctx, testdb.Query016, runB, businessID)
 
 	succeeded := func(id, runID, promptID domain.ID) {
-		mustExec(t, db, ctx, `INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
-VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}'::jsonb, '{"id":"r"}'::jsonb, 'text', now(), now())`, id, runID, promptID)
+		mustExec(t, db, ctx, testdb.Query017, id, runID, promptID)
 	}
 	succeeded(a1, runA, p1)
 	succeeded(a2, runA, p2)
@@ -65,8 +62,7 @@ VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}'::jsonb, '{"id":"r"}'::jsonb,
 	succeeded(b1, runB, p3)
 
 	analysis := func(resultID domain.ID) {
-		mustExec(t, db, ctx, `INSERT INTO result_analyses (prompt_result_id, keywords, excerpts, analysis_model, extraction_version)
-VALUES ($1, ARRAY['useful']::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, resultID)
+		mustExec(t, db, ctx, testdb.Query018, resultID)
 	}
 	analysis(a1)
 	analysis(a2)
@@ -80,8 +76,7 @@ VALUES ($1, ARRAY['useful']::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, resultID)
 		} else {
 			titleArg = title
 		}
-		mustExec(t, db, ctx, `INSERT INTO citations (id, prompt_result_id, url, domain, title, subject, cite_order)
-VALUES ($1, $2, $3, $4, $5, $6, $7)`, mustNewID(t), resultID, url, domainName, titleArg, subject, order)
+		mustExec(t, db, ctx, testdb.Query019, mustNewID(t), resultID, url, domainName, titleArg, subject, order)
 	}
 	// Duplicate annotations in a1 must still count as one source/page/business
 	// frequency because frequency is distinct analyzed responses.

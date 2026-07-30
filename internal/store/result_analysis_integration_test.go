@@ -2,13 +2,13 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"testing"
 
 	"opensight/internal/domain"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 // resultAnalysisFixture is the plan/tenant/business/prompt/run scaffolding the
@@ -21,7 +21,7 @@ type resultAnalysisFixture struct {
 	runID      domain.ID
 }
 
-func seedResultAnalysisBusiness(t *testing.T, db *sql.DB, ctx context.Context) resultAnalysisFixture {
+func seedResultAnalysisBusiness(t *testing.T, db *pgxpool.Pool, ctx context.Context) resultAnalysisFixture {
 	t.Helper()
 
 	fx := resultAnalysisFixture{
@@ -33,31 +33,23 @@ func seedResultAnalysisBusiness(t *testing.T, db *sql.DB, ctx context.Context) r
 	}
 
 	t.Cleanup(func() {
-		child := `IN (SELECT pr.id FROM prompt_results pr
-JOIN monitoring_runs r ON r.id = pr.run_id WHERE r.business_id = $1)`
-		_, _ = db.ExecContext(ctx, "DELETE FROM mentions WHERE prompt_result_id "+child, fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM citations WHERE prompt_result_id "+child, fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM result_analyses WHERE prompt_result_id "+child, fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompt_results WHERE run_id IN (SELECT id FROM monitoring_runs WHERE business_id = $1)", fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM competitors WHERE business_id = $1", fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM prompts WHERE business_id = $1", fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM businesses WHERE id = $1", fx.businessID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", fx.tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", fx.tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query286, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query287, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query288, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query149, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query150, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query151, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query152, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query153, fx.businessID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query154, fx.tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query155, fx.tenantID)
 	})
 
 	insertTenant(t, db, ctx, fx.tenantID, "Result Analysis Tenant")
-	mustExec(t, db, ctx,
-		`INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-VALUES ($1, $2, 'active', 'Result Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, fx.businessID, fx.tenantID)
-	mustExec(t, db, ctx,
-		`INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')`, fx.promptID, fx.businessID)
-	mustExec(t, db, ctx,
-		`INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'cheapest clinic near me', 'active')`, fx.promptID2, fx.businessID)
-	mustExec(t, db, ctx,
-		`INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'result-analysis-workflow', now(), now())`, fx.runID, fx.businessID)
+	mustExec(t, db, ctx, testdb.Query156, fx.businessID, fx.tenantID)
+	mustExec(t, db, ctx, testdb.Query157, fx.promptID, fx.businessID)
+	mustExec(t, db, ctx, testdb.Query158, fx.promptID2, fx.businessID)
+	mustExec(t, db, ctx, testdb.Query159, fx.runID, fx.businessID)
 
 	return fx
 }
@@ -74,11 +66,11 @@ func TestGetResultAnalysis(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	fx := seedResultAnalysisBusiness(t, db, ctx)
 	analyzedID := mustNewID(t)
@@ -88,30 +80,14 @@ func TestGetResultAnalysis(t *testing.T) {
 	competitorMentionID := mustNewID(t)
 	citationID := mustNewID(t)
 
-	mustExec(t, db, ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_1"}'::jsonb, 'Clinic and Rival are options.')`,
-		analyzedID, fx.runID, fx.promptID)
-	mustExec(t, db, ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_2"}'::jsonb, 'No mention here.')`,
-		unanalyzedID, fx.runID, fx.promptID2)
+	mustExec(t, db, ctx, testdb.Query160, analyzedID, fx.runID, fx.promptID)
+	mustExec(t, db, ctx, testdb.Query161, unanalyzedID, fx.runID, fx.promptID2)
 
-	mustExec(t, db, ctx,
-		`INSERT INTO competitors (id, business_id, name, source, status)
-VALUES ($1, $2, 'Rival Clinic', 'discovered', 'discovered')`, competitorID, fx.businessID)
-	mustExec(t, db, ctx,
-		`INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
-VALUES ($1, 'positive', ARRAY['friendly','affordable']::text[], '["Clinic is a good option."]'::jsonb, 'gpt-5-mini', 1)`, analyzedID)
-	mustExec(t, db, ctx,
-		`INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, verbatim_name, excerpt)
-VALUES ($1, $2, 'self', 'exact', 0, 'Atlas Clinic', 'Clinic ... options.')`, selfMentionID, analyzedID)
-	mustExec(t, db, ctx,
-		`INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, verbatim_name, excerpt)
-VALUES ($1, $2, 'competitor', $3, 'llm', 1, 'Rival Clinic', 'Rival ... options.')`, competitorMentionID, analyzedID, competitorID)
-	mustExec(t, db, ctx,
-		`INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject)
-VALUES ($1, $2, 'https://example.com/x', 'example.com', 'Example', 0, 'business')`, citationID, analyzedID)
+	mustExec(t, db, ctx, testdb.Query162, competitorID, fx.businessID)
+	mustExec(t, db, ctx, testdb.Query163, analyzedID)
+	mustExec(t, db, ctx, testdb.Query164, selfMentionID, analyzedID)
+	mustExec(t, db, ctx, testdb.Query165, competitorMentionID, analyzedID, competitorID)
+	mustExec(t, db, ctx, testdb.Query166, citationID, analyzedID)
 
 	store := NewResultStore(db)
 
@@ -182,31 +158,21 @@ func TestListResultsMentionedFilterAndAnalyzedFlag(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	fx := seedResultAnalysisBusiness(t, db, ctx)
 	mentionedID := mustNewID(t)   // analyzed, has a self mention
 	unmentionedID := mustNewID(t) // succeeded, no mention, no analysis
 	selfMentionID := mustNewID(t)
 
-	mustExec(t, db, ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_1"}'::jsonb, 'Clinic is an option.')`,
-		mentionedID, fx.runID, fx.promptID)
-	mustExec(t, db, ctx,
-		`INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_2"}'::jsonb, 'Nobody relevant.')`,
-		unmentionedID, fx.runID, fx.promptID2)
-	mustExec(t, db, ctx,
-		`INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
-VALUES ($1, 'positive', '{}'::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, mentionedID)
-	mustExec(t, db, ctx,
-		`INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
-VALUES ($1, $2, 'self', 'exact', 0, 'Clinic ... option.')`, selfMentionID, mentionedID)
+	mustExec(t, db, ctx, testdb.Query167, mentionedID, fx.runID, fx.promptID)
+	mustExec(t, db, ctx, testdb.Query168, unmentionedID, fx.runID, fx.promptID2)
+	mustExec(t, db, ctx, testdb.Query169, mentionedID)
+	mustExec(t, db, ctx, testdb.Query170, selfMentionID, mentionedID)
 
 	store := NewResultStore(db)
 

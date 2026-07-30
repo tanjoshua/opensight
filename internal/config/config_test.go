@@ -20,9 +20,6 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.DBMaxOpenConns != defaultDBMaxOpenConns {
 		t.Errorf("DBMaxOpenConns = %d, want %d", cfg.DBMaxOpenConns, defaultDBMaxOpenConns)
 	}
-	if cfg.DBMaxIdleConns != defaultDBMaxIdleConns {
-		t.Errorf("DBMaxIdleConns = %d, want %d", cfg.DBMaxIdleConns, defaultDBMaxIdleConns)
-	}
 	if cfg.TemporalAddress != defaultTemporalAddress {
 		t.Errorf("TemporalAddress = %q, want %q", cfg.TemporalAddress, defaultTemporalAddress)
 	}
@@ -67,7 +64,6 @@ func TestLoadOverrides(t *testing.T) {
 		"HTTP_ADDR":              ":9090",
 		"DATABASE_URL":           "postgres://example",
 		"APP_DB_MAX_OPEN_CONNS":  "12",
-		"APP_DB_MAX_IDLE_CONNS":  "6",
 		"TEMPORAL_ADDRESS":       "temporal.example:7233",
 		"TEMPORAL_NAMESPACE":     "opensight-dev",
 		"TEMPORAL_TASK_QUEUE":    "opensight-test",
@@ -95,9 +91,6 @@ func TestLoadOverrides(t *testing.T) {
 	}
 	if cfg.DBMaxOpenConns != 12 {
 		t.Errorf("DBMaxOpenConns = %d", cfg.DBMaxOpenConns)
-	}
-	if cfg.DBMaxIdleConns != 6 {
-		t.Errorf("DBMaxIdleConns = %d", cfg.DBMaxIdleConns)
 	}
 	if cfg.TemporalAddress != "temporal.example:7233" {
 		t.Errorf("TemporalAddress = %q", cfg.TemporalAddress)

@@ -50,7 +50,7 @@ jobs:
         run: npm ci
 
       - name: Check generated code is up to date
-        run: make proto && git diff --exit-code
+        run: make proto && make sqlc && make check-sql && git diff --exit-code
 
       - name: Test
         run: make test

@@ -24,6 +24,20 @@ Depends on: all previous designs; closes their open questions.
 
 `goose` migrations embedded in the binary, run explicitly via `opensight migrate` during deploy (not on startup — a bad migration shouldn't crash-loop the API).
 
+Application SQL is generated with sqlc from `internal/store/queries/`; tests
+reference a separate generated catalog in `internal/store/testqueries/`.
+`make sqlc` regenerates both packages and `make check-sql` rejects SQL embedded
+in non-generated Go. Migration files, migration tests that inspect SQL text,
+the Docker database initializer, and the operator cost report are the explicit
+raw-SQL boundaries.
+
+Integration fixtures use the same pgx pool as the repository under test. Their
+small test-only dispatcher maps opaque catalog IDs to generated sqlc methods;
+it uses reflection only to preserve varied fixture parameter/result shapes
+without duplicating hundreds of wrappers. A catalog coverage test guarantees
+every dispatcher ID resolves to a generated method. Reflection is not used on
+production query paths.
+
 ## Local development
 
 - `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/rpc`.
@@ -35,7 +49,7 @@ Depends on: all previous designs; closes their open questions.
 ## Deployment
 
 - Git repo (private, GitHub).
-- CI (GitHub Actions): test + lint + build a single multi-stage Docker image (Go binary with embedded SPA) pushed to GHCR. CI also re-runs `make proto` (buf format + lint + generate) and fails on any diff, so the committed generated code (`internal/gen/`, `web/src/gen/`) can never drift from the `.proto` schema.
+- CI (GitHub Actions): test + lint + build a single multi-stage Docker image (Go binary with embedded SPA) pushed to GHCR. CI re-runs `make proto` and `make sqlc`, runs the SQL-boundary check, and fails on any diff, so committed protobuf, Connect, and query code cannot drift from their schemas and catalogs.
 - Deploy = SSH script: `docker compose pull && docker compose up -d` on the VPS, then `opensight migrate`. No orchestrator, no blue/green; seconds of downtime at deploy is acceptable for this product. Compose stack per 01-D8: `app`, `worker`, `postgres`, `temporal`, `temporal-ui` (bound to localhost only, reached via SSH tunnel), `caddy` (auto-HTTPS).
 
 ## Backups and recovery

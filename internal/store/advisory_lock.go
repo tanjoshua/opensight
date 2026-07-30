@@ -2,89 +2,61 @@ package store
 
 import (
 	"context"
-	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"fmt"
-	"time"
+
+	storesqlc "opensight/internal/store/sqlc"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type advisoryConnectionContextKey struct{}
+// AdvisoryLocker serializes work across app instances. The callback receives a
+// context pinned to the session that owns the lock, so every repository query
+// and transaction inside it uses that same connection.
+type AdvisoryLocker struct{ pool *pgxpool.Pool }
 
-type contextDB interface {
-	ExecContext(context.Context, string, ...any) (sql.Result, error)
-	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
-	QueryRowContext(context.Context, string, ...any) *sql.Row
-}
+func NewAdvisoryLocker(pool *pgxpool.Pool) *AdvisoryLocker { return &AdvisoryLocker{pool: pool} }
 
-func dbFromContext(ctx context.Context, fallback *sql.DB) contextDB {
-	if conn, ok := ctx.Value(advisoryConnectionContextKey{}).(*sql.Conn); ok {
-		return conn
-	}
-	return fallback
-}
-
-// AdvisoryLocker serializes work across every app instance using PostgreSQL
-// session-level advisory locks. The dedicated connection is held for the
-// callback's duration because advisory locks belong to a database session.
-type AdvisoryLocker struct {
-	db *sql.DB
-}
-
-// NewAdvisoryLocker returns an AdvisoryLocker backed by db.
-func NewAdvisoryLocker(db *sql.DB) *AdvisoryLocker {
-	return &AdvisoryLocker{db: db}
-}
-
-// WithLock holds the lock for key while fn runs. PostgreSQL hashes the
-// namespaced text key to a signed 64-bit advisory-lock id; a hash collision
-// can only serialize unrelated work, not compromise correctness.
 func (l *AdvisoryLocker) WithLock(ctx context.Context, key string, fn func(context.Context) error) (err error) {
-	if l == nil || l.db == nil {
+	if l == nil || l.pool == nil {
 		return errors.New("advisory locker database is required")
 	}
-
-	conn, err := l.db.Conn(ctx)
+	if key == "" {
+		return errors.New("advisory lock key is required")
+	}
+	if fn == nil {
+		return errors.New("advisory lock callback is required")
+	}
+	conn, err := l.pool.Acquire(ctx)
 	if err != nil {
-		return fmt.Errorf("advisory lock: acquire connection: %w", err)
+		return fmt.Errorf("acquire advisory connection: %w", err)
 	}
+	reusable := false
 	defer func() {
-		err = errors.Join(err, conn.Close())
-	}()
-
-	if _, err := conn.ExecContext(ctx, `SELECT pg_advisory_lock(hashtextextended($1, 0))`, key); err != nil {
-		// Cancellation can race the server acquiring the lock. Discarding
-		// the session guarantees a possibly-acquired lock cannot leak back
-		// into the pool.
-		_ = conn.Raw(func(any) error { return driver.ErrBadConn })
-		return fmt.Errorf("advisory lock %q: acquire: %w", key, err)
-	}
-
-	defer func() {
-		// The request context may have been cancelled while fn ran. Use a
-		// short independent context so the pooled connection is never
-		// returned while it still owns the session-level lock.
-		unlockCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		var unlocked bool
-		unlockErr := conn.QueryRowContext(
-			unlockCtx,
-			`SELECT pg_advisory_unlock(hashtextextended($1, 0))`,
-			key,
-		).Scan(&unlocked)
-		if unlockErr != nil {
-			err = errors.Join(err, fmt.Errorf("advisory lock %q: release: %w", key, unlockErr))
-			// Never put a possibly still-locked session back into the pool.
-			_ = conn.Raw(func(any) error { return driver.ErrBadConn })
-		} else if !unlocked {
-			err = errors.Join(err, fmt.Errorf("advisory lock %q: release: lock was not held", key))
-			_ = conn.Raw(func(any) error { return driver.ErrBadConn })
+		if reusable {
+			conn.Release()
+			return
 		}
+		raw := conn.Hijack()
+		_ = raw.Close(context.WithoutCancel(ctx))
 	}()
 
-	// Store calls inside fn reuse the locked session. Besides making the lock
-	// boundary explicit at the database, this prevents pool starvation when
-	// many callbacks concurrently hold dedicated lock connections.
-	return fn(context.WithValue(ctx, advisoryConnectionContextKey{}, conn))
+	q := storesqlc.New(conn)
+	if err := q.AcquireAdvisoryLock(ctx, key); err != nil {
+		return fmt.Errorf("acquire advisory lock: %w", err)
+	}
+	defer func() {
+		unlocked, unlockErr := q.ReleaseAdvisoryLock(context.WithoutCancel(ctx), key)
+		if unlockErr != nil {
+			err = errors.Join(err, fmt.Errorf("release advisory lock: %w", unlockErr))
+			return
+		}
+		if !unlocked {
+			err = errors.Join(err, errors.New("release advisory lock: lock was not held"))
+			return
+		}
+		reusable = true
+	}()
+
+	return fn(context.WithValue(ctx, connectionContextKey{}, conn))
 }

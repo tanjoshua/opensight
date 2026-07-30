@@ -8,3 +8,6 @@ linters:
       - web/node_modules
       # Generated protobuf/Connect code; not ours to style.
       - internal/gen
+      # Generated sqlc code; not ours to style.
+      - internal/store/sqlc
+      - internal/store/testsql

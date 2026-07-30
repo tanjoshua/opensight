@@ -173,11 +173,11 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 		return nil
 	}
 
-	db, err := store.Open(cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns)
+	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
 		return err
 	}
-	defer func() { _ = db.Close() }()
+	defer db.Close()
 
 	businesses := store.NewBusinessStore(db)
 	prompts := store.NewPromptStore(db)

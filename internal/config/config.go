@@ -35,7 +35,6 @@ const (
 	defaultHTTPAddr          = ":8080"
 	defaultDatabaseURL       = "postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable"
 	defaultDBMaxOpenConns    = 10
-	defaultDBMaxIdleConns    = 5
 	defaultTemporalAddress   = "localhost:7233"
 	defaultTemporalNamespace = "default"
 	defaultTemporalTaskQueue = "opensight"
@@ -55,7 +54,6 @@ type Config struct {
 	HTTPAddr              string
 	DatabaseURL           string
 	DBMaxOpenConns        int
-	DBMaxIdleConns        int
 	TemporalAddress       string
 	TemporalNamespace     string
 	TemporalTaskQueue     string
@@ -94,11 +92,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 	}
 
 	dbMaxOpenConns, err := getenvPositiveInt(getenv, "APP_DB_MAX_OPEN_CONNS", defaultDBMaxOpenConns)
-	if err != nil {
-		return Config{}, err
-	}
-
-	dbMaxIdleConns, err := getenvPositiveInt(getenv, "APP_DB_MAX_IDLE_CONNS", defaultDBMaxIdleConns)
 	if err != nil {
 		return Config{}, err
 	}
@@ -160,7 +153,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		HTTPAddr:              getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
 		DatabaseURL:           getenvString(getenv, "DATABASE_URL", defaultDatabaseURL),
 		DBMaxOpenConns:        dbMaxOpenConns,
-		DBMaxIdleConns:        dbMaxIdleConns,
 		TemporalAddress:       getenvString(getenv, "TEMPORAL_ADDRESS", defaultTemporalAddress),
 		TemporalNamespace:     getenvString(getenv, "TEMPORAL_NAMESPACE", defaultTemporalNamespace),
 		TemporalTaskQueue:     getenvString(getenv, "TEMPORAL_TASK_QUEUE", defaultTemporalTaskQueue),

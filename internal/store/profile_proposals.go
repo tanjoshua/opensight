@@ -2,15 +2,17 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrPendingProposalExists is returned when a pending profile proposal already
@@ -45,32 +47,13 @@ type ProfileProposal struct {
 // version needed by Phase-1 callers; epic 10 owns the apply/discard state
 // machine.
 type ProfileProposalStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewProfileProposalStore returns a ProfileProposalStore backed by db.
-func NewProfileProposalStore(db *sql.DB) *ProfileProposalStore {
+func NewProfileProposalStore(db *pgxpool.Pool) *ProfileProposalStore {
 	return &ProfileProposalStore{db: db}
 }
-
-const (
-	proposalColumns = `id, business_id, payload, status, created_at, resolved_at`
-
-	insertPendingProposalSQL = `
-INSERT INTO profile_proposals (id, business_id, payload, status)
-VALUES ($1, $2, $3::jsonb, 'pending')
-RETURNING created_at`
-
-	getPendingProposalSQL = `
-SELECT ` + proposalColumns + `
-FROM profile_proposals
-WHERE business_id = $1 AND status = 'pending'`
-
-	discardPendingProposalSQL = `
-UPDATE profile_proposals
-SET status = 'discarded', resolved_at = now()
-WHERE business_id = $1 AND status = 'pending'`
-)
 
 // CreatePending inserts a pending proposal for the business, entering through
 // the tenant-checked business lookup in the same transaction as the write. A
@@ -95,17 +78,14 @@ func (s *ProfileProposalStore) CreatePending(ctx context.Context, tenantID, busi
 		Payload:    payload,
 		Status:     ProfileProposalStatusPending,
 	}
-	err = withTx(ctx, s.db, func(q querier) error {
+	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 			return err
 		}
-		if err := q.queryRowContext(
-			ctx,
-			insertPendingProposalSQL,
-			id,
-			businessID,
-			string(payload),
-		).Scan(&proposal.CreatedAt); err != nil {
+		proposal.CreatedAt, err = q.InsertPendingProposal(ctx, storesqlc.InsertPendingProposalParams{
+			ID: id, BusinessID: businessID, Payload: payload,
+		})
+		if err != nil {
 			if isConstraintViolation(err, pendingProposalConstraint) {
 				return ErrPendingProposalExists
 			}
@@ -127,26 +107,22 @@ func (s *ProfileProposalStore) GetPending(ctx context.Context, tenantID, busines
 		return ProfileProposal{}, errors.New("profile proposal store database is required")
 	}
 
-	q := sqlQuerier{q: s.db}
+	q := queries(ctx, s.db)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return ProfileProposal{}, err
 	}
 
-	var proposal ProfileProposal
-	if err := q.queryRowContext(ctx, getPendingProposalSQL, businessID).Scan(
-		&proposal.ID,
-		&proposal.BusinessID,
-		&proposal.Payload,
-		&proposal.Status,
-		&proposal.CreatedAt,
-		&proposal.ResolvedAt,
-	); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	row, err := q.GetPendingProposal(ctx, businessID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return ProfileProposal{}, ErrNotFound
 		}
 		return ProfileProposal{}, fmt.Errorf("get pending proposal: %w", err)
 	}
-	return proposal, nil
+	return ProfileProposal{
+		ID: row.ID, BusinessID: row.BusinessID, Payload: row.Payload,
+		Status: ProfileProposalStatus(row.Status), CreatedAt: row.CreatedAt, ResolvedAt: row.ResolvedAt,
+	}, nil
 }
 
 // DiscardPending marks the business's pending proposal (if any) discarded. It is
@@ -158,11 +134,11 @@ func (s *ProfileProposalStore) DiscardPending(ctx context.Context, tenantID, bus
 	if s == nil || s.db == nil {
 		return errors.New("profile proposal store database is required")
 	}
-	return withTx(ctx, s.db, func(q querier) error {
+	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 			return err
 		}
-		if _, err := q.execContext(ctx, discardPendingProposalSQL, businessID); err != nil {
+		if err := q.DiscardPendingProposal(ctx, businessID); err != nil {
 			return fmt.Errorf("discard pending proposal: %w", err)
 		}
 		return nil

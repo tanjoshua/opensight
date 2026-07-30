@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"os"
 	"testing"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	testdb "opensight/internal/store/testdb"
 )
 
 // TestSubscriptionStoreUpsertRoundTrips covers SubscriptionStore against real
@@ -21,18 +21,18 @@ func TestSubscriptionStoreUpsertRoundTrips(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query210, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query211, tenantID)
 	})
-	mustExec(t, db, ctx, `INSERT INTO tenants (id, name) VALUES ($1, 'Subscription Tenant')`, tenantID)
+	mustExec(t, db, ctx, testdb.Query212, tenantID)
 
 	subs := NewSubscriptionStore(db)
 
@@ -115,18 +115,18 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	db, err := sql.Open("pgx", dbURL)
+	db, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(db.Close)
 
 	tenantID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.ExecContext(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query213, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query214, tenantID)
 	})
-	mustExec(t, db, ctx, `INSERT INTO tenants (id, name) VALUES ($1, 'Customer Id Tenant')`, tenantID)
+	mustExec(t, db, ctx, testdb.Query215, tenantID)
 
 	subs := NewSubscriptionStore(db)
 

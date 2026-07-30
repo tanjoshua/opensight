@@ -111,7 +111,24 @@ make proto
 
 This runs `buf format -w`, `buf lint`, then `buf generate`, which writes Go structs + Connect handler interfaces to `internal/gen/opensight/v1/` and TypeScript messages + connect-query method descriptors to `web/src/gen/opensight/v1/`. Two of the four codegen plugins (`protoc-gen-es`, `protoc-gen-connect-query`) are npm-hosted binaries resolved from `web/node_modules/.bin`, so `npm install` in `web/` must have been run at least once before `make proto` will work.
 
-All generated output is committed — CI re-runs `make proto` and fails the build on any diff, so the checked-in generated code and the `.proto` schema can never drift apart.
+Regenerate database queries after changing a catalog or migration:
+
+```bash
+make sqlc
+make check-sql
+```
+
+Production queries and metrics share `internal/store/queries/` and generate to
+`internal/store/sqlc/`. Integration-test fixtures and assertions live in
+`internal/store/testqueries/` and generate to `internal/store/testsql/`. Both
+use the embedded Goose migrations as their schema source. Integration fixtures
+share one pgx pool with the stores they exercise and route opaque test query IDs
+through generated methods; production code does not use that test-only
+dispatcher.
+
+All generated output is committed — CI re-runs `make proto` and `make sqlc`
+and fails the build on any diff, so checked-in generated code cannot drift from
+its protobuf schemas, migrations, or query catalogs.
 
 ## Config
 
@@ -121,7 +138,6 @@ Runtime config is env-driven with development-safe defaults:
 - `HTTP_ADDR` defaults to `:8080`
 - `DATABASE_URL` defaults to `postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable`
 - `APP_DB_MAX_OPEN_CONNS` defaults to `10`
-- `APP_DB_MAX_IDLE_CONNS` defaults to `5`
 - `TEMPORAL_ADDRESS` defaults to `localhost:7233`
 - `TEMPORAL_NAMESPACE` defaults to `default`
 - `TEMPORAL_TASK_QUEUE` defaults to `opensight`

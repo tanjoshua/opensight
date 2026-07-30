@@ -2,17 +2,18 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"opensight/internal/domain"
+	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrDuplicateResult is returned when a prompt result already exists for a
@@ -137,95 +138,13 @@ type ResultAnalysis struct {
 
 // ResultStore reads and writes prompt_results rows.
 type ResultStore struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewResultStore returns a ResultStore backed by db.
-func NewResultStore(db *sql.DB) *ResultStore {
+func NewResultStore(db *pgxpool.Pool) *ResultStore {
 	return &ResultStore{db: db}
 }
-
-const (
-	resultColumns = `pr.id, pr.run_id, pr.prompt_id, pr.status, pr.model, pr.request,
-       pr.raw_response, pr.response_text, pr.error, pr.requested_at, pr.completed_at`
-
-	// runPromptOwnedSQL verifies both that the run belongs to tenantID and that
-	// the prompt being attached belongs to the same business as the run. The
-	// schema has separate FKs for run_id and prompt_id; this check is the
-	// app-layer composite integrity guard for WEB-2/RUN-4.
-	runPromptOwnedSQL = `
-SELECT 1
-FROM monitoring_runs r
-JOIN businesses b ON b.id = r.business_id
-JOIN prompts p ON p.id = $2 AND p.business_id = r.business_id
-WHERE r.id = $1 AND b.tenant_id = $3`
-
-	insertResultSQL = `
-INSERT INTO prompt_results (
-  id, run_id, prompt_id, status, model, request, raw_response, response_text, error,
-  requested_at, completed_at
-) VALUES (
-  $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9,
-  COALESCE($10, now()), COALESCE($11, now())
-)
-RETURNING requested_at, completed_at`
-
-	getResultByRunAndPromptSQL = `
-SELECT ` + resultColumns + `
-FROM prompt_results pr
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-WHERE pr.run_id = $1 AND pr.prompt_id = $2 AND b.tenant_id = $3`
-
-	getResultSQL = `
-SELECT ` + resultColumns + `
-FROM prompt_results pr
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2`
-
-	getResultDetailSQL = `
-SELECT ` + resultColumns + `,
-       p.text,
-       r.business_id, r.platform, r.trigger, r.scheduled_for, r.status,
-       r.workflow_id, r.started_at, r.completed_at, r.analysis_completed_at
-FROM prompt_results pr
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = r.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2`
-
-	// The three enrichment reads below are tenant-scoped through the same
-	// prompt_results -> monitoring_runs -> businesses join the deletes use, so a
-	// cross-tenant result id yields no rows rather than leaking another tenant's
-	// analysis. keywords (text[]) is read as JSON via to_jsonb (see stringSlice);
-	// excerpts is already jsonb.
-	getResultAnalysisRowSQL = `
-SELECT ra.sentiment, to_jsonb(ra.keywords) AS keywords, ra.excerpts
-FROM result_analyses ra
-JOIN prompt_results pr ON pr.id = ra.prompt_result_id
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-WHERE ra.prompt_result_id = $1 AND b.tenant_id = $2`
-
-	listResultMentionsSQL = `
-SELECT m.subject, COALESCE(m.verbatim_name, m.excerpt), m.matched_by, m.mention_order, m.excerpt
-FROM mentions m
-JOIN prompt_results pr ON pr.id = m.prompt_result_id
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-WHERE m.prompt_result_id = $1 AND b.tenant_id = $2
-ORDER BY m.mention_order, m.id`
-
-	listResultCitationsSQL = `
-SELECT c.url, c.domain, c.title, c.cite_order, c.subject
-FROM citations c
-JOIN prompt_results pr ON pr.id = c.prompt_result_id
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN businesses b ON b.id = r.business_id
-WHERE c.prompt_result_id = $1 AND b.tenant_id = $2
-ORDER BY c.cite_order, c.id`
-)
 
 // CreateResult appends a prompt result, scoped by a tenant-predicated lookup of
 // the run's business inside one transaction. A missing or cross-tenant run
@@ -256,34 +175,32 @@ func (s *ResultStore) CreateResult(ctx context.Context, tenantID domain.ID, para
 		ResponseText: params.ResponseText,
 		Error:        params.Error,
 	}
-	err = withTx(ctx, s.db, func(q querier) error {
-		var one int
-		if err := q.queryRowContext(ctx, runPromptOwnedSQL, params.RunID, params.PromptID, tenantID).Scan(&one); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+		if _, err := q.RunPromptOwned(ctx, storesqlc.RunPromptOwnedParams{
+			ID: params.RunID, ID_2: params.PromptID, TenantID: tenantID,
+		}); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
 			}
 			return fmt.Errorf("verify run/prompt ownership: %w", err)
 		}
-		if err := q.queryRowContext(
-			ctx,
-			insertResultSQL,
-			params.ID,
-			params.RunID,
-			params.PromptID,
-			string(params.Status),
-			params.Model,
-			string(params.Request),
-			jsonbArg(params.RawResponse),
-			params.ResponseText,
-			params.Error,
-			nullableTime(params.RequestedAt),
-			nullableTime(params.CompletedAt),
-		).Scan(&result.RequestedAt, &result.CompletedAt); err != nil {
+		var rawResponse *json.RawMessage
+		if len(params.RawResponse) > 0 {
+			rawResponse = &params.RawResponse
+		}
+		times, err := q.InsertResult(ctx, storesqlc.InsertResultParams{
+			ID: params.ID, RunID: params.RunID, PromptID: params.PromptID, Status: string(params.Status),
+			Model: params.Model, Request: params.Request, RawResponse: rawResponse,
+			ResponseText: params.ResponseText, Error: params.Error,
+			RequestedAt: nullableTime(params.RequestedAt), CompletedAt: nullableTime(params.CompletedAt),
+		})
+		if err != nil {
 			if isUniqueViolation(err) {
 				return ErrDuplicateResult
 			}
 			return fmt.Errorf("insert prompt result: %w", err)
 		}
+		result.RequestedAt, result.CompletedAt = times.RequestedAt, times.CompletedAt
 		return nil
 	})
 	if err != nil {
@@ -301,14 +218,16 @@ func (s *ResultStore) GetResultByRunAndPrompt(ctx context.Context, tenantID, run
 		return PromptResult{}, errors.New("result store database is required")
 	}
 
-	result, err := scanResult(s.db.QueryRowContext(ctx, getResultByRunAndPromptSQL, runID, promptID, tenantID))
+	row, err := queries(ctx, s.db).GetResultByRunAndPrompt(ctx, storesqlc.GetResultByRunAndPromptParams{
+		RunID: runID, PromptID: promptID, TenantID: tenantID,
+	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return PromptResult{}, ErrNotFound
 		}
 		return PromptResult{}, fmt.Errorf("get result by run and prompt: %w", err)
 	}
-	return result, nil
+	return resultFromSQLC(row), nil
 }
 
 // GetResult loads a single result by id, tenant scoped via
@@ -319,14 +238,14 @@ func (s *ResultStore) GetResult(ctx context.Context, tenantID, resultID domain.I
 		return PromptResult{}, errors.New("result store database is required")
 	}
 
-	result, err := scanResult(s.db.QueryRowContext(ctx, getResultSQL, resultID, tenantID))
+	row, err := queries(ctx, s.db).GetResult(ctx, storesqlc.GetResultParams{ID: resultID, TenantID: tenantID})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return PromptResult{}, ErrNotFound
 		}
 		return PromptResult{}, fmt.Errorf("get result: %w", err)
 	}
-	return result, nil
+	return resultFromSQLC(row), nil
 }
 
 // GetResultDetail loads one result with its prompt text and run metadata,
@@ -336,44 +255,21 @@ func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID do
 		return ResultDetail{}, errors.New("result store database is required")
 	}
 
-	var detail ResultDetail
-	var promptText string
-	err := s.db.QueryRowContext(ctx, getResultDetailSQL, resultID, tenantID).Scan(
-		&detail.Result.ID,
-		&detail.Result.RunID,
-		&detail.Result.PromptID,
-		&detail.Result.Status,
-		&detail.Result.Model,
-		&detail.Result.Request,
-		nullableJSON{&detail.Result.RawResponse},
-		&detail.Result.ResponseText,
-		&detail.Result.Error,
-		&detail.Result.RequestedAt,
-		&detail.Result.CompletedAt,
-		&promptText,
-		&detail.Run.BusinessID,
-		&detail.Run.Platform,
-		&detail.Run.Trigger,
-		&detail.Run.ScheduledFor,
-		&detail.Run.Status,
-		&detail.Run.WorkflowID,
-		&detail.Run.StartedAt,
-		&detail.Run.CompletedAt,
-		&detail.Run.AnalysisCompletedAt,
-	)
+	row, err := queries(ctx, s.db).GetResultDetail(ctx, storesqlc.GetResultDetailParams{ID: resultID, TenantID: tenantID})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return ResultDetail{}, ErrNotFound
 		}
 		return ResultDetail{}, fmt.Errorf("get result detail: %w", err)
 	}
 
-	detail.BusinessID = detail.Run.BusinessID
-	detail.Run.ID = detail.Result.RunID
-	detail.Prompt = Prompt{
-		ID:         detail.Result.PromptID,
-		BusinessID: detail.Run.BusinessID,
-		Text:       promptText,
+	detail := ResultDetail{
+		Result: resultFromFields(row.ID, row.RunID, row.PromptID, row.Status, row.Model, row.Request,
+			row.RawResponse, row.ResponseText, row.Error, row.RequestedAt, row.CompletedAt),
+		BusinessID: row.BusinessID,
+		Run: runFromFields(row.RunID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
+			row.RunStatus, row.WorkflowID, row.StartedAt, row.RunCompletedAt, row.AnalysisCompletedAt, nil),
+		Prompt: Prompt{ID: row.PromptID, BusinessID: row.BusinessID, Text: row.Text},
 	}
 	return detail, nil
 }
@@ -390,14 +286,18 @@ func (s *ResultStore) GetResultAnalysis(ctx context.Context, tenantID, resultID 
 	}
 
 	var out ResultAnalysis
-	var keywords, excerpts stringSlice
-	err := s.db.QueryRowContext(ctx, getResultAnalysisRowSQL, resultID, tenantID).Scan(&out.Sentiment, &keywords, &excerpts)
+	row, err := queries(ctx, s.db).GetResultAnalysisRow(ctx, storesqlc.GetResultAnalysisRowParams{
+		PromptResultID: resultID, TenantID: tenantID,
+	})
 	switch {
 	case err == nil:
 		out.Analyzed = true
-		out.Keywords = emptyIfNil(keywords)
-		out.Excerpts = emptyIfNil(excerpts)
-	case errors.Is(err, sql.ErrNoRows):
+		out.Sentiment = row.Sentiment
+		out.Keywords = emptyStrings(row.Keywords)
+		if err := json.Unmarshal(row.Excerpts, &out.Excerpts); err != nil {
+			return ResultAnalysis{}, fmt.Errorf("decode analysis excerpts: %w", err)
+		}
+	case errors.Is(err, pgx.ErrNoRows):
 		// Succeeded-but-unanalyzed (or failed): no analysis row. Not an error.
 	default:
 		return ResultAnalysis{}, fmt.Errorf("get result analysis: %w", err)
@@ -418,43 +318,34 @@ func (s *ResultStore) GetResultAnalysis(ctx context.Context, tenantID, resultID 
 }
 
 func (s *ResultStore) listResultMentions(ctx context.Context, tenantID, resultID domain.ID) ([]ResultMention, error) {
-	rows, err := s.db.QueryContext(ctx, listResultMentionsSQL, resultID, tenantID)
+	rows, err := queries(ctx, s.db).ListResultMentions(ctx, storesqlc.ListResultMentionsParams{
+		PromptResultID: resultID, TenantID: tenantID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list result mentions: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	mentions := []ResultMention{}
-	for rows.Next() {
-		var m ResultMention
-		if err := rows.Scan(&m.Subject, &m.VerbatimName, &m.MatchedBy, &m.MentionOrder, &m.Excerpt); err != nil {
-			return nil, fmt.Errorf("scan mention: %w", err)
-		}
-		mentions = append(mentions, m)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate mentions: %w", err)
+	mentions := make([]ResultMention, 0, len(rows))
+	for _, row := range rows {
+		mentions = append(mentions, ResultMention{
+			Subject: row.Subject, VerbatimName: row.VerbatimName, MatchedBy: row.MatchedBy,
+			MentionOrder: int(row.MentionOrder), Excerpt: row.Excerpt,
+		})
 	}
 	return mentions, nil
 }
 
 func (s *ResultStore) listResultCitations(ctx context.Context, tenantID, resultID domain.ID) ([]ResultCitation, error) {
-	rows, err := s.db.QueryContext(ctx, listResultCitationsSQL, resultID, tenantID)
+	rows, err := queries(ctx, s.db).ListResultCitations(ctx, storesqlc.ListResultCitationsParams{
+		PromptResultID: resultID, TenantID: tenantID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list result citations: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
-	citations := []ResultCitation{}
-	for rows.Next() {
-		var c ResultCitation
-		if err := rows.Scan(&c.URL, &c.Domain, &c.Title, &c.CiteOrder, &c.Subject); err != nil {
-			return nil, fmt.Errorf("scan citation: %w", err)
-		}
-		citations = append(citations, c)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate citations: %w", err)
+	citations := make([]ResultCitation, 0, len(rows))
+	for _, row := range rows {
+		citations = append(citations, ResultCitation{
+			URL: row.Url, Domain: row.Domain, Title: row.Title, CiteOrder: int(row.CiteOrder), Subject: row.Subject,
+		})
 	}
 	return citations, nil
 }
@@ -468,97 +359,61 @@ func (s *ResultStore) ListResults(ctx context.Context, tenantID, businessID doma
 		return nil, errors.New("result store database is required")
 	}
 
-	q := sqlQuerier{q: s.db}
+	q := queries(ctx, s.db)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return nil, err
 	}
 
-	query := `
-SELECT ` + resultColumns + `, p.text,
-       EXISTS(SELECT 1 FROM result_analyses ra WHERE ra.prompt_result_id = pr.id) AS analyzed
-FROM prompt_results pr
-JOIN monitoring_runs r ON r.id = pr.run_id
-JOIN prompts p ON p.id = pr.prompt_id AND p.business_id = r.business_id
-WHERE r.business_id = $1
-  AND ($2::uuid IS NULL OR pr.run_id = $2)
-  AND ($3::uuid IS NULL OR pr.prompt_id = $3)
-  AND ($4::text IS NULL OR pr.status = $4)
-  AND ($5::boolean IS NULL OR EXISTS(
-        SELECT 1 FROM mentions m WHERE m.prompt_result_id = pr.id AND m.subject = 'self') = $5)
-  AND ($6::uuid[] IS NULL OR pr.id = ANY($6))
-ORDER BY
-  CASE WHEN $6::uuid[] IS NOT NULL THEN array_position($6, pr.id) END,
-  pr.requested_at DESC,
-  pr.id`
-
-	var resultIDs any
-	if len(filter.ResultIDs) > 0 {
-		resultIDs = filter.ResultIDs
+	limit := filter.Limit
+	const maxInt32 = int(^uint32(0) >> 1)
+	if limit <= 0 || limit > maxInt32 {
+		limit = maxInt32
 	}
-	args := []any{businessID, filter.RunID, filter.PromptID, statusArg(filter.Status), boolArg(filter.Mentioned), resultIDs}
-	if filter.Limit > 0 {
-		args = append(args, filter.Limit)
-		query += " LIMIT $" + strconv.Itoa(len(args))
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	} else if offset > maxInt32 {
+		offset = maxInt32
 	}
-	if filter.Offset > 0 {
-		args = append(args, filter.Offset)
-		query += " OFFSET $" + strconv.Itoa(len(args))
+	var status *string
+	if filter.Status != nil {
+		value := string(*filter.Status)
+		status = &value
 	}
-
-	rows, err := q.queryContext(ctx, query, args...)
+	rows, err := q.ListResults(ctx, storesqlc.ListResultsParams{
+		BusinessID: businessID, RunID: filter.RunID, PromptID: filter.PromptID,
+		Status: status, Mentioned: filter.Mentioned, ResultIds: filter.ResultIDs,
+		ResultLimit: int32(limit), ResultOffset: int32(offset),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list results: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	results := []ResultListItem{}
-	for rows.Next() {
-		var item ResultListItem
-		if err := rows.Scan(
-			&item.ID,
-			&item.RunID,
-			&item.PromptID,
-			&item.Status,
-			&item.Model,
-			&item.Request,
-			nullableJSON{&item.RawResponse},
-			&item.ResponseText,
-			&item.Error,
-			&item.RequestedAt,
-			&item.CompletedAt,
-			&item.PromptText,
-			&item.Analyzed,
-		); err != nil {
-			return nil, err
+	results := make([]ResultListItem, 0, len(rows))
+	for _, row := range rows {
+		item := ResultListItem{
+			PromptResult: resultFromFields(row.ID, row.RunID, row.PromptID, row.Status, row.Model,
+				row.Request, row.RawResponse, row.ResponseText, row.Error, row.RequestedAt, row.CompletedAt),
+			PromptText: row.PromptText, Analyzed: row.Analyzed,
 		}
 		results = append(results, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate results: %w", err)
 	}
 	return results, nil
 }
 
-func scanResult(row rowScanner) (PromptResult, error) {
-	var result PromptResult
-	if err := row.Scan(
-		&result.ID,
-		&result.RunID,
-		&result.PromptID,
-		&result.Status,
-		&result.Model,
-		&result.Request,
-		nullableJSON{&result.RawResponse},
-		&result.ResponseText,
-		&result.Error,
-		&result.RequestedAt,
-		&result.CompletedAt,
-	); err != nil {
-		return PromptResult{}, err
+func resultFromSQLC(row storesqlc.PromptResult) PromptResult {
+	return resultFromFields(row.ID, row.RunID, row.PromptID, row.Status, row.Model, row.Request,
+		row.RawResponse, row.ResponseText, row.Error, row.RequestedAt, row.CompletedAt)
+}
+
+func resultFromFields(id, runID, promptID domain.ID, status string, model *string, request json.RawMessage,
+	raw *json.RawMessage, response, resultErr *string, requested, completed time.Time) PromptResult {
+	var rawResponse json.RawMessage
+	if raw != nil {
+		rawResponse = *raw
 	}
-	return result, nil
+	return PromptResult{ID: id, RunID: runID, PromptID: promptID, Status: ResultStatus(status), Model: model,
+		Request: request, RawResponse: rawResponse, ResponseText: response, Error: resultErr,
+		RequestedAt: requested, CompletedAt: completed}
 }
 
 func normalizeCreateResultParams(params CreateResultParams) (CreateResultParams, error) {
@@ -587,34 +442,20 @@ func normalizeCreateResultParams(params CreateResultParams) (CreateResultParams,
 	return params, nil
 }
 
-func statusArg(status *ResultStatus) any {
-	if status == nil {
-		return nil
-	}
-	return string(*status)
-}
-
-func boolArg(b *bool) any {
-	if b == nil {
-		return nil
-	}
-	return *b
-}
-
-// emptyIfNil normalizes a nil slice to a non-nil empty one so the API encodes
+// emptyStrings normalizes a nil slice to a non-nil empty one so the API encodes
 // [] rather than null for a present-but-empty analysis field.
-func emptyIfNil(s stringSlice) []string {
+func emptyStrings(s []string) []string {
 	if s == nil {
 		return []string{}
 	}
 	return s
 }
 
-func nullableTime(t time.Time) any {
+func nullableTime(t time.Time) *time.Time {
 	if t.IsZero() {
 		return nil
 	}
-	return t
+	return &t
 }
 
 func isUniqueViolation(err error) bool {

@@ -65,6 +65,15 @@ Raw LLM responses are stored as `jsonb`/text in Postgres rather than object stor
 
 Multi-tenancy: shared schema, `tenant_id` column on every tenant-owned table, enforced in a repository layer (not RLS, for MVP simplicity).
 
+The application opens one `pgxpool.Pool` per process and shares it across every
+repository and metrics reader. SQL lives in `internal/store/queries/` and is
+compiled by sqlc into `internal/store/sqlc/`; repository/domain APIs remain the
+boundary seen by API and workflow code. Transactions bind the generated query
+set to `pgx.Tx`. Session advisory locks pin a pool connection for the whole
+callback, including any repository transaction started inside it. The only
+standard-library SQL connection is Goose's private, short-lived migration
+adapter.
+
 ## D5 — Temporal usage
 
 Temporal is the backbone for everything asynchronous:
@@ -94,7 +103,7 @@ opensight/
 │   ├── api/              # HTTP handlers, middleware
 │   ├── auth/             # password hashing (shared by api + user-create CLI)
 │   ├── domain/           # core types, business logic
-│   ├── store/            # Postgres repositories, migrations
+│   ├── store/            # Postgres repositories, sqlc queries, migrations
 │   ├── workflows/        # Temporal workflows + activities
 │   └── llm/              # PromptRunner + analysis interfaces, OpenAI impl
 ├── web/                  # Vite + React SPA
