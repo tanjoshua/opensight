@@ -112,3 +112,41 @@ func CreateMonitorSchedule(ctx context.Context, c ScheduleCreator, params Create
 	}
 	return scheduleID, nil
 }
+
+// SetMonitorSchedulePaused pauses or resumes a business's monitoring
+// Schedule on platform (design 08 "Schedule gate" — reconcile's gate 2,
+// BILL-5). A schedule that does not exist yet is success, not failure,
+// mirroring CreateMonitorSchedule's AlreadyExists swallow: a tenant that
+// lapses before onboarding ever created a Schedule (or before an admin
+// re-seeds one) is a normal state, not an error the caller should surface.
+func SetMonitorSchedulePaused(ctx context.Context, c ScheduleCreator, businessID domain.ID, platform string, paused bool) error {
+	scheduleID := ScheduleID(businessID, platform)
+	handle := c.ScheduleClient().GetHandle(ctx, scheduleID)
+
+	description, err := handle.Describe(ctx)
+	if err != nil {
+		var notFound *serviceerror.NotFound
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return fmt.Errorf("describe schedule %s: %w", scheduleID, err)
+	}
+	currentlyPaused := description.Schedule.State != nil && description.Schedule.State.Paused
+	if currentlyPaused == paused {
+		return nil
+	}
+
+	if paused {
+		err = handle.Pause(ctx, client.SchedulePauseOptions{Note: "billing: access lapsed"})
+	} else {
+		err = handle.Unpause(ctx, client.ScheduleUnpauseOptions{Note: "billing: access restored"})
+	}
+	if err != nil {
+		var notFound *serviceerror.NotFound
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return fmt.Errorf("set schedule %s paused=%t: %w", scheduleID, paused, err)
+	}
+	return nil
+}

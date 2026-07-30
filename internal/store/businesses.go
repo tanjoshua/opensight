@@ -258,7 +258,7 @@ func (s *BusinessStore) ListBusinesses(ctx context.Context, tenantID domain.ID) 
 		return nil, errors.New("business store database is required")
 	}
 
-	rows, err := s.db.QueryContext(ctx, listBusinessesSQL, tenantID)
+	rows, err := dbFromContext(ctx, s.db).QueryContext(ctx, listBusinessesSQL, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("list businesses: %w", err)
 	}

@@ -24,7 +24,7 @@ func newBillingTestServer(subs *fakeSubscriptionStore, provider billing.Provider
 	return &Server{
 		subscriptions:  subs,
 		billing:        provider,
-		reconciler:     reconcile.New(subs, provider, nil),
+		reconciler:     reconcile.New(subs, provider, nil, nil, nil),
 		stripePriceIDs: map[string]string{billing.Starter.Code: "price_stub_starter"},
 		appBaseURL:     "https://app.example.com",
 	}

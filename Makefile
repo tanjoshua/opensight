@@ -21,7 +21,7 @@ test:
 test-integration:
 	DATABASE_URL="$(TEST_DATABASE_URL)" go run ./cmd/opensight migrate
 	OPENSIGHT_STORE_TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
-		go test -count=1 ./internal/store/... ./internal/workflows/... ./internal/metrics/...
+		go test -count=1 ./internal/store/... ./internal/workflows/... ./internal/metrics/... ./internal/api/... ./internal/billing/...
 
 # Drops and recreates the integration-test database in the dev Postgres container.
 test-db:

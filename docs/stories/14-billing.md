@@ -11,7 +11,7 @@ Acceptance criteria state what must be true when the story is done. The mechanis
 As the developer, I want entitlements in a versioned code catalog and Stripe state in one table, so that a plan's limits and the price it is sold against can never drift apart.
 
 - [x] `internal/billing` catalog: `Starter` plan (`code`, `prompt_limit` 20, `run_interval` weekly, `platforms` chatgpt, price env key). Unknown `plan_code` is an error, never a default.
-- [x] Migration creates `subscriptions` (tenant_id PK, plan_code, stripe_customer_id, stripe_subscription_id, stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end) and `stripe_events` (id PK, type, payload, received_at, processed_at).
+- [x] Migrations create `subscriptions` (tenant_id PK, plan_code, stripe_customer_id, stripe_subscription_id, stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end); webhook deliveries are not retained locally.
 - [x] Same migration backfills one `subscriptions` row per existing tenant with `comped = true`, then **drops `tenants.plan_id` and the `plans` table**.
 - [x] `store.SubscriptionStore` with tenant-keyed read/upsert; `GetTenantPlan` and every `plans` reference removed app-wide (prompt limit, profile generation, schedule interval all read the catalog).
 
@@ -55,14 +55,14 @@ Deps: BILL-2, BILL-3 · Phase 4 · Ref: design 08 (Stripe integration — Checko
 
 As the operator, I want subscription state to converge on Stripe's truth regardless of delivery order or duplication, so that billing state is never wrong for long and never wrong permanently.
 
-- [ ] Stripe can deliver the subscription lifecycle to the app; a delivery that fails signature verification is rejected and changes nothing, including leaving no trace to replay.
-- [ ] Redelivery of an event already handled has no further effect.
-- [ ] Out-of-order delivery cannot resurrect a dead subscription — proven by an integration test that delivers `updated` after `deleted`.
-- [ ] The delivered payload's own state is never written; only Stripe's current state is (design 08 — the payload carries identity, not truth).
-- [ ] Every state change also stops or resumes monitoring, idempotently, tolerating a tenant with no business or no schedule yet.
-- [ ] Billing state changes through exactly one path, shared with the checkout return (BILL-4) — the two entry points cannot diverge.
-- [ ] Dunning is anchored once when it begins and cleared when it ends; repeated updates during the same dunning cycle must not push the anchor forward, or BILL-6's bound never expires (test).
-- [ ] Stripe retries only when reconcile genuinely failed; anything unrecognised is accepted and ignored.
+- [x] Stripe can deliver the subscription lifecycle to the app; a delivery that fails signature verification is rejected and changes nothing, including leaving no trace to replay.
+- [x] Redelivery only repeats desired-state reconciliation; it cannot apply an additive effect.
+- [x] Out-of-order delivery cannot resurrect a dead subscription — proven by an integration test that delivers `updated` after `deleted`.
+- [x] The delivered payload's own state is never written; only Stripe's current state is (design 08 — the payload carries identity, not truth).
+- [x] Every reconcile asserts whether monitoring must be running or paused, idempotently, tolerating a tenant with no business or no schedule yet.
+- [x] Billing state changes through exactly one path, shared with the checkout return (BILL-4) — the two entry points cannot diverge.
+- [x] Dunning is anchored once when it begins and cleared when it ends; repeated updates during the same dunning cycle must not push the anchor forward, or BILL-6's bound never expires (test).
+- [x] Stripe retries only when reconcile genuinely failed; anything unrecognised is accepted and ignored.
 
 Deps: BILL-4 · Phase 4 · Ref: design 08 (Stripe integration — Webhook, Reconcile; Enforcement gate 2), 04 (Schedules)
 

@@ -24,12 +24,28 @@ import (
 	"opensight/internal/store"
 )
 
-// subscriptionStore is the seam reconcile needs: load a tenant's row and
-// write it back in full. Narrower than *store.SubscriptionStore so a test can
-// fake it with no database.
+// subscriptionStore is the seam reconcile needs: load a tenant's row (by
+// tenant id or by Stripe Customer id — the webhook only ever carries the
+// latter) and write it back in full. Narrower than *store.SubscriptionStore
+// so a test can fake it with no database.
 type subscriptionStore interface {
 	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
+	GetByCustomer(ctx context.Context, customerID string) (store.Subscription, error)
 	Upsert(ctx context.Context, params store.UpsertSubscriptionParams) error
+}
+
+// monitoringGate is the nil-tolerant seam over *Monitoring: assert whether a
+// tenant's monitoring Schedules should run (design 08 "Schedule gate"). A nil
+// Reconciler.monitoring (e.g. a test that only cares about the row write)
+// makes apply skip this step entirely.
+type monitoringGate interface {
+	Set(ctx context.Context, tenantID domain.ID, platforms []string, enabled bool) error
+}
+
+// customerLocker serializes reconciliation for one Stripe Customer across
+// app instances. Production uses a PostgreSQL session-level advisory lock.
+type customerLocker interface {
+	WithLock(ctx context.Context, key string, fn func(context.Context) error) error
 }
 
 // subscriptionProvider is the one billing.Provider method reconcile needs.
@@ -45,37 +61,79 @@ type subscriptionProvider interface {
 var ErrNoCustomer = errors.New("tenant has no stripe customer")
 
 // Reconciler holds reconcile's dependencies.
-//
-// BILL-5 extends this in two ways this file leaves room for: a nil-tolerant
-// schedule seam (pause/unpause the tenant's monitoring Schedule when access
-// changes) added as a field here, and a second entry point, ByCustomer, that
-// loads the row by stripe_customer_id (the webhook only carries a customer
-// id, never a tenant id) and calls the same apply. Both land alongside an
-// access-changed comparison wrapped around step 3 below.
 type Reconciler struct {
 	subscriptions subscriptionStore
 	provider      subscriptionProvider
+	monitoring    monitoringGate
+	locks         customerLocker
 	now           func() time.Time
 }
 
 // New builds a Reconciler. now defaults to time.Now when nil, so production
 // call sites don't have to pass it and tests can substitute a fixed clock.
-func New(subscriptions subscriptionStore, provider subscriptionProvider, now func() time.Time) *Reconciler {
+// monitoring may be nil (a nil-tolerant seam): apply then writes the row and
+// skips the schedule gate entirely, which is what lets billing_rpc_test.go's
+// checkout-funnel tests build a Reconciler with no Temporal client in scope.
+// locks may likewise be nil in tests that do not exercise concurrency.
+// All five parameters are distinct types, so there is no positional-swap
+// hazard at call sites.
+func New(subscriptions subscriptionStore, provider subscriptionProvider, monitoring monitoringGate, locks customerLocker, now func() time.Time) *Reconciler {
 	if now == nil {
 		now = time.Now
 	}
-	return &Reconciler{subscriptions: subscriptions, provider: provider, now: now}
+	return &Reconciler{subscriptions: subscriptions, provider: provider, monitoring: monitoring, locks: locks, now: now}
 }
 
 // Tenant loads tenantID's subscription row and reconciles it against Stripe.
 // This is BILL-4's entry point (ConfirmCheckout reconciles by tenant, since
-// the session carries the tenant id). BILL-5's ByCustomer is the webhook's.
+// the session carries the tenant id).
 func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error) {
 	sub, err := r.subscriptions.GetByTenant(ctx, tenantID)
 	if err != nil {
 		return store.Subscription{}, fmt.Errorf("reconcile: load subscription: %w", err)
 	}
-	return r.apply(ctx, sub)
+	if sub.StripeCustomerID == nil {
+		return sub, ErrNoCustomer
+	}
+
+	var written store.Subscription
+	err = r.withCustomerLock(ctx, *sub.StripeCustomerID, func(ctx context.Context) error {
+		// The first read only discovers the permanent Customer id. Reload
+		// after acquiring the lock so apply never uses stale local state.
+		locked, err := r.subscriptions.GetByTenant(ctx, tenantID)
+		if err != nil {
+			return fmt.Errorf("reconcile: reload subscription: %w", err)
+		}
+		written, err = r.apply(ctx, locked)
+		return err
+	})
+	return written, err
+}
+
+// ByCustomer loads the subscription row for a Stripe Customer id and
+// reconciles it against Stripe. This is the webhook's entry point (BILL-5):
+// a delivery only ever carries a Customer id, never a tenant id. A customer
+// id with no matching row returns store.ErrNotFound wrapped, so the handler
+// can tell an orphan Customer (accepted crash window, design 08) from a real
+// failure.
+func (r *Reconciler) ByCustomer(ctx context.Context, customerID string) (store.Subscription, error) {
+	var written store.Subscription
+	err := r.withCustomerLock(ctx, customerID, func(ctx context.Context) error {
+		sub, err := r.subscriptions.GetByCustomer(ctx, customerID)
+		if err != nil {
+			return fmt.Errorf("reconcile: load subscription by customer: %w", err)
+		}
+		written, err = r.apply(ctx, sub)
+		return err
+	})
+	return written, err
+}
+
+func (r *Reconciler) withCustomerLock(ctx context.Context, customerID string, fn func(context.Context) error) error {
+	if r.locks == nil {
+		return fn(ctx)
+	}
+	return r.locks.WithLock(ctx, "billing-customer:"+customerID, fn)
 }
 
 // apply is the single writer (design 08). Precisely:
@@ -88,6 +146,10 @@ func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subs
 //     invented here — that is what makes the full-row overwrite safe. Stripe
 //     fields (StripeSubscriptionID, StripeStatus, CancelAtPeriodEnd,
 //     CurrentPeriodEnd) come from the freshly fetched remote state.
+//  4. Assert the desired monitoring state after every write. This is not
+//     transition-based: if the row write succeeds but changing a Schedule
+//     fails, the error makes Stripe retry and the next reconcile repairs the
+//     partial failure.
 func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.Subscription, error) {
 	if sub.StripeCustomerID == nil {
 		return sub, ErrNoCustomer
@@ -100,6 +162,10 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 		}
 		return store.Subscription{}, fmt.Errorf("reconcile: get subscription for customer: %w", err)
 	}
+
+	// One "now" for the whole call: access and the dunning anchor must reason
+	// about the same instant.
+	now := r.now()
 
 	status := remote.Status
 	subscriptionID := remote.ID
@@ -116,7 +182,7 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 		StripeCustomerID:     sub.StripeCustomerID,
 		StripeSubscriptionID: &subscriptionID,
 		StripeStatus:         &status,
-		PastDueSince:         dunningAnchor(sub.PastDueSince, remote.Status, r.now()),
+		PastDueSince:         dunningAnchor(sub.PastDueSince, remote.Status, now),
 		CurrentPeriodEnd:     currentPeriodEnd,
 		CancelAtPeriodEnd:    remote.CancelAtPeriodEnd,
 	}
@@ -126,7 +192,7 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 
 	// Constructed locally rather than re-read: one query, and the caller
 	// needs exactly what was just written.
-	return store.Subscription{
+	written := store.Subscription{
 		TenantID:             params.TenantID,
 		PlanCode:             params.PlanCode,
 		Comped:               params.Comped,
@@ -136,7 +202,19 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 		PastDueSince:         params.PastDueSince,
 		CurrentPeriodEnd:     params.CurrentPeriodEnd,
 		CancelAtPeriodEnd:    params.CancelAtPeriodEnd,
-	}, nil
+	}
+
+	after := billing.DeriveAccess(written.AccessState(), now)
+	if r.monitoring != nil {
+		plan, err := billing.PlanFor(written.PlanCode)
+		if err != nil {
+			return written, fmt.Errorf("reconcile: resolve plan for monitoring gate: %w", err)
+		} else if err := r.monitoring.Set(ctx, written.TenantID, plan.Platforms, after == billing.AccessFull); err != nil {
+			return written, fmt.Errorf("reconcile: set monitoring enabled=%t: %w", after == billing.AccessFull, err)
+		}
+	}
+
+	return written, nil
 }
 
 // dunningAnchor computes past_due_since for a write. Its AC and test belong

@@ -423,14 +423,25 @@ func serve(ctx context.Context, cfg config.Config) error {
 	// Shared between Deps.Subscriptions and the Reconciler, same store, no
 	// duplicate connection pooling.
 	subscriptions := store.NewSubscriptionStore(db)
-	reconciler := reconcile.New(subscriptions, billingProvider, nil)
+	// businesses and temporalClient are already in scope for Deps.Businesses
+	// and Deps.Temporal below; the monitoring gate reuses both rather than
+	// opening a second store or client.
+	businesses := store.NewBusinessStore(db)
+	monitoring := reconcile.NewMonitoring(businesses, temporalClient)
+	locks := store.NewAdvisoryLocker(db)
+	reconciler := reconcile.New(subscriptions, billingProvider, monitoring, locks, nil)
+
+	// Built unconditionally, even under BILLING_PROVIDER=stub: an empty
+	// STRIPE_WEBHOOK_SECRET makes Verify reject every delivery (design 08),
+	// so a stub-mode deploy is never trickable into accepting one.
+	webhookVerifier := stripe.NewWebhookVerifier(cfg.StripeWebhookSecret)
 
 	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
 	// behind Caddy TLS, where Secure must be set.
 	apiServer := api.New(api.Deps{
 		Auth:              store.NewAuthStore(db),
 		Accounts:          store.NewAccountStore(db),
-		Businesses:        store.NewBusinessStore(db),
+		Businesses:        businesses,
 		Subscriptions:     subscriptions,
 		Proposals:         store.NewProfileProposalStore(db),
 		Apply:             store.NewApplyProposalStore(db),
@@ -446,6 +457,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 		Reconciler:        reconciler,
 		StripePriceIDs:    cfg.StripePriceIDs,
 		AppBaseURL:        cfg.AppBaseURL,
+		Webhooks:          webhookVerifier,
 	})
 
 	server := &http.Server{

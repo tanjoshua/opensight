@@ -78,9 +78,10 @@ type billingProvider interface {
 }
 
 // billingReconciler is the seam over *reconcile.Reconciler: ConfirmCheckout's
-// one write path (design 08 "Reconcile").
+// (BILL-4) and the webhook's (BILL-5) one write path (design 08 "Reconcile").
 type billingReconciler interface {
 	Tenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
+	ByCustomer(ctx context.Context, customerID string) (store.Subscription, error)
 }
 
 // proposalStore is the seam over *store.ProfileProposalStore for the proposal
@@ -150,12 +151,14 @@ type Server struct {
 	reconciler     billingReconciler
 	stripePriceIDs map[string]string
 	appBaseURL     string
+	// webhooks verifies /webhooks/stripe deliveries (BILL-5).
+	webhooks billing.WebhookVerifier
 }
 
 // Deps are api.New's dependencies. A struct rather than a positional argument
-// list: the billing stories add several more dependencies, and two adjacent
-// same-typed strings (temporalTaskQueue, appBaseURL, and BILL-5's
-// stripeWebhookSecret) can silently swap at a positional call site.
+// list: the billing stories add several more dependencies, and adjacent
+// same-typed fields (temporalTaskQueue, appBaseURL) can silently swap at a
+// positional call site.
 type Deps struct {
 	Auth              *store.AuthStore
 	Accounts          *store.AccountStore
@@ -177,6 +180,9 @@ type Deps struct {
 	Reconciler     *reconcile.Reconciler
 	StripePriceIDs map[string]string
 	AppBaseURL     string
+
+	// Webhook (BILL-5).
+	Webhooks billing.WebhookVerifier
 }
 
 // New builds a Server from d. SecureCookies should be true everywhere except
@@ -206,6 +212,7 @@ func New(d Deps) *Server {
 		reconciler:        d.Reconciler,
 		stripePriceIDs:    d.StripePriceIDs,
 		appBaseURL:        d.AppBaseURL,
+		webhooks:          d.Webhooks,
 	}
 }
 
@@ -220,6 +227,11 @@ func (s *Server) Routes() http.Handler {
 	})
 
 	r.Get("/healthz", handleHealthz)
+
+	// Outside /rpc so the session interceptor never sees it: Stripe signs the
+	// delivery, and that signature is the route's only authentication
+	// (design 08 "Webhook").
+	r.Post("/webhooks/stripe", s.handleStripeWebhook)
 
 	r.Mount("/rpc", s.rpcHandler())
 

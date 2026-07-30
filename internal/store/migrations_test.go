@@ -25,6 +25,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00008_drop_business_practitioners.sql",
 		"migrations/00009_add_run_expected_results.sql",
 		"migrations/00010_create_subscriptions_stripe_events.sql",
+		"migrations/00011_drop_stripe_events.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -40,6 +41,23 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 			if !strings.Contains(sql, marker) {
 				t.Errorf("%s missing %q", name, marker)
 			}
+		}
+	}
+}
+
+func TestDropStripeEventsMigration(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00011_drop_stripe_events.sql")
+	if err != nil {
+		t.Fatalf("read drop stripe_events migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"DROP TABLE stripe_events",
+		"CREATE TABLE stripe_events",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("drop stripe_events migration missing %q", marker)
 		}
 	}
 }

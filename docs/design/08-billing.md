@@ -73,14 +73,6 @@ subscriptions (
   cancel_at_period_end   boolean NOT NULL DEFAULT false,
   created_at, updated_at
 )
-
-stripe_events (
-  id           text PRIMARY KEY,   -- Stripe's event id: the idempotency key
-  type         text NOT NULL,
-  payload      jsonb NOT NULL,     -- the event as delivered, for audit and replay
-  received_at  timestamptz NOT NULL DEFAULT now(),
-  processed_at timestamptz NULL
-)
 ```
 
 One `subscriptions` row per tenant, created at signup with `plan_code = 'starter'` and every Stripe column null. It is the tenant's permanent billing record, not a per-subscription log — Stripe holds subscription history, and duplicating it locally would create a second thing to keep correct for no query we need.
@@ -89,8 +81,6 @@ Two deliberate shapes:
 
 - **`stripe_status` is verbatim.** It holds exactly what Stripe reports (`active`, `past_due`, `canceled`, `incomplete`, …) and nothing else. Local concepts never contaminate it, so a status question is always answerable against Stripe's documentation rather than our folklore.
 - **`comped` is a separate boolean, not a status value.** Design partners and internal tenants get access with no Stripe objects at all. Encoding that as a fake status would have made every `stripe_status` comparison lie.
-
-`stripe_events` keeps the delivered payload permanently. This is the same instinct as `prompt_results.raw_response` (02): the raw fact is cheap to keep and the only thing that can settle a billing dispute or a reconcile bug after the fact.
 
 ## Access: one derived authorization primitive
 
@@ -168,16 +158,18 @@ The id is persisted **write-once**: `SubscriptionStore.SetStripeCustomerID` (BIL
 
 **Webhook** — `POST /webhooks/stripe`, a chi route outside `/rpc`:
 
-- Reads the **raw body** before any parsing middleware and verifies the signature with the endpoint's signing secret. An unverified event is a 400 and is never persisted.
-- Inserts into `stripe_events` first; a primary-key conflict means the event was already delivered and the handler returns 200 without reprocessing. Stripe retries aggressively and at-least-once delivery is guaranteed — idempotency is not optional.
-- **Never trusts the event payload's subscription state.** Stripe does not guarantee delivery order, so a stale `updated` arriving after a `deleted` would otherwise resurrect a dead subscription. The handler takes only the *identity* from the event (customer id / subscription id) and then **re-fetches the subscription from the API**, writing that. Last write wins and converges regardless of arrival order, for one extra API call per event.
+- Reads the **raw body** before any parsing middleware and verifies the signature with the endpoint's signing secret. An unverified event is a 400. Deliveries and their payloads are not persisted: Stripe retains the event history, while the app only needs the current subscription state.
+- **Never trusts the event payload's subscription state.** Stripe does not guarantee delivery order, so a stale `updated` arriving after a `deleted` would otherwise resurrect a dead subscription. The handler takes only the *identity* from the event (customer id) and then **re-fetches the subscription from the API**, writing that.
+- Duplicate deliveries simply reconcile the same Customer again. Reconcile is desired-state based rather than an additive side effect, so persisted event-id deduplication would add machinery without changing the result.
 - Returns 200 for events it does not handle, and 500 only when reconcile genuinely failed — so Stripe's retry means something.
 
 Subscribed events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`. Invoice events are not subscribed: Stripe's own emails handle receipts and dunning notification, and every state we care about is reachable from the subscription.
 
-**Reconcile** is one path, keyed by the Stripe Customer: fetch the current subscription, write the `subscriptions` row, and pause or unpause the monitoring Schedule if access changed. The webhook calls it. The checkout return calls it. There is exactly one code path that can change billing state, so the two entry points cannot disagree.
+**Reconcile** is one path, keyed by the Stripe Customer: acquire a PostgreSQL session-level advisory lock for that Customer, reload the local row under the lock, fetch the current subscription, write the `subscriptions` row, and assert whether monitoring must be running or paused. The lock is held on a dedicated database connection across the fetch and write, so webhook deliveries and checkout returns cannot race even across multiple app instances. The webhook calls it. The checkout return calls it. There is exactly one code path that can change billing state, so the two entry points cannot disagree.
 
 It lives in its own package, `internal/billing/reconcile` (BILL-4), not as a method on `api.Server` and not as a file in `internal/billing` itself: `internal/billing` cannot host it without a cycle (its seam would need to speak `store.Subscription`, and `internal/store` already imports `internal/billing`), and hanging it off `api.Server` would make it untestable without a full `Server` and would force a future CLI comp command to reach into `internal/api`. The single writer is an unexported `apply(ctx, sub store.Subscription) (store.Subscription, error)`, reached through per-source entry points: `Reconciler.Tenant(ctx, tenantID)` for the checkout return (BILL-4, keyed by the id already on the session), and `Reconciler.ByCustomer(ctx, customerID)` for the webhook (BILL-5, which only ever carries a Stripe Customer id). Both funnel into the same `apply`, which is what makes "exactly one code path" a checkable claim rather than a convention.
+
+`apply` derives access from the written row (`billing.DeriveAccess`) and asserts the corresponding Schedule state for every business the tenant has, on every platform its plan covers (BILL-5, `Reconciler`'s nil-tolerant `monitoring` seam, `internal/billing/reconcile/monitoring.go`). This happens on every reconcile, not only when a local before/after comparison detects a transition. Pause and unpause first inspect the Schedule and no-op when it already has the desired state. A monitoring failure is returned: Stripe retries the webhook, and the next desired-state assertion repairs a row-write/schedule-update partial failure. Gate 3, `RunWorkflow`'s spend backstop, remains authoritative while that retry is pending.
 
 **Checkout return.** `success_url` lands on `/checkout/return`, which calls `BillingService.ConfirmCheckout(session_id)`; that retrieves the session server-side, confirms it belongs to this tenant, and runs the same reconcile. Without this, a customer whose webhook is delayed by seconds stares at a page telling them they haven't paid, immediately after paying. The webhook remains the source of truth; this is the latency fix, not a second implementation.
 

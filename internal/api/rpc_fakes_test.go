@@ -52,6 +52,16 @@ func (f *fakeSubscriptionStore) GetByTenant(context.Context, domain.ID) (store.S
 	return f.sub, f.err
 }
 
+func (f *fakeSubscriptionStore) GetByCustomer(_ context.Context, customerID string) (store.Subscription, error) {
+	if f.err != nil {
+		return store.Subscription{}, f.err
+	}
+	if f.sub.StripeCustomerID == nil || *f.sub.StripeCustomerID != customerID {
+		return store.Subscription{}, store.ErrNotFound
+	}
+	return f.sub, nil
+}
+
 func (f *fakeSubscriptionStore) SetStripeCustomerID(_ context.Context, _ domain.ID, customerID string) (string, error) {
 	f.setCustomerIDCalls++
 	if f.setCustomerIDErr != nil {
@@ -160,6 +170,15 @@ type fakeScheduleClient struct {
 	err          error
 	describeErr  error
 	nextActionAt []time.Time
+	// pauseErr/unpauseErr are returned by every handle's Pause/Unpause;
+	// pauses/unpauses record every schedule id acted on, in order, so a test
+	// can assert exactly which schedules were paused/resumed and how many
+	// times (BILL-5's "paused exactly once across both deliveries").
+	pauseErr   error
+	unpauseErr error
+	pauses     []string
+	unpauses   []string
+	paused     map[string]bool
 }
 
 func (f *fakeScheduleClient) Create(context.Context, client.ScheduleOptions) (client.ScheduleHandle, error) {
@@ -167,16 +186,30 @@ func (f *fakeScheduleClient) Create(context.Context, client.ScheduleOptions) (cl
 	return nil, f.err
 }
 
-func (f *fakeScheduleClient) GetHandle(context.Context, string) client.ScheduleHandle {
-	return &fakeScheduleHandle{describeErr: f.describeErr, nextActionAt: f.nextActionAt}
+func (f *fakeScheduleClient) GetHandle(_ context.Context, scheduleID string) client.ScheduleHandle {
+	if f.paused == nil {
+		f.paused = make(map[string]bool)
+	}
+	return &fakeScheduleHandle{
+		id:           scheduleID,
+		describeErr:  f.describeErr,
+		nextActionAt: f.nextActionAt,
+		pauseErr:     f.pauseErr,
+		unpauseErr:   f.unpauseErr,
+		client:       f,
+	}
 }
 
-// fakeScheduleHandle implements just Describe; the embedded nil
+// fakeScheduleHandle implements Describe/Pause/Unpause; the embedded nil
 // client.ScheduleHandle satisfies the rest of the interface.
 type fakeScheduleHandle struct {
 	client.ScheduleHandle
+	id           string
 	describeErr  error
 	nextActionAt []time.Time
+	pauseErr     error
+	unpauseErr   error
+	client       *fakeScheduleClient
 }
 
 func (f *fakeScheduleHandle) Describe(context.Context) (*client.ScheduleDescription, error) {
@@ -184,9 +217,27 @@ func (f *fakeScheduleHandle) Describe(context.Context) (*client.ScheduleDescript
 		return nil, f.describeErr
 	}
 	return &client.ScheduleDescription{
-		Schedule: client.Schedule{},
+		Schedule: client.Schedule{State: &client.ScheduleState{Paused: f.client.paused[f.id]}},
 		Info:     client.ScheduleInfo{NextActionTimes: f.nextActionAt},
 	}, nil
+}
+
+func (f *fakeScheduleHandle) Pause(context.Context, client.SchedulePauseOptions) error {
+	if f.pauseErr != nil {
+		return f.pauseErr
+	}
+	f.client.pauses = append(f.client.pauses, f.id)
+	f.client.paused[f.id] = true
+	return nil
+}
+
+func (f *fakeScheduleHandle) Unpause(context.Context, client.ScheduleUnpauseOptions) error {
+	if f.unpauseErr != nil {
+		return f.unpauseErr
+	}
+	f.client.unpauses = append(f.client.unpauses, f.id)
+	f.client.paused[f.id] = false
+	return nil
 }
 
 type fakeApplyStore struct {

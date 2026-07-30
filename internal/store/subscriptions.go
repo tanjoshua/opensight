@@ -86,6 +86,11 @@ SELECT ` + subscriptionColumns + `
 FROM subscriptions
 WHERE tenant_id = $1`
 
+	getSubscriptionByCustomerSQL = `
+SELECT ` + subscriptionColumns + `
+FROM subscriptions
+WHERE stripe_customer_id = $1`
+
 	upsertSubscriptionSQL = `
 INSERT INTO subscriptions (
   tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
@@ -130,12 +135,31 @@ func (s *SubscriptionStore) GetByTenant(ctx context.Context, tenantID domain.ID)
 		return Subscription{}, errors.New("subscription store database is required")
 	}
 
-	sub, err := scanSubscription(s.db.QueryRowContext(ctx, getSubscriptionByTenantSQL, tenantID))
+	sub, err := scanSubscription(dbFromContext(ctx, s.db).QueryRowContext(ctx, getSubscriptionByTenantSQL, tenantID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Subscription{}, ErrNotFound
 		}
 		return Subscription{}, fmt.Errorf("get subscription: %w", err)
+	}
+	return sub, nil
+}
+
+// GetByCustomer loads the subscription row for a Stripe Customer id — the
+// webhook's lookup (BILL-5): a delivery only ever carries a Customer id,
+// never a tenant id. stripe_customer_id is UNIQUE, so at most one row can
+// match; no match returns ErrNotFound.
+func (s *SubscriptionStore) GetByCustomer(ctx context.Context, customerID string) (Subscription, error) {
+	if s == nil || s.db == nil {
+		return Subscription{}, errors.New("subscription store database is required")
+	}
+
+	sub, err := scanSubscription(dbFromContext(ctx, s.db).QueryRowContext(ctx, getSubscriptionByCustomerSQL, customerID))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Subscription{}, ErrNotFound
+		}
+		return Subscription{}, fmt.Errorf("get subscription by customer: %w", err)
 	}
 	return sub, nil
 }
@@ -148,7 +172,7 @@ func (s *SubscriptionStore) Upsert(ctx context.Context, params UpsertSubscriptio
 		return errors.New("subscription store database is required")
 	}
 
-	_, err := s.db.ExecContext(ctx, upsertSubscriptionSQL,
+	_, err := dbFromContext(ctx, s.db).ExecContext(ctx, upsertSubscriptionSQL,
 		params.TenantID, params.PlanCode, params.StripeCustomerID, params.StripeSubscriptionID,
 		params.StripeStatus, params.PastDueSince, params.Comped, params.CurrentPeriodEnd,
 		params.CancelAtPeriodEnd,
