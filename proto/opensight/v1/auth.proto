@@ -48,7 +48,12 @@ message GetMeResponse {
   User user = 1;
   Tenant tenant = 2;
   repeated BusinessSummary businesses = 3;
-  int32 prompt_limit = 4;
+  // prompt_limit (bare int32) is replaced by access + plan (BILL-6): the SPA
+  // needs to know its billing state, not just one entitlement number.
+  reserved 4;
+  reserved "prompt_limit";
+  Access access = 5;
+  Plan plan = 6;
 }
 
 service AuthService {

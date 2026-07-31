@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"opensight/internal/billing"
 	testdb "opensight/internal/store/testdb"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // TestAuthStore exercises the AUTH-1 credential and session repository against a
@@ -136,4 +138,121 @@ func TestAuthStore(t *testing.T) {
 func tokenHashFor(raw string) []byte {
 	sum := sha256.Sum256([]byte(raw))
 	return sum[:]
+}
+
+// TestGetSessionBillingJoin is BILL-6's GetSession integration test: the
+// LEFT JOIN to subscriptions returns plan_code and the billing columns
+// (comped, Stripe id/status), live off whatever the row currently holds, and
+// a tenant with no subscriptions row surfaces as an explicit error rather
+// than the same ErrNotFound an absent/expired session returns.
+func TestGetSessionBillingJoin(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	auth := NewAuthStore(db)
+	subs := NewSubscriptionStore(db)
+
+	t.Run("comped starter fixture, then a live Upsert is reflected without a new session", func(t *testing.T) {
+		tenantID := mustNewID(t)
+		userID := mustNewID(t)
+		const email = "billing-join@example.com"
+		t.Cleanup(func() {
+			_, _ = testdb.Exec(ctx, db, testdb.Query111, userID)
+			_, _ = testdb.Exec(ctx, db, testdb.Query112, userID)
+			_, _ = testdb.Exec(ctx, db, testdb.Query113, tenantID)
+			_, _ = testdb.Exec(ctx, db, testdb.Query114, tenantID)
+		})
+
+		// insertTenant's fixture (tenant_fixture_test.go) inserts a comped
+		// starter subscription — this must keep working unchanged.
+		insertTenant(t, db, ctx, tenantID, "Billing Join Tenant")
+		if _, err := testdb.Exec(ctx, db, testdb.Query115, userID, tenantID, email, ""); err != nil {
+			t.Fatalf("insert user: %v", err)
+		}
+
+		liveHash := tokenHashFor("billing-join-live")
+		if err := auth.CreateSession(ctx, CreateSessionParams{TokenHash: liveHash, UserID: userID, ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+			t.Fatalf("CreateSession: %v", err)
+		}
+
+		su, err := auth.GetSession(ctx, liveHash)
+		if err != nil {
+			t.Fatalf("GetSession: %v", err)
+		}
+		if su.PlanCode != billing.Starter.Code {
+			t.Fatalf("PlanCode = %q, want %q", su.PlanCode, billing.Starter.Code)
+		}
+		if !su.Billing.Comped {
+			t.Fatalf("Billing.Comped = false, want true (insertTenant fixture)")
+		}
+
+		// Live Upsert to a non-comped active Stripe subscription; GetSession
+		// re-derives from the current row on every call, no caching.
+		custID, subID, status := "cus_join_test", "sub_join_test", "active"
+		if err := subs.Upsert(ctx, UpsertSubscriptionParams{
+			TenantID: tenantID, PlanCode: billing.Starter.Code,
+			StripeCustomerID: &custID, StripeSubscriptionID: &subID, StripeStatus: &status,
+			Comped: false,
+		}); err != nil {
+			t.Fatalf("Upsert: %v", err)
+		}
+
+		su2, err := auth.GetSession(ctx, liveHash)
+		if err != nil {
+			t.Fatalf("GetSession after upsert: %v", err)
+		}
+		if su2.Billing.Comped {
+			t.Fatalf("Billing.Comped = true after upsert to comped=false")
+		}
+		if su2.Billing.StripeSubscriptionID != subID {
+			t.Fatalf("Billing.StripeSubscriptionID = %q, want %q", su2.Billing.StripeSubscriptionID, subID)
+		}
+		if su2.Billing.StripeStatus != status {
+			t.Fatalf("Billing.StripeStatus = %q, want %q", su2.Billing.StripeStatus, status)
+		}
+	})
+
+	t.Run("tenant with no subscriptions row returns an explicit error, not ErrNotFound", func(t *testing.T) {
+		tenantID := mustNewID(t)
+		userID := mustNewID(t)
+		const email = "no-sub@example.com"
+		t.Cleanup(func() {
+			_, _ = testdb.Exec(ctx, db, testdb.Query111, userID)
+			_, _ = testdb.Exec(ctx, db, testdb.Query112, userID)
+			_, _ = testdb.Exec(ctx, db, testdb.Query114, tenantID)
+		})
+
+		// TestQuery225 alone (not insertTenant, which also inserts Query226's
+		// subscription row) is the fixture for a tenant with no subscriptions
+		// row at all — structurally impossible via signup, but reachable if a
+		// tenant somehow predates the backfill.
+		if _, err := testdb.Exec(ctx, db, testdb.Query225, tenantID, "No Subscription Tenant"); err != nil {
+			t.Fatalf("insert tenant: %v", err)
+		}
+		if _, err := testdb.Exec(ctx, db, testdb.Query115, userID, tenantID, email, ""); err != nil {
+			t.Fatalf("insert user: %v", err)
+		}
+
+		liveHash := tokenHashFor("no-sub-live")
+		if err := auth.CreateSession(ctx, CreateSessionParams{TokenHash: liveHash, UserID: userID, ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+			t.Fatalf("CreateSession: %v", err)
+		}
+
+		_, err := auth.GetSession(ctx, liveHash)
+		if err == nil {
+			t.Fatal("GetSession with no subscriptions row: want an error, got nil")
+		}
+		if errors.Is(err, ErrNotFound) {
+			t.Fatalf("GetSession err = %v, want an explicit non-ErrNotFound error (not masquerading as an absent session)", err)
+		}
+	})
 }

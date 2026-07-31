@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
@@ -42,9 +43,9 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 	}
 	website := strings.TrimSpace(req.Msg.Website)
 
-	plan, err := s.tenantPlan(ctx, su.TenantID)
+	plan, err := billing.PlanFor(su.PlanCode)
 	if err != nil {
-		return nil, s.rpcInternal("create business: get tenant plan", err)
+		return nil, s.rpcInternal("create business: resolve plan", err)
 	}
 
 	params := store.CreateBusinessParams{
@@ -91,11 +92,7 @@ func (s *Server) GetBusiness(ctx context.Context, req *connect.Request[opensight
 	if err != nil {
 		return nil, s.rpcError("get business", err)
 	}
-	plan, err := s.tenantPlan(ctx, su.TenantID)
-	if err != nil {
-		return nil, s.rpcError("get business: get tenant plan", err)
-	}
-	resp, err := businessProfileToProto(business, plan)
+	resp, err := businessProfileToProto(business)
 	if err != nil {
 		return nil, s.rpcInternal("get business: decode profile", err)
 	}
@@ -193,11 +190,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, s.rpcError("update business", err)
 	}
 
-	plan, err := s.tenantPlan(ctx, su.TenantID)
-	if err != nil {
-		return nil, s.rpcError("update business: get tenant plan", err)
-	}
-	resp, err := businessProfileToProto(updated, plan)
+	resp, err := businessProfileToProto(updated)
 	if err != nil {
 		return nil, s.rpcInternal("update business: decode updated profile", err)
 	}
@@ -272,9 +265,9 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, s.rpcInternal("regen proposal: discard pending", err)
 	}
 
-	plan, err := s.tenantPlan(ctx, su.TenantID)
+	plan, err := billing.PlanFor(su.PlanCode)
 	if err != nil {
-		return nil, s.rpcInternal("regen proposal: get tenant plan", err)
+		return nil, s.rpcInternal("regen proposal: resolve plan", err)
 	}
 
 	if err := s.startGeneration(ctx, su.TenantID, businessID, business.Name, websiteOrEmpty(business.Website), plan.PromptLimit); err != nil {
@@ -307,9 +300,9 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 
 	payload := proposalPayloadFromProto(req.Msg.Payload)
 
-	plan, err := s.tenantPlan(ctx, su.TenantID)
+	plan, err := billing.PlanFor(su.PlanCode)
 	if err != nil {
-		return nil, s.rpcInternal("apply business: get tenant plan", err)
+		return nil, s.rpcInternal("apply business: resolve plan", err)
 	}
 
 	if errs := llm.ValidateProposal(payload, llm.ProposeProfileInput{

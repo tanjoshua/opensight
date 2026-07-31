@@ -48,6 +48,11 @@ func (f *fakeAuthStore) CreateSession(_ context.Context, params store.CreateSess
 	su := store.SessionUser{
 		UserID:    params.UserID,
 		ExpiresAt: params.ExpiresAt,
+		// Real GetSession LEFT JOINs subscriptions (BILL-6); mirror that here
+		// with comped-starter, the same fixture insertTenant uses for store
+		// integration tests, so existing handler tests keep passing unchanged.
+		PlanCode: billing.Starter.Code,
+		Billing:  billing.State{Comped: true},
 	}
 	// The real store's session lookup always joins to users/tenants, so mirror
 	// that here: find the matching credentials entry by user id and populate

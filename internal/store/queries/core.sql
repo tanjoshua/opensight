@@ -22,10 +22,15 @@ INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3);
 DELETE FROM sessions WHERE user_id = $1 AND expires_at <= now();
 
 -- name: GetSession :one
-SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at
+-- LEFT JOIN deliberately, not INNER: a missing subscriptions row must surface
+-- to the caller as an explicit error (BILL-6), not silently masquerade as an
+-- expired/absent session by disappearing from the result set.
+SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at,
+       sub.plan_code, sub.comped, sub.stripe_subscription_id, sub.stripe_status, sub.past_due_since
 FROM sessions s
 JOIN users u ON u.id = s.user_id
 JOIN tenants t ON t.id = u.tenant_id
+LEFT JOIN subscriptions sub ON sub.tenant_id = u.tenant_id
 WHERE s.token_hash = $1 AND s.expires_at > now();
 
 -- name: DeleteSession :exec

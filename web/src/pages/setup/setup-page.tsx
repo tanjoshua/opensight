@@ -13,6 +13,7 @@ import {
   useAllCompetitors,
   useCurrentBusiness,
   useInvalidateCompetitorViews,
+  usePlan,
 } from "@/api/hooks"
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
@@ -119,7 +120,7 @@ export function SetupPage() {
           )}
         </CardContent>
       </Card>
-      <PlanCard business={business.data.business} />
+      <PlanCard />
     </div>
   )
 }
@@ -464,8 +465,10 @@ function CompetitorAliases({ competitor }: { competitor: Competitor }) {
   )
 }
 
-function PlanCard({ business }: { business: BusinessProfile }) {
-  const plan = business.plan
+// PlanCard reads from useMe() (via usePlan(), BILL-6), not the business:
+// plan entitlements are a tenant fact, not a per-business one.
+function PlanCard() {
+  const { plan } = usePlan()
   if (!plan) return null
   return (
     <Card>
@@ -476,7 +479,7 @@ function PlanCard({ business }: { business: BusinessProfile }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
-        <PlanValue label="Plan" value={plan.slug} />
+        <PlanValue label="Plan" value={plan.code} />
         <PlanValue label="Prompt limit" value={String(plan.promptLimit)} />
         <PlanValue label="Run interval" value={plan.runInterval} />
         <PlanValue label="Platforms" value={plan.platforms.join(", ")} />

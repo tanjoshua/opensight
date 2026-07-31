@@ -450,7 +450,8 @@ type GetMeResponse struct {
 	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	Tenant        *Tenant                `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
 	Businesses    []*BusinessSummary     `protobuf:"bytes,3,rep,name=businesses,proto3" json:"businesses,omitempty"`
-	PromptLimit   int32                  `protobuf:"varint,4,opt,name=prompt_limit,json=promptLimit,proto3" json:"prompt_limit,omitempty"`
+	Access        Access                 `protobuf:"varint,5,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
+	Plan          *Plan                  `protobuf:"bytes,6,opt,name=plan,proto3" json:"plan,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -506,11 +507,18 @@ func (x *GetMeResponse) GetBusinesses() []*BusinessSummary {
 	return nil
 }
 
-func (x *GetMeResponse) GetPromptLimit() int32 {
+func (x *GetMeResponse) GetAccess() Access {
 	if x != nil {
-		return x.PromptLimit
+		return x.Access
 	}
-	return 0
+	return Access_ACCESS_UNSPECIFIED
+}
+
+func (x *GetMeResponse) GetPlan() *Plan {
+	if x != nil {
+		return x.Plan
+	}
+	return nil
 }
 
 var File_opensight_v1_auth_proto protoreflect.FileDescriptor
@@ -538,14 +546,15 @@ const file_opensight_v1_auth_proto_rawDesc = "" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.opensight.v1.TenantR\x06tenant\"\x0f\n" +
 	"\rLogoutRequest\"\x10\n" +
 	"\x0eLogoutResponse\"\x0e\n" +
-	"\fGetMeRequest\"\xc7\x01\n" +
+	"\fGetMeRequest\"\x8e\x02\n" +
 	"\rGetMeResponse\x12&\n" +
 	"\x04user\x18\x01 \x01(\v2\x12.opensight.v1.UserR\x04user\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.opensight.v1.TenantR\x06tenant\x12=\n" +
 	"\n" +
 	"businesses\x18\x03 \x03(\v2\x1d.opensight.v1.BusinessSummaryR\n" +
-	"businesses\x12!\n" +
-	"\fprompt_limit\x18\x04 \x01(\x05R\vpromptLimit2\x9b\x02\n" +
+	"businesses\x12,\n" +
+	"\x06access\x18\x05 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\x12&\n" +
+	"\x04plan\x18\x06 \x01(\v2\x12.opensight.v1.PlanR\x04planJ\x04\b\x04\x10\x05R\fprompt_limit2\x9b\x02\n" +
 	"\vAuthService\x12@\n" +
 	"\x05Login\x12\x1a.opensight.v1.LoginRequest\x1a\x1b.opensight.v1.LoginResponse\x12C\n" +
 	"\x06Signup\x12\x1b.opensight.v1.SignupRequest\x1a\x1c.opensight.v1.SignupResponse\x12C\n" +
@@ -578,6 +587,8 @@ var file_opensight_v1_auth_proto_goTypes = []any{
 	(*GetMeRequest)(nil),    // 8: opensight.v1.GetMeRequest
 	(*GetMeResponse)(nil),   // 9: opensight.v1.GetMeResponse
 	(*BusinessSummary)(nil), // 10: opensight.v1.BusinessSummary
+	(Access)(0),             // 11: opensight.v1.Access
+	(*Plan)(nil),            // 12: opensight.v1.Plan
 }
 var file_opensight_v1_auth_proto_depIdxs = []int32{
 	0,  // 0: opensight.v1.LoginResponse.user:type_name -> opensight.v1.User
@@ -587,19 +598,21 @@ var file_opensight_v1_auth_proto_depIdxs = []int32{
 	0,  // 4: opensight.v1.GetMeResponse.user:type_name -> opensight.v1.User
 	1,  // 5: opensight.v1.GetMeResponse.tenant:type_name -> opensight.v1.Tenant
 	10, // 6: opensight.v1.GetMeResponse.businesses:type_name -> opensight.v1.BusinessSummary
-	2,  // 7: opensight.v1.AuthService.Login:input_type -> opensight.v1.LoginRequest
-	4,  // 8: opensight.v1.AuthService.Signup:input_type -> opensight.v1.SignupRequest
-	6,  // 9: opensight.v1.AuthService.Logout:input_type -> opensight.v1.LogoutRequest
-	8,  // 10: opensight.v1.AuthService.GetMe:input_type -> opensight.v1.GetMeRequest
-	3,  // 11: opensight.v1.AuthService.Login:output_type -> opensight.v1.LoginResponse
-	5,  // 12: opensight.v1.AuthService.Signup:output_type -> opensight.v1.SignupResponse
-	7,  // 13: opensight.v1.AuthService.Logout:output_type -> opensight.v1.LogoutResponse
-	9,  // 14: opensight.v1.AuthService.GetMe:output_type -> opensight.v1.GetMeResponse
-	11, // [11:15] is the sub-list for method output_type
-	7,  // [7:11] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	11, // 7: opensight.v1.GetMeResponse.access:type_name -> opensight.v1.Access
+	12, // 8: opensight.v1.GetMeResponse.plan:type_name -> opensight.v1.Plan
+	2,  // 9: opensight.v1.AuthService.Login:input_type -> opensight.v1.LoginRequest
+	4,  // 10: opensight.v1.AuthService.Signup:input_type -> opensight.v1.SignupRequest
+	6,  // 11: opensight.v1.AuthService.Logout:input_type -> opensight.v1.LogoutRequest
+	8,  // 12: opensight.v1.AuthService.GetMe:input_type -> opensight.v1.GetMeRequest
+	3,  // 13: opensight.v1.AuthService.Login:output_type -> opensight.v1.LoginResponse
+	5,  // 14: opensight.v1.AuthService.Signup:output_type -> opensight.v1.SignupResponse
+	7,  // 15: opensight.v1.AuthService.Logout:output_type -> opensight.v1.LogoutResponse
+	9,  // 16: opensight.v1.AuthService.GetMe:output_type -> opensight.v1.GetMeResponse
+	13, // [13:17] is the sub-list for method output_type
+	9,  // [9:13] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_auth_proto_init() }

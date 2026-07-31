@@ -925,6 +925,127 @@ func (x *BusinessSummary) GetStatus() BusinessStatus {
 	return BusinessStatus_BUSINESS_STATUS_UNSPECIFIED
 }
 
+// AccessDenied is the error detail attached to a rejected RPC (BILL-6
+// "Enforcement gate 1"): the access the caller actually has, so the SPA can
+// render the right billing state without parsing the error string.
+type AccessDenied struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Access        Access                 `protobuf:"varint,1,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccessDenied) Reset() {
+	*x = AccessDenied{}
+	mi := &file_opensight_v1_common_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccessDenied) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccessDenied) ProtoMessage() {}
+
+func (x *AccessDenied) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_common_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccessDenied.ProtoReflect.Descriptor instead.
+func (*AccessDenied) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AccessDenied) GetAccess() Access {
+	if x != nil {
+		return x.Access
+	}
+	return Access_ACCESS_UNSPECIFIED
+}
+
+// Plan is the tenant's plan config (internal/billing catalog). Lives here,
+// not business.proto: AuthService.GetMe (BILL-6) carries it alongside
+// Access, and BusinessProfile no longer does (a business's plan is the
+// tenant's plan, not a per-business fact).
+type Plan struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Code        string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	PromptLimit int32                  `protobuf:"varint,2,opt,name=prompt_limit,json=promptLimit,proto3" json:"prompt_limit,omitempty"`
+	// run_interval stays a plain string, not an enum: it comes from the
+	// versioned plan catalog (internal/billing), not a closed domain set.
+	RunInterval   string   `protobuf:"bytes,3,opt,name=run_interval,json=runInterval,proto3" json:"run_interval,omitempty"`
+	Platforms     []string `protobuf:"bytes,4,rep,name=platforms,proto3" json:"platforms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Plan) Reset() {
+	*x = Plan{}
+	mi := &file_opensight_v1_common_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Plan) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Plan) ProtoMessage() {}
+
+func (x *Plan) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_common_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Plan.ProtoReflect.Descriptor instead.
+func (*Plan) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Plan) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *Plan) GetPromptLimit() int32 {
+	if x != nil {
+		return x.PromptLimit
+	}
+	return 0
+}
+
+func (x *Plan) GetRunInterval() string {
+	if x != nil {
+		return x.RunInterval
+	}
+	return ""
+}
+
+func (x *Plan) GetPlatforms() []string {
+	if x != nil {
+		return x.Platforms
+	}
+	return nil
+}
+
 var File_opensight_v1_common_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_common_proto_rawDesc = "" +
@@ -941,7 +1062,14 @@ const file_opensight_v1_common_proto_rawDesc = "" +
 	"\x0fBusinessSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x124\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1c.opensight.v1.BusinessStatusR\x06status*h\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1c.opensight.v1.BusinessStatusR\x06status\"<\n" +
+	"\fAccessDenied\x12,\n" +
+	"\x06access\x18\x01 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\"~\n" +
+	"\x04Plan\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12!\n" +
+	"\fprompt_limit\x18\x02 \x01(\x05R\vpromptLimit\x12!\n" +
+	"\frun_interval\x18\x03 \x01(\tR\vrunInterval\x12\x1c\n" +
+	"\tplatforms\x18\x04 \x03(\tR\tplatforms*h\n" +
 	"\x0eBusinessStatus\x12\x1f\n" +
 	"\x1bBUSINESS_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15BUSINESS_STATUS_DRAFT\x10\x01\x12\x1a\n" +
@@ -1024,7 +1152,7 @@ func file_opensight_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_opensight_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 14)
-var file_opensight_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_opensight_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_opensight_v1_common_proto_goTypes = []any{
 	(BusinessStatus)(0),     // 0: opensight.v1.BusinessStatus
 	(PromptStatus)(0),       // 1: opensight.v1.PromptStatus
@@ -1043,14 +1171,17 @@ var file_opensight_v1_common_proto_goTypes = []any{
 	(*Paging)(nil),          // 14: opensight.v1.Paging
 	(*StringList)(nil),      // 15: opensight.v1.StringList
 	(*BusinessSummary)(nil), // 16: opensight.v1.BusinessSummary
+	(*AccessDenied)(nil),    // 17: opensight.v1.AccessDenied
+	(*Plan)(nil),            // 18: opensight.v1.Plan
 }
 var file_opensight_v1_common_proto_depIdxs = []int32{
-	0, // 0: opensight.v1.BusinessSummary.status:type_name -> opensight.v1.BusinessStatus
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0,  // 0: opensight.v1.BusinessSummary.status:type_name -> opensight.v1.BusinessStatus
+	13, // 1: opensight.v1.AccessDenied.access:type_name -> opensight.v1.Access
+	2,  // [2:2] is the sub-list for method output_type
+	2,  // [2:2] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_common_proto_init() }
@@ -1064,7 +1195,7 @@ func file_opensight_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_common_proto_rawDesc), len(file_opensight_v1_common_proto_rawDesc)),
 			NumEnums:      14,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -13,6 +13,10 @@
 //     business from (MVP is one business per tenant). onboarding-page is the
 //     one deliberate exception — it needs the full businesses list to tell
 //     draft-resume apart from already-onboarded, so it stays on useMe().
+//   - usePlan: the useMe projection for plan entitlements (BILL-6 — GetMe
+//     carries Plan, BusinessProfile no longer does), narrowing the
+//     possibly-undefined field once so callers never fall back to a bogus
+//     default limit.
 import { Code, createClient } from "@connectrpc/connect"
 import {
   createConnectQueryKey,
@@ -25,7 +29,7 @@ import {
 } from "@tanstack/react-query"
 
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
-import type { BusinessSummary } from "@/gen/opensight/v1/common_pb"
+import type { BusinessSummary, Plan } from "@/gen/opensight/v1/common_pb"
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
 import {
   CompetitorService,
@@ -67,6 +71,27 @@ export function useCurrentBusiness(): CurrentBusiness {
     isLoading: me.isLoading,
     isError: me.isError,
     isReady: me.data !== undefined,
+  }
+}
+
+export interface CurrentPlan {
+  plan: Plan | undefined
+  isLoading: boolean
+  isError: boolean
+  // Distinguishes "still loading" from "loaded, with a plan" — narrows
+  // GetMeResponse.plan's possible-undefined shape once, so call sites (e.g.
+  // onboarding's prompt-count validation) never fall back to a bogus default
+  // limit like 0 (BILL-6).
+  isReady: boolean
+}
+
+export function usePlan(): CurrentPlan {
+  const me = useMe()
+  return {
+    plan: me.data?.plan,
+    isLoading: me.isLoading,
+    isError: me.isError,
+    isReady: me.data?.plan !== undefined,
   }
 }
 

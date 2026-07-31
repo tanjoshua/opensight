@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/business.proto.
  */
 export const file_opensight_v1_business: GenFile = /*@__PURE__*/
-  fileDesc("ChtvcGVuc2lnaHQvdjEvYnVzaW5lc3MucHJvdG8SDG9wZW5zaWdodC52MSJICghMb2NhdGlvbhIPCgdhZGRyZXNzGAEgASgJEgwKBGFyZWEYAiABKAkSDAoEY2l0eRgDIAEoCRIPCgdjb3VudHJ5GAQgASgJIlMKBFBsYW4SDAoEc2x1ZxgBIAEoCRIUCgxwcm9tcHRfbGltaXQYAiABKAUSFAoMcnVuX2ludGVydmFsGAMgASgJEhEKCXBsYXRmb3JtcxgEIAMoCSKOAgoPQnVzaW5lc3NQcm9maWxlEgoKAmlkGAEgASgJEiwKBnN0YXR1cxgCIAEoDjIcLm9wZW5zaWdodC52MS5CdXNpbmVzc1N0YXR1cxIMCgRuYW1lGAMgASgJEhQKB3dlYnNpdGUYBCABKAlIAIgBARIPCgdhbGlhc2VzGAUgAygJEhUKCGNhdGVnb3J5GAYgASgJSAGIAQESEAoIc2VydmljZXMYByADKAkSKAoIbG9jYXRpb24YCCABKAsyFi5vcGVuc2lnaHQudjEuTG9jYXRpb24SIAoEcGxhbhgJIAEoCzISLm9wZW5zaWdodC52MS5QbGFuQgoKCF93ZWJzaXRlQgsKCV9jYXRlZ29yeSJ+Cg9Qcm9wb3NlZFByb2ZpbGUSDAoEbmFtZRgBIAEoCRIPCgdhbGlhc2VzGAIgAygJEhAKCGNhdGVnb3J5GAMgASgJEhAKCHNlcnZpY2VzGAQgAygJEigKCGxvY2F0aW9uGAUgASgLMhYub3BlbnNpZ2h0LnYxLkxvY2F0aW9uIh4KDlByb3Bvc2VkUHJvbXB0EgwKBHRleHQYASABKAkiPAoOUHJvcG9zYWxTb3VyY2USCwoDdXJsGAEgASgJEg0KBXRpdGxlGAIgASgJEg4KBmRvbWFpbhgDIAEoCSK3AQoPUHJvcG9zYWxQYXlsb2FkEhYKDmxvd19jb25maWRlbmNlGAEgASgIEi4KB3Byb2ZpbGUYAiABKAsyHS5vcGVuc2lnaHQudjEuUHJvcG9zZWRQcm9maWxlEi0KB3Byb21wdHMYAyADKAsyHC5vcGVuc2lnaHQudjEuUHJvcG9zZWRQcm9tcHQSLQoHc291cmNlcxgEIAMoCzIcLm9wZW5zaWdodC52MS5Qcm9wb3NhbFNvdXJjZSKbAQoNUHJvcG9zYWxTdGF0ZRIsCgZzdGF0dXMYASABKA4yHC5vcGVuc2lnaHQudjEuUHJvcG9zYWxTdGF0dXMSLAoFc3RhZ2UYAiABKA4yHS5vcGVuc2lnaHQudjEuR2VuZXJhdGlvblN0YWdlEi4KB3BheWxvYWQYAyABKAsyHS5vcGVuc2lnaHQudjEuUHJvcG9zYWxQYXlsb2FkIjYKFUNyZWF0ZUJ1c2luZXNzUmVxdWVzdBIMCgRuYW1lGAEgASgJEg8KB3dlYnNpdGUYAiABKAkiSQoWQ3JlYXRlQnVzaW5lc3NSZXNwb25zZRIvCghidXNpbmVzcxgBIAEoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1N1bW1hcnkiKQoSR2V0QnVzaW5lc3NSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIkYKE0dldEJ1c2luZXNzUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NQcm9maWxlIo8CChVVcGRhdGVCdXNpbmVzc1JlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkSEQoEbmFtZRgCIAEoCUgAiAEBEhQKB3dlYnNpdGUYAyABKAlIAYgBARIpCgdhbGlhc2VzGAQgASgLMhgub3BlbnNpZ2h0LnYxLlN0cmluZ0xpc3QSFQoIY2F0ZWdvcnkYBSABKAlIAogBARIqCghzZXJ2aWNlcxgGIAEoCzIYLm9wZW5zaWdodC52MS5TdHJpbmdMaXN0EigKCGxvY2F0aW9uGAcgASgLMhYub3BlbnNpZ2h0LnYxLkxvY2F0aW9uQgcKBV9uYW1lQgoKCF93ZWJzaXRlQgsKCV9jYXRlZ29yeSJJChZVcGRhdGVCdXNpbmVzc1Jlc3BvbnNlEi8KCGJ1c2luZXNzGAEgASgLMh0ub3BlbnNpZ2h0LnYxLkJ1c2luZXNzUHJvZmlsZSIpChJHZXRQcm9wb3NhbFJlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkiQQoTR2V0UHJvcG9zYWxSZXNwb25zZRIqCgVzdGF0ZRgBIAEoCzIbLm9wZW5zaWdodC52MS5Qcm9wb3NhbFN0YXRlIjAKGVJlZ2VuZXJhdGVQcm9wb3NhbFJlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkiSAoaUmVnZW5lcmF0ZVByb3Bvc2FsUmVzcG9uc2USKgoFc3RhdGUYASABKAsyGy5vcGVuc2lnaHQudjEuUHJvcG9zYWxTdGF0ZSJbChRBcHBseVByb3Bvc2FsUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCRIuCgdwYXlsb2FkGAIgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2FsUGF5bG9hZCJIChVBcHBseVByb3Bvc2FsUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NTdW1tYXJ5MrYECg9CdXNpbmVzc1NlcnZpY2USWwoOQ3JlYXRlQnVzaW5lc3MSIy5vcGVuc2lnaHQudjEuQ3JlYXRlQnVzaW5lc3NSZXF1ZXN0GiQub3BlbnNpZ2h0LnYxLkNyZWF0ZUJ1c2luZXNzUmVzcG9uc2USUgoLR2V0QnVzaW5lc3MSIC5vcGVuc2lnaHQudjEuR2V0QnVzaW5lc3NSZXF1ZXN0GiEub3BlbnNpZ2h0LnYxLkdldEJ1c2luZXNzUmVzcG9uc2USWwoOVXBkYXRlQnVzaW5lc3MSIy5vcGVuc2lnaHQudjEuVXBkYXRlQnVzaW5lc3NSZXF1ZXN0GiQub3BlbnNpZ2h0LnYxLlVwZGF0ZUJ1c2luZXNzUmVzcG9uc2USUgoLR2V0UHJvcG9zYWwSIC5vcGVuc2lnaHQudjEuR2V0UHJvcG9zYWxSZXF1ZXN0GiEub3BlbnNpZ2h0LnYxLkdldFByb3Bvc2FsUmVzcG9uc2USZwoSUmVnZW5lcmF0ZVByb3Bvc2FsEicub3BlbnNpZ2h0LnYxLlJlZ2VuZXJhdGVQcm9wb3NhbFJlcXVlc3QaKC5vcGVuc2lnaHQudjEuUmVnZW5lcmF0ZVByb3Bvc2FsUmVzcG9uc2USWAoNQXBwbHlQcm9wb3NhbBIiLm9wZW5zaWdodC52MS5BcHBseVByb3Bvc2FsUmVxdWVzdBojLm9wZW5zaWdodC52MS5BcHBseVByb3Bvc2FsUmVzcG9uc2VCowEKEGNvbS5vcGVuc2lnaHQudjFCDUJ1c2luZXNzUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_opensight_v1_common]);
+  fileDesc("ChtvcGVuc2lnaHQvdjEvYnVzaW5lc3MucHJvdG8SDG9wZW5zaWdodC52MSJICghMb2NhdGlvbhIPCgdhZGRyZXNzGAEgASgJEgwKBGFyZWEYAiABKAkSDAoEY2l0eRgDIAEoCRIPCgdjb3VudHJ5GAQgASgJIvgBCg9CdXNpbmVzc1Byb2ZpbGUSCgoCaWQYASABKAkSLAoGc3RhdHVzGAIgASgOMhwub3BlbnNpZ2h0LnYxLkJ1c2luZXNzU3RhdHVzEgwKBG5hbWUYAyABKAkSFAoHd2Vic2l0ZRgEIAEoCUgAiAEBEg8KB2FsaWFzZXMYBSADKAkSFQoIY2F0ZWdvcnkYBiABKAlIAYgBARIQCghzZXJ2aWNlcxgHIAMoCRIoCghsb2NhdGlvbhgIIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbkIKCghfd2Vic2l0ZUILCglfY2F0ZWdvcnlKBAgJEApSBHBsYW4ifgoPUHJvcG9zZWRQcm9maWxlEgwKBG5hbWUYASABKAkSDwoHYWxpYXNlcxgCIAMoCRIQCghjYXRlZ29yeRgDIAEoCRIQCghzZXJ2aWNlcxgEIAMoCRIoCghsb2NhdGlvbhgFIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbiIeCg5Qcm9wb3NlZFByb21wdBIMCgR0ZXh0GAEgASgJIjwKDlByb3Bvc2FsU291cmNlEgsKA3VybBgBIAEoCRINCgV0aXRsZRgCIAEoCRIOCgZkb21haW4YAyABKAkitwEKD1Byb3Bvc2FsUGF5bG9hZBIWCg5sb3dfY29uZmlkZW5jZRgBIAEoCBIuCgdwcm9maWxlGAIgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2VkUHJvZmlsZRItCgdwcm9tcHRzGAMgAygLMhwub3BlbnNpZ2h0LnYxLlByb3Bvc2VkUHJvbXB0Ei0KB3NvdXJjZXMYBCADKAsyHC5vcGVuc2lnaHQudjEuUHJvcG9zYWxTb3VyY2UimwEKDVByb3Bvc2FsU3RhdGUSLAoGc3RhdHVzGAEgASgOMhwub3BlbnNpZ2h0LnYxLlByb3Bvc2FsU3RhdHVzEiwKBXN0YWdlGAIgASgOMh0ub3BlbnNpZ2h0LnYxLkdlbmVyYXRpb25TdGFnZRIuCgdwYXlsb2FkGAMgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2FsUGF5bG9hZCI2ChVDcmVhdGVCdXNpbmVzc1JlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgd3ZWJzaXRlGAIgASgJIkkKFkNyZWF0ZUJ1c2luZXNzUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NTdW1tYXJ5IikKEkdldEJ1c2luZXNzUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCSJGChNHZXRCdXNpbmVzc1Jlc3BvbnNlEi8KCGJ1c2luZXNzGAEgASgLMh0ub3BlbnNpZ2h0LnYxLkJ1c2luZXNzUHJvZmlsZSKPAgoVVXBkYXRlQnVzaW5lc3NSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJEhEKBG5hbWUYAiABKAlIAIgBARIUCgd3ZWJzaXRlGAMgASgJSAGIAQESKQoHYWxpYXNlcxgEIAEoCzIYLm9wZW5zaWdodC52MS5TdHJpbmdMaXN0EhUKCGNhdGVnb3J5GAUgASgJSAKIAQESKgoIc2VydmljZXMYBiABKAsyGC5vcGVuc2lnaHQudjEuU3RyaW5nTGlzdBIoCghsb2NhdGlvbhgHIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbkIHCgVfbmFtZUIKCghfd2Vic2l0ZUILCglfY2F0ZWdvcnkiSQoWVXBkYXRlQnVzaW5lc3NSZXNwb25zZRIvCghidXNpbmVzcxgBIAEoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1Byb2ZpbGUiKQoSR2V0UHJvcG9zYWxSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIkEKE0dldFByb3Bvc2FsUmVzcG9uc2USKgoFc3RhdGUYASABKAsyGy5vcGVuc2lnaHQudjEuUHJvcG9zYWxTdGF0ZSIwChlSZWdlbmVyYXRlUHJvcG9zYWxSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIkgKGlJlZ2VuZXJhdGVQcm9wb3NhbFJlc3BvbnNlEioKBXN0YXRlGAEgASgLMhsub3BlbnNpZ2h0LnYxLlByb3Bvc2FsU3RhdGUiWwoUQXBwbHlQcm9wb3NhbFJlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkSLgoHcGF5bG9hZBgCIAEoCzIdLm9wZW5zaWdodC52MS5Qcm9wb3NhbFBheWxvYWQiSAoVQXBwbHlQcm9wb3NhbFJlc3BvbnNlEi8KCGJ1c2luZXNzGAEgASgLMh0ub3BlbnNpZ2h0LnYxLkJ1c2luZXNzU3VtbWFyeTK2BAoPQnVzaW5lc3NTZXJ2aWNlElsKDkNyZWF0ZUJ1c2luZXNzEiMub3BlbnNpZ2h0LnYxLkNyZWF0ZUJ1c2luZXNzUmVxdWVzdBokLm9wZW5zaWdodC52MS5DcmVhdGVCdXNpbmVzc1Jlc3BvbnNlElIKC0dldEJ1c2luZXNzEiAub3BlbnNpZ2h0LnYxLkdldEJ1c2luZXNzUmVxdWVzdBohLm9wZW5zaWdodC52MS5HZXRCdXNpbmVzc1Jlc3BvbnNlElsKDlVwZGF0ZUJ1c2luZXNzEiMub3BlbnNpZ2h0LnYxLlVwZGF0ZUJ1c2luZXNzUmVxdWVzdBokLm9wZW5zaWdodC52MS5VcGRhdGVCdXNpbmVzc1Jlc3BvbnNlElIKC0dldFByb3Bvc2FsEiAub3BlbnNpZ2h0LnYxLkdldFByb3Bvc2FsUmVxdWVzdBohLm9wZW5zaWdodC52MS5HZXRQcm9wb3NhbFJlc3BvbnNlEmcKElJlZ2VuZXJhdGVQcm9wb3NhbBInLm9wZW5zaWdodC52MS5SZWdlbmVyYXRlUHJvcG9zYWxSZXF1ZXN0Gigub3BlbnNpZ2h0LnYxLlJlZ2VuZXJhdGVQcm9wb3NhbFJlc3BvbnNlElgKDUFwcGx5UHJvcG9zYWwSIi5vcGVuc2lnaHQudjEuQXBwbHlQcm9wb3NhbFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuQXBwbHlQcm9wb3NhbFJlc3BvbnNlQqMBChBjb20ub3BlbnNpZ2h0LnYxQg1CdXNpbmVzc1Byb3RvUAFaL29wZW5zaWdodC9pbnRlcm5hbC9nZW4vb3BlbnNpZ2h0L3YxO29wZW5zaWdodHYxogIDT1hYqgIMT3BlbnNpZ2h0LlYxygIMT3BlbnNpZ2h0XFYx4gIYT3BlbnNpZ2h0XFYxXEdQQk1ldGFkYXRh6gINT3BlbnNpZ2h0OjpWMWIGcHJvdG8z", [file_opensight_v1_common]);
 
 /**
  * Location mirrors llm.ProposedLocation (internal/llm/propose_profile.go).
@@ -51,45 +51,10 @@ export const LocationSchema: GenMessage<Location> = /*@__PURE__*/
   messageDesc(file_opensight_v1_business, 0);
 
 /**
- * Plan is the tenant's plan config (internal/api/businesses.go planResponse).
- *
- * @generated from message opensight.v1.Plan
- */
-export type Plan = Message<"opensight.v1.Plan"> & {
-  /**
-   * @generated from field: string slug = 1;
-   */
-  slug: string;
-
-  /**
-   * @generated from field: int32 prompt_limit = 2;
-   */
-  promptLimit: number;
-
-  /**
-   * run_interval stays a plain string, not an enum: it comes from the
-   * versioned plan catalog (internal/billing), not a closed domain set.
-   *
-   * @generated from field: string run_interval = 3;
-   */
-  runInterval: string;
-
-  /**
-   * @generated from field: repeated string platforms = 4;
-   */
-  platforms: string[];
-};
-
-/**
- * Describes the message opensight.v1.Plan.
- * Use `create(PlanSchema)` to create a new message.
- */
-export const PlanSchema: GenMessage<Plan> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 1);
-
-/**
  * BusinessProfile is the full business detail (internal/api/businesses.go
- * businessDetailResponse).
+ * businessDetailResponse). Plan entitlements are not a per-business fact —
+ * they live on AuthService.GetMe (BILL-6) — so field 9 (the old `plan`
+ * field) is reserved rather than reused.
  *
  * @generated from message opensight.v1.BusinessProfile
  */
@@ -133,11 +98,6 @@ export type BusinessProfile = Message<"opensight.v1.BusinessProfile"> & {
    * @generated from field: opensight.v1.Location location = 8;
    */
   location?: Location | undefined;
-
-  /**
-   * @generated from field: opensight.v1.Plan plan = 9;
-   */
-  plan?: Plan | undefined;
 };
 
 /**
@@ -145,7 +105,7 @@ export type BusinessProfile = Message<"opensight.v1.BusinessProfile"> & {
  * Use `create(BusinessProfileSchema)` to create a new message.
  */
 export const BusinessProfileSchema: GenMessage<BusinessProfile> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 2);
+  messageDesc(file_opensight_v1_business, 1);
 
 /**
  * ProposedProfile mirrors llm.ProposedProfile.
@@ -184,7 +144,7 @@ export type ProposedProfile = Message<"opensight.v1.ProposedProfile"> & {
  * Use `create(ProposedProfileSchema)` to create a new message.
  */
 export const ProposedProfileSchema: GenMessage<ProposedProfile> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 3);
+  messageDesc(file_opensight_v1_business, 2);
 
 /**
  * ProposedPrompt mirrors llm.ProposedPrompt.
@@ -203,7 +163,7 @@ export type ProposedPrompt = Message<"opensight.v1.ProposedPrompt"> & {
  * Use `create(ProposedPromptSchema)` to create a new message.
  */
 export const ProposedPromptSchema: GenMessage<ProposedPrompt> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 4);
+  messageDesc(file_opensight_v1_business, 3);
 
 /**
  * ProposalSource mirrors llm.ProposalSource.
@@ -232,7 +192,7 @@ export type ProposalSource = Message<"opensight.v1.ProposalSource"> & {
  * Use `create(ProposalSourceSchema)` to create a new message.
  */
 export const ProposalSourceSchema: GenMessage<ProposalSource> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 5);
+  messageDesc(file_opensight_v1_business, 4);
 
 /**
  * ProposalPayload mirrors llm.ProposalPayload.
@@ -266,7 +226,7 @@ export type ProposalPayload = Message<"opensight.v1.ProposalPayload"> & {
  * Use `create(ProposalPayloadSchema)` to create a new message.
  */
 export const ProposalPayloadSchema: GenMessage<ProposalPayload> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 6);
+  messageDesc(file_opensight_v1_business, 5);
 
 /**
  * ProposalState is the GET/regen proposal body (internal/api/businesses.go
@@ -300,7 +260,7 @@ export type ProposalState = Message<"opensight.v1.ProposalState"> & {
  * Use `create(ProposalStateSchema)` to create a new message.
  */
 export const ProposalStateSchema: GenMessage<ProposalState> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 7);
+  messageDesc(file_opensight_v1_business, 6);
 
 /**
  * @generated from message opensight.v1.CreateBusinessRequest
@@ -322,7 +282,7 @@ export type CreateBusinessRequest = Message<"opensight.v1.CreateBusinessRequest"
  * Use `create(CreateBusinessRequestSchema)` to create a new message.
  */
 export const CreateBusinessRequestSchema: GenMessage<CreateBusinessRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 8);
+  messageDesc(file_opensight_v1_business, 7);
 
 /**
  * @generated from message opensight.v1.CreateBusinessResponse
@@ -339,7 +299,7 @@ export type CreateBusinessResponse = Message<"opensight.v1.CreateBusinessRespons
  * Use `create(CreateBusinessResponseSchema)` to create a new message.
  */
 export const CreateBusinessResponseSchema: GenMessage<CreateBusinessResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 9);
+  messageDesc(file_opensight_v1_business, 8);
 
 /**
  * @generated from message opensight.v1.GetBusinessRequest
@@ -356,7 +316,7 @@ export type GetBusinessRequest = Message<"opensight.v1.GetBusinessRequest"> & {
  * Use `create(GetBusinessRequestSchema)` to create a new message.
  */
 export const GetBusinessRequestSchema: GenMessage<GetBusinessRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 10);
+  messageDesc(file_opensight_v1_business, 9);
 
 /**
  * @generated from message opensight.v1.GetBusinessResponse
@@ -373,7 +333,7 @@ export type GetBusinessResponse = Message<"opensight.v1.GetBusinessResponse"> & 
  * Use `create(GetBusinessResponseSchema)` to create a new message.
  */
 export const GetBusinessResponseSchema: GenMessage<GetBusinessResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 11);
+  messageDesc(file_opensight_v1_business, 10);
 
 /**
  * UpdateBusinessRequest's optional/wrapper fields express PATCH semantics:
@@ -427,7 +387,7 @@ export type UpdateBusinessRequest = Message<"opensight.v1.UpdateBusinessRequest"
  * Use `create(UpdateBusinessRequestSchema)` to create a new message.
  */
 export const UpdateBusinessRequestSchema: GenMessage<UpdateBusinessRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 12);
+  messageDesc(file_opensight_v1_business, 11);
 
 /**
  * @generated from message opensight.v1.UpdateBusinessResponse
@@ -444,7 +404,7 @@ export type UpdateBusinessResponse = Message<"opensight.v1.UpdateBusinessRespons
  * Use `create(UpdateBusinessResponseSchema)` to create a new message.
  */
 export const UpdateBusinessResponseSchema: GenMessage<UpdateBusinessResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 13);
+  messageDesc(file_opensight_v1_business, 12);
 
 /**
  * @generated from message opensight.v1.GetProposalRequest
@@ -461,7 +421,7 @@ export type GetProposalRequest = Message<"opensight.v1.GetProposalRequest"> & {
  * Use `create(GetProposalRequestSchema)` to create a new message.
  */
 export const GetProposalRequestSchema: GenMessage<GetProposalRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 14);
+  messageDesc(file_opensight_v1_business, 13);
 
 /**
  * @generated from message opensight.v1.GetProposalResponse
@@ -478,7 +438,7 @@ export type GetProposalResponse = Message<"opensight.v1.GetProposalResponse"> & 
  * Use `create(GetProposalResponseSchema)` to create a new message.
  */
 export const GetProposalResponseSchema: GenMessage<GetProposalResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 15);
+  messageDesc(file_opensight_v1_business, 14);
 
 /**
  * RegenerateProposalRequest starts an OpenAI-spending workflow. Its dedup key
@@ -501,7 +461,7 @@ export type RegenerateProposalRequest = Message<"opensight.v1.RegenerateProposal
  * Use `create(RegenerateProposalRequestSchema)` to create a new message.
  */
 export const RegenerateProposalRequestSchema: GenMessage<RegenerateProposalRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 16);
+  messageDesc(file_opensight_v1_business, 15);
 
 /**
  * @generated from message opensight.v1.RegenerateProposalResponse
@@ -518,7 +478,7 @@ export type RegenerateProposalResponse = Message<"opensight.v1.RegenerateProposa
  * Use `create(RegenerateProposalResponseSchema)` to create a new message.
  */
 export const RegenerateProposalResponseSchema: GenMessage<RegenerateProposalResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 17);
+  messageDesc(file_opensight_v1_business, 16);
 
 /**
  * ApplyProposalRequest carries the final user-edited payload verbatim. There
@@ -544,7 +504,7 @@ export type ApplyProposalRequest = Message<"opensight.v1.ApplyProposalRequest"> 
  * Use `create(ApplyProposalRequestSchema)` to create a new message.
  */
 export const ApplyProposalRequestSchema: GenMessage<ApplyProposalRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 18);
+  messageDesc(file_opensight_v1_business, 17);
 
 /**
  * @generated from message opensight.v1.ApplyProposalResponse
@@ -561,7 +521,7 @@ export type ApplyProposalResponse = Message<"opensight.v1.ApplyProposalResponse"
  * Use `create(ApplyProposalResponseSchema)` to create a new message.
  */
 export const ApplyProposalResponseSchema: GenMessage<ApplyProposalResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 19);
+  messageDesc(file_opensight_v1_business, 18);
 
 /**
  * @generated from service opensight.v1.BusinessService

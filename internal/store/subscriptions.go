@@ -36,20 +36,30 @@ type Subscription struct {
 // AccessState projects a Subscription onto the primitives billing.State takes
 // (internal/store imports internal/billing for the plan catalog, so the
 // derivation cannot take a Subscription directly without an import cycle;
-// this is the one adapter). A nil *string/*time.Time dereferences to its zero
-// value, which billing.DeriveAccess treats correctly (empty StripeStatus
-// falls through to the never/lapsed arms; a zero PastDueSince is handled
-// explicitly).
+// this is the one adapter). Delegates to billingStateFromRow, shared with
+// AuthStore.GetSession's joined-column path (BILL-6) so the two dereferences
+// can't drift.
 func (s Subscription) AccessState() billing.State {
-	st := billing.State{Comped: s.Comped}
-	if s.StripeSubscriptionID != nil {
-		st.StripeSubscriptionID = *s.StripeSubscriptionID
+	return billingStateFromRow(s.Comped, s.StripeSubscriptionID, s.StripeStatus, s.PastDueSince)
+}
+
+// billingStateFromRow builds a billing.State from the nullable Stripe
+// columns shared by a subscriptions row (Subscription.AccessState) and
+// GetSession's LEFT JOINed columns (AuthStore.GetSession) — the one place
+// both paths dereference, so they can't drift (BILL-6). A nil
+// *string/*time.Time dereferences to its zero value, which billing.DeriveAccess
+// treats correctly (empty StripeStatus falls through to the never/lapsed
+// arms; a zero PastDueSince is handled explicitly).
+func billingStateFromRow(comped bool, stripeSubscriptionID, stripeStatus *string, pastDueSince *time.Time) billing.State {
+	st := billing.State{Comped: comped}
+	if stripeSubscriptionID != nil {
+		st.StripeSubscriptionID = *stripeSubscriptionID
 	}
-	if s.StripeStatus != nil {
-		st.StripeStatus = *s.StripeStatus
+	if stripeStatus != nil {
+		st.StripeStatus = *stripeStatus
 	}
-	if s.PastDueSince != nil {
-		st.PastDueSince = *s.PastDueSince
+	if pastDueSince != nil {
+		st.PastDueSince = *pastDueSince
 	}
 	return st
 }

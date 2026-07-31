@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	storesqlc "opensight/internal/store/sqlc"
 
@@ -20,6 +21,10 @@ import (
 // ResolveTenantID). Login looks up a user by email before any tenant is known,
 // and a session token resolves to exactly one user/tenant. Keep the method set
 // to exactly these four; anything tenant-scoped belongs on a business store.
+//
+// GetSession also resolves the tenant's billing state (BILL-6): it LEFT JOINs
+// subscriptions so access is available anywhere a session is, with no extra
+// round trip. This is a read only — GetSession never writes billing state.
 type AuthStore struct {
 	db *pgxpool.Pool
 }
@@ -38,13 +43,20 @@ type UserCredentials struct {
 	PasswordHash *string // NULL until AUTH-2's CLI sets a credential.
 }
 
-// SessionUser is a live session resolved to its owning user and tenant.
+// SessionUser is a live session resolved to its owning user and tenant, plus
+// the tenant's billing state (BILL-6). PlanCode and Billing come from the
+// same joined row as the rest of SessionUser — no second lookup. Billing is
+// the raw State, not a derived Access: access must be computed per-request
+// against the current time (billing.DeriveAccess), never cached on the
+// session, or the dunning bound would stop taking effect immediately.
 type SessionUser struct {
 	UserID     domain.ID
 	TenantID   domain.ID
 	Email      string
 	TenantName string
 	ExpiresAt  time.Time
+	PlanCode   string
+	Billing    billing.State
 }
 
 // CreateSessionParams are the inputs for persisting a new session row. TokenHash
@@ -103,9 +115,17 @@ func (s *AuthStore) CreateSession(ctx context.Context, params CreateSessionParam
 	})
 }
 
-// GetSession resolves a live (unexpired) session by token hash to its user and
-// tenant. An absent or expired session both return ErrNotFound — the two are
-// deliberately indistinguishable so an expired token leaks nothing.
+// GetSession resolves a live (unexpired) session by token hash to its user,
+// tenant, and billing state (BILL-6). An absent or expired session both
+// return ErrNotFound — the two are deliberately indistinguishable so an
+// expired token leaks nothing.
+//
+// The subscriptions join is a LEFT JOIN, deliberately: every tenant is
+// supposed to have exactly one subscriptions row (signup creates it in the
+// same transaction as the tenant), so a missing one is our bug, not an
+// absent session. Masquerading it as ErrNotFound would silently log the user
+// out instead of surfacing the inconsistency; this returns a distinct error
+// instead, which the RPC layer maps to CodeInternal.
 func (s *AuthStore) GetSession(ctx context.Context, tokenHash []byte) (SessionUser, error) {
 	if s == nil || s.db == nil {
 		return SessionUser{}, errors.New("auth store database is required")
@@ -121,7 +141,15 @@ func (s *AuthStore) GetSession(ctx context.Context, tokenHash []byte) (SessionUs
 		}
 		return SessionUser{}, fmt.Errorf("get session: %w", err)
 	}
-	return SessionUser{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, ExpiresAt: row.ExpiresAt}, nil
+	if row.PlanCode == nil {
+		return SessionUser{}, fmt.Errorf("get session: tenant %s has no subscriptions row", row.TenantID)
+	}
+
+	return SessionUser{
+		UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, ExpiresAt: row.ExpiresAt,
+		PlanCode: *row.PlanCode,
+		Billing:  billingStateFromRow(row.Comped.Valid && row.Comped.Bool, row.StripeSubscriptionID, row.StripeStatus, row.PastDueSince),
+	}, nil
 }
 
 // DeleteSession removes a session row by token hash. A missing row is not an

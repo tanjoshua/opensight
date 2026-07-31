@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 
-	"opensight/internal/billing"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/llm"
 	"opensight/internal/store"
@@ -141,22 +140,10 @@ func proposalPayloadFromProto(p *opensightv1.ProposalPayload) llm.ProposalPayloa
 	}
 }
 
-// planToProto maps a catalog billing.Plan onto the proto Plan message.
-// billing.Plan.Code fills the wire's slug field: the field is not renamed
-// here (out of scope for BILL-1 — a future story reshapes GetMeResponse's
-// plan/access surface).
-func planToProto(p billing.Plan) *opensightv1.Plan {
-	return &opensightv1.Plan{
-		Slug:        p.Code,
-		PromptLimit: int32(p.PromptLimit),
-		RunInterval: p.RunInterval,
-		Platforms:   p.Platforms,
-	}
-}
-
 // businessProfileToProto wraps businessToProfile above to build the full
-// BusinessProfile message.
-func businessProfileToProto(b store.Business, plan billing.Plan) (*opensightv1.BusinessProfile, error) {
+// BusinessProfile message. Plan entitlements are no longer a per-business
+// field (BILL-6, GetMe carries them instead), so this takes no plan.
+func businessProfileToProto(b store.Business) (*opensightv1.BusinessProfile, error) {
 	profile, err := businessToProfile(b)
 	if err != nil {
 		return nil, err
@@ -170,7 +157,6 @@ func businessProfileToProto(b store.Business, plan billing.Plan) (*opensightv1.B
 		Category: b.Category,
 		Services: profile.Services,
 		Location: locationToProto(profile.Location),
-		Plan:     planToProto(plan),
 	}
 	return resp, nil
 }

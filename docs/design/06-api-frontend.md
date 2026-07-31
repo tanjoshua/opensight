@@ -6,7 +6,7 @@ Depends on: [02 Data Model](02-data-model.md), [03 Onboarding](03-onboarding.md)
 
 - Protobuf schema under `proto/opensight/v1/` (package `opensight.v1`), served over **Connect RPC** at `/rpc` by the Go binary; the SPA is static files from the same binary, so no CORS in production (Vite dev server proxies `/rpc` locally).
 - `make proto` (buf format + lint + generate) regenerates code from the `.proto` files: Go structs + Connect handler interfaces into `internal/gen/opensight/v1/`, and TS messages + connect-query method descriptors into `web/src/gen/opensight/v1/`. Both trees are committed — CI re-runs `make proto` and fails on any diff, so generated code can never drift from the schema.
-- Auth: a Connect interceptor (`sessionInterceptor`, `internal/api/rpc.go`) resolves the session cookie into tenant context for every procedure except a small `publicProcedures` allowlist (just `AuthService.Login`) — default-deny, keyed by generated procedure constants so a renamed/removed RPC breaks the build instead of silently changing access. **Every handler receives tenant context and every repository call is tenant-scoped** — there is no unscoped query path.
+- Auth: a Connect interceptor (`accessInterceptor`, `internal/api/rpc.go`) resolves the session cookie into tenant context for every procedure except `Login`/`Signup`, and additionally gates every procedure on the tenant's derived billing access (`billing`/`read`/`write`, BILL-6 design 08 "Access") — default-deny, classified by one total map (`procedureAccess`) keyed by generated procedure constants, so a renamed/removed/unclassified RPC breaks the build or the test suite instead of silently changing access. **Every handler receives tenant context and every repository call is tenant-scoped** — there is no unscoped query path.
 - MVP has one business per tenant, but requests carry `business_id` anyway (multi-location future, PRD §9). The API validates business→tenant ownership on every request.
 - Errors: a `connect.Error` from a small fixed set of codes (`Unauthenticated`, `NotFound`, `FailedPrecondition`, `ResourceExhausted`, `AlreadyExists`, `InvalidArgument`, `Internal`) carrying a client-safe message — the real error always goes to `slog`, never the client. Pagination: `limit`/`offset` request fields plus a `Paging` response message, only where lists can grow (results, competitors, citations).
 - All metrics are computed server-side in one shared `internal/metrics` package (SQL over 02's tables) — Overview, Prompts, and Competitors must never disagree because they computed visibility differently. Mention facts come only from `mentions`, and visibility counts only analyzed results (02/05): succeeded-but-unanalyzed results are excluded from the math and badged.
@@ -19,11 +19,12 @@ Onboarding RPCs are already defined in 03. Seven services, 23 RPCs total, coveri
 # AuthService
 Login(email, password)                     → user, tenant — the only public procedure
 Logout()
-GetMe()                                     → user, tenant, businesses (section picker), plan prompt_limit
+GetMe()                                     → user, tenant, businesses (section picker), access, plan (BILL-6)
 
 # BusinessService (onboarding + Setup)
 CreateBusiness(name, website)               → draft business summary; starts onboarding
-GetBusiness(business_id)                    → full profile + read-only plan entitlements
+GetBusiness(business_id)                    → full profile (plan entitlements moved to GetMe, BILL-6 — not
+                                              a per-business fact)
 UpdateBusiness(business_id, fields...)      → partial profile merge; active-only,
                                               complete merged profile remains valid and
                                               country remains a two-letter ISO code

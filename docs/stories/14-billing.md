@@ -71,11 +71,11 @@ Deps: BILL-4 · Phase 4 · Ref: design 08 (Stripe integration — Webhook, Recon
 As a customer whose subscription lapsed, I want my history to stay readable while changes are blocked, so that I keep the evidence I paid for.
 
 - [x] One derivation answers `never | full | lapsed` for any billing row at any moment, exactly per design 08's table, and is tested over every Stripe status and both sides of the dunning bound without needing Stripe or a database. Landed in BILL-4 (`internal/billing/access.go`, `internal/billing/access_test.go`) — pulled forward because the second-checkout guard is itself an access question.
-- [ ] The dunning bound takes effect the moment it passes, with no scheduled job: a `past_due` tenant beyond the bound is denied writes and runs even though its schedule is still running.
-- [ ] Access is available wherever a session is, without an extra round trip per request.
-- [ ] Every RPC is classified as billing / read / write and rejected below the access it requires; the rejection tells the SPA which billing state caused it.
-- [ ] Classification is default-deny and cannot rot: adding an RPC without classifying it fails the build or the test suite.
-- [ ] The client learns its access and its plan entitlements from one authoritative payload rather than a bare prompt limit.
+- [x] The dunning bound takes effect the moment it passes, with no scheduled job: a `past_due` tenant beyond the bound is denied writes and runs even though its schedule is still running.
+- [x] Access is available wherever a session is, without an extra round trip per request.
+- [x] Every RPC is classified as billing / read / write and rejected below the access it requires; the rejection tells the SPA which billing state caused it.
+- [x] Classification is default-deny and cannot rot: adding an RPC without classifying it fails the build or the test suite.
+- [x] The client learns its access and its plan entitlements from one authoritative payload rather than a bare prompt limit.
 
 Deps: BILL-1, BILL-3 · Phase 4 · Ref: design 08 (Access; Enforcement gate 1)
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const acquireAdvisoryLock = `-- name: AcquireAdvisoryLock :exec
@@ -205,21 +206,31 @@ func (q *Queries) GetPrompt(ctx context.Context, arg GetPromptParams) (GetPrompt
 }
 
 const getSession = `-- name: GetSession :one
-SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at
+SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at,
+       sub.plan_code, sub.comped, sub.stripe_subscription_id, sub.stripe_status, sub.past_due_since
 FROM sessions s
 JOIN users u ON u.id = s.user_id
 JOIN tenants t ON t.id = u.tenant_id
+LEFT JOIN subscriptions sub ON sub.tenant_id = u.tenant_id
 WHERE s.token_hash = $1 AND s.expires_at > now()
 `
 
 type GetSessionRow struct {
-	ID        uuid.UUID
-	TenantID  uuid.UUID
-	Email     string
-	Name      string
-	ExpiresAt time.Time
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	Email                string
+	Name                 string
+	ExpiresAt            time.Time
+	PlanCode             *string
+	Comped               pgtype.Bool
+	StripeSubscriptionID *string
+	StripeStatus         *string
+	PastDueSince         *time.Time
 }
 
+// LEFT JOIN deliberately, not INNER: a missing subscriptions row must surface
+// to the caller as an explicit error (BILL-6), not silently masquerade as an
+// expired/absent session by disappearing from the result set.
 func (q *Queries) GetSession(ctx context.Context, tokenHash []byte) (GetSessionRow, error) {
 	row := q.db.QueryRow(ctx, getSession, tokenHash)
 	var i GetSessionRow
@@ -229,6 +240,11 @@ func (q *Queries) GetSession(ctx context.Context, tokenHash []byte) (GetSessionR
 		&i.Email,
 		&i.Name,
 		&i.ExpiresAt,
+		&i.PlanCode,
+		&i.Comped,
+		&i.StripeSubscriptionID,
+		&i.StripeStatus,
+		&i.PastDueSince,
 	)
 	return i, err
 }

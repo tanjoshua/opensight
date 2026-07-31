@@ -6,7 +6,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -58,11 +57,12 @@ type businessStore interface {
 	UpdateActiveProfile(ctx context.Context, params store.UpdateBusinessProfileParams) (store.Business, error)
 }
 
-// subscriptionStore is the seam over *store.SubscriptionStore. Server.tenantPlan
-// resolves the returned plan_code against the billing catalog, so onboarding
-// sizes the generated prompt count from billing.Plan.PromptLimit (never
-// hardcoded — design 03). SetStripeCustomerID (BILL-4) is StartCheckout's
-// write-once Customer id persistence.
+// subscriptionStore is the seam over *store.SubscriptionStore, still used by
+// StartCheckout to read/write the tenant's Stripe Customer id. Plan
+// resolution off a session's plan_code no longer needs a store round trip
+// (BILL-6: billing.PlanFor(su.PlanCode) reads the catalog directly) —
+// SetStripeCustomerID (BILL-4) is StartCheckout's write-once Customer id
+// persistence.
 type subscriptionStore interface {
 	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
 	SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error)
@@ -241,22 +241,6 @@ func (s *Server) Routes() http.Handler {
 // nowUTC is the single clock source for session expiry, so it is trivial to
 // stub in a future test.
 func nowUTC() time.Time { return time.Now().UTC() }
-
-// tenantPlan loads the tenant's subscription and resolves its plan_code
-// against the billing catalog. Call sites that used to read s.plans.GetTenantPlan
-// call this one-liner instead (design 08 "Entitlements move from a table to
-// code").
-func (s *Server) tenantPlan(ctx context.Context, tenantID domain.ID) (billing.Plan, error) {
-	sub, err := s.subscriptions.GetByTenant(ctx, tenantID)
-	if err != nil {
-		return billing.Plan{}, err
-	}
-	plan, err := billing.PlanFor(sub.PlanCode)
-	if err != nil {
-		return billing.Plan{}, fmt.Errorf("resolve plan: %w", err)
-	}
-	return plan, nil
-}
 
 func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")

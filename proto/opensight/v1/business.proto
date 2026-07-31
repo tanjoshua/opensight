@@ -13,18 +13,10 @@ message Location {
   string country = 4;
 }
 
-// Plan is the tenant's plan config (internal/api/businesses.go planResponse).
-message Plan {
-  string slug = 1;
-  int32 prompt_limit = 2;
-  // run_interval stays a plain string, not an enum: it comes from the
-  // versioned plan catalog (internal/billing), not a closed domain set.
-  string run_interval = 3;
-  repeated string platforms = 4;
-}
-
 // BusinessProfile is the full business detail (internal/api/businesses.go
-// businessDetailResponse).
+// businessDetailResponse). Plan entitlements are not a per-business fact —
+// they live on AuthService.GetMe (BILL-6) — so field 9 (the old `plan`
+// field) is reserved rather than reused.
 message BusinessProfile {
   string id = 1;
   BusinessStatus status = 2;
@@ -34,7 +26,8 @@ message BusinessProfile {
   optional string category = 6;
   repeated string services = 7;
   Location location = 8;
-  Plan plan = 9;
+  reserved 9;
+  reserved "plan";
 }
 
 // ProposedProfile mirrors llm.ProposedProfile.

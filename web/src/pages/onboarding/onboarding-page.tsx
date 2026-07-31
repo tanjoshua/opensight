@@ -21,7 +21,7 @@ import {
 import { Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
-import { useMe } from "@/api/hooks"
+import { useMe, usePlan } from "@/api/hooks"
 import { BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
 import { ProposalPayloadSchema, type ProposalPayload } from "@/gen/opensight/v1/business_pb"
 import {
@@ -50,6 +50,7 @@ const EMPTY_PAYLOAD: ProposalPayload = create(ProposalPayloadSchema, {
 
 export function OnboardingPage() {
   const me = useMe()
+  const plan = usePlan()
   const [createdId, setCreatedId] = useState<string>()
 
   if (me.isLoading) {
@@ -93,11 +94,23 @@ export function OnboardingPage() {
     )
   }
 
+  // plan.plan can be momentarily undefined even once me.data has loaded (the
+  // same GetMe response, one field). Guard rather than fall back to a bogus
+  // default limit like 0, which would silently allow "add exactly 0
+  // questions" (BILL-6).
+  if (!plan.plan) {
+    return (
+      <OnboardingShell wide>
+        <Skeleton className="h-64 w-full" />
+      </OnboardingShell>
+    )
+  }
+
   return (
     <OnboardingShell wide>
       <ProposalFlow
         businessId={businessId}
-        promptLimit={me.data.promptLimit}
+        promptLimit={plan.plan.promptLimit}
       />
     </OnboardingShell>
   )

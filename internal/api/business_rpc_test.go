@@ -34,8 +34,15 @@ func newBusinessRPCServer(businesses businessStore, subscriptions subscriptionSt
 
 // businessRPCContext returns a context carrying the same session user shape
 // newAuthedOnboardingServer's fake session uses, for direct method calls that
-// bypass the session interceptor.
+// bypass the session interceptor. PlanCode defaults to Starter: CreateBusiness/
+// RegenerateProposal/ApplyProposal resolve billing.PlanFor(su.PlanCode) off the
+// session directly (BILL-6), not through the subscriptions store.
 func businessRPCContext(t *testing.T) context.Context {
+	t.Helper()
+	return businessRPCContextWithPlan(t, billing.Starter.Code)
+}
+
+func businessRPCContextWithPlan(t *testing.T, planCode string) context.Context {
 	t.Helper()
 	return withSessionUser(context.Background(), store.SessionUser{
 		UserID:     mustHashV7(t, userID),
@@ -43,6 +50,7 @@ func businessRPCContext(t *testing.T) context.Context {
 		Email:      "user@example.com",
 		TenantName: "Acme Clinic",
 		ExpiresAt:  time.Now().Add(time.Hour),
+		PlanCode:   planCode,
 	})
 }
 
@@ -63,7 +71,10 @@ func decodeApplyPayloadProto(t *testing.T, raw string) *opensightv1.ProposalPayl
 	return proposalPayloadToProto(payload)
 }
 
-func TestRPCGetBusinessProfileAndPlan(t *testing.T) {
+// TestRPCGetBusinessProfile: plan entitlements moved to AuthService.GetMe
+// (BILL-6) — BusinessProfile no longer carries them, so this only asserts
+// the profile fields.
+func TestRPCGetBusinessProfile(t *testing.T) {
 	businesses := &fakeBusinessStore{business: setupBusinessFixture(t, store.BusinessStatusActive)}
 	plans := &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}}
 	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, &fakeTemporalClient{})
@@ -73,8 +84,7 @@ func TestRPCGetBusinessProfileAndPlan(t *testing.T) {
 		t.Fatalf("GetBusiness: %v", err)
 	}
 	b := resp.Msg.GetBusiness()
-	if b.GetName() != "Old Clinic" || b.GetLocation().GetCountry() != "SG" ||
-		b.GetPlan().GetSlug() != "starter" || b.GetPlan().GetPromptLimit() != 20 {
+	if b.GetName() != "Old Clinic" || b.GetLocation().GetCountry() != "SG" {
 		t.Fatalf("business = %+v", b)
 	}
 }
@@ -201,16 +211,17 @@ func TestRPCCreateBusinessMissingName(t *testing.T) {
 	}
 }
 
+// TestRPCCreateBusinessPlanLookupFails: an unknown plan_code on the session
+// (BILL-6: resolved via billing.PlanFor(su.PlanCode), no store round trip)
+// is always Internal — an unknown plan_code is our bug, never a client fault
+// (design 08 "Entitlements move from a table to code").
 func TestRPCCreateBusinessPlanLookupFails(t *testing.T) {
-	plans := &fakeSubscriptionStore{err: store.ErrNotFound}
 	businesses := &fakeBusinessStore{}
 	temporal := &fakeTemporalClient{}
-	srv := newBusinessRPCServer(businesses, plans, &fakeProposalStore{}, &fakeApplyStore{}, temporal)
+	srv := newBusinessRPCServer(businesses, &fakeSubscriptionStore{}, &fakeProposalStore{}, &fakeApplyStore{}, temporal)
 
-	_, err := srv.CreateBusiness(businessRPCContext(t), connect.NewRequest(&opensightv1.CreateBusinessRequest{Name: "Acme"}))
-	// The rpcInternal guard: a plan lookup failure is always Internal, even
-	// though the underlying error is store.ErrNotFound (which rpcError would
-	// otherwise map to NotFound).
+	ctx := businessRPCContextWithPlan(t, "not-a-real-plan")
+	_, err := srv.CreateBusiness(ctx, connect.NewRequest(&opensightv1.CreateBusinessRequest{Name: "Acme"}))
 	if connect.CodeOf(err) != connect.CodeInternal {
 		t.Fatalf("code = %v, want Internal", connect.CodeOf(err))
 	}

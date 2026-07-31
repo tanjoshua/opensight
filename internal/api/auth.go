@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 
+	"opensight/internal/billing"
 	"opensight/internal/store"
 )
 
@@ -18,15 +19,56 @@ const sessionCookieName = "opensight_session"
 // beyond a uniform 401.
 var errNoSession = errors.New("no session")
 
-type sessionUserContextKey struct{}
+// requestContext holds the session and its derived access under one context
+// key (BILL-6), so the two can never be set independently of each other by
+// accident. hasAccess distinguishes "access was derived this request" from
+// the zero billing.AccessNever, for callers (like handler tests) that set
+// only a session via withSessionUser and never call accessFromContext.
+type requestContext struct {
+	su        store.SessionUser
+	access    billing.Access
+	hasAccess bool
+}
 
+type requestContextKey struct{}
+
+// withSessionUser stores su, preserving whatever access was already set on
+// ctx (if any) — accessInterceptor calls this before withAccess. Handler
+// tests that bypass the interceptor and call this alone get a context with
+// no access, which is fine: they don't call accessFromContext.
 func withSessionUser(ctx context.Context, su store.SessionUser) context.Context {
-	return context.WithValue(ctx, sessionUserContextKey{}, su)
+	rc, _ := ctx.Value(requestContextKey{}).(requestContext)
+	rc.su = su
+	return context.WithValue(ctx, requestContextKey{}, rc)
+}
+
+// withAccess stores the request's derived access, preserving whatever
+// session was already set on ctx.
+func withAccess(ctx context.Context, access billing.Access) context.Context {
+	rc, _ := ctx.Value(requestContextKey{}).(requestContext)
+	rc.access = access
+	rc.hasAccess = true
+	return context.WithValue(ctx, requestContextKey{}, rc)
 }
 
 func sessionUserFromContext(ctx context.Context) (store.SessionUser, bool) {
-	su, ok := ctx.Value(sessionUserContextKey{}).(store.SessionUser)
-	return su, ok
+	rc, ok := ctx.Value(requestContextKey{}).(requestContext)
+	if !ok {
+		return store.SessionUser{}, false
+	}
+	return rc.su, true
+}
+
+// accessFromContext returns the request's derived access (BILL-6), set by
+// accessInterceptor for every non-public procedure. Handler unit tests that
+// construct a context via withSessionUser alone (bypassing the interceptor)
+// get ok=false.
+func accessFromContext(ctx context.Context) (billing.Access, bool) {
+	rc, ok := ctx.Value(requestContextKey{}).(requestContext)
+	if !ok || !rc.hasAccess {
+		return billing.AccessNever, false
+	}
+	return rc.access, true
 }
 
 // newSessionToken mints a random opaque bearer token. The raw base64url string

@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	"opensight/internal/billing"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
 	"opensight/internal/store"
@@ -102,8 +105,11 @@ func TestRPCSessionLifecycle(t *testing.T) {
 			if len(meRes.Msg.GetBusinesses()) != 1 {
 				t.Fatalf("GetMe businesses = %d, want 1", len(meRes.Msg.GetBusinesses()))
 			}
-			if meRes.Msg.GetPromptLimit() != 20 {
-				t.Errorf("GetMe prompt limit = %d, want 20", meRes.Msg.GetPromptLimit())
+			if meRes.Msg.GetPlan().GetPromptLimit() != 20 {
+				t.Errorf("GetMe plan prompt limit = %d, want 20", meRes.Msg.GetPlan().GetPromptLimit())
+			}
+			if meRes.Msg.GetAccess() != opensightv1.Access_ACCESS_FULL {
+				t.Errorf("GetMe access = %v, want ACCESS_FULL (comped-starter fixture)", meRes.Msg.GetAccess())
 			}
 
 			// 4. Logout.
@@ -171,8 +177,11 @@ func TestRPCSignupRoundTrip(t *testing.T) {
 	if len(meRes.Msg.GetBusinesses()) != 0 {
 		t.Fatalf("GetMe businesses = %d, want 0 (account survives with no business)", len(meRes.Msg.GetBusinesses()))
 	}
-	if meRes.Msg.GetPromptLimit() != 20 {
-		t.Errorf("GetMe prompt limit = %d, want 20 (Starter)", meRes.Msg.GetPromptLimit())
+	if meRes.Msg.GetPlan().GetPromptLimit() != 20 {
+		t.Errorf("GetMe plan prompt limit = %d, want 20 (Starter)", meRes.Msg.GetPlan().GetPromptLimit())
+	}
+	if meRes.Msg.GetAccess() != opensightv1.Access_ACCESS_FULL {
+		t.Errorf("GetMe access = %v, want ACCESS_FULL (comped-starter fixture)", meRes.Msg.GetAccess())
 	}
 }
 
@@ -516,4 +525,239 @@ func TestNoRPCIsSideEffectFree(t *testing.T) {
 	if checked == 0 {
 		t.Fatal("no opensight.v1 RPC methods found in protoregistry.GlobalFiles — did the import registering generated types get dropped?")
 	}
+}
+
+// TestEveryProcedureIsClassified is BILL-6's non-rotting guarantee: every
+// procedure in the opensight.v1 schema must be a key in procedureAccess
+// (rpc.go), so adding an RPC without classifying it fails the test suite
+// rather than silently falling through accessInterceptor's runtime
+// default-deny. Modelled on TestNoRPCIsSideEffectFree above: walk the same
+// protoregistry, derive each method's Connect procedure path, and look it up.
+func TestEveryProcedureIsClassified(t *testing.T) {
+	checked := 0
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		if fd.Package() != "opensight.v1" {
+			return true
+		}
+		services := fd.Services()
+		for i := 0; i < services.Len(); i++ {
+			svc := services.Get(i)
+			methods := svc.Methods()
+			for j := 0; j < methods.Len(); j++ {
+				method := methods.Get(j)
+				checked++
+				procedure := "/" + string(svc.FullName()) + "/" + string(method.Name())
+				if _, ok := procedureAccess[procedure]; !ok {
+					t.Errorf("%s is not classified in procedureAccess (rpc.go) — every procedure must be classified as public/billing/read/write", procedure)
+				}
+			}
+		}
+		return true
+	})
+	if checked == 0 {
+		t.Fatal("no opensight.v1 RPC methods found in protoregistry.GlobalFiles — did the import registering generated types get dropped?")
+	}
+	if len(procedureAccess) != checked {
+		t.Errorf("procedureAccess has %d entries, want exactly %d (every schema procedure, no stale ones)", len(procedureAccess), checked)
+	}
+}
+
+// gateSession installs su directly into f's session map, bypassing
+// Login/CreateSession, so a test can drive an arbitrary billing.State onto
+// the session without going through the credential/signup path. Returns the
+// raw cookie token.
+func gateSession(t *testing.T, f *fakeAuthStore, su store.SessionUser) string {
+	t.Helper()
+	raw, tokenHash, err := newSessionToken()
+	if err != nil {
+		t.Fatalf("mint session token: %v", err)
+	}
+	if f.sessions == nil {
+		f.sessions = map[string]store.SessionUser{}
+	}
+	f.sessions[string(tokenHash)] = su
+	return raw
+}
+
+// gateHTTPClient returns an http.Client whose cookie jar already carries the
+// session cookie for raw, pointed at baseURL — so a Connect client built
+// over it is already "logged in" as that session for every request.
+func gateHTTPClient(t *testing.T, baseURL, raw string) *http.Client {
+	t.Helper()
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("new cookie jar: %v", err)
+	}
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		t.Fatalf("parse base url: %v", err)
+	}
+	jar.SetCookies(u, []*http.Cookie{{Name: sessionCookieName, Value: raw}})
+	return &http.Client{Jar: jar}
+}
+
+// gateSessionUser builds a session user carrying state, for the gate tests
+// below. Email/tenant fields are fixed fixtures; only Billing varies.
+func gateSessionUser(t *testing.T, state billing.State) store.SessionUser {
+	t.Helper()
+	return store.SessionUser{
+		UserID:     mustHashV7(t, userID),
+		TenantID:   mustHashV7(t, tenantID),
+		Email:      "gate@example.com",
+		TenantName: "Acme Clinic",
+		ExpiresAt:  time.Now().Add(time.Hour),
+		PlanCode:   billing.Starter.Code,
+		Billing:    state,
+	}
+}
+
+// gateGetMe, gateListPrompts, gateAddPrompt are one representative RPC per
+// access class, used by both gate tests below: GetMe (billing — reachable at
+// any access), ListPrompts (read — needs full or lapsed), AddPrompt (write —
+// needs full).
+func gateGetMe(ctx context.Context, hc *http.Client, baseURL string) error {
+	client := opensightv1connect.NewAuthServiceClient(hc, baseURL)
+	_, err := client.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{}))
+	return err
+}
+
+func gateListPrompts(ctx context.Context, hc *http.Client, baseURL string) error {
+	client := opensightv1connect.NewPromptServiceClient(hc, baseURL)
+	_, err := client.ListPrompts(ctx, connect.NewRequest(&opensightv1.ListPromptsRequest{BusinessId: testBusinessID}))
+	return err
+}
+
+func gateAddPrompt(ctx context.Context, hc *http.Client, baseURL string) error {
+	client := opensightv1connect.NewPromptServiceClient(hc, baseURL)
+	_, err := client.AddPrompt(ctx, connect.NewRequest(&opensightv1.AddPromptRequest{BusinessId: testBusinessID, Text: "question"}))
+	return err
+}
+
+// assertGateResult checks an RPC call's outcome against whether class ought
+// to be satisfied by access: success when satisfied, else FailedPrecondition
+// with an AccessDenied detail carrying exactly access.
+func assertGateResult(t *testing.T, err error, class accessClass, access billing.Access) {
+	t.Helper()
+	if class.satisfiedBy(access) {
+		if err != nil {
+			t.Fatalf("access=%v satisfies the class but the call failed: %v", access, err)
+		}
+		return
+	}
+	if err == nil {
+		t.Fatalf("access=%v does not satisfy the class, want rejection, got success", access)
+	}
+	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("code = %v, want FailedPrecondition: %v", connect.CodeOf(err), err)
+	}
+	var cerr *connect.Error
+	if !errors.As(err, &cerr) {
+		t.Fatalf("expected *connect.Error, got %T", err)
+	}
+	details := cerr.Details()
+	if len(details) != 1 {
+		t.Fatalf("AccessDenied detail count = %d, want 1", len(details))
+	}
+	msg, derr := details[0].Value()
+	if derr != nil {
+		t.Fatalf("decode AccessDenied detail: %v", derr)
+	}
+	ad, ok := msg.(*opensightv1.AccessDenied)
+	if !ok {
+		t.Fatalf("detail type = %T, want *opensightv1.AccessDenied", msg)
+	}
+	if want := accessToProto(access); ad.GetAccess() != want {
+		t.Fatalf("AccessDenied.access = %v, want %v", ad.GetAccess(), want)
+	}
+}
+
+// TestRPCAccessGate is BILL-6's gate table test: one representative RPC per
+// access class (billing/read/write), driven through the full-stack httptest
+// server, over every {never, full, lapsed} session billing state. Asserts
+// success where the class is satisfied and, on rejection, that
+// AccessDenied.access matches the state's derived access — proving the SPA
+// always learns which billing state caused the rejection.
+func TestRPCAccessGate(t *testing.T) {
+	f := &fakeAuthStore{}
+	srv := newTestServer(f)
+	srv.prompts = &fakePromptStore{}
+	srv.promptMetrics = &fakePromptsMetrics{}
+	ts := httptest.NewServer(srv.Routes())
+	t.Cleanup(ts.Close)
+
+	states := []struct {
+		name  string
+		state billing.State
+	}{
+		{"never", billing.State{}},
+		{"full", billing.State{Comped: true}},
+		{"lapsed", billing.State{StripeSubscriptionID: "sub_x", StripeStatus: "canceled"}},
+	}
+	classes := []struct {
+		name  string
+		class accessClass
+		call  func(ctx context.Context, hc *http.Client, baseURL string) error
+	}{
+		{"billing/GetMe", classBilling, gateGetMe},
+		{"read/ListPrompts", classRead, gateListPrompts},
+		{"write/AddPrompt", classWrite, gateAddPrompt},
+	}
+
+	for _, st := range states {
+		for _, rc := range classes {
+			t.Run(st.name+"/"+rc.name, func(t *testing.T) {
+				su := gateSessionUser(t, st.state)
+				raw := gateSession(t, f, su)
+				hc := gateHTTPClient(t, ts.URL+"/rpc", raw)
+
+				access := billing.DeriveAccess(st.state, time.Now())
+				err := rc.call(context.Background(), hc, ts.URL+"/rpc")
+				assertGateResult(t, err, rc.class, access)
+			})
+		}
+	}
+}
+
+// TestRPCDunningBoundTakesEffectImmediately is BILL-6's headline acceptance
+// test: a past_due tenant beyond the 21-day dunning bound is denied writes
+// (and stays read-only) with no webhook delivered, no reconcile run, no
+// schedule paused, and no job of any kind executed — this is a pure handler
+// test proving the bound takes effect the instant billing.DeriveAccess sees
+// now cross past_due_since+21d, purely because access is derived fresh on
+// every request rather than cached (design 08 "This needs no scheduled
+// job").
+func TestRPCDunningBoundTakesEffectImmediately(t *testing.T) {
+	f := &fakeAuthStore{}
+	srv := newTestServer(f)
+	srv.prompts = &fakePromptStore{}
+	srv.promptMetrics = &fakePromptsMetrics{}
+	ts := httptest.NewServer(srv.Routes())
+	t.Cleanup(ts.Close)
+
+	now := time.Now()
+
+	t.Run("22 days past due: lapsed, write denied, read still succeeds", func(t *testing.T) {
+		state := billing.State{StripeSubscriptionID: "sub_x", StripeStatus: "past_due", PastDueSince: now.Add(-22 * 24 * time.Hour)}
+		su := gateSessionUser(t, state)
+		raw := gateSession(t, f, su)
+		hc := gateHTTPClient(t, ts.URL+"/rpc", raw)
+
+		writeErr := gateAddPrompt(context.Background(), hc, ts.URL+"/rpc")
+		assertGateResult(t, writeErr, classWrite, billing.AccessLapsed)
+
+		if err := gateListPrompts(context.Background(), hc, ts.URL+"/rpc"); err != nil {
+			t.Fatalf("read RPC at lapsed access: %v, want success (history stays readable)", err)
+		}
+	})
+
+	t.Run("20 days past due: still full, write succeeds", func(t *testing.T) {
+		state := billing.State{StripeSubscriptionID: "sub_x", StripeStatus: "past_due", PastDueSince: now.Add(-20 * 24 * time.Hour)}
+		su := gateSessionUser(t, state)
+		raw := gateSession(t, f, su)
+		hc := gateHTTPClient(t, ts.URL+"/rpc", raw)
+
+		if err := gateAddPrompt(context.Background(), hc, ts.URL+"/rpc"); err != nil {
+			t.Fatalf("write RPC at 20 days past due: %v, want success (within the 21-day bound)", err)
+		}
+	})
 }
