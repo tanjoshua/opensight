@@ -8,8 +8,8 @@ import (
 
 // Provider is the seam between OpenSight and Stripe (design 08 "Stripe
 // integration — Client"), the same shape as the PromptRunner adapter (01).
-// It is implemented by StubProvider (this package, BILLING_PROVIDER=stub)
-// and by the real adapter in internal/billing/stripe (BILLING_PROVIDER=stripe).
+// It is implemented by the Stripe runtime adapter and StubProvider, the
+// in-memory test fake.
 //
 // Only plain Go types appear in the interface — no stripe-go import — so
 // this package's dependency-free promise (catalog.go) extends to the
@@ -86,6 +86,10 @@ type Subscription struct {
 type CreatePortalSessionParams struct {
 	CustomerID string
 	ReturnURL  string
+	// ConfigurationID pins the session to the repo-owned Billing Portal
+	// Configuration (BILL-8, internal/billing/portal.go) rather than the
+	// account default. The Stripe adapter requires it; test fakes may ignore it.
+	ConfigurationID string
 }
 
 // PortalSession is the subset of a Stripe Billing Portal Session callers need.

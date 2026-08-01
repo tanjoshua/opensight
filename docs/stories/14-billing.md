@@ -17,14 +17,14 @@ As the developer, I want entitlements in a versioned code catalog and Stripe sta
 
 Deps: — · Phase 4 · Ref: design 08 (Entitlements move from a table to code; Schema), 02 (Plans and tenancy)
 
-## BILL-2 — Stripe adapter, config, and stub provider
+## BILL-2 — Stripe adapter and test fake
 
-As the developer, I want one Stripe adapter behind an interface with a stub mode, so that local dev and the whole test suite run without network or spend.
+As the developer, I want one Stripe runtime adapter behind an interface with an in-memory test fake, so that local development exercises the sandbox while the test suite remains deterministic.
 
 - [x] `github.com/stripe/stripe-go/v86` adapter declaring its own `APIVersion` constant (`2026-06-24.dahlia`), asserted equal to the SDK's in a test. Production authenticates with a **restricted key** (`rk_`), never a secret key — a go-live checklist item (BILL-12), not a code-enforced prefix check, since sandbox keys are `sk_test_` and a hard check would break local dev.
 - [x] `billing.Provider` interface: create customer, create checkout session, get checkout session, get subscription, create portal session.
-- [x] `BILLING_PROVIDER=stub` returns canned URLs and a locally driven subscription state — mirrors the `PROMPT_RUNNER_MODE` pattern; `make up` and integration tests hit no Stripe endpoint.
-- [x] Config: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `APP_BASE_URL`, `BILLING_PROVIDER` loaded in `internal/config` with `stripe` mode failing fast on missing values.
+- [x] The serving path always uses Stripe: sandbox locally and a restricted live key in production. The in-memory provider is injected only by tests, which hit no Stripe endpoint.
+- [x] Config: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, and `APP_BASE_URL` loaded in `internal/config`; `serve` fails fast on missing runtime values without making unrelated commands require them.
 
 Deps: BILL-1 · Phase 4 · Ref: design 08 (Stripe integration — Client; Local development), 07 (Secrets and config)
 
@@ -93,11 +93,22 @@ Deps: BILL-5, BILL-6 · Phase 4 · Ref: design 08 (Enforcement gate 3), 04 (RunW
 
 As a customer, I want to update my card, see invoices, and cancel myself, so that I am never blocked on support for my own billing.
 
-- [ ] A customer with a Stripe Customer can reach the Stripe-hosted portal and come back to the billing page; one without is refused rather than sent somewhere broken.
-- [ ] The portal offers card updates, invoice history and cancellation, and does not offer plan switching. The configuration is recorded, not tribal knowledge.
-- [ ] Cancelling in the portal keeps access until the period ends, then lapses it — verified end to end against the sandbox, not assumed.
+- [x] A customer with a Stripe Customer can reach the Stripe-hosted portal and come back to the billing page; one without is refused rather than sent somewhere broken.
+- [x] The portal offers card updates, invoice history and cancellation, and does not offer plan switching. The configuration is recorded, not tribal knowledge.
+- [x] Cancelling in the portal keeps access until the period ends, then lapses it — verified end to end against the sandbox, not assumed.
 
 Deps: BILL-5 · Phase 4 · Ref: design 08 (Customer Portal; Lapse and reactivation)
+
+## BILL-8A — ID-addressed portal configuration deployment
+
+As the operator, I want deployment and runtime to use one explicitly provisioned Stripe Portal Configuration, so that a deployment cannot create duplicates or update a different configuration from the one customers receive.
+
+- [ ] Each Stripe environment has one Portal Configuration provisioned during environment bootstrap; its `bpc_...` id is stored as protected `STRIPE_PORTAL_CONFIGURATION_ID` configuration, with the sandbox id in local `.env` and the live id in the production deployment environment.
+- [x] `opensight stripe portal-config` requires `STRIPE_PORTAL_CONFIGURATION_ID` and idempotently updates that exact configuration to `DesiredPortalConfig` with `active=true`; it never lists configurations, discovers them through metadata, or creates one during deployment, and an unknown id fails clearly.
+- [ ] A protected pre-deploy job runs the release binary with the configuration id, `APP_BASE_URL`, and a command-only Stripe administration key. The serving environment never receives that administration key.
+- [x] `opensight serve` requires the same configuration id at startup and every portal session pins to it, with tests covering exact-id update, missing/unknown-id failure, and propagation from server configuration to Stripe session creation.
+
+Deps: BILL-8, FND-5 · Phase 4 · Ref: design 08 (Customer Portal; Config and secrets), 07 (Deployment)
 
 ## BILL-9 — Signup, checkout, and billing UI
 

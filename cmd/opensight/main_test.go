@@ -74,6 +74,40 @@ func TestRunMigrateUsesExplicitMigrateSubcommand(t *testing.T) {
 	}
 }
 
+func TestValidateStripeRuntimeConfig(t *testing.T) {
+	complete := config.Config{
+		StripeSecretKey:             "sk_test_123",
+		StripeWebhookSecret:         "whsec_123",
+		StripePortalConfigurationID: "bpc_123",
+		StripePriceIDs:              map[string]string{"starter": "price_123"},
+		AppBaseURL:                  "https://app.example.com",
+	}
+	if err := validateStripeRuntimeConfig(complete); err != nil {
+		t.Fatalf("complete Stripe config: %v", err)
+	}
+
+	cases := []struct {
+		name string
+		edit func(*config.Config)
+		want string
+	}{
+		{"secret key", func(c *config.Config) { c.StripeSecretKey = "" }, "STRIPE_SECRET_KEY"},
+		{"webhook secret", func(c *config.Config) { c.StripeWebhookSecret = "" }, "STRIPE_WEBHOOK_SECRET"},
+		{"portal configuration", func(c *config.Config) { c.StripePortalConfigurationID = "" }, "STRIPE_PORTAL_CONFIGURATION_ID"},
+		{"app base URL", func(c *config.Config) { c.AppBaseURL = "" }, "APP_BASE_URL"},
+		{"price", func(c *config.Config) { c.StripePriceIDs = nil }, "STRIPE_PRICE_STARTER_MONTHLY"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := complete
+			tc.edit(&cfg)
+			if err := validateStripeRuntimeConfig(cfg); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want containing %q", err, tc.want)
+			}
+		})
+	}
+}
+
 func TestRunTenantCreateDispatches(t *testing.T) {
 	var out bytes.Buffer
 	var got tenantCreateOptions

@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	usage               = "usage: opensight <serve|work|migrate|tenant|user|business|seed>"
+	usage               = "usage: opensight <serve|work|migrate|tenant|user|business|seed|stripe>"
 	tenantCreateUsage   = "usage: opensight tenant create --name <tenant-name>"
 	userCreateUsage     = "usage: opensight user create --tenant <tenant-id> --email <email> [--password-stdin]"
 	businessCreateUsage = "usage: opensight business create --tenant <tenant-id> --file <spec.yaml>"
@@ -75,14 +75,15 @@ func newLogger(w io.Writer) *slog.Logger {
 }
 
 type commandDeps struct {
-	migrate          func(context.Context, config.Config) error
-	createTenant     func(context.Context, config.Config, tenantCreateOptions, io.Writer) error
-	createUser       func(context.Context, config.Config, userCreateOptions, io.Writer) error
-	createBusiness   func(context.Context, config.Config, businessCreateOptions, io.Writer) error
-	seedDev          func(context.Context, config.Config, io.Writer) error
-	generatePassword func() (string, error)
-	stdin            io.Reader
-	stdout           io.Writer
+	migrate           func(context.Context, config.Config) error
+	createTenant      func(context.Context, config.Config, tenantCreateOptions, io.Writer) error
+	createUser        func(context.Context, config.Config, userCreateOptions, io.Writer) error
+	createBusiness    func(context.Context, config.Config, businessCreateOptions, io.Writer) error
+	seedDev           func(context.Context, config.Config, io.Writer) error
+	applyPortalConfig func(context.Context, config.Config, io.Writer) error
+	generatePassword  func() (string, error)
+	stdin             io.Reader
+	stdout            io.Writer
 }
 
 type tenantCreateOptions struct {
@@ -128,6 +129,8 @@ func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 		return runBusinessCommand(ctx, cfg, args[1:], deps)
 	case "seed":
 		return runSeedCommand(ctx, cfg, args[1:], deps)
+	case "stripe":
+		return runStripeCommand(ctx, cfg, args[1:], deps)
 	default:
 		return fmt.Errorf("unknown subcommand %q; %s", cmd, usage)
 	}
@@ -135,14 +138,15 @@ func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 
 func defaultCommandDeps() commandDeps {
 	return commandDeps{
-		migrate:          migrate,
-		createTenant:     createTenantCLI,
-		createUser:       createUserCLI,
-		createBusiness:   createBusinessCLI,
-		seedDev:          seedDevCLI,
-		generatePassword: generatePassword,
-		stdin:            os.Stdin,
-		stdout:           os.Stdout,
+		migrate:           migrate,
+		createTenant:      createTenantCLI,
+		createUser:        createUserCLI,
+		createBusiness:    createBusinessCLI,
+		seedDev:           seedDevCLI,
+		applyPortalConfig: applyPortalConfigCLI,
+		generatePassword:  generatePassword,
+		stdin:             os.Stdin,
+		stdout:            os.Stdout,
 	}
 }
 
@@ -162,6 +166,9 @@ func (d commandDeps) withDefaults() commandDeps {
 	}
 	if d.seedDev == nil {
 		d.seedDev = defaults.seedDev
+	}
+	if d.applyPortalConfig == nil {
+		d.applyPortalConfig = defaults.applyPortalConfig
 	}
 	if d.generatePassword == nil {
 		d.generatePassword = defaults.generatePassword
@@ -396,6 +403,11 @@ func serve(ctx context.Context, cfg config.Config) error {
 	if ctx.Err() != nil {
 		return nil
 	}
+	// Validate before opening the database or dialing Temporal so a bad Stripe
+	// environment fails without touching any other service.
+	if err := validateStripeRuntimeConfig(cfg); err != nil {
+		return err
+	}
 
 	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
@@ -411,9 +423,9 @@ func serve(ctx context.Context, cfg config.Config) error {
 	}
 	defer temporalClient.Close()
 
-	// Built before api.New so a misconfigured BILLING_PROVIDER=stripe fails at
-	// startup, not at the first customer's checkout.
-	billingProvider, err := newBillingProvider(cfg)
+	// Stripe is the sole runtime billing provider. Local development uses a
+	// Stripe sandbox; the in-memory provider is retained only as a test fake.
+	billingProvider, err := stripe.New(stripe.Config{APIKey: cfg.StripeSecretKey})
 	if err != nil {
 		return err
 	}
@@ -429,33 +441,31 @@ func serve(ctx context.Context, cfg config.Config) error {
 	locks := store.NewAdvisoryLocker(db)
 	reconciler := reconcile.New(subscriptions, billingProvider, monitoring, locks, nil)
 
-	// Built unconditionally, even under BILLING_PROVIDER=stub: an empty
-	// STRIPE_WEBHOOK_SECRET makes Verify reject every delivery (design 08),
-	// so a stub-mode deploy is never trickable into accepting one.
 	webhookVerifier := stripe.NewWebhookVerifier(cfg.StripeWebhookSecret)
 
 	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
 	// behind Caddy TLS, where Secure must be set.
 	apiServer := api.New(api.Deps{
-		Auth:              store.NewAuthStore(db),
-		Accounts:          store.NewAccountStore(db),
-		Businesses:        businesses,
-		Subscriptions:     subscriptions,
-		Proposals:         store.NewProfileProposalStore(db),
-		Apply:             store.NewApplyProposalStore(db),
-		Prompts:           store.NewPromptStore(db),
-		Competitors:       store.NewCompetitorStore(db),
-		Runs:              store.NewRunStore(db),
-		Results:           store.NewResultStore(db),
-		Metrics:           metrics.New(db),
-		Temporal:          temporalClient,
-		TemporalTaskQueue: cfg.TemporalTaskQueue,
-		SecureCookies:     cfg.Env != "dev",
-		Billing:           billingProvider,
-		Reconciler:        reconciler,
-		StripePriceIDs:    cfg.StripePriceIDs,
-		AppBaseURL:        cfg.AppBaseURL,
-		Webhooks:          webhookVerifier,
+		Auth:                        store.NewAuthStore(db),
+		Accounts:                    store.NewAccountStore(db),
+		Businesses:                  businesses,
+		Subscriptions:               subscriptions,
+		Proposals:                   store.NewProfileProposalStore(db),
+		Apply:                       store.NewApplyProposalStore(db),
+		Prompts:                     store.NewPromptStore(db),
+		Competitors:                 store.NewCompetitorStore(db),
+		Runs:                        store.NewRunStore(db),
+		Results:                     store.NewResultStore(db),
+		Metrics:                     metrics.New(db),
+		Temporal:                    temporalClient,
+		TemporalTaskQueue:           cfg.TemporalTaskQueue,
+		SecureCookies:               cfg.Env != "dev",
+		Billing:                     billingProvider,
+		Reconciler:                  reconciler,
+		StripePriceIDs:              cfg.StripePriceIDs,
+		AppBaseURL:                  cfg.AppBaseURL,
+		Webhooks:                    webhookVerifier,
+		StripePortalConfigurationID: cfg.StripePortalConfigurationID,
 	})
 
 	server := &http.Server{
@@ -608,21 +618,29 @@ func work(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-// newBillingProvider builds the billing.Provider for cfg.BillingProvider
-// (design 08 "Local development"). It lives in the composition root, not
-// internal/billing, because internal/billing/stripe imports internal/billing
-// — a factory inside internal/billing would cycle. StubProvider is
-// per-process in-memory; serve is its only consumer, so its state never
-// crosses the serve/work process boundary.
-func newBillingProvider(cfg config.Config) (billing.Provider, error) {
-	switch cfg.BillingProvider {
-	case config.BillingProviderStub:
-		return billing.NewStubProvider(), nil
-	case config.BillingProviderStripe:
-		return stripe.New(stripe.Config{APIKey: cfg.StripeSecretKey})
-	default:
-		return nil, fmt.Errorf("unknown billing provider %q", cfg.BillingProvider)
+// validateStripeRuntimeConfig is serve-specific: migrations, workers and
+// operator commands should not require credentials for services they do not
+// use. The portal configuration command validates its own smaller set,
+// including the same pre-provisioned configuration id serve requires.
+func validateStripeRuntimeConfig(cfg config.Config) error {
+	if cfg.StripeSecretKey == "" {
+		return errors.New("STRIPE_SECRET_KEY is required to serve")
 	}
+	if cfg.StripeWebhookSecret == "" {
+		return errors.New("STRIPE_WEBHOOK_SECRET is required to serve")
+	}
+	if cfg.StripePortalConfigurationID == "" {
+		return errors.New("STRIPE_PORTAL_CONFIGURATION_ID is required to serve")
+	}
+	if cfg.AppBaseURL == "" {
+		return errors.New("APP_BASE_URL is required to serve")
+	}
+	for _, plan := range billing.Plans() {
+		if cfg.StripePriceIDs[plan.Code] == "" {
+			return fmt.Errorf("%s is required to serve", plan.PriceEnvKey)
+		}
+	}
+	return nil
 }
 
 // dialTemporal connects to the Temporal frontend with a bounded dial timeout.

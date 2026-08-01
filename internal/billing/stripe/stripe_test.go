@@ -235,22 +235,111 @@ func TestProviderGetSubscriptionForCustomerNoSubscription(t *testing.T) {
 	}
 }
 
-func TestProviderCreatePortalSession(t *testing.T) {
+func TestProviderCreatePortalSessionRequiresConfiguration(t *testing.T) {
+	requests := 0
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		jsonResponse(t, w, `{}`)
+	})
+
+	_, err := p.CreatePortalSession(context.Background(), billing.CreatePortalSessionParams{
+		CustomerID: "cus_1",
+		ReturnURL:  "https://app.example.com/billing",
+	})
+	if err == nil || !strings.Contains(err.Error(), "configuration ID is required") {
+		t.Fatalf("CreatePortalSession error = %v, want missing-configuration error", err)
+	}
+	if requests != 0 {
+		t.Fatalf("Stripe requests = %d, want 0", requests)
+	}
+}
+
+// TestProviderCreatePortalSessionWithConfiguration covers BILL-8: a pinned
+// ConfigurationID must reach Stripe as the configuration form param, so the
+// session's behavior comes from the repo-owned configuration and never the
+// account default.
+func TestProviderCreatePortalSessionWithConfiguration(t *testing.T) {
 	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(t, w, `{"id":"bps_1","url":"https://billing.stripe.com/p/session/x","return_url":"https://app.example.com/billing"}`)
 	})
 
-	portal, err := p.CreatePortalSession(context.Background(), billing.CreatePortalSessionParams{CustomerID: "cus_1", ReturnURL: "https://app.example.com/billing"})
-	if err != nil {
+	if _, err := p.CreatePortalSession(context.Background(), billing.CreatePortalSessionParams{
+		CustomerID:      "cus_1",
+		ReturnURL:       "https://app.example.com/billing",
+		ConfigurationID: "bpc_1",
+	}); err != nil {
 		t.Fatalf("CreatePortalSession: %v", err)
 	}
-	if portal.URL != "https://billing.stripe.com/p/session/x" {
-		t.Fatalf("PortalSession.URL = %q", portal.URL)
+	if got := captured.values.Get("configuration"); got != "bpc_1" {
+		t.Fatalf("configuration = %q, want bpc_1", got)
 	}
 	if got := captured.values.Get("customer"); got != "cus_1" {
 		t.Fatalf("customer = %q, want cus_1", got)
 	}
 	if got := captured.values.Get("return_url"); got != "https://app.example.com/billing" {
 		t.Fatalf("return_url = %q, want https://app.example.com/billing", got)
+	}
+}
+
+func TestApplyPortalConfigurationUpdatesExactID(t *testing.T) {
+	requests := 0
+	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		jsonResponse(t, w, `{"id":"bpc_exact"}`)
+	})
+
+	desired := billing.PortalConfig{
+		PaymentMethodUpdate: true,
+		InvoiceHistory:      true,
+		SubscriptionCancel:  true,
+		SubscriptionUpdate:  false,
+		DefaultReturnURL:    "https://app.example.com/billing",
+	}
+	for range 2 {
+		if err := p.ApplyPortalConfiguration(context.Background(), "bpc_exact", desired); err != nil {
+			t.Fatalf("ApplyPortalConfiguration: %v", err)
+		}
+	}
+	if requests != 2 {
+		t.Fatalf("Stripe requests = %d, want 2 exact-id updates", requests)
+	}
+	if captured.method != http.MethodPost || captured.path != "/v1/billing_portal/configurations/bpc_exact" {
+		t.Fatalf("last request = %s %s, want POST /v1/billing_portal/configurations/bpc_exact", captured.method, captured.path)
+	}
+	if got := captured.values.Get("active"); got != "true" {
+		t.Fatalf("active = %q, want true", got)
+	}
+	if got := captured.values.Get("default_return_url"); got != desired.DefaultReturnURL {
+		t.Fatalf("default_return_url = %q, want %q", got, desired.DefaultReturnURL)
+	}
+	if got := captured.values.Get("features[payment_method_update][enabled]"); got != "true" {
+		t.Fatalf("payment_method_update enabled = %q, want true", got)
+	}
+	if got := captured.values.Get("features[invoice_history][enabled]"); got != "true" {
+		t.Fatalf("invoice_history enabled = %q, want true", got)
+	}
+	if got := captured.values.Get("features[subscription_cancel][enabled]"); got != "true" {
+		t.Fatalf("subscription_cancel enabled = %q, want true", got)
+	}
+	if got := captured.values.Get("features[subscription_cancel][mode]"); got != "at_period_end" {
+		t.Fatalf("subscription_cancel mode = %q, want at_period_end", got)
+	}
+	if got := captured.values.Get("features[subscription_update][enabled]"); got != "false" {
+		t.Fatalf("subscription_update enabled = %q, want false", got)
+	}
+}
+
+func TestApplyPortalConfigurationUnknownID(t *testing.T) {
+	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		jsonResponse(t, w, `{"error":{"type":"invalid_request_error","code":"resource_missing","message":"No such configuration"}}`)
+	})
+
+	err := p.ApplyPortalConfiguration(context.Background(), "bpc_missing", billing.DesiredPortalConfig)
+	if err == nil || !strings.Contains(err.Error(), "bpc_missing") {
+		t.Fatalf("error = %v, want unknown configuration id", err)
+	}
+	if captured.method != http.MethodPost || captured.path != "/v1/billing_portal/configurations/bpc_missing" {
+		t.Fatalf("request = %s %s, want exact missing-id update", captured.method, captured.path)
 	}
 }

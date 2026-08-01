@@ -8,10 +8,8 @@ import (
 	"time"
 )
 
-// StubProvider is an in-memory Provider selected by BILLING_PROVIDER=stub
-// (design 08 "Local development"). It mirrors llm.StubPromptRunner in
-// spirit: no network, deterministic ids, so make up and the whole test
-// suite run with zero Stripe calls.
+// StubProvider is an in-memory test fake. Runtime development uses Stripe's
+// sandbox; deterministic tests use this provider and make no network calls.
 //
 // CreateCheckoutSession completes itself immediately and records an active
 // subscription (period end 30 days out) — a stub that never completes would

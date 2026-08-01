@@ -69,12 +69,12 @@ type subscriptionStore interface {
 }
 
 // billingProvider is the slice of billing.Provider the RPC layer needs.
-// GetSubscriptionForCustomer belongs to reconcile, not here; CreatePortalSession
-// arrives with BILL-8.
+// GetSubscriptionForCustomer belongs to reconcile, not here.
 type billingProvider interface {
 	CreateCustomer(ctx context.Context, params billing.CreateCustomerParams) (billing.Customer, error)
 	CreateCheckoutSession(ctx context.Context, params billing.CreateCheckoutSessionParams) (billing.CheckoutSession, error)
 	GetCheckoutSession(ctx context.Context, sessionID string) (billing.CheckoutSession, error)
+	CreatePortalSession(ctx context.Context, params billing.CreatePortalSessionParams) (billing.PortalSession, error)
 }
 
 // billingReconciler is the seam over *reconcile.Reconciler: ConfirmCheckout's
@@ -151,6 +151,10 @@ type Server struct {
 	reconciler     billingReconciler
 	stripePriceIDs map[string]string
 	appBaseURL     string
+	// stripePortalConfigurationID pins CreatePortalSession (BILL-8) to the
+	// repo-owned Billing Portal Configuration rather than the account
+	// default (design 08 "Customer Portal").
+	stripePortalConfigurationID string
 	// webhooks verifies /webhooks/stripe deliveries (BILL-5).
 	webhooks billing.WebhookVerifier
 }
@@ -180,6 +184,8 @@ type Deps struct {
 	Reconciler     *reconcile.Reconciler
 	StripePriceIDs map[string]string
 	AppBaseURL     string
+	// StripePortalConfigurationID (BILL-8) — see Server.stripePortalConfigurationID.
+	StripePortalConfigurationID string
 
 	// Webhook (BILL-5).
 	Webhooks billing.WebhookVerifier
@@ -189,30 +195,31 @@ type Deps struct {
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
 func New(d Deps) *Server {
 	return &Server{
-		auth:              d.Auth,
-		accounts:          d.Accounts,
-		businesses:        d.Businesses,
-		subscriptions:     d.Subscriptions,
-		proposals:         d.Proposals,
-		apply:             d.Apply,
-		prompts:           d.Prompts,
-		competitors:       d.Competitors,
-		runs:              d.Runs,
-		results:           d.Results,
-		metrics:           d.Metrics,
-		promptMetrics:     d.Metrics,
-		competitorMetrics: d.Metrics,
-		citationMetrics:   d.Metrics,
-		runMetrics:        d.Metrics,
-		temporal:          d.Temporal,
-		temporalTaskQueue: d.TemporalTaskQueue,
-		secureCookies:     d.SecureCookies,
-		sessionTTL:        defaultSessionTTL,
-		billing:           d.Billing,
-		reconciler:        d.Reconciler,
-		stripePriceIDs:    d.StripePriceIDs,
-		appBaseURL:        d.AppBaseURL,
-		webhooks:          d.Webhooks,
+		auth:                        d.Auth,
+		accounts:                    d.Accounts,
+		businesses:                  d.Businesses,
+		subscriptions:               d.Subscriptions,
+		proposals:                   d.Proposals,
+		apply:                       d.Apply,
+		prompts:                     d.Prompts,
+		competitors:                 d.Competitors,
+		runs:                        d.Runs,
+		results:                     d.Results,
+		metrics:                     d.Metrics,
+		promptMetrics:               d.Metrics,
+		competitorMetrics:           d.Metrics,
+		citationMetrics:             d.Metrics,
+		runMetrics:                  d.Metrics,
+		temporal:                    d.Temporal,
+		temporalTaskQueue:           d.TemporalTaskQueue,
+		secureCookies:               d.SecureCookies,
+		sessionTTL:                  defaultSessionTTL,
+		billing:                     d.Billing,
+		reconciler:                  d.Reconciler,
+		stripePriceIDs:              d.StripePriceIDs,
+		appBaseURL:                  d.AppBaseURL,
+		webhooks:                    d.Webhooks,
+		stripePortalConfigurationID: d.StripePortalConfigurationID,
 	}
 }
 

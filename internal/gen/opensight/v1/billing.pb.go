@@ -201,6 +201,91 @@ func (x *ConfirmCheckoutResponse) GetAccess() Access {
 	return Access_ACCESS_UNSPECIFIED
 }
 
+// CreatePortalSessionRequest is deliberately empty, the same shape as
+// StartCheckoutRequest: the Customer to send is the calling tenant's own, not
+// a client-supplied id.
+type CreatePortalSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatePortalSessionRequest) Reset() {
+	*x = CreatePortalSessionRequest{}
+	mi := &file_opensight_v1_billing_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePortalSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePortalSessionRequest) ProtoMessage() {}
+
+func (x *CreatePortalSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_billing_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePortalSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreatePortalSessionRequest) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{4}
+}
+
+type CreatePortalSessionResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// portal_url is the Stripe-hosted portal. The SPA navigates to it; it is
+	// never fetched or framed.
+	PortalUrl     string `protobuf:"bytes,1,opt,name=portal_url,json=portalUrl,proto3" json:"portal_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatePortalSessionResponse) Reset() {
+	*x = CreatePortalSessionResponse{}
+	mi := &file_opensight_v1_billing_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePortalSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePortalSessionResponse) ProtoMessage() {}
+
+func (x *CreatePortalSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_billing_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePortalSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreatePortalSessionResponse) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreatePortalSessionResponse) GetPortalUrl() string {
+	if x != nil {
+		return x.PortalUrl
+	}
+	return ""
+}
+
 var File_opensight_v1_billing_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_billing_proto_rawDesc = "" +
@@ -213,10 +298,15 @@ const file_opensight_v1_billing_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"G\n" +
 	"\x17ConfirmCheckoutResponse\x12,\n" +
-	"\x06access\x18\x01 \x01(\x0e2\x14.opensight.v1.AccessR\x06access2\xca\x01\n" +
+	"\x06access\x18\x01 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\"\x1c\n" +
+	"\x1aCreatePortalSessionRequest\"<\n" +
+	"\x1bCreatePortalSessionResponse\x12\x1d\n" +
+	"\n" +
+	"portal_url\x18\x01 \x01(\tR\tportalUrl2\xb6\x02\n" +
 	"\x0eBillingService\x12X\n" +
 	"\rStartCheckout\x12\".opensight.v1.StartCheckoutRequest\x1a#.opensight.v1.StartCheckoutResponse\x12^\n" +
-	"\x0fConfirmCheckout\x12$.opensight.v1.ConfirmCheckoutRequest\x1a%.opensight.v1.ConfirmCheckoutResponseB\xa2\x01\n" +
+	"\x0fConfirmCheckout\x12$.opensight.v1.ConfirmCheckoutRequest\x1a%.opensight.v1.ConfirmCheckoutResponse\x12j\n" +
+	"\x13CreatePortalSession\x12(.opensight.v1.CreatePortalSessionRequest\x1a).opensight.v1.CreatePortalSessionResponseB\xa2\x01\n" +
 	"\x10com.opensight.v1B\fBillingProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
 
 var (
@@ -231,22 +321,26 @@ func file_opensight_v1_billing_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_billing_proto_rawDescData
 }
 
-var file_opensight_v1_billing_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_opensight_v1_billing_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_opensight_v1_billing_proto_goTypes = []any{
-	(*StartCheckoutRequest)(nil),    // 0: opensight.v1.StartCheckoutRequest
-	(*StartCheckoutResponse)(nil),   // 1: opensight.v1.StartCheckoutResponse
-	(*ConfirmCheckoutRequest)(nil),  // 2: opensight.v1.ConfirmCheckoutRequest
-	(*ConfirmCheckoutResponse)(nil), // 3: opensight.v1.ConfirmCheckoutResponse
-	(Access)(0),                     // 4: opensight.v1.Access
+	(*StartCheckoutRequest)(nil),        // 0: opensight.v1.StartCheckoutRequest
+	(*StartCheckoutResponse)(nil),       // 1: opensight.v1.StartCheckoutResponse
+	(*ConfirmCheckoutRequest)(nil),      // 2: opensight.v1.ConfirmCheckoutRequest
+	(*ConfirmCheckoutResponse)(nil),     // 3: opensight.v1.ConfirmCheckoutResponse
+	(*CreatePortalSessionRequest)(nil),  // 4: opensight.v1.CreatePortalSessionRequest
+	(*CreatePortalSessionResponse)(nil), // 5: opensight.v1.CreatePortalSessionResponse
+	(Access)(0),                         // 6: opensight.v1.Access
 }
 var file_opensight_v1_billing_proto_depIdxs = []int32{
-	4, // 0: opensight.v1.ConfirmCheckoutResponse.access:type_name -> opensight.v1.Access
+	6, // 0: opensight.v1.ConfirmCheckoutResponse.access:type_name -> opensight.v1.Access
 	0, // 1: opensight.v1.BillingService.StartCheckout:input_type -> opensight.v1.StartCheckoutRequest
 	2, // 2: opensight.v1.BillingService.ConfirmCheckout:input_type -> opensight.v1.ConfirmCheckoutRequest
-	1, // 3: opensight.v1.BillingService.StartCheckout:output_type -> opensight.v1.StartCheckoutResponse
-	3, // 4: opensight.v1.BillingService.ConfirmCheckout:output_type -> opensight.v1.ConfirmCheckoutResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
+	4, // 3: opensight.v1.BillingService.CreatePortalSession:input_type -> opensight.v1.CreatePortalSessionRequest
+	1, // 4: opensight.v1.BillingService.StartCheckout:output_type -> opensight.v1.StartCheckoutResponse
+	3, // 5: opensight.v1.BillingService.ConfirmCheckout:output_type -> opensight.v1.ConfirmCheckoutResponse
+	5, // 6: opensight.v1.BillingService.CreatePortalSession:output_type -> opensight.v1.CreatePortalSessionResponse
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -264,7 +358,7 @@ func file_opensight_v1_billing_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_billing_proto_rawDesc), len(file_opensight_v1_billing_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

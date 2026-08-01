@@ -43,7 +43,7 @@ production query paths.
 - `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/rpc`.
 - `docker compose -f compose.dev.yml up`: still available for infrastructure-only debugging.
 - **`PromptRunner` stub mode** (env-selected): development and tests must not spend OpenAI money or wait on real searches. Two flavors: `stub` (canned, deterministic fixtures — a fake clinic-recommendation response with citations) and `replay` (recorded real `raw_response` payloads checked into `testdata/`). The analysis pipeline (05) develops almost entirely against replay data — real responses, zero cost, deterministic tests.
-- **Stripe stub mode** (`BILLING_PROVIDER=stub`, 08): the same instinct as the runner stub — dev and tests never call Stripe. The real loop uses `stripe sandbox create` plus `stripe listen --forward-to localhost:8080/webhooks/stripe`.
+- **Stripe sandbox locally** (08): the serving path always uses Stripe, so local development exercises the real Checkout, Portal and webhook boundary with `stripe sandbox create` plus `stripe listen --forward-to localhost:8080/webhooks/stripe`. Tests inject the in-memory `StubProvider` and never call Stripe.
 - Seed command: `opensight seed dev` creates only a comped tenant and login account. The developer completes the normal onboarding flow to create the business profile and initial prompts, keeping the end-to-end onboarding path exercised during local development.
 
 ## Deployment

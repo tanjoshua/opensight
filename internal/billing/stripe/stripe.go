@@ -1,5 +1,5 @@
 // Package stripe is the real adapter behind billing.Provider (design 08
-// "Stripe integration — Client"), selected by BILLING_PROVIDER=stripe. It is
+// "Stripe integration — Client"). It is
 // a separate package from internal/billing, not a file in it, so stripe-go
 // never becomes a transitive dependency of internal/store (which imports
 // internal/billing for the plan catalog).
@@ -44,8 +44,7 @@ type Provider struct {
 var _ billing.Provider = (*Provider)(nil)
 
 // New constructs a Provider. An empty API key is a construction error: a
-// misconfigured BILLING_PROVIDER=stripe must fail at startup, not at the
-// first checkout.
+// misconfigured runtime must fail at startup, not at the first checkout.
 func New(cfg Config) (*Provider, error) {
 	if cfg.APIKey == "" {
 		return nil, errors.New("stripe: API key is required")
@@ -138,17 +137,64 @@ func (p *Provider) GetSubscriptionForCustomer(ctx context.Context, customerID st
 	return subscriptionFromStripe(subs[0]), nil
 }
 
-// CreatePortalSession starts a Customer Portal session (design 08 "Customer
-// Portal").
+// CreatePortalSession starts a Customer Portal session pinned to the
+// explicitly provisioned configuration (design 08 "Customer Portal").
 func (p *Provider) CreatePortalSession(ctx context.Context, params billing.CreatePortalSessionParams) (billing.PortalSession, error) {
-	session, err := p.client.V1BillingPortalSessions.Create(ctx, &stripesdk.BillingPortalSessionCreateParams{
-		Customer:  stripesdk.String(params.CustomerID),
-		ReturnURL: stripesdk.String(params.ReturnURL),
-	})
+	if params.ConfigurationID == "" {
+		return billing.PortalSession{}, errors.New("stripe: portal configuration ID is required")
+	}
+
+	createParams := &stripesdk.BillingPortalSessionCreateParams{
+		Customer:      stripesdk.String(params.CustomerID),
+		ReturnURL:     stripesdk.String(params.ReturnURL),
+		Configuration: stripesdk.String(params.ConfigurationID),
+	}
+	session, err := p.client.V1BillingPortalSessions.Create(ctx, createParams)
 	if err != nil {
 		return billing.PortalSession{}, fmt.Errorf("stripe: create portal session: %w", err)
 	}
 	return billing.PortalSession{URL: session.URL}, nil
+}
+
+// ApplyPortalConfiguration updates the explicitly provisioned Billing Portal
+// Configuration to match cfg. It deliberately lives on *Provider, not
+// billing.Provider: it is an admin-only operation the serving path never
+// calls, and adding it to the runtime seam would force a meaningless fake
+// implementation.
+func (p *Provider) ApplyPortalConfiguration(ctx context.Context, configurationID string, cfg billing.PortalConfig) error {
+	if configurationID == "" {
+		return errors.New("stripe: portal configuration ID is required")
+	}
+	params := &stripesdk.BillingPortalConfigurationUpdateParams{
+		Active:           stripesdk.Bool(true),
+		DefaultReturnURL: stripesdk.String(cfg.DefaultReturnURL),
+		Features:         portalConfigurationUpdateFeatures(cfg),
+	}
+	_, err := p.client.V1BillingPortalConfigurations.Update(ctx, configurationID, params)
+	if err != nil {
+		return fmt.Errorf("stripe: update portal configuration %q: %w", configurationID, err)
+	}
+	return nil
+}
+
+// portalConfigurationUpdateFeatures builds the update-params Features from
+// cfg — a distinct SDK type from the create-params one, same field shape.
+func portalConfigurationUpdateFeatures(cfg billing.PortalConfig) *stripesdk.BillingPortalConfigurationUpdateFeaturesParams {
+	return &stripesdk.BillingPortalConfigurationUpdateFeaturesParams{
+		PaymentMethodUpdate: &stripesdk.BillingPortalConfigurationUpdateFeaturesPaymentMethodUpdateParams{
+			Enabled: stripesdk.Bool(cfg.PaymentMethodUpdate),
+		},
+		InvoiceHistory: &stripesdk.BillingPortalConfigurationUpdateFeaturesInvoiceHistoryParams{
+			Enabled: stripesdk.Bool(cfg.InvoiceHistory),
+		},
+		SubscriptionCancel: &stripesdk.BillingPortalConfigurationUpdateFeaturesSubscriptionCancelParams{
+			Enabled: stripesdk.Bool(cfg.SubscriptionCancel),
+			Mode:    stripesdk.String(string(stripesdk.BillingPortalConfigurationFeaturesSubscriptionCancelModeAtPeriodEnd)),
+		},
+		SubscriptionUpdate: &stripesdk.BillingPortalConfigurationUpdateFeaturesSubscriptionUpdateParams{
+			Enabled: stripesdk.Bool(cfg.SubscriptionUpdate),
+		},
+	}
 }
 
 func checkoutSessionFromStripe(s *stripesdk.CheckoutSession) billing.CheckoutSession {

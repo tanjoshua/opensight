@@ -20,7 +20,7 @@ var _ billing.WebhookVerifier = (*WebhookVerifier)(nil)
 // NewWebhookVerifier builds a WebhookVerifier for secret, the endpoint's
 // Stripe signing secret. An empty secret is accepted at construction (a stub
 // deploy never builds one) but Verify then rejects every delivery: a blank
-// STRIPE_WEBHOOK_SECRET must never make BILLING_PROVIDER=stripe silently
+// STRIPE_WEBHOOK_SECRET must never make the runtime silently
 // accept unsigned events.
 func NewWebhookVerifier(secret string) *WebhookVerifier {
 	return &WebhookVerifier{secret: secret}

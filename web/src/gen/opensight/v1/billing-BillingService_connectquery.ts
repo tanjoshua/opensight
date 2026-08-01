@@ -17,3 +17,10 @@ export const startCheckout = BillingService.method.startCheckout;
  * @generated from rpc opensight.v1.BillingService.ConfirmCheckout
  */
 export const confirmCheckout = BillingService.method.confirmCheckout;
+
+/**
+ * BILL-8
+ *
+ * @generated from rpc opensight.v1.BillingService.CreatePortalSession
+ */
+export const createPortalSession = BillingService.method.createPortalSession;

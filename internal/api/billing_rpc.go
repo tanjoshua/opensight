@@ -140,3 +140,34 @@ func (s *Server) ConfirmCheckout(ctx context.Context, req *connect.Request[opens
 	access := billing.DeriveAccess(sub.AccessState(), nowUTC())
 	return connect.NewResponse(&opensightv1.ConfirmCheckoutResponse{Access: accessToProto(access)}), nil
 }
+
+// CreatePortalSession starts a Stripe-hosted Customer Portal session for the
+// calling tenant (design 08 "Customer Portal"). A tenant with no Stripe
+// Customer is refused rather than sent somewhere broken — this correctly
+// covers a comped tenant too, which has no Stripe objects at all (AC #1).
+func (s *Server) CreatePortalSession(ctx context.Context, _ *connect.Request[opensightv1.CreatePortalSessionRequest]) (*connect.Response[opensightv1.CreatePortalSessionResponse], error) {
+	su, cerr := s.rpcSessionUser(ctx, "create portal session")
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	sub, err := s.subscriptions.GetByTenant(ctx, su.TenantID)
+	if err != nil {
+		// Signup guarantees the row; a miss here is our bug, not the client's.
+		return nil, s.rpcInternal("create portal session: get subscription", err)
+	}
+	if sub.StripeCustomerID == nil {
+		return nil, rpcFailedPrecondition("this account has no billing history yet")
+	}
+
+	session, err := s.billing.CreatePortalSession(ctx, billing.CreatePortalSessionParams{
+		CustomerID:      *sub.StripeCustomerID,
+		ConfigurationID: s.stripePortalConfigurationID,
+		ReturnURL:       s.appBaseURL + "/billing",
+	})
+	if err != nil {
+		return nil, s.rpcInternal("create portal session: create portal session", err)
+	}
+
+	return connect.NewResponse(&opensightv1.CreatePortalSessionResponse{PortalUrl: session.URL}), nil
+}

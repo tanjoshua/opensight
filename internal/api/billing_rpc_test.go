@@ -22,11 +22,12 @@ import (
 // fake the handler sees (design 08 "exactly one code path").
 func newBillingTestServer(subs *fakeSubscriptionStore, provider billing.Provider) *Server {
 	return &Server{
-		subscriptions:  subs,
-		billing:        provider,
-		reconciler:     reconcile.New(subs, provider, nil, nil, nil),
-		stripePriceIDs: map[string]string{billing.Starter.Code: "price_stub_starter"},
-		appBaseURL:     "https://app.example.com",
+		subscriptions:               subs,
+		billing:                     provider,
+		reconciler:                  reconcile.New(subs, provider, nil, nil, nil),
+		stripePriceIDs:              map[string]string{billing.Starter.Code: "price_stub_starter"},
+		appBaseURL:                  "https://app.example.com",
+		stripePortalConfigurationID: "bpc_test",
 	}
 }
 
@@ -55,6 +56,16 @@ type countingProvider struct {
 func (c *countingProvider) CreateCustomer(ctx context.Context, params billing.CreateCustomerParams) (billing.Customer, error) {
 	c.createCustomerCalls++
 	return c.Provider.CreateCustomer(ctx, params)
+}
+
+type portalCapturingProvider struct {
+	billing.Provider
+	params billing.CreatePortalSessionParams
+}
+
+func (p *portalCapturingProvider) CreatePortalSession(_ context.Context, params billing.CreatePortalSessionParams) (billing.PortalSession, error) {
+	p.params = params
+	return billing.PortalSession{URL: params.ReturnURL}, nil
 }
 
 // sessionIDFromCheckoutURL extracts the session_id StartCheckout's stub URL
@@ -212,5 +223,47 @@ func TestConfirmCheckoutUnknownSessionID(t *testing.T) {
 	}
 	if connect.CodeOf(err) != connect.CodeNotFound {
 		t.Fatalf("code = %v, want CodeNotFound", connect.CodeOf(err))
+	}
+}
+
+// TestCreatePortalSession covers BILL-8's happy path: a tenant with a Stripe
+// Customer reaches the portal, with the return URL pointed at /billing (the
+// same target ConfirmCheckout and StartCheckout use).
+func TestCreatePortalSession(t *testing.T) {
+	tenantID := uuid.New()
+	customerID := "cus_existing"
+	subs := &fakeSubscriptionStore{sub: store.Subscription{
+		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+	}}
+	provider := &portalCapturingProvider{Provider: billing.NewStubProvider()}
+	srv := newBillingTestServer(subs, provider)
+
+	resp, err := srv.CreatePortalSession(billingRPCContext(t, tenantID), connect.NewRequest(&opensightv1.CreatePortalSessionRequest{}))
+	if err != nil {
+		t.Fatalf("CreatePortalSession: %v", err)
+	}
+	if resp.Msg.PortalUrl != "https://app.example.com/billing" {
+		t.Fatalf("PortalUrl = %q, want https://app.example.com/billing", resp.Msg.PortalUrl)
+	}
+	if provider.params.ConfigurationID != "bpc_test" {
+		t.Fatalf("ConfigurationID = %q, want bpc_test", provider.params.ConfigurationID)
+	}
+}
+
+// TestCreatePortalSessionRefusesNoCustomer covers the AC that a tenant with
+// no Stripe Customer is refused rather than sent somewhere broken — this is
+// also the path a comped tenant takes, since comped tenants have no Stripe
+// objects at all (design 08 "Customer Portal").
+func TestCreatePortalSessionRefusesNoCustomer(t *testing.T) {
+	tenantID := uuid.New()
+	subs := &fakeSubscriptionStore{sub: store.Subscription{TenantID: tenantID, PlanCode: billing.Starter.Code}}
+	srv := newBillingTestServer(subs, billing.NewStubProvider())
+
+	_, err := srv.CreatePortalSession(billingRPCContext(t, tenantID), connect.NewRequest(&opensightv1.CreatePortalSessionRequest{}))
+	if err == nil {
+		t.Fatal("CreatePortalSession with no Stripe Customer succeeded, want CodeFailedPrecondition")
+	}
+	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("code = %v, want CodeFailedPrecondition", connect.CodeOf(err))
 	}
 }

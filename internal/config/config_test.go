@@ -44,11 +44,8 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.DevPromptLimit != defaultDevPromptLimit {
 		t.Errorf("DevPromptLimit = %d, want %d", cfg.DevPromptLimit, defaultDevPromptLimit)
 	}
-	if cfg.BillingProvider != BillingProviderStub {
-		t.Errorf("BillingProvider = %q, want %q", cfg.BillingProvider, BillingProviderStub)
-	}
-	if cfg.AppBaseURL != defaultAppBaseURL {
-		t.Errorf("AppBaseURL = %q, want %q", cfg.AppBaseURL, defaultAppBaseURL)
+	if cfg.AppBaseURL != "" {
+		t.Errorf("AppBaseURL = %q, want empty", cfg.AppBaseURL)
 	}
 	if cfg.StripeSecretKey != "" || cfg.StripeWebhookSecret != "" {
 		t.Errorf("StripeSecretKey/StripeWebhookSecret = %q/%q, want empty", cfg.StripeSecretKey, cfg.StripeWebhookSecret)
@@ -137,14 +134,6 @@ func TestLoadRejectsInvalidPositiveInt(t *testing.T) {
 	}
 }
 
-func TestLoadRejectsInvalidBillingProvider(t *testing.T) {
-	env := map[string]string{"BILLING_PROVIDER": "paypal"}
-
-	if _, err := LoadFromEnv(func(key string) string { return env[key] }); err == nil {
-		t.Fatal("expected invalid BILLING_PROVIDER to return error")
-	}
-}
-
 func TestAppBaseURLNormalizedAndValidated(t *testing.T) {
 	env := map[string]string{"APP_BASE_URL": "https://app.example.com/"}
 	cfg, err := LoadFromEnv(func(key string) string { return env[key] })
@@ -187,37 +176,5 @@ func TestStripePriceIDsResolveFromCatalog(t *testing.T) {
 	}
 	if got := cfg.StripePriceIDs["starter"]; got != "price_abc" {
 		t.Fatalf(`StripePriceIDs["starter"] = %q, want price_abc`, got)
-	}
-}
-
-// TestLoadStripeModeFailsFast covers design 08's fail-fast requirement: every
-// var BILLING_PROVIDER=stripe needs must be present, one at a time, plus the
-// success case with all of them set.
-func TestLoadStripeModeFailsFast(t *testing.T) {
-	complete := map[string]string{
-		"BILLING_PROVIDER":             "stripe",
-		"STRIPE_SECRET_KEY":            "sk_test_123",
-		"STRIPE_WEBHOOK_SECRET":        "whsec_123",
-		"STRIPE_PRICE_STARTER_MONTHLY": "price_123",
-		"APP_BASE_URL":                 "https://app.example.com",
-	}
-
-	if _, err := LoadFromEnv(func(key string) string { return complete[key] }); err != nil {
-		t.Fatalf("LoadFromEnv with every stripe var set: %v", err)
-	}
-
-	for missing := range complete {
-		if missing == "BILLING_PROVIDER" {
-			continue
-		}
-		env := make(map[string]string, len(complete))
-		for k, v := range complete {
-			env[k] = v
-		}
-		delete(env, missing)
-
-		if _, err := LoadFromEnv(func(key string) string { return env[key] }); err == nil {
-			t.Fatalf("LoadFromEnv with %s missing: want error, got nil", missing)
-		}
 	}
 }

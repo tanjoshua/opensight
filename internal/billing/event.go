@@ -18,7 +18,7 @@ type Event struct {
 
 // WebhookVerifier verifies a raw webhook delivery against its signature and
 // parses out the identity fields reconcile needs. Implemented by
-// internal/billing/stripe (BILLING_PROVIDER=stripe) so internal/api never
+// internal/billing/stripe so internal/api never
 // imports stripe-go directly (the same reason Provider is split out).
 type WebhookVerifier interface {
 	Verify(payload []byte, signatureHeader string) (Event, error)

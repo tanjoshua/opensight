@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/billing.proto.
  */
 export const file_opensight_v1_billing: GenFile = /*@__PURE__*/
-  fileDesc("ChpvcGVuc2lnaHQvdjEvYmlsbGluZy5wcm90bxIMb3BlbnNpZ2h0LnYxIhYKFFN0YXJ0Q2hlY2tvdXRSZXF1ZXN0Ii0KFVN0YXJ0Q2hlY2tvdXRSZXNwb25zZRIUCgxjaGVja291dF91cmwYASABKAkiLAoWQ29uZmlybUNoZWNrb3V0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIj8KF0NvbmZpcm1DaGVja291dFJlc3BvbnNlEiQKBmFjY2VzcxgBIAEoDjIULm9wZW5zaWdodC52MS5BY2Nlc3MyygEKDkJpbGxpbmdTZXJ2aWNlElgKDVN0YXJ0Q2hlY2tvdXQSIi5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlc3BvbnNlEl4KD0NvbmZpcm1DaGVja291dBIkLm9wZW5zaWdodC52MS5Db25maXJtQ2hlY2tvdXRSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLkNvbmZpcm1DaGVja291dFJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxCaWxsaW5nUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_opensight_v1_common]);
+  fileDesc("ChpvcGVuc2lnaHQvdjEvYmlsbGluZy5wcm90bxIMb3BlbnNpZ2h0LnYxIhYKFFN0YXJ0Q2hlY2tvdXRSZXF1ZXN0Ii0KFVN0YXJ0Q2hlY2tvdXRSZXNwb25zZRIUCgxjaGVja291dF91cmwYASABKAkiLAoWQ29uZmlybUNoZWNrb3V0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIj8KF0NvbmZpcm1DaGVja291dFJlc3BvbnNlEiQKBmFjY2VzcxgBIAEoDjIULm9wZW5zaWdodC52MS5BY2Nlc3MiHAoaQ3JlYXRlUG9ydGFsU2Vzc2lvblJlcXVlc3QiMQobQ3JlYXRlUG9ydGFsU2Vzc2lvblJlc3BvbnNlEhIKCnBvcnRhbF91cmwYASABKAkytgIKDkJpbGxpbmdTZXJ2aWNlElgKDVN0YXJ0Q2hlY2tvdXQSIi5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlc3BvbnNlEl4KD0NvbmZpcm1DaGVja291dBIkLm9wZW5zaWdodC52MS5Db25maXJtQ2hlY2tvdXRSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLkNvbmZpcm1DaGVja291dFJlc3BvbnNlEmoKE0NyZWF0ZVBvcnRhbFNlc3Npb24SKC5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlcXVlc3QaKS5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxCaWxsaW5nUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_opensight_v1_common]);
 
 /**
  * StartCheckoutRequest is deliberately empty. The plan being paid for is the
@@ -95,6 +95,43 @@ export const ConfirmCheckoutResponseSchema: GenMessage<ConfirmCheckoutResponse> 
   messageDesc(file_opensight_v1_billing, 3);
 
 /**
+ * CreatePortalSessionRequest is deliberately empty, the same shape as
+ * StartCheckoutRequest: the Customer to send is the calling tenant's own, not
+ * a client-supplied id.
+ *
+ * @generated from message opensight.v1.CreatePortalSessionRequest
+ */
+export type CreatePortalSessionRequest = Message<"opensight.v1.CreatePortalSessionRequest"> & {
+};
+
+/**
+ * Describes the message opensight.v1.CreatePortalSessionRequest.
+ * Use `create(CreatePortalSessionRequestSchema)` to create a new message.
+ */
+export const CreatePortalSessionRequestSchema: GenMessage<CreatePortalSessionRequest> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_billing, 4);
+
+/**
+ * @generated from message opensight.v1.CreatePortalSessionResponse
+ */
+export type CreatePortalSessionResponse = Message<"opensight.v1.CreatePortalSessionResponse"> & {
+  /**
+   * portal_url is the Stripe-hosted portal. The SPA navigates to it; it is
+   * never fetched or framed.
+   *
+   * @generated from field: string portal_url = 1;
+   */
+  portalUrl: string;
+};
+
+/**
+ * Describes the message opensight.v1.CreatePortalSessionResponse.
+ * Use `create(CreatePortalSessionResponseSchema)` to create a new message.
+ */
+export const CreatePortalSessionResponseSchema: GenMessage<CreatePortalSessionResponse> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_billing, 5);
+
+/**
  * @generated from service opensight.v1.BillingService
  */
 export const BillingService: GenService<{
@@ -117,6 +154,16 @@ export const BillingService: GenService<{
     methodKind: "unary";
     input: typeof ConfirmCheckoutRequestSchema;
     output: typeof ConfirmCheckoutResponseSchema;
+  },
+  /**
+   * BILL-8
+   *
+   * @generated from rpc opensight.v1.BillingService.CreatePortalSession
+   */
+  createPortalSession: {
+    methodKind: "unary";
+    input: typeof CreatePortalSessionRequestSchema;
+    output: typeof CreatePortalSessionResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_opensight_v1_billing, 0);

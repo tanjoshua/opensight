@@ -30,9 +30,22 @@ message ConfirmCheckoutResponse {
   Access access = 1;
 }
 
+// CreatePortalSessionRequest is deliberately empty, the same shape as
+// StartCheckoutRequest: the Customer to send is the calling tenant's own, not
+// a client-supplied id.
+message CreatePortalSessionRequest {}
+
+message CreatePortalSessionResponse {
+  // portal_url is the Stripe-hosted portal. The SPA navigates to it; it is
+  // never fetched or framed.
+  string portal_url = 1;
+}
+
 service BillingService {
   // BILL-4
   rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);
   // BILL-4
   rpc ConfirmCheckout(ConfirmCheckoutRequest) returns (ConfirmCheckoutResponse);
+  // BILL-8
+  rpc CreatePortalSession(CreatePortalSessionRequest) returns (CreatePortalSessionResponse);
 }

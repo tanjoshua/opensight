@@ -76,6 +76,11 @@ var procedureAccess = map[string]accessClass{
 	opensightv1connect.AuthServiceLogoutProcedure:             classBilling,
 	opensightv1connect.BillingServiceStartCheckoutProcedure:   classBilling,
 	opensightv1connect.BillingServiceConfirmCheckoutProcedure: classBilling,
+	// CreatePortalSession is billing, not read/write: a lapsed customer must
+	// still reach invoices and reactivate, and a never-paid tenant is
+	// refused by the handler's no-Customer check rather than by the access
+	// gate (design 08 "Customer Portal").
+	opensightv1connect.BillingServiceCreatePortalSessionProcedure: classBilling,
 
 	// classRead — needs full or lapsed.
 	opensightv1connect.BusinessServiceGetBusinessProcedure:         classRead,

@@ -139,7 +139,7 @@ The prompt-limit check (02's `count(active) <= prompt_limit`) now reads the cata
 
 ## Stripe integration
 
-**Client.** `github.com/stripe/stripe-go/v86`, a `Provider` interface in `internal/billing` with a stub implementation and a real adapter in `internal/billing/stripe` — the same shape as the `PromptRunner` adapter (01). The adapter declares its own `APIVersion` constant (`2026-06-24.dahlia`) and asserts it matches the SDK's in a test, so a stripe-go upgrade that moves the API version fails CI rather than silently changing behavior between deploys (the SDK always sends its own `APIVersion` as `Stripe-Version`, with no per-request override — pinning is therefore a build-time guarantee, not a runtime one). Production authenticates with a **restricted API key** (`rk_`) scoped to write Checkout Sessions, Customers and Billing Portal Sessions and read Subscriptions — not a secret key. This is enforced by the go-live checklist, not by code: sandbox keys are `sk_test_`, so a `rk_` prefix check in `internal/config` would break local development against the Stripe sandbox.
+**Client.** `github.com/stripe/stripe-go/v86`, behind a `Provider` interface in `internal/billing` with the runtime adapter in `internal/billing/stripe` and an in-memory test fake. Stripe is the only serving implementation in every environment; local development uses its sandbox rather than a runtime stub mode. The adapter declares its own `APIVersion` constant (`2026-06-24.dahlia`) and asserts it matches the SDK's in a test, so a stripe-go upgrade that moves the API version fails CI rather than silently changing behavior between deploys (the SDK always sends its own `APIVersion` as `Stripe-Version`, with no per-request override — pinning is therefore a build-time guarantee, not a runtime one). Production authenticates with a **restricted API key** (`rk_`) scoped to write Checkout Sessions, Customers and Billing Portal Sessions and read Subscriptions — not a secret key. This is enforced by the go-live checklist, not by code: sandbox keys are `sk_test_`, so a `rk_` prefix check in `internal/config` would break local development against the Stripe sandbox.
 
 **Customer.** One Stripe Customer per **tenant** (the billing entity; users are post-MVP plural). Created lazily when the tenant's first Checkout Session is created, with `metadata.tenant_id`. It is never recreated — a lapsed tenant that resubscribes reuses the same Customer, keeping one invoice history per clinic.
 
@@ -173,7 +173,13 @@ It lives in its own package, `internal/billing/reconcile` (BILL-4), not as a met
 
 **Checkout return.** `success_url` lands on `/checkout/return`, which calls `BillingService.ConfirmCheckout(session_id)`; that retrieves the session server-side, confirms it belongs to this tenant, and runs the same reconcile. Without this, a customer whose webhook is delayed by seconds stares at a page telling them they haven't paid, immediately after paying. The webhook remains the source of truth; this is the latency fix, not a second implementation.
 
-**Customer Portal** handles cancellation, card updates, and invoice history — all of it Stripe-hosted, none of it code we own or PCI surface we touch. `BillingService.CreatePortalSession` returns a redirect URL with `return_url` to `/billing`. The portal configuration allows payment-method updates, invoice history and cancellation, and **disallows plan switching** (there is one plan; an empty plan switcher is worse than none).
+**Customer Portal** handles cancellation, card updates, and invoice history — all of it Stripe-hosted, none of it code we own or PCI surface we touch. `BillingService.CreatePortalSession` returns a redirect URL with `return_url` to `/billing`. A tenant with no Stripe Customer (never paid, or comped — comped tenants have no Stripe objects at all) is refused rather than sent to a broken portal.
+
+The portal's behaviour — payment-method updates, invoice history and cancellation on, plan switching **off** (there is one plan; an empty switcher is worse than none) — is recorded as code, not left as a Stripe dashboard default: `internal/billing.DesiredPortalConfig` is the desired Billing Portal Configuration. Each Stripe environment gets one configuration provisioned during environment bootstrap, and its `bpc_...` id is stored as `STRIPE_PORTAL_CONFIGURATION_ID` in that environment's protected deployment configuration. `opensight stripe portal-config` (`cmd/opensight/stripe.go`) requires that id and idempotently updates that exact object; it never discovers ownership through metadata and never creates a configuration during a recurring deployment.
+
+The same id is required by the main server. Startup fails when it is absent, and every `CreatePortalSession` call pins the session to it rather than falling back to the Stripe account default. The deployment job and serving process therefore refer to exactly the same configuration object: deployment defines its desired behaviour, and runtime selects it for every customer.
+
+Production applies the configuration in a protected pre-deploy pipeline job built from the release commit. The job receives the pre-provisioned configuration id, a command-only Stripe administration key, and `APP_BASE_URL`, then runs `opensight stripe portal-config`. A missing or invalid id fails the deployment. The serving process receives the same id but retains its narrower restricted runtime key and never receives the administration key. Local development provisions one configuration in the sandbox, stores its id in `.env`, and runs the same command manually.
 
 ### RPC surface
 
@@ -186,7 +192,7 @@ service BillingService {
 }
 ```
 
-Only `StartCheckout` and `ConfirmCheckout` exist today, in their own `proto/opensight/v1/billing.proto` — `GetBilling` and `CreatePortalSession` are declared here as the target shape but not yet in the `.proto` file, so an unimplemented method reads as "not yet built" rather than a regression. Adding methods to an existing service is backward-compatible; declaring them ahead of the story that implements them would force `Unimplemented` stubs and dead generated TS hooks.
+`StartCheckout`, `ConfirmCheckout`, and `CreatePortalSession` exist today, in their own `proto/opensight/v1/billing.proto`. `GetBilling` is declared here as the target shape but not yet in the `.proto` file, so an unimplemented method reads as "not yet built" rather than a regression. Adding methods to an existing service is backward-compatible; declaring them ahead of the story that implements them would force `Unimplemented` stubs and dead generated TS hooks.
 
 `AuthService.Signup` joins `Login` as `procedureAccess`'s only `public`-class entries; every other procedure is `billing`/`read`/`write` (BILL-6). `GetMeResponse` drops the bare `prompt_limit` int in favour of an `access` enum plus a `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`, moved to `common.proto` since `BusinessProfile` no longer carries plan entitlements — a business's plan is the tenant's plan), so the SPA renders entitlements and billing state from one authoritative payload. No method is ever declared `idempotency_level = NO_SIDE_EFFECTS` (07's CSRF guarantee).
 
@@ -230,8 +236,8 @@ Password reset stays deferred: with no transactional email provider, reset is an
 
 ## Local development and testing
 
-- **Stub provider.** A `Provider` implementation returning canned checkout/portal URLs and driving reconcile from a local fake, selected by env exactly like `PROMPT_RUNNER_MODE` (07). `make up` and the whole integration suite run with zero Stripe calls and no network.
-- **Real-Stripe loop.** `stripe sandbox create` for keys; `stripe listen --forward-to localhost:8080/webhooks/stripe` for signed webhook delivery against local code; `stripe trigger` for lifecycle events. Test cards cover success, decline, and the `4000000000000341` attach-then-fail path that produces `past_due`.
+- **Local runtime.** `stripe sandbox create` for keys; `stripe listen --forward-to localhost:8080/webhooks/stripe` for signed webhook delivery against local code; `stripe trigger` for lifecycle events. Test cards cover success, decline, and the `4000000000000341` attach-then-fail path that produces `past_due`.
+- **Automated tests.** Tests inject the deterministic in-memory `StubProvider`, so the suite makes no Stripe calls and needs no credentials. The fake is not selectable by runtime configuration.
 - Reconcile is a pure-ish function over a fetched subscription — the access table above is table-tested directly, without Stripe or a database.
 
 ## Config and secrets
@@ -241,8 +247,8 @@ Password reset stays deferred: with no transactional email provider, reset is an
 | `STRIPE_SECRET_KEY` | Restricted key (`rk_`) in production, scoped as above; a sandbox key (`sk_test_`) locally. The `rk_` prefix is a go-live checklist item (12), not a code check — sandbox keys don't have it |
 | `STRIPE_WEBHOOK_SECRET` | Endpoint signing secret |
 | `STRIPE_PRICE_STARTER_MONTHLY` | Price id for the Starter monthly Price |
-| `APP_BASE_URL` | Absolute base for checkout/portal return URLs |
-| `BILLING_PROVIDER` | `stripe` \| `stub` |
+| `APP_BASE_URL` | Required absolute base for checkout/portal return URLs; `http://localhost:5173` is set explicitly in local `.env` |
+| `STRIPE_PORTAL_CONFIGURATION_ID` | Pre-provisioned Billing Portal Configuration id for this Stripe environment. Required by both the configuration job and `opensight serve`; runtime never falls back to the account default |
 
 Added to 07's `.env` inventory and to the restic backup set by virtue of that file already being included.
 
@@ -256,7 +262,7 @@ Added to 07's `.env` inventory and to the restic backup set by virtue of that fi
    - End of dunning → [`/settings/billing/automatic`](https://dashboard.stripe.com/settings/billing/automatic) → *Manage failed payments for subscriptions*: **cancel the subscription**. Never *leave past due* — Stripe then never cancels, and the subscription sits in `past_due` forever. Invoice status alongside it: mark uncollectible (Stripe pairs this with cancellation anyway).
 
    Both are the reason `past_due_since` exists: a setting that cannot be version-controlled or tested is a setting that will eventually be wrong.
-5. Customer Portal configured: payment method + invoice history + cancellation on, plan switching off, `return_url` to `/billing`.
+5. Customer Portal: provision one live configuration, store its id as protected `STRIPE_PORTAL_CONFIGURATION_ID`, and have the pre-deploy job update that exact id with its command-only administration key. Payment method + invoice history + cancellation on, plan switching off, and `return_url` to `/billing` are asserted by the command rather than configured by hand. The server receives the same id and pins every session to it.
 6. Webhook endpoint registered at `https://<app>/webhooks/stripe` for the four subscription events; signing secret in `.env`.
 7. Restricted API key minted with the minimum scopes; secret key never deployed.
 8. End-to-end rehearsal in the sandbox: signup → checkout → onboarding → first run → portal cancel → verify schedule paused and history readable → reactivate → verify schedule resumed.

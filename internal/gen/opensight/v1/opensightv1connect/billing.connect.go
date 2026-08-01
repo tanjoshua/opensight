@@ -39,6 +39,9 @@ const (
 	// BillingServiceConfirmCheckoutProcedure is the fully-qualified name of the BillingService's
 	// ConfirmCheckout RPC.
 	BillingServiceConfirmCheckoutProcedure = "/opensight.v1.BillingService/ConfirmCheckout"
+	// BillingServiceCreatePortalSessionProcedure is the fully-qualified name of the BillingService's
+	// CreatePortalSession RPC.
+	BillingServiceCreatePortalSessionProcedure = "/opensight.v1.BillingService/CreatePortalSession"
 )
 
 // BillingServiceClient is a client for the opensight.v1.BillingService service.
@@ -47,6 +50,8 @@ type BillingServiceClient interface {
 	StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error)
 	// BILL-4
 	ConfirmCheckout(context.Context, *connect.Request[v1.ConfirmCheckoutRequest]) (*connect.Response[v1.ConfirmCheckoutResponse], error)
+	// BILL-8
+	CreatePortalSession(context.Context, *connect.Request[v1.CreatePortalSessionRequest]) (*connect.Response[v1.CreatePortalSessionResponse], error)
 }
 
 // NewBillingServiceClient constructs a client for the opensight.v1.BillingService service. By
@@ -72,13 +77,20 @@ func NewBillingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(billingServiceMethods.ByName("ConfirmCheckout")),
 			connect.WithClientOptions(opts...),
 		),
+		createPortalSession: connect.NewClient[v1.CreatePortalSessionRequest, v1.CreatePortalSessionResponse](
+			httpClient,
+			baseURL+BillingServiceCreatePortalSessionProcedure,
+			connect.WithSchema(billingServiceMethods.ByName("CreatePortalSession")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // billingServiceClient implements BillingServiceClient.
 type billingServiceClient struct {
-	startCheckout   *connect.Client[v1.StartCheckoutRequest, v1.StartCheckoutResponse]
-	confirmCheckout *connect.Client[v1.ConfirmCheckoutRequest, v1.ConfirmCheckoutResponse]
+	startCheckout       *connect.Client[v1.StartCheckoutRequest, v1.StartCheckoutResponse]
+	confirmCheckout     *connect.Client[v1.ConfirmCheckoutRequest, v1.ConfirmCheckoutResponse]
+	createPortalSession *connect.Client[v1.CreatePortalSessionRequest, v1.CreatePortalSessionResponse]
 }
 
 // StartCheckout calls opensight.v1.BillingService.StartCheckout.
@@ -91,12 +103,19 @@ func (c *billingServiceClient) ConfirmCheckout(ctx context.Context, req *connect
 	return c.confirmCheckout.CallUnary(ctx, req)
 }
 
+// CreatePortalSession calls opensight.v1.BillingService.CreatePortalSession.
+func (c *billingServiceClient) CreatePortalSession(ctx context.Context, req *connect.Request[v1.CreatePortalSessionRequest]) (*connect.Response[v1.CreatePortalSessionResponse], error) {
+	return c.createPortalSession.CallUnary(ctx, req)
+}
+
 // BillingServiceHandler is an implementation of the opensight.v1.BillingService service.
 type BillingServiceHandler interface {
 	// BILL-4
 	StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error)
 	// BILL-4
 	ConfirmCheckout(context.Context, *connect.Request[v1.ConfirmCheckoutRequest]) (*connect.Response[v1.ConfirmCheckoutResponse], error)
+	// BILL-8
+	CreatePortalSession(context.Context, *connect.Request[v1.CreatePortalSessionRequest]) (*connect.Response[v1.CreatePortalSessionResponse], error)
 }
 
 // NewBillingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -118,12 +137,20 @@ func NewBillingServiceHandler(svc BillingServiceHandler, opts ...connect.Handler
 		connect.WithSchema(billingServiceMethods.ByName("ConfirmCheckout")),
 		connect.WithHandlerOptions(opts...),
 	)
+	billingServiceCreatePortalSessionHandler := connect.NewUnaryHandler(
+		BillingServiceCreatePortalSessionProcedure,
+		svc.CreatePortalSession,
+		connect.WithSchema(billingServiceMethods.ByName("CreatePortalSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/opensight.v1.BillingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BillingServiceStartCheckoutProcedure:
 			billingServiceStartCheckoutHandler.ServeHTTP(w, r)
 		case BillingServiceConfirmCheckoutProcedure:
 			billingServiceConfirmCheckoutHandler.ServeHTTP(w, r)
+		case BillingServiceCreatePortalSessionProcedure:
+			billingServiceCreatePortalSessionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -139,4 +166,8 @@ func (UnimplementedBillingServiceHandler) StartCheckout(context.Context, *connec
 
 func (UnimplementedBillingServiceHandler) ConfirmCheckout(context.Context, *connect.Request[v1.ConfirmCheckoutRequest]) (*connect.Response[v1.ConfirmCheckoutResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BillingService.ConfirmCheckout is not implemented"))
+}
+
+func (UnimplementedBillingServiceHandler) CreatePortalSession(context.Context, *connect.Request[v1.CreatePortalSessionRequest]) (*connect.Response[v1.CreatePortalSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BillingService.CreatePortalSession is not implemented"))
 }

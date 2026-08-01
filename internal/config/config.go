@@ -21,15 +21,6 @@ const (
 	PromptRunnerOpenAI PromptRunnerMode = "openai"
 )
 
-// BillingProvider selects the billing.Provider implementation (design 08
-// "Local development"), the same stub/real split as PromptRunnerMode.
-type BillingProvider string
-
-const (
-	BillingProviderStub   BillingProvider = "stub"
-	BillingProviderStripe BillingProvider = "stripe"
-)
-
 const (
 	defaultEnv               = "dev"
 	defaultHTTPAddr          = ":8080"
@@ -44,9 +35,6 @@ const (
 	defaultPromptRunnerMode  = PromptRunnerStub
 	defaultDevPromptLimit    = 3
 	defaultPromptConcurrency = 2
-	defaultBillingProvider   = BillingProviderStub
-	// defaultAppBaseURL is the Vite dev server port (scripts/dev-up).
-	defaultAppBaseURL = "http://localhost:5173"
 )
 
 type Config struct {
@@ -64,10 +52,14 @@ type Config struct {
 	PromptRunnerMode      PromptRunnerMode
 	DevPromptLimit        int
 	PromptConcurrency     int
-	BillingProvider       BillingProvider
 	StripeSecretKey       string
 	StripeWebhookSecret   string
-	AppBaseURL            string
+	// StripePortalConfigurationID pins BillingService.CreatePortalSession to
+	// the repo-owned Billing Portal Configuration (design 08 "Customer
+	// Portal", internal/billing/portal.go) rather than the account default,
+	// applied by `opensight stripe portal-config`.
+	StripePortalConfigurationID string
+	AppBaseURL                  string
 	// StripePriceIDs maps a catalog plan code to its Stripe Price id,
 	// resolved by reading each billing.Plan's PriceEnvKey (design 08 "the
 	// pairing is one Go value"). A plan added to the catalog gets a required
@@ -106,19 +98,18 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 
-	billingProvider := BillingProvider(getenvString(getenv, "BILLING_PROVIDER", string(defaultBillingProvider)))
-	if !validBillingProvider(billingProvider) {
-		return Config{}, fmt.Errorf("BILLING_PROVIDER must be one of stub, stripe; got %q", billingProvider)
-	}
-
-	rawAppBaseURL := getenv("APP_BASE_URL")
-	appBaseURL, err := normalizeAppBaseURL(getenvString(getenv, "APP_BASE_URL", defaultAppBaseURL))
-	if err != nil {
-		return Config{}, err
+	appBaseURL := getenv("APP_BASE_URL")
+	if appBaseURL != "" {
+		var err error
+		appBaseURL, err = normalizeAppBaseURL(appBaseURL)
+		if err != nil {
+			return Config{}, err
+		}
 	}
 
 	stripeSecretKey := getenv("STRIPE_SECRET_KEY")
 	stripeWebhookSecret := getenv("STRIPE_WEBHOOK_SECRET")
+	stripePortalConfigurationID := getenv("STRIPE_PORTAL_CONFIGURATION_ID")
 
 	// Built by iterating the catalog, not hardcoded to Starter, so a plan
 	// added later is required in config for free (design 08 "the pairing is
@@ -128,61 +119,32 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		stripePriceIDs[plan.Code] = getenv(plan.PriceEnvKey)
 	}
 
-	if billingProvider == BillingProviderStripe {
-		if stripeSecretKey == "" {
-			return Config{}, fmt.Errorf("STRIPE_SECRET_KEY is required when BILLING_PROVIDER=stripe")
-		}
-		if stripeWebhookSecret == "" {
-			return Config{}, fmt.Errorf("STRIPE_WEBHOOK_SECRET is required when BILLING_PROVIDER=stripe")
-		}
-		for _, plan := range billing.Plans() {
-			if stripePriceIDs[plan.Code] == "" {
-				return Config{}, fmt.Errorf("%s is required when BILLING_PROVIDER=stripe", plan.PriceEnvKey)
-			}
-		}
-		// An explicit APP_BASE_URL, not the localhost default: silently
-		// defaulting a production success_url would send paying customers
-		// nowhere (design 08).
-		if rawAppBaseURL == "" {
-			return Config{}, fmt.Errorf("APP_BASE_URL is required when BILLING_PROVIDER=stripe")
-		}
-	}
-
 	return Config{
-		Env:                   getenvString(getenv, "OPENSIGHT_ENV", defaultEnv),
-		HTTPAddr:              getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
-		DatabaseURL:           getenvString(getenv, "DATABASE_URL", defaultDatabaseURL),
-		DBMaxOpenConns:        dbMaxOpenConns,
-		TemporalAddress:       getenvString(getenv, "TEMPORAL_ADDRESS", defaultTemporalAddress),
-		TemporalNamespace:     getenvString(getenv, "TEMPORAL_NAMESPACE", defaultTemporalNamespace),
-		TemporalTaskQueue:     getenvString(getenv, "TEMPORAL_TASK_QUEUE", defaultTemporalTaskQueue),
-		OpenAIAPIKey:          getenv("OPENAI_API_KEY"),
-		OpenAIResponsesModel:  getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
-		OpenAIAnalysisModel:   getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
-		OpenAIOnboardingModel: getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
-		PromptRunnerMode:      mode,
-		DevPromptLimit:        devPromptLimit,
-		PromptConcurrency:     promptConcurrency,
-		BillingProvider:       billingProvider,
-		StripeSecretKey:       stripeSecretKey,
-		StripeWebhookSecret:   stripeWebhookSecret,
-		AppBaseURL:            appBaseURL,
-		StripePriceIDs:        stripePriceIDs,
+		Env:                         getenvString(getenv, "OPENSIGHT_ENV", defaultEnv),
+		HTTPAddr:                    getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
+		DatabaseURL:                 getenvString(getenv, "DATABASE_URL", defaultDatabaseURL),
+		DBMaxOpenConns:              dbMaxOpenConns,
+		TemporalAddress:             getenvString(getenv, "TEMPORAL_ADDRESS", defaultTemporalAddress),
+		TemporalNamespace:           getenvString(getenv, "TEMPORAL_NAMESPACE", defaultTemporalNamespace),
+		TemporalTaskQueue:           getenvString(getenv, "TEMPORAL_TASK_QUEUE", defaultTemporalTaskQueue),
+		OpenAIAPIKey:                getenv("OPENAI_API_KEY"),
+		OpenAIResponsesModel:        getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
+		OpenAIAnalysisModel:         getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
+		OpenAIOnboardingModel:       getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
+		PromptRunnerMode:            mode,
+		DevPromptLimit:              devPromptLimit,
+		PromptConcurrency:           promptConcurrency,
+		StripeSecretKey:             stripeSecretKey,
+		StripeWebhookSecret:         stripeWebhookSecret,
+		StripePortalConfigurationID: stripePortalConfigurationID,
+		AppBaseURL:                  appBaseURL,
+		StripePriceIDs:              stripePriceIDs,
 	}, nil
 }
 
 func validPromptRunnerMode(mode PromptRunnerMode) bool {
 	switch mode {
 	case PromptRunnerStub, PromptRunnerReplay, PromptRunnerOpenAI:
-		return true
-	default:
-		return false
-	}
-}
-
-func validBillingProvider(provider BillingProvider) bool {
-	switch provider {
-	case BillingProviderStub, BillingProviderStripe:
 		return true
 	default:
 		return false
