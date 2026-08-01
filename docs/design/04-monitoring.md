@@ -16,6 +16,16 @@ Workflow id: `run-{business_id}-chatgpt-{scheduled_for}` — deterministic, so s
 
 ```
 RunWorkflow(businessID, platform, scheduledFor)
+ ├─ CheckRunAccess     activity: resolve tenant, derive billing.Access (08) fresh
+ │                     against now; anything but full returns the workflow
+ │                     immediately as a skip — no run row, no prompt, no
+ │                     analysis. This is design 08's authoritative spend
+ │                     backstop (gate 3): it recomputes on every run start, so
+ │                     a delayed or dropped Stripe webhook can never turn into
+ │                     spend, unlike the RPC gate (08 gate 1) and the schedule
+ │                     pause (08 gate 2), which both depend on one arriving.
+ │                     Access is read once, here — a run already in flight
+ │                     when access drops is allowed to finish.
  ├─ LoadRunSpec        activity: resolve tenant via BusinessStore.ResolveTenantID,
  │                     then upsert monitoring_runs(status=running,
  │                     expected_results=len(prompts)); snapshot active prompts

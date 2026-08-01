@@ -3,6 +3,7 @@ package workflows
 import (
 	"testing"
 
+	"opensight/internal/billing"
 	"opensight/internal/store"
 
 	"github.com/google/uuid"
@@ -63,6 +64,8 @@ func TestRunWorkflowDerivesScheduledForWhenUnset(t *testing.T) {
 	env := ts.NewTestWorkflowEnvironment()
 	var a *Activities
 
+	env.OnActivity(a.CheckRunAccess, mock.Anything, mock.Anything).
+		Return(CheckRunAccessOutput{Access: billing.AccessFull.String()}, nil).Once()
 	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.MatchedBy(func(in LoadRunSpecInput) bool {
 		return !in.ScheduledFor.IsZero()
 	})).Return(specWithPrompts(t, 0), nil).Once()

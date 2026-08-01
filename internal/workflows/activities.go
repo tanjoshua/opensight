@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
@@ -21,16 +22,17 @@ import (
 // exercising one activity leave the rest at their nil zero value instead of
 // padding a long positional constructor call.
 type Activities struct {
-	Businesses *store.BusinessStore
-	Prompts    *store.PromptStore
-	Runs       *store.RunStore
-	Results    *store.ResultStore
-	Runner     llm.PromptRunner
-	Analysis   *store.AnalysisStore
-	Extractor  llm.ExtractionRunner
-	Matcher    llm.MatchRunner
-	Proposer   llm.ProposeProfileRunner
-	Proposals  *store.ProfileProposalStore
+	Businesses    *store.BusinessStore
+	Prompts       *store.PromptStore
+	Runs          *store.RunStore
+	Results       *store.ResultStore
+	Runner        llm.PromptRunner
+	Analysis      *store.AnalysisStore
+	Extractor     llm.ExtractionRunner
+	Matcher       llm.MatchRunner
+	Proposer      llm.ProposeProfileRunner
+	Proposals     *store.ProfileProposalStore
+	Subscriptions *store.SubscriptionStore
 }
 
 // PromptSnapshot is one active prompt captured at run start. The workflow
@@ -48,6 +50,56 @@ type RunSpec struct {
 	RunID    domain.ID
 	Location llm.Location
 	Prompts  []PromptSnapshot
+}
+
+// CheckRunAccessInput identifies the business whose tenant access gates the run.
+type CheckRunAccessInput struct {
+	BusinessID domain.ID
+}
+
+// CheckRunAccessOutput carries the resolved tenant and its access, so a caller
+// that skips the run still has the tenant id for logging without a second
+// lookup. Access is the string form (billing.Access.String()) rather than the
+// int, so the value is legible in Temporal history and workflow results —
+// AccessNever is the zero value of the int, which would otherwise read as
+// "unset" rather than "never paid".
+type CheckRunAccessOutput struct {
+	TenantID domain.ID
+	Access   string
+}
+
+// CheckRunAccess is design 08's gate 3, the authoritative spend backstop:
+// RunWorkflow calls this before LoadRunSpec (the only monitoring_runs writer)
+// and before any prompt executes, so a tenant without full access costs
+// nothing — no run row, no prompt, no analysis. Gates 1 (RPC) and 2 (schedule
+// pause) both depend on a webhook that can be delayed or dropped; this one
+// recomputes access fresh against the current time on every run start, so a
+// missed webhook can never turn into spend.
+func (a *Activities) CheckRunAccess(ctx context.Context, in CheckRunAccessInput) (CheckRunAccessOutput, error) {
+	tenantID, err := a.Businesses.ResolveTenantID(ctx, in.BusinessID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return CheckRunAccessOutput{}, temporal.NewNonRetryableApplicationError(
+				"resolve tenant for business", "BadBusinessData", err)
+		}
+		return CheckRunAccessOutput{}, err
+	}
+
+	sub, err := a.Subscriptions.GetByTenant(ctx, tenantID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			// Every tenant is supposed to have exactly one subscriptions row
+			// (design 08); a miss is a bug, not a normal skip. Non-retryable so
+			// it surfaces rather than retrying forever, and it still spends
+			// nothing.
+			return CheckRunAccessOutput{}, temporal.NewNonRetryableApplicationError(
+				"load subscription for tenant", "BadBillingData", err)
+		}
+		return CheckRunAccessOutput{}, err
+	}
+
+	access := billing.DeriveAccess(sub.AccessState(), time.Now().UTC())
+	return CheckRunAccessOutput{TenantID: tenantID, Access: access.String()}, nil
 }
 
 // LoadRunSpecInput identifies the run to load or create.

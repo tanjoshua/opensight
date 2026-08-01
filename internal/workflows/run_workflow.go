@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	"opensight/internal/store"
 
@@ -40,11 +41,43 @@ type RunWorkflowInput struct {
 	Trigger      store.RunTrigger
 }
 
-// RunWorkflow is the weekly monitoring run (design 04): LoadRunSpec snapshots
-// the run and prompts, ExecutePrompt fans out one activity per prompt, and
-// FinalizeRun sets the terminal status. A single prompt's failure never aborts
-// the run — its already-succeeded siblings must survive.
-func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
+// RunResult reports whether the run actually ran. A skipped run has no
+// monitoring_runs row by design (gate 3, design 08) — the workflow result is
+// the only place the skip is otherwise visible, since nothing gets written.
+type RunResult struct {
+	Skipped    bool
+	SkipReason string
+}
+
+// RunWorkflow is the weekly monitoring run (design 04): CheckRunAccess gates
+// spend on the tenant's current billing access, LoadRunSpec snapshots the run
+// and prompts, ExecutePrompt fans out one activity per prompt, and FinalizeRun
+// sets the terminal status. A single prompt's failure never aborts the run —
+// its already-succeeded siblings must survive.
+func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error) {
+	gateCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 30 * time.Second,
+	})
+
+	// Gate 3 (design 08, "Enforcement: three gates"): resolve access fresh,
+	// before anything that costs money or writes history. Gates 1 (RPC) and 2
+	// (schedule pause) both depend on a webhook that can be delayed or
+	// dropped; this is the one that recomputes on every run start, so a missed
+	// webhook can never turn into spend. Access is read once, here, and never
+	// rechecked below — a run already in flight when access drops is allowed
+	// to finish (design 08), so this is not a bug to "fix" by re-gating later.
+	var gate CheckRunAccessOutput
+	if err := workflow.ExecuteActivity(gateCtx, acts.CheckRunAccess, CheckRunAccessInput{
+		BusinessID: input.BusinessID,
+	}).Get(ctx, &gate); err != nil {
+		return RunResult{}, err
+	}
+	if gate.Access != billing.AccessFull.String() {
+		workflow.GetLogger(ctx).Warn("run skipped: tenant access is not full",
+			"business_id", input.BusinessID.String(), "access", gate.Access)
+		return RunResult{Skipped: true, SkipReason: "billing access " + gate.Access}, nil
+	}
+
 	// A Temporal Schedule fires with static Args, so scheduled runs leave
 	// ScheduledFor unset; derive the week bucket from the deterministic workflow
 	// clock (the fire time). Initial/manual triggers pass an explicit date.
@@ -65,7 +98,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
 		Trigger:      input.Trigger,
 		WorkflowID:   workflow.GetInfo(ctx).WorkflowExecution.ID,
 	}).Get(ctx, &spec); err != nil {
-		return err
+		return RunResult{}, err
 	}
 
 	execCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
@@ -112,7 +145,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
 		TenantID: spec.TenantID,
 		RunID:    spec.RunID,
 	}).Get(ctx, &run); err != nil {
-		return err
+		return RunResult{}, err
 	}
 
 	// AnalyzeRun runs as a child workflow with its own retry budget so a failed
@@ -132,5 +165,5 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) error {
 			"run_id", spec.RunID.String(), "error", err.Error())
 	}
 
-	return nil
+	return RunResult{}, nil
 }

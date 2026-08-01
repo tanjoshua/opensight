@@ -561,16 +561,17 @@ func work(ctx context.Context, cfg config.Config) error {
 	)
 
 	activities := &workflows.Activities{
-		Businesses: store.NewBusinessStore(db),
-		Prompts:    store.NewPromptStore(db),
-		Runs:       store.NewRunStore(db),
-		Results:    store.NewResultStore(db),
-		Runner:     runner,
-		Analysis:   store.NewAnalysisStore(db),
-		Extractor:  extractor,
-		Matcher:    matcher,
-		Proposer:   proposer,
-		Proposals:  store.NewProfileProposalStore(db),
+		Businesses:    store.NewBusinessStore(db),
+		Prompts:       store.NewPromptStore(db),
+		Runs:          store.NewRunStore(db),
+		Results:       store.NewResultStore(db),
+		Runner:        runner,
+		Analysis:      store.NewAnalysisStore(db),
+		Extractor:     extractor,
+		Matcher:       matcher,
+		Proposer:      proposer,
+		Proposals:     store.NewProfileProposalStore(db),
+		Subscriptions: store.NewSubscriptionStore(db),
 	}
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
@@ -579,6 +580,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterWorkflow(workflows.RunWorkflow)
 	w.RegisterWorkflow(workflows.AnalyzeRun)
 	w.RegisterWorkflow(workflows.GenerateProfileWorkflow)
+	w.RegisterActivity(activities.CheckRunAccess)
 	w.RegisterActivity(activities.LoadRunSpec)
 	w.RegisterActivity(activities.ExecutePrompt)
 	w.RegisterActivity(activities.FinalizeRun)

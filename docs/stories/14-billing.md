@@ -83,9 +83,9 @@ Deps: BILL-1, BILL-3 · Phase 4 · Ref: design 08 (Access; Enforcement gate 1)
 
 As the operator, I want an unentitled run to cost nothing even if every other gate failed, so that a missed webhook can never spend money.
 
-- [ ] A run that starts for a tenant without full access stops before spending anything: no run row, no prompt executed, no analysis. Integration test proves zero rows written and zero LLM calls.
-- [ ] The skip is legible as a skip, not as a failure, wherever runs are observed.
-- [ ] A run already in flight when access drops is allowed to finish — the period was paid for, and a killed run leaves a partial history.
+- [x] A run that starts for a tenant without full access stops before spending anything: no run row, no prompt executed, no analysis. Integration test proves zero rows written and zero LLM calls.
+- [x] The skip is legible as a skip, not as a failure, wherever runs are observed.
+- [x] A run already in flight when access drops is allowed to finish — the period was paid for, and a killed run leaves a partial history.
 
 Deps: BILL-5, BILL-6 · Phase 4 · Ref: design 08 (Enforcement gate 3), 04 (RunWorkflow)
 
