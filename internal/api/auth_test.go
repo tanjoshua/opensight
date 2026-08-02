@@ -200,6 +200,10 @@ func newTestServer(f *fakeAuthStore) *Server {
 		accounts:      &fakeAccountStore{auth: f},
 		businesses:    &fakeBusinessStore{},
 		subscriptions: &fakeSubscriptionStore{sub: store.Subscription{PlanCode: billing.Starter.Code}},
+		// classActive's representative gate call (CreateBusiness) reaches
+		// startGeneration, which needs a temporal client even for the gate
+		// tests that only exercise the interceptor.
+		temporal:      &fakeTemporalClient{},
 		secureCookies: false,
 		sessionTTL:    time.Hour,
 	}

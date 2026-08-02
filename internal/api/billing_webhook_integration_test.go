@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
 
 	"opensight/internal/billing"
@@ -184,4 +185,199 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 		t.Fatalf("unpauses across both deliveries = %v, want 0 (the stale update must not resume monitoring)", temporal.schedule.unpauses)
 	}
 
+}
+
+// TestStripeWebhookLapseAndReactivationPreservesData is BILL-10's AC4 proof
+// (design 08 "Lapse and reactivation"): a customer.subscription.deleted
+// delivery pauses monitoring and drops access to lapsed without touching a
+// single business/prompt/run row, and a later customer.subscription.updated
+// delivery that finds the subscription active again unpauses monitoring and
+// restores full access, still against the same rows and the same Stripe
+// customer id — reactivation is a status flip, never a re-signup.
+func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run api integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	tenantID := mustDomainID(t)
+	businessID := mustDomainID(t)
+	customerID := "cus_" + tenantID.String()
+	t.Cleanup(func() {
+		_, _ = testdb.Exec(ctx, db, testdb.Query001, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query002, tenantID)
+		_, _ = testdb.Exec(ctx, db, testdb.Query003, tenantID)
+	})
+	if _, err := testdb.Exec(ctx, db, testdb.Query004, tenantID); err != nil {
+		t.Fatalf("insert tenant: %v", err)
+	}
+
+	pool := db
+	businesses := store.NewBusinessStore(pool)
+	category := "clinic"
+	activatedAt := nowUTC()
+	if _, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
+		ID: businessID, TenantID: tenantID, Status: store.BusinessStatusActive, Name: "Acme Clinic",
+		Category:    &category,
+		Services:    json.RawMessage(`["checkups"]`),
+		Location:    json.RawMessage(`{"address":"1 Road","area":"Central","city":"Singapore","country":"SG"}`),
+		ActivatedAt: &activatedAt,
+	}); err != nil {
+		t.Fatalf("CreateBusiness: %v", err)
+	}
+
+	subscriptions := store.NewSubscriptionStore(pool)
+	subscriptionID := "sub_" + tenantID.String()
+	activeStatus := "active"
+	if err := subscriptions.Upsert(ctx, store.UpsertSubscriptionParams{
+		TenantID: tenantID, PlanCode: billing.Starter.Code,
+		StripeCustomerID: &customerID, StripeSubscriptionID: &subscriptionID, StripeStatus: &activeStatus,
+	}); err != nil {
+		t.Fatalf("seed subscription: %v", err)
+	}
+
+	// Seed a prompt and an analyzed run so there is real data for the lapse
+	// to leave untouched.
+	prompts := store.NewPromptStore(pool)
+	prompt, err := prompts.CreateActivePrompt(ctx, store.CreateActivePromptParams{
+		TenantID: tenantID, BusinessID: businessID, Text: "Who are the best clinics?",
+	})
+	if err != nil {
+		t.Fatalf("seed prompt: %v", err)
+	}
+
+	runs := store.NewRunStore(pool)
+	run, err := runs.UpsertRun(ctx, tenantID, store.UpsertRunParams{
+		BusinessID: businessID, Platform: store.PlatformChatGPT, Trigger: store.RunTriggerInitial,
+		ScheduledFor: activatedAt, WorkflowID: "wf_" + businessID.String(), ExpectedResults: 1,
+	})
+	if err != nil {
+		t.Fatalf("seed run: %v", err)
+	}
+
+	provider := billing.NewStubProvider()
+	if _, err := provider.CreateCheckoutSession(ctx, billing.CreateCheckoutSessionParams{
+		CustomerID: customerID, SuccessURL: "https://app.example.com/checkout/return",
+	}); err != nil {
+		t.Fatalf("seed stub checkout session: %v", err)
+	}
+
+	temporal := &fakeTemporalClient{}
+	monitoring := reconcile.NewMonitoring(businesses, temporal)
+	reconciler := reconcile.New(subscriptions, provider, monitoring, store.NewAdvisoryLocker(pool), nil)
+
+	srv := New(Deps{
+		Reconciler: reconciler,
+		Webhooks:   stripe.NewWebhookVerifier(webhookTestSecret),
+	})
+
+	// businessRow/promptRow/runRow snapshot every mutable-looking field, so a
+	// later comparison catches an accidental write from either delivery, not
+	// just a status change.
+	businessRow := func(t *testing.T) store.Business {
+		t.Helper()
+		b, err := businesses.GetBusiness(ctx, tenantID, businessID)
+		if err != nil {
+			t.Fatalf("GetBusiness: %v", err)
+		}
+		return b
+	}
+	promptRow := func(t *testing.T) store.Prompt {
+		t.Helper()
+		p, err := prompts.GetPrompt(ctx, tenantID, prompt.ID)
+		if err != nil {
+			t.Fatalf("GetPrompt: %v", err)
+		}
+		return p
+	}
+	runRow := func(t *testing.T) store.RunListItem {
+		t.Helper()
+		list, err := runs.ListRuns(ctx, tenantID, businessID)
+		if err != nil {
+			t.Fatalf("ListRuns: %v", err)
+		}
+		for _, r := range list {
+			if r.ID == run.ID {
+				return r
+			}
+		}
+		t.Fatalf("run %s not found after delivery", run.ID)
+		return store.RunListItem{}
+	}
+
+	businessBefore, promptBefore, runBefore := businessRow(t), promptRow(t), runRow(t)
+
+	// First delivery: customer.subscription.deleted — pauses monitoring and
+	// drops access to lapsed, touching only the subscriptions row.
+	provider.SetSubscriptionStatus(customerID, "canceled")
+	deletedPayload, deletedHeader := signWebhookEvent(t, "evt_lapse_1", "customer.subscription.deleted", customerID, "canceled")
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/stripe", bytes.NewReader(deletedPayload))
+	req.Header.Set("Stripe-Signature", deletedHeader)
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("deleted delivery status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+
+	if len(temporal.schedule.pauses) != 1 {
+		t.Fatalf("pauses after deleted delivery = %v, want exactly 1", temporal.schedule.pauses)
+	}
+	sub, err := subscriptions.GetByTenant(ctx, tenantID)
+	if err != nil {
+		t.Fatalf("GetByTenant after deleted delivery: %v", err)
+	}
+	if access := billing.DeriveAccess(sub.AccessState(), nowUTC()); access != billing.AccessLapsed {
+		t.Fatalf("access after deleted delivery = %v, want lapsed", access)
+	}
+	if !reflect.DeepEqual(businessBefore, businessRow(t)) {
+		t.Fatalf("business row changed after lapse")
+	}
+	if !reflect.DeepEqual(promptBefore, promptRow(t)) {
+		t.Fatalf("prompt row changed after lapse")
+	}
+	if !reflect.DeepEqual(runBefore, runRow(t)) {
+		t.Fatalf("run row changed after lapse")
+	}
+
+	// Second delivery: the subscription is live again — unpauses monitoring
+	// and restores full access, still against the same rows and customer id.
+	provider.SetSubscriptionStatus(customerID, "active")
+	updatedPayload, updatedHeader := signWebhookEvent(t, "evt_lapse_2", "customer.subscription.updated", customerID, "active")
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/webhooks/stripe", bytes.NewReader(updatedPayload))
+	req.Header.Set("Stripe-Signature", updatedHeader)
+	srv.Routes().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("updated delivery status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+
+	if len(temporal.schedule.unpauses) != 1 {
+		t.Fatalf("unpauses after updated delivery = %v, want exactly 1", temporal.schedule.unpauses)
+	}
+	sub, err = subscriptions.GetByTenant(ctx, tenantID)
+	if err != nil {
+		t.Fatalf("GetByTenant after updated delivery: %v", err)
+	}
+	if access := billing.DeriveAccess(sub.AccessState(), nowUTC()); access != billing.AccessFull {
+		t.Fatalf("access after updated delivery = %v, want full", access)
+	}
+	if sub.StripeCustomerID == nil || *sub.StripeCustomerID != customerID {
+		t.Fatalf("stripe_customer_id after reactivation = %v, want %s (reactivation is a status flip, not a new customer)", sub.StripeCustomerID, customerID)
+	}
+	if !reflect.DeepEqual(businessBefore, businessRow(t)) {
+		t.Fatalf("business row changed after reactivation")
+	}
+	if !reflect.DeepEqual(promptBefore, promptRow(t)) {
+		t.Fatalf("prompt row changed after reactivation")
+	}
+	if !reflect.DeepEqual(runBefore, runRow(t)) {
+		t.Fatalf("run row changed after reactivation")
+	}
 }

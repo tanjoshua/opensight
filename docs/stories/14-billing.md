@@ -66,14 +66,14 @@ As the operator, I want subscription state to converge on Stripe's truth regardl
 
 Deps: BILL-4 · Phase 4 · Ref: design 08 (Stripe integration — Webhook, Reconcile; Enforcement gate 2), 04 (Schedules)
 
-## BILL-6 — Access derivation and the write gate
+## BILL-6 — Access derivation and the RPC access gate
 
-As a customer whose subscription lapsed, I want my history to stay readable while changes are blocked, so that I keep the evidence I paid for.
+As a customer whose subscription lapsed, I want my history to stay readable while spend is blocked, so that I keep the evidence I paid for.
 
 - [x] One derivation answers `never | full | lapsed` for any billing row at any moment, exactly per design 08's table, and is tested over every Stripe status and both sides of the dunning bound without needing Stripe or a database. Landed in BILL-4 (`internal/billing/access.go`, `internal/billing/access_test.go`) — pulled forward because the second-checkout guard is itself an access question.
-- [x] The dunning bound takes effect the moment it passes, with no scheduled job: a `past_due` tenant beyond the bound is denied writes and runs even though its schedule is still running.
+- [x] The dunning bound takes effect the moment it passes, with no scheduled job: a `past_due` tenant beyond the bound is denied spend-triggering RPCs and runs even though its schedule is still running.
 - [x] Access is available wherever a session is, without an extra round trip per request.
-- [x] Every RPC is classified as billing / read / write and rejected below the access it requires; the rejection tells the SPA which billing state caused it.
+- [x] Every RPC is classified as account / subscriber / active and rejected below the access it requires; the rejection tells the SPA which billing state caused it.
 - [x] Classification is default-deny and cannot rot: adding an RPC without classifying it fails the build or the test suite.
 - [x] The client learns its access and its plan entitlements from one authoritative payload rather than a bare prompt limit.
 
@@ -121,14 +121,14 @@ As a new customer, I want signup → payment → onboarding to be one uninterrup
 
 Deps: BILL-4, BILL-6, BILL-8 · Phase 4 · Ref: design 08 (The funnel; RPC surface), 06 (Frontend stack)
 
-## BILL-10 — Lapsed read-only mode
+## BILL-10 — Lapsed access and reactivation
 
 As a lapsed customer, I want to browse everything I collected with a clear path back, so that returning is one click and my history is visibly intact.
 
-- [ ] Every read view renders normally while lapsed; every write affordance is visibly disabled with a consistent reason rather than hidden, so nothing looks lost.
-- [ ] A persistent banner says monitoring has stopped and offers reactivation; a subscription cancelling at period end says when it stops instead.
-- [ ] The uncollected period renders as a gap in trends — never interpolated, never back-filled.
-- [ ] Reactivating touches billing only: same Customer, business, prompts and history untouched, monitoring resumes (end-to-end test).
+- [x] Every read view renders normally while lapsed; editing stays available (the gate protects spend, not data — no run fires while lapsed, so a prompt or competitor edit costs nothing); only new runs and profile generation stop.
+- [x] A persistent, generic banner in the app shell says monitoring has stopped and offers reactivation — non-dated, since the exact lapse/renewal date already lives one click away on `/billing`.
+- [x] The uncollected period renders as a gap in trends — never interpolated, never back-filled.
+- [x] Reactivating touches billing only: same Customer, business, prompts and history untouched, monitoring resumes (end-to-end test).
 
 Deps: BILL-9, BILL-7 · Phase 4 · Ref: design 08 (Lapse and reactivation), 04 (charts show observed values only)
 

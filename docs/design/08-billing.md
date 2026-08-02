@@ -127,7 +127,7 @@ Because the pause happens when the webhook lands, a schedule firing in the same 
 
 ## Enforcement: three gates, one of them authoritative
 
-**1. Write gate (RPC).** Every procedure carries one of four access classes — `public` (no session), `billing` (reachable at any access), `read` (needs `full` or `lapsed`), `write` (needs `full`) — and a request below the required access is rejected with `CodeFailedPrecondition` plus an `AccessDenied` error detail the SPA renders as the billing state. Classification is **default-deny and non-rotting**: `procedureAccess` (`internal/api/rpc.go`) is one total map keyed by every generated procedure constant, so a renamed/removed RPC fails the build; `accessInterceptor` denies (`CodeInternal`) any procedure that reaches it unclassified, and `TestEveryProcedureIsClassified` walks `protoregistry.GlobalFiles` to fail the test suite if a schema procedure is missing from the map. Access is derived fresh on every request from the session's joined billing state and the current time — never cached — which is what makes the dunning bound below take effect the instant it passes, with no scheduled job.
+**1. Access gate (RPC).** Every procedure carries one of four access classes, named after what they *require* rather than what the procedure does — `public` (no session), `account` (reachable at any access, including never-paid: the billing/account-lifecycle surface itself), `subscriber` (needs `full` or `lapsed` — has paid at some point), `active` (needs `full` — a live subscription) — and a request below the required access is rejected with `CodeFailedPrecondition` plus an `AccessDenied` error detail the SPA renders as the billing state. **The gate protects spend, not data** (BILL-10): `subscriber` covers every read *and* every edit that costs nothing — no run fires while lapsed, so a prompt, competitor or business-profile edit is a row change with no downstream spend. `active` is reserved for the three procedures that actually reach an LLM or start a Temporal Schedule: `CreateBusiness`, `RegenerateProposal`, `ApplyProposal`. Classification is **default-deny and non-rotting**: `procedureAccess` (`internal/api/rpc.go`) is one total map keyed by every generated procedure constant, so a renamed/removed RPC fails the build; `accessInterceptor` denies (`CodeInternal`) any procedure that reaches it unclassified, and `TestEveryProcedureIsClassified` walks `protoregistry.GlobalFiles` to fail the test suite if a schema procedure is missing from the map. Access is derived fresh on every request from the session's joined billing state and the current time — never cached — which is what makes the dunning bound below take effect the instant it passes, with no scheduled job.
 
 **2. Schedule gate (Temporal).** Reconcile pauses the business's monitoring Schedule when access leaves `full` and unpauses it when access returns. This is the mechanism that actually stops recurring spend, and it is *an optimization*: a paused schedule costs nothing to be slightly late.
 
@@ -196,7 +196,7 @@ service BillingService {
 
 All four exist today, in `proto/opensight/v1/billing.proto`.
 
-`AuthService.Signup` joins `Login` as `procedureAccess`'s only `public`-class entries; every other procedure is `billing`/`read`/`write` (BILL-6). `GetMeResponse` drops the bare `prompt_limit` int in favour of an `access` enum plus a `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`, moved to `common.proto` since `BusinessProfile` no longer carries plan entitlements — a business's plan is the tenant's plan), so the SPA renders entitlements and billing state from one authoritative payload. No method is ever declared `idempotency_level = NO_SIDE_EFFECTS` (07's CSRF guarantee).
+`AuthService.Signup` joins `Login` as `procedureAccess`'s only `public`-class entries; every other procedure is `account`/`subscriber`/`active` (BILL-6, reclassified by BILL-10). `GetMeResponse` drops the bare `prompt_limit` int in favour of an `access` enum plus a `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`, moved to `common.proto` since `BusinessProfile` no longer carries plan entitlements — a business's plan is the tenant's plan), so the SPA renders entitlements and billing state from one authoritative payload. No method is ever declared `idempotency_level = NO_SIDE_EFFECTS` (07's CSRF guarantee).
 
 Access is resolved alongside the session rather than by a second lookup: `AuthStore.GetSession` LEFT JOINs `subscriptions` on the same query that resolves the session's user and tenant, so `store.SessionUser` carries `plan_code` and the raw billing `State` (not a derived `Access` — that's still computed per-request against the current time) with no extra round trip. The join is a LEFT JOIN deliberately: every tenant is supposed to have exactly one `subscriptions` row, so a miss is a bug surfaced as an explicit internal error, not silently treated as an absent session.
 
@@ -209,7 +209,8 @@ active ──cancel in portal──▶ cancel_at_period_end=true   full access u
                                       ▼
                                    lapsed:  schedule paused
                                             history, metrics, evidence  read-only ✓
-                                            new runs, prompt edits, profile edits  ✗
+                                            prompt and competitor edits  stay available
+                                            new runs and profile generation  ✗
                                       │
                                  reactivate (Portal once a charge has landed;
                                    new Checkout when none ever did,
@@ -218,11 +219,11 @@ active ──cancel in portal──▶ cancel_at_period_end=true   full access u
                                     full:  schedule unpaused, next run on schedule
 ```
 
-Historical results *are* the product (02: retention is indefinite because trends are the value). Locking a lapsed customer out of the evidence they spent months accumulating destroys the strongest reason to come back, so lapse pauses collection and preserves reading. A dated banner states what has stopped and offers reactivation; while `cancel_at_period_end` is set, it states the date monitoring ends.
+Historical results *are* the product (02: retention is indefinite because trends are the value). Locking a lapsed customer out of the evidence they spent months accumulating destroys the strongest reason to come back, so lapse pauses collection and preserves reading. A generic, non-dated shell banner (BILL-10) states that monitoring has stopped and offers reactivation — the exact lapse/renewal dates already live one click away on `/billing`, so nothing is threaded through the session payload for this.
 
 **Flexible billing mode and `cancel_at`.** A live sandbox `subscriptions.update` call (BILL-9) confirmed Stripe's documented flexible-billing-mode behavior (the default from API version `2025-09-30.clover` onward, which our pinned `2026-06-24.dahlia` postdates): a Customer Portal "cancel at period end" sets `cancel_at` to the effective end instant and leaves `cancel_at_period_end` **false**. `subscriptionFromStripe` (`internal/billing/stripe/stripe.go`) treats a non-zero `cancel_at` as itself a scheduled cancellation — setting `CancelAtPeriodEnd` true and taking `CurrentPeriodEnd` from `cancel_at`, which is also the more accurate end date since it does not drift if a later billing period starts (unlike the item's `current_period_end`).
 
-Reactivation touches nothing but billing: business, profile, prompts and every stored run are untouched, the Schedule unpauses, and the trend simply has a gap where nothing was collected. That gap is honest and must render as a gap — never interpolated (04's rule that charts show only observed values).
+Reactivation touches nothing but billing: business, profile, prompts and every stored run are untouched, the Schedule unpauses, and the trend simply has a gap where nothing was collected. That gap is honest and must render as a gap — never interpolated (04's rule that charts show only observed values). The SPA (`web/src/lib/trend-gaps.ts`, BILL-10) breaks a trend line at any interval wider than 2× the plan's `run_interval` — one missed run is a hiccup a straight line can absorb, sustained absence is a gap that must show as one.
 
 ## Signup
 

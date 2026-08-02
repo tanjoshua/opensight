@@ -69,7 +69,7 @@ func rpcFailedPrecondition(msg string) *connect.Error {
 	return connect.NewError(connect.CodeFailedPrecondition, errors.New(msg))
 }
 
-// rpcAccessDenied is the write gate's rejection (BILL-6, design 08
+// rpcAccessDenied is the RPC access gate's rejection (BILL-6, design 08
 // "Enforcement gate 1"): a is the access the caller actually has, carried as
 // an error detail so the SPA can render the right billing state rather than
 // parse the message string.
@@ -79,7 +79,7 @@ func rpcAccessDenied(a billing.Access) *connect.Error {
 	case billing.AccessNever:
 		msg = "this account has no active subscription"
 	case billing.AccessLapsed:
-		msg = "your subscription has lapsed; changes are paused"
+		msg = "your subscription has lapsed; monitoring is paused"
 	}
 	cerr := connect.NewError(connect.CodeFailedPrecondition, errors.New(msg))
 	// NewErrorDetail can only fail to marshal msg into an Any, and

@@ -9,10 +9,11 @@ type Access int
 const (
 	// AccessNever means signed up, never paid: nothing to read.
 	AccessNever Access = iota
-	// AccessFull means the tenant may read and write.
+	// AccessFull means the tenant has a live subscription, so reads, edits,
+	// profile generation, and monitoring runs are available.
 	AccessFull
-	// AccessLapsed means the tenant was once full but is not now: history
-	// stays readable, writes and runs are blocked.
+	// AccessLapsed means the tenant was once full but is not now: reads and
+	// cost-free edits stay available, while generation and runs are blocked.
 	AccessLapsed
 )
 
@@ -27,6 +28,10 @@ const (
 	ActionCheckout
 	ActionPortal
 )
+
+// Active reports whether the tenant currently has a live subscription. Every
+// spend-side safeguard asks this one question — never a per-feature variant.
+func (a Access) Active() bool { return a == AccessFull }
 
 // String renders Access for logging; it is not the wire format (see
 // internal/api's accessToProto for that).

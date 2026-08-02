@@ -1,5 +1,5 @@
 // /billing renders standalone (outside AppLayout), alongside /login and
-// /onboarding: a never-paid tenant is denied every classRead/classWrite RPC,
+// /onboarding: a never-paid tenant is denied every classSubscriber/classActive RPC,
 // so the product shell has nothing to show it (design 08 "The funnel", BILL-9
 // AC "an account that has never paid cannot wander into the app").
 import { timestampDate } from "@bufbuild/protobuf/wkt"

@@ -9,6 +9,7 @@ import {
   useAllCompetitors,
   useCurrentBusiness,
   useInvalidateCompetitorViews,
+  usePlan,
 } from "@/api/hooks"
 import { competitorStatusLabel } from "@/api/labels"
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/components/evidence-selection"
 import { PageHeader } from "@/components/page-header"
 import { ResponseDrawer } from "@/components/response-drawer"
+import { runIntervalDays, withGaps } from "@/lib/trend-gaps"
 import {
   AliasDecision,
   type Competitor,
@@ -1123,6 +1125,7 @@ function TrendChart({
   trend: CompetitorTrendPoint[]
   onSelectRun: (runID: string) => void
 }) {
+  const { plan } = usePlan()
   if (trend.length === 0) {
     return (
       <EmptyNote>
@@ -1148,12 +1151,19 @@ function TrendChart({
   }
 
   const data = trend.map((point) => ({ x: dateMs(point.scheduledFor), point }))
+  // Break the line across any period lapsed monitoring left uncollected
+  // (BILL-10), instead of interpolating straight across it.
+  const intervalDays = runIntervalDays(plan?.runInterval ?? "")
+  const chartData =
+    intervalDays === undefined
+      ? data
+      : withGaps(data, 2 * intervalDays * 24 * 60 * 60 * 1000)
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <ChartContainer config={chartConfig} className="h-56 w-full min-w-0">
         <LineChart
           accessibilityLayer
-          data={data}
+          data={chartData}
           margin={{ left: 4, right: 12, top: 8 }}
           onClick={(state) => {
             const point = (
@@ -1225,10 +1235,12 @@ function TrendTooltip({
   payload,
 }: {
   active?: boolean
-  payload?: { payload: { point: CompetitorTrendPoint } }[]
+  payload?: { payload: { point?: CompetitorTrendPoint } }[]
 }) {
   if (!active || !payload?.length) return null
   const point = payload[0].payload.point
+  // A gap row (BILL-10, trend-gaps.ts) carries no point — nothing to show.
+  if (!point) return null
   return (
     <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
       <div className="font-medium">{shortDate(dateMs(point.scheduledFor))}</div>

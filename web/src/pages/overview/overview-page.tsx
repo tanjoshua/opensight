@@ -27,7 +27,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { pollWhileRunning, useCurrentBusiness } from "@/api/hooks"
+import { pollWhileRunning, useCurrentBusiness, usePlan } from "@/api/hooks"
 import { CompetitorStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
 import type {
   CompetitorSummary,
@@ -47,6 +47,7 @@ import {
   type EvidenceSelection,
 } from "@/components/evidence-selection"
 import { RunStageStrip } from "@/components/run-stage-strip"
+import { runIntervalDays, withGaps } from "@/lib/trend-gaps"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -103,6 +104,7 @@ type Overview = GetOverviewResponse
 
 export function OverviewPage() {
   const { business, isError, isReady } = useCurrentBusiness()
+  const { plan } = usePlan()
   const navigate = useNavigate()
   // Overview polls off its own latest_run rather than the runs list, but with
   // the shared poll-while-running cadence (first-run-in-progress, design 06).
@@ -187,6 +189,7 @@ export function OverviewPage() {
       <VisibilityCard
         overview={data}
         mode={explorerMode}
+        runInterval={plan?.runInterval ?? ""}
         onModeChange={setExplorerModeOverride}
         onOpenResult={openResult}
         onSelectRun={(runID) => navigate(`/runs/${runID}`)}
@@ -254,12 +257,14 @@ function OverviewHeader() {
 function VisibilityCard({
   overview,
   mode,
+  runInterval,
   onModeChange,
   onOpenResult,
   onSelectRun,
 }: {
   overview: Overview
   mode: ExplorerMode
+  runInterval: string
   onModeChange: (mode: ExplorerMode) => void
   onOpenResult: (ids: string[], context?: string) => void
   onSelectRun: (runID: string) => void
@@ -372,6 +377,7 @@ function VisibilityCard({
             trend={visibleTrend}
             competitors={overview.topCompetitors}
             promptChanges={overview.promptChanges}
+            runInterval={runInterval}
             selectedRunID={selectedTrendRunID}
             onSelectPoint={setSelectedTrendRunID}
             selectedPoint={selectedTrendPoint}
@@ -638,6 +644,16 @@ function MentionComposition({ point }: { point: VisibilityPoint }) {
   )
 }
 
+// A trend chart row: a true-time x plus "point" (the source datum, read by
+// the tooltip/onClick) and one numeric value per plotted series, keyed by
+// Series.key below. The index signature is what lets withGaps (trend-gaps.ts)
+// insert a valueless `{ x }` row that still satisfies this type — Recharts
+// then has nothing to plot for it, breaking the line.
+interface TrendRow extends Record<string, number | VisibilityPoint | undefined> {
+  x: number
+  point?: VisibilityPoint
+}
+
 // A plotted series: "You" plus the capped competitor lines. `key` is the row
 // field recharts reads; `color` carries identity, `width` keeps "You" dominant.
 interface Series {
@@ -651,6 +667,7 @@ function TrendChart({
   trend,
   competitors,
   promptChanges,
+  runInterval,
   selectedRunID,
   onSelectPoint,
   selectedPoint,
@@ -660,6 +677,7 @@ function TrendChart({
   trend: VisibilityPoint[]
   competitors: CompetitorSummary[]
   promptChanges: PromptChange[]
+  runInterval: string
   selectedRunID?: string
   onSelectPoint: (runID: string) => void
   selectedPoint?: VisibilityPoint
@@ -693,8 +711,8 @@ function TrendChart({
       return [s.key, new Map(comp.trend.map((p) => [p.runId, p.percent]))]
     })
   )
-  const data = trend.map((point) => {
-    const row: Record<string, number | VisibilityPoint> = {
+  const data: TrendRow[] = trend.map((point) => {
+    const row: TrendRow = {
       x: dateMs(point.scheduledFor),
       point,
       you: point.percent,
@@ -705,15 +723,15 @@ function TrendChart({
     }
     return row
   })
-  const minX = data[0].x as number
-  const maxX = data[data.length - 1].x as number
+  const minX = data[0].x
+  const maxX = data[data.length - 1].x
   const tickStep = Math.max(1, Math.ceil((data.length - 1) / 4))
   const xTicks = data
     .filter(
       (_, index) =>
         index === 0 || index === data.length - 1 || index % tickStep === 0
     )
-    .map((datum) => datum.x as number)
+    .map((datum) => datum.x)
   // A change is meaningful only between observed points in this window: exclude
   // anything on/before its first run and anything after its last.
   const markers = promptChanges
@@ -723,6 +741,15 @@ function TrendChart({
       text: describeChange(change),
     }))
     .filter((marker) => marker.ms > minX && marker.ms <= maxX)
+  // Break the line across any period lapsed monitoring left uncollected
+  // (BILL-10), instead of interpolating straight across it. Computed off the
+  // real rows above — minX/maxX/xTicks/markers stay true to the observed
+  // data, not stretched by the inserted gap rows.
+  const intervalDays = runIntervalDays(runInterval)
+  const chartData =
+    intervalDays === undefined
+      ? data
+      : withGaps(data, 2 * intervalDays * 24 * 60 * 60 * 1000)
 
   return (
     <div className="flex flex-col gap-2">
@@ -730,7 +757,7 @@ function TrendChart({
         <ChartContainer config={chartConfig} className="h-64 w-full sm:h-72">
           <LineChart
             accessibilityLayer
-            data={data}
+            data={chartData}
             margin={{ left: 4, right: 12, top: 8 }}
             onClick={(state) => {
               const point = (
@@ -942,12 +969,14 @@ function TrendTooltip({
   payload?: {
     dataKey?: string
     value?: number
-    payload: { point: VisibilityPoint }
+    payload: { point?: VisibilityPoint }
   }[]
   series: Series[]
 }) {
   if (!active || !payload?.length) return null
   const point = payload[0].payload.point
+  // A gap row (BILL-10, trend-gaps.ts) carries no point — nothing to show.
+  if (!point) return null
   const valueByKey = new Map(payload.map((p) => [p.dataKey, p.value]))
   return (
     <div className="min-w-40 rounded-lg border bg-background px-3 py-2 text-xs shadow-md">

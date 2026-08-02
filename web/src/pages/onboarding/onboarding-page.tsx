@@ -21,8 +21,8 @@ import {
 import { Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
-import { useMe, usePlan } from "@/api/hooks"
-import { Access, BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
+import { useBillingAccess, useMe, usePlan } from "@/api/hooks"
+import { BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
 import { ProposalPayloadSchema, type ProposalPayload } from "@/gen/opensight/v1/business_pb"
 import {
   createBusiness,
@@ -51,6 +51,7 @@ const EMPTY_PAYLOAD: ProposalPayload = create(ProposalPayloadSchema, {
 export function OnboardingPage() {
   const me = useMe()
   const plan = usePlan()
+  const { isActive } = useBillingAccess()
   const [createdId, setCreatedId] = useState<string>()
 
   if (me.isLoading) {
@@ -77,9 +78,12 @@ export function OnboardingPage() {
       </OnboardingShell>
     )
   }
-  // Onboarding renders outside AppLayout, so it needs its own copy of the
-  // never-paid redirect (BILL-9) — AppLayout's doesn't cover this route.
-  if (me.data.access === Access.NEVER) {
+  // Onboarding renders outside AppLayout, so it needs its own copy of this
+  // redirect (BILL-9). Onboarding is entirely classActive (BILL-10 — it
+  // creates a business and generates a proposal, both LLM spend), so a
+  // lapsed tenant that never finished onboarding has nowhere else useful to
+  // go either — not just a never-paid one.
+  if (!isActive) {
     return <Navigate to="/billing" replace />
   }
 

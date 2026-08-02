@@ -18,36 +18,43 @@ import (
 // http.MaxBytesReader in ~9 handlers).
 const maxRPCRequestBytes = 64 << 10
 
-// accessClass is a procedure's required billing access (design 08 "Write
-// gate"). Order is significant only in that classPublic must be the zero
-// value's opposite — see procedureAccess's total-map property below, not in
-// any numeric comparison between classes.
+// accessClass is a procedure's required billing access (design 08 "Access
+// gate"). Classes are named after what they require, not what the procedure
+// does — classSubscriber admits both reads and edits, because both are free
+// once a tenant has paid at least once; only classActive costs money. Order
+// is significant only in that classPublic must be the zero value's opposite
+// — see procedureAccess's total-map property below, not in any numeric
+// comparison between classes.
 type accessClass int
 
 const (
 	// classPublic needs no session at all (Login, Signup).
 	classPublic accessClass = iota
-	// classBilling is reachable at any access, including "never paid" — the
+	// classAccount is reachable at any access, including "never paid" — the
 	// billing/account-lifecycle surface itself.
-	classBilling
-	// classRead needs at least AccessLapsed: history stays readable after a
-	// subscription lapses.
-	classRead
-	// classWrite needs AccessFull.
-	classWrite
+	classAccount
+	// classSubscriber needs at least AccessLapsed: has paid at some point.
+	// Every read plus every edit that costs nothing lives here — history
+	// stays readable and curatable after a subscription lapses.
+	classSubscriber
+	// classActive needs AccessFull: a live subscription. Reserved for the
+	// procedures that reach an LLM or start a Temporal Schedule — the gate
+	// protects spend, not data.
+	classActive
 )
 
-// satisfiedBy encodes design 08's access table: billing at any access, read
-// at full or lapsed, write at full only. A small method rather than inlining
-// this at the interceptor call site, so the table has exactly one home.
+// satisfiedBy encodes design 08's access table: account at any access,
+// subscriber at full or lapsed, active at full only. A small method rather
+// than inlining this at the interceptor call site, so the table has exactly
+// one home.
 func (c accessClass) satisfiedBy(a billing.Access) bool {
 	switch c {
-	case classBilling:
+	case classAccount:
 		return true
-	case classRead:
+	case classSubscriber:
 		return a == billing.AccessFull || a == billing.AccessLapsed
-	case classWrite:
-		return a == billing.AccessFull
+	case classActive:
+		return a.Active()
 	default:
 		return false
 	}
@@ -66,54 +73,57 @@ var procedureAccess = map[string]accessClass{
 	opensightv1connect.AuthServiceLoginProcedure:  classPublic,
 	opensightv1connect.AuthServiceSignupProcedure: classPublic,
 
-	// classBilling — reachable at any access.
+	// classAccount — reachable at any access.
 	//
-	// GetMe is billing, not read: it's how a never-paid or lapsed SPA learns
-	// its own state. Gating it on read access would make the billing page
-	// unrenderable for exactly the users who need it.
-	opensightv1connect.AuthServiceGetMeProcedure: classBilling,
-	// Logout is billing: a lapsed customer must always be able to log out.
-	opensightv1connect.AuthServiceLogoutProcedure:             classBilling,
-	opensightv1connect.BillingServiceGetBillingProcedure:      classBilling,
-	opensightv1connect.BillingServiceStartCheckoutProcedure:   classBilling,
-	opensightv1connect.BillingServiceConfirmCheckoutProcedure: classBilling,
-	// CreatePortalSession is billing, not read/write: a lapsed customer must
-	// still reach invoices and reactivate, and a never-paid tenant is
-	// refused by the handler's no-Customer check rather than by the access
-	// gate (design 08 "Customer Portal").
-	opensightv1connect.BillingServiceCreatePortalSessionProcedure: classBilling,
+	// GetMe is account, not subscriber: it's how a never-paid or lapsed SPA
+	// learns its own state. Gating it on subscriber access would make the
+	// billing page unrenderable for exactly the users who need it.
+	opensightv1connect.AuthServiceGetMeProcedure: classAccount,
+	// Logout is account: a lapsed customer must always be able to log out.
+	opensightv1connect.AuthServiceLogoutProcedure:             classAccount,
+	opensightv1connect.BillingServiceGetBillingProcedure:      classAccount,
+	opensightv1connect.BillingServiceStartCheckoutProcedure:   classAccount,
+	opensightv1connect.BillingServiceConfirmCheckoutProcedure: classAccount,
+	// CreatePortalSession is account, not subscriber/active: a lapsed
+	// customer must still reach invoices and reactivate, and a never-paid
+	// tenant is refused by the handler's no-Customer check rather than by
+	// the access gate (design 08 "Customer Portal").
+	opensightv1connect.BillingServiceCreatePortalSessionProcedure: classAccount,
 
-	// classRead — needs full or lapsed.
-	opensightv1connect.BusinessServiceGetBusinessProcedure:         classRead,
-	opensightv1connect.BusinessServiceGetProposalProcedure:         classRead,
-	opensightv1connect.PromptServiceListPromptsProcedure:           classRead,
-	opensightv1connect.PromptServiceGetPromptProcedure:             classRead,
-	opensightv1connect.CompetitorServiceListCompetitorsProcedure:   classRead,
-	opensightv1connect.OverviewServiceGetOverviewProcedure:         classRead,
-	opensightv1connect.CitationServiceListCitationSourcesProcedure: classRead,
-	opensightv1connect.ResultServiceListRunsProcedure:              classRead,
-	opensightv1connect.ResultServiceListResultsProcedure:           classRead,
-	opensightv1connect.ResultServiceGetResultProcedure:             classRead,
+	// classSubscriber — needs full or lapsed. Reads, plus every edit that
+	// costs nothing: no run fires while lapsed, so these are row changes
+	// with no downstream spend.
+	opensightv1connect.BusinessServiceGetBusinessProcedure:               classSubscriber,
+	opensightv1connect.BusinessServiceGetProposalProcedure:               classSubscriber,
+	opensightv1connect.BusinessServiceUpdateBusinessProcedure:            classSubscriber,
+	opensightv1connect.PromptServiceListPromptsProcedure:                 classSubscriber,
+	opensightv1connect.PromptServiceGetPromptProcedure:                   classSubscriber,
+	opensightv1connect.PromptServiceAddPromptProcedure:                   classSubscriber,
+	opensightv1connect.PromptServiceReplacePromptProcedure:               classSubscriber,
+	opensightv1connect.CompetitorServiceListCompetitorsProcedure:         classSubscriber,
+	opensightv1connect.CompetitorServiceAddCompetitorProcedure:           classSubscriber,
+	opensightv1connect.CompetitorServiceSetCompetitorStatusProcedure:     classSubscriber,
+	opensightv1connect.CompetitorServiceReviewSuggestedAliasProcedure:    classSubscriber,
+	opensightv1connect.CompetitorServiceUpdateCompetitorAliasesProcedure: classSubscriber,
+	opensightv1connect.OverviewServiceGetOverviewProcedure:               classSubscriber,
+	opensightv1connect.CitationServiceListCitationSourcesProcedure:       classSubscriber,
+	opensightv1connect.ResultServiceListRunsProcedure:                    classSubscriber,
+	opensightv1connect.ResultServiceListResultsProcedure:                 classSubscriber,
+	opensightv1connect.ResultServiceGetResultProcedure:                   classSubscriber,
 
-	// classWrite — needs full.
+	// classActive — needs full. Exactly the procedures that reach an LLM or
+	// start a Temporal Schedule.
 	//
-	// CreateBusiness/RegenerateProposal are writes because they start
+	// CreateBusiness/RegenerateProposal need full because they start
 	// GenerateProfileWorkflow (LLM spend), not merely because they mutate a
-	// row. ApplyProposal is a write: activates the business, inserts
+	// row. ApplyProposal needs full: activates the business, inserts
 	// prompts, creates the Temporal Schedule.
-	opensightv1connect.BusinessServiceCreateBusinessProcedure:            classWrite,
-	opensightv1connect.BusinessServiceUpdateBusinessProcedure:            classWrite,
-	opensightv1connect.BusinessServiceRegenerateProposalProcedure:        classWrite,
-	opensightv1connect.BusinessServiceApplyProposalProcedure:             classWrite,
-	opensightv1connect.PromptServiceAddPromptProcedure:                   classWrite,
-	opensightv1connect.PromptServiceReplacePromptProcedure:               classWrite,
-	opensightv1connect.CompetitorServiceAddCompetitorProcedure:           classWrite,
-	opensightv1connect.CompetitorServiceSetCompetitorStatusProcedure:     classWrite,
-	opensightv1connect.CompetitorServiceReviewSuggestedAliasProcedure:    classWrite,
-	opensightv1connect.CompetitorServiceUpdateCompetitorAliasesProcedure: classWrite,
+	opensightv1connect.BusinessServiceCreateBusinessProcedure:     classActive,
+	opensightv1connect.BusinessServiceRegenerateProposalProcedure: classActive,
+	opensightv1connect.BusinessServiceApplyProposalProcedure:      classActive,
 }
 
-// accessInterceptor is the write gate (BILL-6, design 08 "Enforcement gate
+// accessInterceptor is the RPC access gate (BILL-6, design 08 "Enforcement gate
 // 1"): every procedure carries one of four access classes, resolved once per
 // request alongside the session, with no extra round trip.
 //

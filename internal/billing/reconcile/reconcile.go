@@ -209,8 +209,8 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 		plan, err := billing.PlanFor(written.PlanCode)
 		if err != nil {
 			return written, fmt.Errorf("reconcile: resolve plan for monitoring gate: %w", err)
-		} else if err := r.monitoring.Set(ctx, written.TenantID, plan.Platforms, after == billing.AccessFull); err != nil {
-			return written, fmt.Errorf("reconcile: set monitoring enabled=%t: %w", after == billing.AccessFull, err)
+		} else if err := r.monitoring.Set(ctx, written.TenantID, plan.Platforms, after.Active()); err != nil {
+			return written, fmt.Errorf("reconcile: set monitoring enabled=%t: %w", after.Active(), err)
 		}
 	}
 

@@ -548,7 +548,7 @@ func TestEveryProcedureIsClassified(t *testing.T) {
 				checked++
 				procedure := "/" + string(svc.FullName()) + "/" + string(method.Name())
 				if _, ok := procedureAccess[procedure]; !ok {
-					t.Errorf("%s is not classified in procedureAccess (rpc.go) — every procedure must be classified as public/billing/read/write", procedure)
+					t.Errorf("%s is not classified in procedureAccess (rpc.go) — every procedure must be classified as public/account/subscriber/active", procedure)
 				}
 			}
 		}
@@ -611,10 +611,12 @@ func gateSessionUser(t *testing.T, state billing.State) store.SessionUser {
 	}
 }
 
-// gateGetMe, gateListPrompts, gateAddPrompt are one representative RPC per
-// access class, used by both gate tests below: GetMe (billing — reachable at
-// any access), ListPrompts (read — needs full or lapsed), AddPrompt (write —
-// needs full).
+// gateGetMe, gateListPrompts, gateAddPrompt, gateCreateBusiness are one
+// representative RPC per access class, used by both gate tests below: GetMe
+// (account — reachable at any access), ListPrompts (subscriber — needs full
+// or lapsed), AddPrompt (subscriber — an edit, needs full or lapsed since it
+// costs nothing), CreateBusiness (active — needs full, since it starts
+// GenerateProfileWorkflow).
 func gateGetMe(ctx context.Context, hc *http.Client, baseURL string) error {
 	client := opensightv1connect.NewAuthServiceClient(hc, baseURL)
 	_, err := client.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{}))
@@ -630,6 +632,12 @@ func gateListPrompts(ctx context.Context, hc *http.Client, baseURL string) error
 func gateAddPrompt(ctx context.Context, hc *http.Client, baseURL string) error {
 	client := opensightv1connect.NewPromptServiceClient(hc, baseURL)
 	_, err := client.AddPrompt(ctx, connect.NewRequest(&opensightv1.AddPromptRequest{BusinessId: testBusinessID, Text: "question"}))
+	return err
+}
+
+func gateCreateBusiness(ctx context.Context, hc *http.Client, baseURL string) error {
+	client := opensightv1connect.NewBusinessServiceClient(hc, baseURL)
+	_, err := client.CreateBusiness(ctx, connect.NewRequest(&opensightv1.CreateBusinessRequest{Name: "Acme Clinic"}))
 	return err
 }
 
@@ -672,11 +680,13 @@ func assertGateResult(t *testing.T, err error, class accessClass, access billing
 }
 
 // TestRPCAccessGate is BILL-6's gate table test: one representative RPC per
-// access class (billing/read/write), driven through the full-stack httptest
-// server, over every {never, full, lapsed} session billing state. Asserts
-// success where the class is satisfied and, on rejection, that
+// access class (account/subscriber/active), driven through the full-stack
+// httptest server, over every {never, full, lapsed} session billing state.
+// Asserts success where the class is satisfied and, on rejection, that
 // AccessDenied.access matches the state's derived access — proving the SPA
-// always learns which billing state caused the rejection.
+// always learns which billing state caused the rejection. AddPrompt is the
+// subscriber representative rather than a plain read, so this also proves
+// BILL-10's reclassification: a lapsed tenant may still edit.
 func TestRPCAccessGate(t *testing.T) {
 	f := &fakeAuthStore{}
 	srv := newTestServer(f)
@@ -698,9 +708,10 @@ func TestRPCAccessGate(t *testing.T) {
 		class accessClass
 		call  func(ctx context.Context, hc *http.Client, baseURL string) error
 	}{
-		{"billing/GetMe", classBilling, gateGetMe},
-		{"read/ListPrompts", classRead, gateListPrompts},
-		{"write/AddPrompt", classWrite, gateAddPrompt},
+		{"account/GetMe", classAccount, gateGetMe},
+		{"subscriber/ListPrompts", classSubscriber, gateListPrompts},
+		{"subscriber/AddPrompt", classSubscriber, gateAddPrompt},
+		{"active/CreateBusiness", classActive, gateCreateBusiness},
 	}
 
 	for _, st := range states {
@@ -719,13 +730,13 @@ func TestRPCAccessGate(t *testing.T) {
 }
 
 // TestRPCDunningBoundTakesEffectImmediately is BILL-6's headline acceptance
-// test: a past_due tenant beyond the 21-day dunning bound is denied writes
-// (and stays read-only) with no webhook delivered, no reconcile run, no
-// schedule paused, and no job of any kind executed — this is a pure handler
-// test proving the bound takes effect the instant billing.DeriveAccess sees
-// now cross past_due_since+21d, purely because access is derived fresh on
-// every request rather than cached (design 08 "This needs no scheduled
-// job").
+// test: a past_due tenant beyond the 21-day dunning bound is denied
+// classActive (spend-triggering) RPCs, while classSubscriber reads and edits
+// stay available, with no webhook delivered, no reconcile run, no schedule
+// paused, and no job of any kind executed — this is a pure handler test
+// proving the bound takes effect the instant billing.DeriveAccess sees now
+// cross past_due_since+21d, purely because access is derived fresh on every
+// request rather than cached (design 08 "This needs no scheduled job").
 func TestRPCDunningBoundTakesEffectImmediately(t *testing.T) {
 	f := &fakeAuthStore{}
 	srv := newTestServer(f)
@@ -736,28 +747,31 @@ func TestRPCDunningBoundTakesEffectImmediately(t *testing.T) {
 
 	now := time.Now()
 
-	t.Run("22 days past due: lapsed, write denied, read still succeeds", func(t *testing.T) {
+	t.Run("22 days past due: lapsed, active denied, subscriber edit and read still succeed", func(t *testing.T) {
 		state := billing.State{StripeSubscriptionID: "sub_x", StripeStatus: "past_due", PastDueSince: now.Add(-22 * 24 * time.Hour)}
 		su := gateSessionUser(t, state)
 		raw := gateSession(t, f, su)
 		hc := gateHTTPClient(t, ts.URL+"/rpc", raw)
 
-		writeErr := gateAddPrompt(context.Background(), hc, ts.URL+"/rpc")
-		assertGateResult(t, writeErr, classWrite, billing.AccessLapsed)
+		activeErr := gateCreateBusiness(context.Background(), hc, ts.URL+"/rpc")
+		assertGateResult(t, activeErr, classActive, billing.AccessLapsed)
 
+		if err := gateAddPrompt(context.Background(), hc, ts.URL+"/rpc"); err != nil {
+			t.Fatalf("subscriber edit RPC at lapsed access: %v, want success (edits cost nothing)", err)
+		}
 		if err := gateListPrompts(context.Background(), hc, ts.URL+"/rpc"); err != nil {
-			t.Fatalf("read RPC at lapsed access: %v, want success (history stays readable)", err)
+			t.Fatalf("subscriber read RPC at lapsed access: %v, want success (history stays readable)", err)
 		}
 	})
 
-	t.Run("20 days past due: still full, write succeeds", func(t *testing.T) {
+	t.Run("20 days past due: still full, active RPC succeeds", func(t *testing.T) {
 		state := billing.State{StripeSubscriptionID: "sub_x", StripeStatus: "past_due", PastDueSince: now.Add(-20 * 24 * time.Hour)}
 		su := gateSessionUser(t, state)
 		raw := gateSession(t, f, su)
 		hc := gateHTTPClient(t, ts.URL+"/rpc", raw)
 
-		if err := gateAddPrompt(context.Background(), hc, ts.URL+"/rpc"); err != nil {
-			t.Fatalf("write RPC at 20 days past due: %v, want success (within the 21-day bound)", err)
+		if err := gateCreateBusiness(context.Background(), hc, ts.URL+"/rpc"); err != nil {
+			t.Fatalf("active RPC at 20 days past due: %v, want success (within the 21-day bound)", err)
 		}
 	})
 }

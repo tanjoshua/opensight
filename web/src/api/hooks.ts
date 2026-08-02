@@ -17,6 +17,9 @@
 //     carries Plan, BusinessProfile no longer does), narrowing the
 //     possibly-undefined field once so callers never fall back to a bogus
 //     default limit.
+//   - useBillingAccess: the useMe projection for the tenant's derived
+//     billing access (BILL-10) — the one primitive every spend-side
+//     safeguard in the SPA should ask, rather than comparing Access inline.
 import { Code, createClient } from "@connectrpc/connect"
 import {
   createConnectQueryKey,
@@ -30,7 +33,7 @@ import {
 
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import type { BusinessSummary, Plan } from "@/gen/opensight/v1/common_pb"
-import { RunStatus } from "@/gen/opensight/v1/common_pb"
+import { Access, RunStatus } from "@/gen/opensight/v1/common_pb"
 import {
   CompetitorService,
   type Competitor,
@@ -92,6 +95,26 @@ export function usePlan(): CurrentPlan {
     isLoading: me.isLoading,
     isError: me.isError,
     isReady: me.data?.plan !== undefined,
+  }
+}
+
+export interface CurrentBillingAccess {
+  access: Access
+  isActive: boolean // Access.FULL
+  isLapsed: boolean
+  isReady: boolean
+}
+
+// useBillingAccess is the one billing primitive the SPA asks (BILL-10).
+// Named after the subscription, not after any single feature, so a future
+// safeguard reuses this rather than growing its own Access comparison.
+export function useBillingAccess(): CurrentBillingAccess {
+  const me = useMe()
+  return {
+    access: me.data?.access ?? Access.UNSPECIFIED,
+    isActive: me.data?.access === Access.FULL,
+    isLapsed: me.data?.access === Access.LAPSED,
+    isReady: me.data !== undefined,
   }
 }
 

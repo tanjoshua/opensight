@@ -4,6 +4,7 @@ import { isUnauthenticated } from "@/api/errors"
 import { useCurrentBusiness, useMe, useRuns } from "@/api/hooks"
 import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import { AppSidebar } from "@/components/app-sidebar"
+import { BillingBanner } from "@/components/billing-banner"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -33,8 +34,8 @@ export function AppLayout() {
       </div>
     )
   }
-  // An account that has never paid is denied every classRead/classWrite RPC
-  // (BILL-6), so the product shell has nothing to show it — send it to
+  // An account that has never paid is denied every classSubscriber/classActive
+  // RPC (BILL-6), so the product shell has nothing to show it — send it to
   // billing before the business check even runs (BILL-9).
   if (me.data.access === Access.NEVER) {
     return <Navigate to="/billing" replace />
@@ -61,6 +62,7 @@ export function AppLayout() {
           </span>
           {business && <RunProgressBadge businessId={business.id} />}
         </header>
+        <BillingBanner />
         <main className="flex flex-1 flex-col px-4 py-6 md:px-6">
           <div className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col">
             <Outlet />
