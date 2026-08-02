@@ -2,17 +2,114 @@
 // @generated from file opensight/v1/billing.proto (package opensight.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Access } from "./common_pb";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Access, Plan } from "./common_pb";
 import { file_opensight_v1_common } from "./common_pb";
-import type { Message } from "@bufbuild/protobuf";
+import type { Message, UnknownEnum } from "@bufbuild/protobuf";
 
 /**
  * Describes the file opensight/v1/billing.proto.
  */
 export const file_opensight_v1_billing: GenFile = /*@__PURE__*/
-  fileDesc("ChpvcGVuc2lnaHQvdjEvYmlsbGluZy5wcm90bxIMb3BlbnNpZ2h0LnYxIhYKFFN0YXJ0Q2hlY2tvdXRSZXF1ZXN0Ii0KFVN0YXJ0Q2hlY2tvdXRSZXNwb25zZRIUCgxjaGVja291dF91cmwYASABKAkiLAoWQ29uZmlybUNoZWNrb3V0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIj8KF0NvbmZpcm1DaGVja291dFJlc3BvbnNlEiQKBmFjY2VzcxgBIAEoDjIULm9wZW5zaWdodC52MS5BY2Nlc3MiHAoaQ3JlYXRlUG9ydGFsU2Vzc2lvblJlcXVlc3QiMQobQ3JlYXRlUG9ydGFsU2Vzc2lvblJlc3BvbnNlEhIKCnBvcnRhbF91cmwYASABKAkytgIKDkJpbGxpbmdTZXJ2aWNlElgKDVN0YXJ0Q2hlY2tvdXQSIi5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlc3BvbnNlEl4KD0NvbmZpcm1DaGVja291dBIkLm9wZW5zaWdodC52MS5Db25maXJtQ2hlY2tvdXRSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLkNvbmZpcm1DaGVja291dFJlc3BvbnNlEmoKE0NyZWF0ZVBvcnRhbFNlc3Npb24SKC5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlcXVlc3QaKS5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxCaWxsaW5nUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_opensight_v1_common]);
+  fileDesc("ChpvcGVuc2lnaHQvdjEvYmlsbGluZy5wcm90bxIMb3BlbnNpZ2h0LnYxIhMKEUdldEJpbGxpbmdSZXF1ZXN0ItECChJHZXRCaWxsaW5nUmVzcG9uc2USJAoGYWNjZXNzGAEgASgOMhQub3BlbnNpZ2h0LnYxLkFjY2VzcxIgCgRwbGFuGAIgASgLMhIub3BlbnNpZ2h0LnYxLlBsYW4SFQoNc3RyaXBlX3N0YXR1cxgDIAEoCRIZChFwcmljZV91bml0X2Ftb3VudBgEIAEoAxIWCg5wcmljZV9jdXJyZW5jeRgFIAEoCRIWCg5wcmljZV9pbnRlcnZhbBgGIAEoCRI2ChJjdXJyZW50X3BlcmlvZF9lbmQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhwKFGNhbmNlbF9hdF9wZXJpb2RfZW5kGAggASgIEg4KBmNvbXBlZBgJIAEoCBIrCgZhY3Rpb24YCiABKA4yGy5vcGVuc2lnaHQudjEuQmlsbGluZ0FjdGlvbiIWChRTdGFydENoZWNrb3V0UmVxdWVzdCItChVTdGFydENoZWNrb3V0UmVzcG9uc2USFAoMY2hlY2tvdXRfdXJsGAEgASgJIiwKFkNvbmZpcm1DaGVja291dFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSI/ChdDb25maXJtQ2hlY2tvdXRSZXNwb25zZRIkCgZhY2Nlc3MYASABKA4yFC5vcGVuc2lnaHQudjEuQWNjZXNzIhwKGkNyZWF0ZVBvcnRhbFNlc3Npb25SZXF1ZXN0IjEKG0NyZWF0ZVBvcnRhbFNlc3Npb25SZXNwb25zZRISCgpwb3J0YWxfdXJsGAEgASgJKoABCg1CaWxsaW5nQWN0aW9uEh4KGkJJTExJTkdfQUNUSU9OX1VOU1BFQ0lGSUVEEAASFwoTQklMTElOR19BQ1RJT05fTk9ORRABEhsKF0JJTExJTkdfQUNUSU9OX0NIRUNLT1VUEAISGQoVQklMTElOR19BQ1RJT05fUE9SVEFMEAMyhwMKDkJpbGxpbmdTZXJ2aWNlEk8KCkdldEJpbGxpbmcSHy5vcGVuc2lnaHQudjEuR2V0QmlsbGluZ1JlcXVlc3QaIC5vcGVuc2lnaHQudjEuR2V0QmlsbGluZ1Jlc3BvbnNlElgKDVN0YXJ0Q2hlY2tvdXQSIi5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlc3BvbnNlEl4KD0NvbmZpcm1DaGVja291dBIkLm9wZW5zaWdodC52MS5Db25maXJtQ2hlY2tvdXRSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLkNvbmZpcm1DaGVja291dFJlc3BvbnNlEmoKE0NyZWF0ZVBvcnRhbFNlc3Npb24SKC5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlcXVlc3QaKS5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxCaWxsaW5nUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_opensight_v1_common]);
+
+/**
+ * @generated from message opensight.v1.GetBillingRequest
+ */
+export type GetBillingRequest = Message<"opensight.v1.GetBillingRequest"> & {
+};
+
+/**
+ * Describes the message opensight.v1.GetBillingRequest.
+ * Use `create(GetBillingRequestSchema)` to create a new message.
+ */
+export const GetBillingRequestSchema: GenMessage<GetBillingRequest> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_billing, 0);
+
+/**
+ * @generated from message opensight.v1.GetBillingResponse
+ */
+export type GetBillingResponse = Message<"opensight.v1.GetBillingResponse"> & {
+  /**
+   * @generated from field: opensight.v1.Access access = 1;
+   */
+  access: Access;
+
+  /**
+   * @generated from field: opensight.v1.Plan plan = 2;
+   */
+  plan?: Plan | undefined;
+
+  /**
+   * stripe_status is VERBATIM Stripe status, empty when the tenant has no
+   * subscription. The SPA maps it to copy; it is never invented locally
+   * (design 08 — subscriptions.stripe_status).
+   *
+   * @generated from field: string stripe_status = 3;
+   */
+  stripeStatus: string;
+
+  /**
+   * price_unit_amount is minor units (e.g. 5000 for S$50.00), fetched live
+   * from Stripe rather than a constant — Stripe Prices are immutable, so a
+   * displayed price can never disagree with the charge.
+   *
+   * @generated from field: int64 price_unit_amount = 4;
+   */
+  priceUnitAmount: bigint;
+
+  /**
+   * @generated from field: string price_currency = 5;
+   */
+  priceCurrency: string;
+
+  /**
+   * @generated from field: string price_interval = 6;
+   */
+  priceInterval: string;
+
+  /**
+   * current_period_end and cancel_at_period_end together carry the
+   * "renewal or end date": current_period_end is the renewal date when
+   * cancel_at_period_end is false, and the end date when it is true.
+   *
+   * @generated from field: google.protobuf.Timestamp current_period_end = 7;
+   */
+  currentPeriodEnd?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bool cancel_at_period_end = 8;
+   */
+  cancelAtPeriodEnd: boolean;
+
+  /**
+   * comped tenants have no Stripe objects at all (design 08 "comped is a
+   * separate boolean, not a status value") — stripe_status is empty and
+   * there is no portal to offer.
+   *
+   * @generated from field: bool comped = 9;
+   */
+  comped: boolean;
+
+  /**
+   * action is derived server-side from the tenant's subscription. The SPA
+   * does not interpret Stripe statuses to decide whether to create a new
+   * subscription or manage the existing one.
+   *
+   * @generated from field: opensight.v1.BillingAction action = 10;
+   */
+  action: BillingAction;
+};
+
+/**
+ * Describes the message opensight.v1.GetBillingResponse.
+ * Use `create(GetBillingResponseSchema)` to create a new message.
+ */
+export const GetBillingResponseSchema: GenMessage<GetBillingResponse> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_billing, 1);
 
 /**
  * StartCheckoutRequest is deliberately empty. The plan being paid for is the
@@ -30,7 +127,7 @@ export type StartCheckoutRequest = Message<"opensight.v1.StartCheckoutRequest"> 
  * Use `create(StartCheckoutRequestSchema)` to create a new message.
  */
 export const StartCheckoutRequestSchema: GenMessage<StartCheckoutRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_billing, 0);
+  messageDesc(file_opensight_v1_billing, 2);
 
 /**
  * @generated from message opensight.v1.StartCheckoutResponse
@@ -50,7 +147,7 @@ export type StartCheckoutResponse = Message<"opensight.v1.StartCheckoutResponse"
  * Use `create(StartCheckoutResponseSchema)` to create a new message.
  */
 export const StartCheckoutResponseSchema: GenMessage<StartCheckoutResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_billing, 1);
+  messageDesc(file_opensight_v1_billing, 3);
 
 /**
  * @generated from message opensight.v1.ConfirmCheckoutRequest
@@ -71,7 +168,7 @@ export type ConfirmCheckoutRequest = Message<"opensight.v1.ConfirmCheckoutReques
  * Use `create(ConfirmCheckoutRequestSchema)` to create a new message.
  */
 export const ConfirmCheckoutRequestSchema: GenMessage<ConfirmCheckoutRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_billing, 2);
+  messageDesc(file_opensight_v1_billing, 4);
 
 /**
  * @generated from message opensight.v1.ConfirmCheckoutResponse
@@ -92,7 +189,7 @@ export type ConfirmCheckoutResponse = Message<"opensight.v1.ConfirmCheckoutRespo
  * Use `create(ConfirmCheckoutResponseSchema)` to create a new message.
  */
 export const ConfirmCheckoutResponseSchema: GenMessage<ConfirmCheckoutResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_billing, 3);
+  messageDesc(file_opensight_v1_billing, 5);
 
 /**
  * CreatePortalSessionRequest is deliberately empty, the same shape as
@@ -109,7 +206,7 @@ export type CreatePortalSessionRequest = Message<"opensight.v1.CreatePortalSessi
  * Use `create(CreatePortalSessionRequestSchema)` to create a new message.
  */
 export const CreatePortalSessionRequestSchema: GenMessage<CreatePortalSessionRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_billing, 4);
+  messageDesc(file_opensight_v1_billing, 6);
 
 /**
  * @generated from message opensight.v1.CreatePortalSessionResponse
@@ -129,12 +226,58 @@ export type CreatePortalSessionResponse = Message<"opensight.v1.CreatePortalSess
  * Use `create(CreatePortalSessionResponseSchema)` to create a new message.
  */
 export const CreatePortalSessionResponseSchema: GenMessage<CreatePortalSessionResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_billing, 5);
+  messageDesc(file_opensight_v1_billing, 7);
+
+/**
+ * @generated from enum opensight.v1.BillingAction
+ */
+export const BillingAction = {
+  /**
+   * @generated from enum value: BILLING_ACTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: BILLING_ACTION_NONE = 1;
+   */
+  NONE: 1,
+
+  /**
+   * @generated from enum value: BILLING_ACTION_CHECKOUT = 2;
+   */
+  CHECKOUT: 2,
+
+  /**
+   * @generated from enum value: BILLING_ACTION_PORTAL = 3;
+   */
+  PORTAL: 3,
+} as const;
+
+/**
+ * @generated from enum opensight.v1.BillingAction
+ */
+export type BillingAction = (typeof BillingAction)[keyof typeof BillingAction] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.BillingAction.
+ */
+export const BillingActionSchema: GenEnum<BillingAction> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_billing, 0);
 
 /**
  * @generated from service opensight.v1.BillingService
  */
 export const BillingService: GenService<{
+  /**
+   * BILL-9
+   *
+   * @generated from rpc opensight.v1.BillingService.GetBilling
+   */
+  getBilling: {
+    methodKind: "unary";
+    input: typeof GetBillingRequestSchema;
+    output: typeof GetBillingResponseSchema;
+  },
   /**
    * BILL-4
    *

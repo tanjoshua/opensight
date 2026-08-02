@@ -1,26 +1,15 @@
 package billing
 
+// This file holds the plain-Go parameter and result types every Stripe
+// consumer speaks. They live here, not in internal/billing/stripe, so the
+// narrow seams that internal/api and internal/billing/reconcile declare stay
+// free of stripe-go — preserving this package's dependency-free promise
+// (catalog.go) for internal/store, which imports it for the plan catalog.
+
 import (
-	"context"
 	"errors"
 	"time"
 )
-
-// Provider is the seam between OpenSight and Stripe (design 08 "Stripe
-// integration — Client"), the same shape as the PromptRunner adapter (01).
-// It is implemented by the Stripe runtime adapter and StubProvider, the
-// in-memory test fake.
-//
-// Only plain Go types appear in the interface — no stripe-go import — so
-// this package's dependency-free promise (catalog.go) extends to the
-// provider seam too.
-type Provider interface {
-	CreateCustomer(ctx context.Context, params CreateCustomerParams) (Customer, error)
-	CreateCheckoutSession(ctx context.Context, params CreateCheckoutSessionParams) (CheckoutSession, error)
-	GetCheckoutSession(ctx context.Context, sessionID string) (CheckoutSession, error)
-	GetSubscriptionForCustomer(ctx context.Context, customerID string) (Subscription, error)
-	CreatePortalSession(ctx context.Context, params CreatePortalSessionParams) (PortalSession, error)
-}
 
 // ErrNoSubscription is returned by GetSubscriptionForCustomer when a Stripe
 // Customer exists but has never completed a checkout. Reconcile (BILL-5)
@@ -95,4 +84,14 @@ type CreatePortalSessionParams struct {
 // PortalSession is the subset of a Stripe Billing Portal Session callers need.
 type PortalSession struct {
 	URL string
+}
+
+// Price mirrors the subset of a Stripe Price callers need for display
+// (BILL-9). Interval is empty when the Price has no Recurring component —
+// tolerated, not a construction error, mirroring subscriptionFromStripe's
+// nil-tolerant mapping.
+type Price struct {
+	UnitAmount int64
+	Currency   string
+	Interval   string
 }

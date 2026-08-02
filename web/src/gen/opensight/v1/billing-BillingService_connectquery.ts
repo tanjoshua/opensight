@@ -5,6 +5,13 @@
 import { BillingService } from "./billing_pb";
 
 /**
+ * BILL-9
+ *
+ * @generated from rpc opensight.v1.BillingService.GetBilling
+ */
+export const getBilling = BillingService.method.getBilling;
+
+/**
  * BILL-4
  *
  * @generated from rpc opensight.v1.BillingService.StartCheckout

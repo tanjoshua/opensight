@@ -1,4 +1,5 @@
 import {
+  CreditCard,
   FileSearch,
   Newspaper,
   LogOut,
@@ -32,6 +33,7 @@ const sections = [
   { title: "Competitors", to: "/competitors", icon: Users },
   { title: "Monitoring history", to: "/runs", icon: FileSearch },
   { title: "Settings", to: "/setup", icon: Settings },
+  { title: "Billing", to: "/billing", icon: CreditCard },
 ]
 
 export function AppSidebar() {

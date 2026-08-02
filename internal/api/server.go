@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	"opensight/internal/billing"
@@ -68,13 +69,16 @@ type subscriptionStore interface {
 	SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error)
 }
 
-// billingProvider is the slice of billing.Provider the RPC layer needs.
-// GetSubscriptionForCustomer belongs to reconcile, not here.
+// billingProvider is the Stripe operations the RPC layer consumes.
+// GetSubscriptionForCustomer belongs to reconcile's separate narrow seam.
 type billingProvider interface {
 	CreateCustomer(ctx context.Context, params billing.CreateCustomerParams) (billing.Customer, error)
 	CreateCheckoutSession(ctx context.Context, params billing.CreateCheckoutSessionParams) (billing.CheckoutSession, error)
 	GetCheckoutSession(ctx context.Context, sessionID string) (billing.CheckoutSession, error)
 	CreatePortalSession(ctx context.Context, params billing.CreatePortalSessionParams) (billing.PortalSession, error)
+	// GetPrice backs GetBilling's price display (BILL-9); cachedPrice
+	// (billing_rpc.go) is the only caller.
+	GetPrice(ctx context.Context, priceID string) (billing.Price, error)
 }
 
 // billingReconciler is the seam over *reconcile.Reconciler: ConfirmCheckout's
@@ -157,6 +161,13 @@ type Server struct {
 	stripePortalConfigurationID string
 	// webhooks verifies /webhooks/stripe deliveries (BILL-5).
 	webhooks billing.WebhookVerifier
+	// priceCache holds GetBilling's (BILL-9) fetched Stripe Prices, keyed by
+	// price id. Safe to keep for the process lifetime: Stripe Prices are
+	// immutable, so a cache entry can never go stale.
+	priceCache struct {
+		mu     sync.Mutex
+		prices map[string]billing.Price
+	}
 }
 
 // Deps are api.New's dependencies. A struct rather than a positional argument
@@ -180,7 +191,7 @@ type Deps struct {
 	SecureCookies     bool
 
 	// Billing (BILL-4).
-	Billing        billing.Provider
+	Billing        billingProvider
 	Reconciler     *reconcile.Reconciler
 	StripePriceIDs map[string]string
 	AppBaseURL     string
@@ -194,7 +205,7 @@ type Deps struct {
 // New builds a Server from d. SecureCookies should be true everywhere except
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
 func New(d Deps) *Server {
-	return &Server{
+	s := &Server{
 		auth:                        d.Auth,
 		accounts:                    d.Accounts,
 		businesses:                  d.Businesses,
@@ -221,6 +232,8 @@ func New(d Deps) *Server {
 		webhooks:                    d.Webhooks,
 		stripePortalConfigurationID: d.StripePortalConfigurationID,
 	}
+	s.priceCache.prices = make(map[string]billing.Price)
+	return s
 }
 
 // Routes is the single place routes are registered: /healthz, the /rpc tree,

@@ -2,7 +2,7 @@ import { Link, Navigate, Outlet, useLocation } from "react-router"
 
 import { isUnauthenticated } from "@/api/errors"
 import { useCurrentBusiness, useMe, useRuns } from "@/api/hooks"
-import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
+import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -32,6 +32,12 @@ export function AppLayout() {
         The app could not be loaded. Try reloading the page.
       </div>
     )
+  }
+  // An account that has never paid is denied every classRead/classWrite RPC
+  // (BILL-6), so the product shell has nothing to show it — send it to
+  // billing before the business check even runs (BILL-9).
+  if (me.data.access === Access.NEVER) {
+    return <Navigate to="/billing" replace />
   }
   // Onboarding is tenant-scoped (a teammate joining an already-onboarded org
   // has an active business the moment they log in), so this checks every

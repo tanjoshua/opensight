@@ -48,7 +48,7 @@ type customerLocker interface {
 	WithLock(ctx context.Context, key string, fn func(context.Context) error) error
 }
 
-// subscriptionProvider is the one billing.Provider method reconcile needs.
+// subscriptionProvider is the one Stripe operation reconcile needs.
 // CreateCustomer/CreateCheckoutSession/GetCheckoutSession belong to the RPC
 // layer's checkout flow (internal/api's billingProvider seam), not here.
 type subscriptionProvider interface {

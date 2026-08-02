@@ -19,10 +19,10 @@ Deps: — · Phase 4 · Ref: design 08 (Entitlements move from a table to code; 
 
 ## BILL-2 — Stripe adapter and test fake
 
-As the developer, I want one Stripe runtime adapter behind an interface with an in-memory test fake, so that local development exercises the sandbox while the test suite remains deterministic.
+As the developer, I want one concrete Stripe runtime client with narrow consumer-owned test seams and an in-memory fake, so that local development exercises the sandbox while the test suite remains deterministic.
 
 - [x] `github.com/stripe/stripe-go/v86` adapter declaring its own `APIVersion` constant (`2026-06-24.dahlia`), asserted equal to the SDK's in a test. Production authenticates with a **restricted key** (`rk_`), never a secret key — a go-live checklist item (BILL-12), not a code-enforced prefix check, since sandbox keys are `sk_test_` and a hard check would break local dev.
-- [x] `billing.Provider` interface: create customer, create checkout session, get checkout session, get subscription, create portal session.
+- [x] The API and reconciler declare only the Stripe operations they consume; `internal/billing/stripe.Provider` satisfies those seams and the in-memory fake keeps tests deterministic.
 - [x] The serving path always uses Stripe: sandbox locally and a restricted live key in production. The in-memory provider is injected only by tests, which hit no Stripe endpoint.
 - [x] Config: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, and `APP_BASE_URL` loaded in `internal/config`; `serve` fails fast on missing runtime values without making unrelated commands require them.
 
@@ -114,10 +114,10 @@ Deps: BILL-8, FND-5 · Phase 4 · Ref: design 08 (Customer Portal; Config and se
 
 As a new customer, I want signup → payment → onboarding to be one uninterrupted path, so that nothing about setup requires help.
 
-- [ ] A signup page consistent with login; a new account reaches payment without a detour.
-- [ ] Returning from a successful payment shows a brief settling state and then continues into onboarding; abandoning checkout returns to billing with no error framing — nothing went wrong.
-- [ ] A billing page states plan, price, status and the renewal or end date, and offers the single action the current access allows.
-- [ ] An account that has never paid cannot wander into the app; it arrives at billing instead.
+- [x] A signup page consistent with login; a new account reaches payment without a detour.
+- [x] Returning from a successful payment shows a brief settling state and then continues into onboarding; abandoning checkout returns to billing with no error framing — nothing went wrong.
+- [x] A billing page states plan, price, status and the renewal or end date, and offers the server-derived action: manage an already-paid subscription in the portal, or start Checkout when none exists or the prior one never completed a payment.
+- [x] An account that has never paid cannot wander into the app; it arrives at billing instead.
 
 Deps: BILL-4, BILL-6, BILL-8 · Phase 4 · Ref: design 08 (The funnel; RPC surface), 06 (Frontend stack)
 

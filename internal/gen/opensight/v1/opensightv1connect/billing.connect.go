@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// BillingServiceGetBillingProcedure is the fully-qualified name of the BillingService's GetBilling
+	// RPC.
+	BillingServiceGetBillingProcedure = "/opensight.v1.BillingService/GetBilling"
 	// BillingServiceStartCheckoutProcedure is the fully-qualified name of the BillingService's
 	// StartCheckout RPC.
 	BillingServiceStartCheckoutProcedure = "/opensight.v1.BillingService/StartCheckout"
@@ -46,6 +49,8 @@ const (
 
 // BillingServiceClient is a client for the opensight.v1.BillingService service.
 type BillingServiceClient interface {
+	// BILL-9
+	GetBilling(context.Context, *connect.Request[v1.GetBillingRequest]) (*connect.Response[v1.GetBillingResponse], error)
 	// BILL-4
 	StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error)
 	// BILL-4
@@ -65,6 +70,12 @@ func NewBillingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 	baseURL = strings.TrimRight(baseURL, "/")
 	billingServiceMethods := v1.File_opensight_v1_billing_proto.Services().ByName("BillingService").Methods()
 	return &billingServiceClient{
+		getBilling: connect.NewClient[v1.GetBillingRequest, v1.GetBillingResponse](
+			httpClient,
+			baseURL+BillingServiceGetBillingProcedure,
+			connect.WithSchema(billingServiceMethods.ByName("GetBilling")),
+			connect.WithClientOptions(opts...),
+		),
 		startCheckout: connect.NewClient[v1.StartCheckoutRequest, v1.StartCheckoutResponse](
 			httpClient,
 			baseURL+BillingServiceStartCheckoutProcedure,
@@ -88,9 +99,15 @@ func NewBillingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // billingServiceClient implements BillingServiceClient.
 type billingServiceClient struct {
+	getBilling          *connect.Client[v1.GetBillingRequest, v1.GetBillingResponse]
 	startCheckout       *connect.Client[v1.StartCheckoutRequest, v1.StartCheckoutResponse]
 	confirmCheckout     *connect.Client[v1.ConfirmCheckoutRequest, v1.ConfirmCheckoutResponse]
 	createPortalSession *connect.Client[v1.CreatePortalSessionRequest, v1.CreatePortalSessionResponse]
+}
+
+// GetBilling calls opensight.v1.BillingService.GetBilling.
+func (c *billingServiceClient) GetBilling(ctx context.Context, req *connect.Request[v1.GetBillingRequest]) (*connect.Response[v1.GetBillingResponse], error) {
+	return c.getBilling.CallUnary(ctx, req)
 }
 
 // StartCheckout calls opensight.v1.BillingService.StartCheckout.
@@ -110,6 +127,8 @@ func (c *billingServiceClient) CreatePortalSession(ctx context.Context, req *con
 
 // BillingServiceHandler is an implementation of the opensight.v1.BillingService service.
 type BillingServiceHandler interface {
+	// BILL-9
+	GetBilling(context.Context, *connect.Request[v1.GetBillingRequest]) (*connect.Response[v1.GetBillingResponse], error)
 	// BILL-4
 	StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error)
 	// BILL-4
@@ -125,6 +144,12 @@ type BillingServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewBillingServiceHandler(svc BillingServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	billingServiceMethods := v1.File_opensight_v1_billing_proto.Services().ByName("BillingService").Methods()
+	billingServiceGetBillingHandler := connect.NewUnaryHandler(
+		BillingServiceGetBillingProcedure,
+		svc.GetBilling,
+		connect.WithSchema(billingServiceMethods.ByName("GetBilling")),
+		connect.WithHandlerOptions(opts...),
+	)
 	billingServiceStartCheckoutHandler := connect.NewUnaryHandler(
 		BillingServiceStartCheckoutProcedure,
 		svc.StartCheckout,
@@ -145,6 +170,8 @@ func NewBillingServiceHandler(svc BillingServiceHandler, opts ...connect.Handler
 	)
 	return "/opensight.v1.BillingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case BillingServiceGetBillingProcedure:
+			billingServiceGetBillingHandler.ServeHTTP(w, r)
 		case BillingServiceStartCheckoutProcedure:
 			billingServiceStartCheckoutHandler.ServeHTTP(w, r)
 		case BillingServiceConfirmCheckoutProcedure:
@@ -159,6 +186,10 @@ func NewBillingServiceHandler(svc BillingServiceHandler, opts ...connect.Handler
 
 // UnimplementedBillingServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedBillingServiceHandler struct{}
+
+func (UnimplementedBillingServiceHandler) GetBilling(context.Context, *connect.Request[v1.GetBillingRequest]) (*connect.Response[v1.GetBillingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BillingService.GetBilling is not implemented"))
+}
 
 func (UnimplementedBillingServiceHandler) StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BillingService.StartCheckout is not implemented"))

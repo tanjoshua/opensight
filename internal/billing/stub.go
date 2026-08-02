@@ -21,13 +21,20 @@ type StubProvider struct {
 
 	sessions      map[string]CheckoutSession
 	subscriptions map[string]Subscription // keyed by Stripe customer id
+	price         Price
 }
+
+// stubPrice is the StubProvider's default GetPrice response: deterministic,
+// matching the commercial model design 08 pins down (SGD 50.00/month), so a
+// test that never calls SetPrice still sees a realistic value.
+var stubPrice = Price{UnitAmount: 5000, Currency: "sgd", Interval: "month"}
 
 // NewStubProvider returns a ready StubProvider.
 func NewStubProvider() *StubProvider {
 	return &StubProvider{
 		sessions:      make(map[string]CheckoutSession),
 		subscriptions: make(map[string]Subscription),
+		price:         stubPrice,
 	}
 }
 
@@ -126,6 +133,24 @@ func (p *StubProvider) SetSubscriptionStatus(customerID, status string) {
 	}
 	sub.Status = status
 	p.subscriptions[customerID] = sub
+}
+
+// GetPrice returns the stub's fixed price, ignoring priceID: the stub tracks
+// no per-id catalog since only one price exists today.
+func (p *StubProvider) GetPrice(_ context.Context, _ string) (Price, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.price, nil
+}
+
+// SetPrice overrides the stub's GetPrice response, for a test that needs a
+// different price than the default.
+func (p *StubProvider) SetPrice(price Price) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.price = price
 }
 
 // SetCancelAtPeriodEnd drives a customer's stub subscription's

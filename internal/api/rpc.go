@@ -74,6 +74,7 @@ var procedureAccess = map[string]accessClass{
 	opensightv1connect.AuthServiceGetMeProcedure: classBilling,
 	// Logout is billing: a lapsed customer must always be able to log out.
 	opensightv1connect.AuthServiceLogoutProcedure:             classBilling,
+	opensightv1connect.BillingServiceGetBillingProcedure:      classBilling,
 	opensightv1connect.BillingServiceStartCheckoutProcedure:   classBilling,
 	opensightv1connect.BillingServiceConfirmCheckoutProcedure: classBilling,
 	// CreatePortalSession is billing, not read/write: a lapsed customer must

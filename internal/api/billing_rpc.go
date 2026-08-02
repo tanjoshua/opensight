@@ -11,6 +11,7 @@ import (
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
 
 	connect "connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ opensightv1connect.BillingServiceHandler = (*Server)(nil)
@@ -20,6 +21,81 @@ var _ opensightv1connect.BillingServiceHandler = (*Server)(nil)
 // (design 08). The 8-letter suffix was rolled once and committed — randomising
 // it per session would produce a population of one and defeat the purpose.
 const checkoutIntegrationIdentifier = "opensight-signup-vqmzhrtk"
+
+// GetBilling returns the calling tenant's billing state for the billing page
+// (BILL-9, design 08 "RPC surface"): derived access, plan entitlements, the
+// verbatim Stripe status, a live price for display, and the renewal-or-end
+// date pair (current_period_end + cancel_at_period_end).
+func (s *Server) GetBilling(ctx context.Context, _ *connect.Request[opensightv1.GetBillingRequest]) (*connect.Response[opensightv1.GetBillingResponse], error) {
+	su, cerr := s.rpcSessionUser(ctx, "get billing")
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	sub, err := s.subscriptions.GetByTenant(ctx, su.TenantID)
+	if err != nil {
+		// Signup guarantees the row; a miss here is our bug, not the client's.
+		return nil, s.rpcInternal("get billing: get subscription", err)
+	}
+
+	plan, err := billing.PlanFor(sub.PlanCode)
+	if err != nil {
+		return nil, s.rpcInternal("get billing: resolve plan", err)
+	}
+
+	resp := &opensightv1.GetBillingResponse{
+		Access:            accessToProto(billing.DeriveAccess(sub.AccessState(), nowUTC())),
+		Action:            billingActionToProto(billing.DeriveAction(sub.AccessState())),
+		Plan:              planToProto(plan),
+		Comped:            sub.Comped,
+		CancelAtPeriodEnd: sub.CancelAtPeriodEnd,
+	}
+	if sub.StripeStatus != nil {
+		resp.StripeStatus = *sub.StripeStatus
+	}
+	if sub.CurrentPeriodEnd != nil {
+		resp.CurrentPeriodEnd = timestamppb.New(*sub.CurrentPeriodEnd)
+	}
+
+	priceID := s.stripePriceIDs[plan.Code]
+	if priceID == "" {
+		// A misconfigured deploy (missing Stripe Price env var), not a client
+		// fault.
+		return nil, s.rpcInternal("get billing: no price configured", errors.New("no stripe price id for plan "+plan.Code))
+	}
+	price, err := s.cachedPrice(ctx, priceID)
+	if err != nil {
+		return nil, s.rpcInternal("get billing: get price", err)
+	}
+	resp.PriceUnitAmount = price.UnitAmount
+	resp.PriceCurrency = price.Currency
+	resp.PriceInterval = price.Interval
+
+	return connect.NewResponse(resp), nil
+}
+
+// cachedPrice returns priceID's Stripe Price, fetching once per process
+// lifetime: Stripe Prices are immutable (a new amount is a new Price
+// object), so a cache entry can never disagree with what a customer is
+// charged.
+func (s *Server) cachedPrice(ctx context.Context, priceID string) (billing.Price, error) {
+	s.priceCache.mu.Lock()
+	if price, ok := s.priceCache.prices[priceID]; ok {
+		s.priceCache.mu.Unlock()
+		return price, nil
+	}
+	s.priceCache.mu.Unlock()
+
+	price, err := s.billing.GetPrice(ctx, priceID)
+	if err != nil {
+		return billing.Price{}, err
+	}
+
+	s.priceCache.mu.Lock()
+	s.priceCache.prices[priceID] = price
+	s.priceCache.mu.Unlock()
+	return price, nil
+}
 
 // StartCheckout sends the calling tenant to a Stripe-hosted Checkout Session
 // for the Starter plan, creating the tenant's permanent Stripe Customer on
@@ -36,10 +112,11 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 		return nil, s.rpcInternal("start checkout: get subscription", err)
 	}
 
-	// Second-checkout guard, before any Stripe call, so a double-checkout
-	// costs zero API calls.
-	if billing.DeriveAccess(sub.AccessState(), nowUTC()) == billing.AccessFull {
-		return nil, rpcFailedPrecondition("this account already has an active subscription")
+	// Enforce the same server-derived action returned by GetBilling before any
+	// Stripe call. Recoverable subscriptions belong in the Customer Portal;
+	// Checkout is only for a tenant with no subscription or a terminal one.
+	if billing.DeriveAction(sub.AccessState()) != billing.ActionCheckout {
+		return nil, rpcFailedPrecondition("this account already has a subscription; manage it from the billing portal")
 	}
 
 	plan, err := billing.PlanFor(sub.PlanCode)

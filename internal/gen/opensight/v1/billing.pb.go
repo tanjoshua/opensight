@@ -9,6 +9,7 @@ package opensightv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -20,6 +21,225 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type BillingAction int32
+
+const (
+	BillingAction_BILLING_ACTION_UNSPECIFIED BillingAction = 0
+	BillingAction_BILLING_ACTION_NONE        BillingAction = 1
+	BillingAction_BILLING_ACTION_CHECKOUT    BillingAction = 2
+	BillingAction_BILLING_ACTION_PORTAL      BillingAction = 3
+)
+
+// Enum value maps for BillingAction.
+var (
+	BillingAction_name = map[int32]string{
+		0: "BILLING_ACTION_UNSPECIFIED",
+		1: "BILLING_ACTION_NONE",
+		2: "BILLING_ACTION_CHECKOUT",
+		3: "BILLING_ACTION_PORTAL",
+	}
+	BillingAction_value = map[string]int32{
+		"BILLING_ACTION_UNSPECIFIED": 0,
+		"BILLING_ACTION_NONE":        1,
+		"BILLING_ACTION_CHECKOUT":    2,
+		"BILLING_ACTION_PORTAL":      3,
+	}
+)
+
+func (x BillingAction) Enum() *BillingAction {
+	p := new(BillingAction)
+	*p = x
+	return p
+}
+
+func (x BillingAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BillingAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_billing_proto_enumTypes[0].Descriptor()
+}
+
+func (BillingAction) Type() protoreflect.EnumType {
+	return &file_opensight_v1_billing_proto_enumTypes[0]
+}
+
+func (x BillingAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BillingAction.Descriptor instead.
+func (BillingAction) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{0}
+}
+
+type GetBillingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBillingRequest) Reset() {
+	*x = GetBillingRequest{}
+	mi := &file_opensight_v1_billing_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBillingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBillingRequest) ProtoMessage() {}
+
+func (x *GetBillingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_billing_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBillingRequest.ProtoReflect.Descriptor instead.
+func (*GetBillingRequest) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{0}
+}
+
+type GetBillingResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Access Access                 `protobuf:"varint,1,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
+	Plan   *Plan                  `protobuf:"bytes,2,opt,name=plan,proto3" json:"plan,omitempty"`
+	// stripe_status is VERBATIM Stripe status, empty when the tenant has no
+	// subscription. The SPA maps it to copy; it is never invented locally
+	// (design 08 — subscriptions.stripe_status).
+	StripeStatus string `protobuf:"bytes,3,opt,name=stripe_status,json=stripeStatus,proto3" json:"stripe_status,omitempty"`
+	// price_unit_amount is minor units (e.g. 5000 for S$50.00), fetched live
+	// from Stripe rather than a constant — Stripe Prices are immutable, so a
+	// displayed price can never disagree with the charge.
+	PriceUnitAmount int64  `protobuf:"varint,4,opt,name=price_unit_amount,json=priceUnitAmount,proto3" json:"price_unit_amount,omitempty"`
+	PriceCurrency   string `protobuf:"bytes,5,opt,name=price_currency,json=priceCurrency,proto3" json:"price_currency,omitempty"`
+	PriceInterval   string `protobuf:"bytes,6,opt,name=price_interval,json=priceInterval,proto3" json:"price_interval,omitempty"`
+	// current_period_end and cancel_at_period_end together carry the
+	// "renewal or end date": current_period_end is the renewal date when
+	// cancel_at_period_end is false, and the end date when it is true.
+	CurrentPeriodEnd  *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=current_period_end,json=currentPeriodEnd,proto3" json:"current_period_end,omitempty"`
+	CancelAtPeriodEnd bool                   `protobuf:"varint,8,opt,name=cancel_at_period_end,json=cancelAtPeriodEnd,proto3" json:"cancel_at_period_end,omitempty"`
+	// comped tenants have no Stripe objects at all (design 08 "comped is a
+	// separate boolean, not a status value") — stripe_status is empty and
+	// there is no portal to offer.
+	Comped bool `protobuf:"varint,9,opt,name=comped,proto3" json:"comped,omitempty"`
+	// action is derived server-side from the tenant's subscription. The SPA
+	// does not interpret Stripe statuses to decide whether to create a new
+	// subscription or manage the existing one.
+	Action        BillingAction `protobuf:"varint,10,opt,name=action,proto3,enum=opensight.v1.BillingAction" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBillingResponse) Reset() {
+	*x = GetBillingResponse{}
+	mi := &file_opensight_v1_billing_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBillingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBillingResponse) ProtoMessage() {}
+
+func (x *GetBillingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_billing_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBillingResponse.ProtoReflect.Descriptor instead.
+func (*GetBillingResponse) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetBillingResponse) GetAccess() Access {
+	if x != nil {
+		return x.Access
+	}
+	return Access_ACCESS_UNSPECIFIED
+}
+
+func (x *GetBillingResponse) GetPlan() *Plan {
+	if x != nil {
+		return x.Plan
+	}
+	return nil
+}
+
+func (x *GetBillingResponse) GetStripeStatus() string {
+	if x != nil {
+		return x.StripeStatus
+	}
+	return ""
+}
+
+func (x *GetBillingResponse) GetPriceUnitAmount() int64 {
+	if x != nil {
+		return x.PriceUnitAmount
+	}
+	return 0
+}
+
+func (x *GetBillingResponse) GetPriceCurrency() string {
+	if x != nil {
+		return x.PriceCurrency
+	}
+	return ""
+}
+
+func (x *GetBillingResponse) GetPriceInterval() string {
+	if x != nil {
+		return x.PriceInterval
+	}
+	return ""
+}
+
+func (x *GetBillingResponse) GetCurrentPeriodEnd() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CurrentPeriodEnd
+	}
+	return nil
+}
+
+func (x *GetBillingResponse) GetCancelAtPeriodEnd() bool {
+	if x != nil {
+		return x.CancelAtPeriodEnd
+	}
+	return false
+}
+
+func (x *GetBillingResponse) GetComped() bool {
+	if x != nil {
+		return x.Comped
+	}
+	return false
+}
+
+func (x *GetBillingResponse) GetAction() BillingAction {
+	if x != nil {
+		return x.Action
+	}
+	return BillingAction_BILLING_ACTION_UNSPECIFIED
+}
 
 // StartCheckoutRequest is deliberately empty. The plan being paid for is the
 // one already on the tenant's subscriptions row, and its Price id is resolved
@@ -33,7 +253,7 @@ type StartCheckoutRequest struct {
 
 func (x *StartCheckoutRequest) Reset() {
 	*x = StartCheckoutRequest{}
-	mi := &file_opensight_v1_billing_proto_msgTypes[0]
+	mi := &file_opensight_v1_billing_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +265,7 @@ func (x *StartCheckoutRequest) String() string {
 func (*StartCheckoutRequest) ProtoMessage() {}
 
 func (x *StartCheckoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_billing_proto_msgTypes[0]
+	mi := &file_opensight_v1_billing_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +278,7 @@ func (x *StartCheckoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartCheckoutRequest.ProtoReflect.Descriptor instead.
 func (*StartCheckoutRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{0}
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{2}
 }
 
 type StartCheckoutResponse struct {
@@ -72,7 +292,7 @@ type StartCheckoutResponse struct {
 
 func (x *StartCheckoutResponse) Reset() {
 	*x = StartCheckoutResponse{}
-	mi := &file_opensight_v1_billing_proto_msgTypes[1]
+	mi := &file_opensight_v1_billing_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -84,7 +304,7 @@ func (x *StartCheckoutResponse) String() string {
 func (*StartCheckoutResponse) ProtoMessage() {}
 
 func (x *StartCheckoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_billing_proto_msgTypes[1]
+	mi := &file_opensight_v1_billing_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -97,7 +317,7 @@ func (x *StartCheckoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartCheckoutResponse.ProtoReflect.Descriptor instead.
 func (*StartCheckoutResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{1}
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *StartCheckoutResponse) GetCheckoutUrl() string {
@@ -119,7 +339,7 @@ type ConfirmCheckoutRequest struct {
 
 func (x *ConfirmCheckoutRequest) Reset() {
 	*x = ConfirmCheckoutRequest{}
-	mi := &file_opensight_v1_billing_proto_msgTypes[2]
+	mi := &file_opensight_v1_billing_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -131,7 +351,7 @@ func (x *ConfirmCheckoutRequest) String() string {
 func (*ConfirmCheckoutRequest) ProtoMessage() {}
 
 func (x *ConfirmCheckoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_billing_proto_msgTypes[2]
+	mi := &file_opensight_v1_billing_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -144,7 +364,7 @@ func (x *ConfirmCheckoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmCheckoutRequest.ProtoReflect.Descriptor instead.
 func (*ConfirmCheckoutRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{2}
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ConfirmCheckoutRequest) GetSessionId() string {
@@ -166,7 +386,7 @@ type ConfirmCheckoutResponse struct {
 
 func (x *ConfirmCheckoutResponse) Reset() {
 	*x = ConfirmCheckoutResponse{}
-	mi := &file_opensight_v1_billing_proto_msgTypes[3]
+	mi := &file_opensight_v1_billing_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -178,7 +398,7 @@ func (x *ConfirmCheckoutResponse) String() string {
 func (*ConfirmCheckoutResponse) ProtoMessage() {}
 
 func (x *ConfirmCheckoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_billing_proto_msgTypes[3]
+	mi := &file_opensight_v1_billing_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -191,7 +411,7 @@ func (x *ConfirmCheckoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmCheckoutResponse.ProtoReflect.Descriptor instead.
 func (*ConfirmCheckoutResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{3}
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ConfirmCheckoutResponse) GetAccess() Access {
@@ -212,7 +432,7 @@ type CreatePortalSessionRequest struct {
 
 func (x *CreatePortalSessionRequest) Reset() {
 	*x = CreatePortalSessionRequest{}
-	mi := &file_opensight_v1_billing_proto_msgTypes[4]
+	mi := &file_opensight_v1_billing_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -224,7 +444,7 @@ func (x *CreatePortalSessionRequest) String() string {
 func (*CreatePortalSessionRequest) ProtoMessage() {}
 
 func (x *CreatePortalSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_billing_proto_msgTypes[4]
+	mi := &file_opensight_v1_billing_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +457,7 @@ func (x *CreatePortalSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePortalSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreatePortalSessionRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{4}
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{6}
 }
 
 type CreatePortalSessionResponse struct {
@@ -251,7 +471,7 @@ type CreatePortalSessionResponse struct {
 
 func (x *CreatePortalSessionResponse) Reset() {
 	*x = CreatePortalSessionResponse{}
-	mi := &file_opensight_v1_billing_proto_msgTypes[5]
+	mi := &file_opensight_v1_billing_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -263,7 +483,7 @@ func (x *CreatePortalSessionResponse) String() string {
 func (*CreatePortalSessionResponse) ProtoMessage() {}
 
 func (x *CreatePortalSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_billing_proto_msgTypes[5]
+	mi := &file_opensight_v1_billing_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -276,7 +496,7 @@ func (x *CreatePortalSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePortalSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreatePortalSessionResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{5}
+	return file_opensight_v1_billing_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreatePortalSessionResponse) GetPortalUrl() string {
@@ -290,7 +510,20 @@ var File_opensight_v1_billing_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_billing_proto_rawDesc = "" +
 	"\n" +
-	"\x1aopensight/v1/billing.proto\x12\fopensight.v1\x1a\x19opensight/v1/common.proto\"\x16\n" +
+	"\x1aopensight/v1/billing.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19opensight/v1/common.proto\"\x13\n" +
+	"\x11GetBillingRequest\"\xd1\x03\n" +
+	"\x12GetBillingResponse\x12,\n" +
+	"\x06access\x18\x01 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\x12&\n" +
+	"\x04plan\x18\x02 \x01(\v2\x12.opensight.v1.PlanR\x04plan\x12#\n" +
+	"\rstripe_status\x18\x03 \x01(\tR\fstripeStatus\x12*\n" +
+	"\x11price_unit_amount\x18\x04 \x01(\x03R\x0fpriceUnitAmount\x12%\n" +
+	"\x0eprice_currency\x18\x05 \x01(\tR\rpriceCurrency\x12%\n" +
+	"\x0eprice_interval\x18\x06 \x01(\tR\rpriceInterval\x12H\n" +
+	"\x12current_period_end\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x10currentPeriodEnd\x12/\n" +
+	"\x14cancel_at_period_end\x18\b \x01(\bR\x11cancelAtPeriodEnd\x12\x16\n" +
+	"\x06comped\x18\t \x01(\bR\x06comped\x123\n" +
+	"\x06action\x18\n" +
+	" \x01(\x0e2\x1b.opensight.v1.BillingActionR\x06action\"\x16\n" +
 	"\x14StartCheckoutRequest\":\n" +
 	"\x15StartCheckoutResponse\x12!\n" +
 	"\fcheckout_url\x18\x01 \x01(\tR\vcheckoutUrl\"7\n" +
@@ -302,8 +535,15 @@ const file_opensight_v1_billing_proto_rawDesc = "" +
 	"\x1aCreatePortalSessionRequest\"<\n" +
 	"\x1bCreatePortalSessionResponse\x12\x1d\n" +
 	"\n" +
-	"portal_url\x18\x01 \x01(\tR\tportalUrl2\xb6\x02\n" +
-	"\x0eBillingService\x12X\n" +
+	"portal_url\x18\x01 \x01(\tR\tportalUrl*\x80\x01\n" +
+	"\rBillingAction\x12\x1e\n" +
+	"\x1aBILLING_ACTION_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13BILLING_ACTION_NONE\x10\x01\x12\x1b\n" +
+	"\x17BILLING_ACTION_CHECKOUT\x10\x02\x12\x19\n" +
+	"\x15BILLING_ACTION_PORTAL\x10\x032\x87\x03\n" +
+	"\x0eBillingService\x12O\n" +
+	"\n" +
+	"GetBilling\x12\x1f.opensight.v1.GetBillingRequest\x1a .opensight.v1.GetBillingResponse\x12X\n" +
 	"\rStartCheckout\x12\".opensight.v1.StartCheckoutRequest\x1a#.opensight.v1.StartCheckoutResponse\x12^\n" +
 	"\x0fConfirmCheckout\x12$.opensight.v1.ConfirmCheckoutRequest\x1a%.opensight.v1.ConfirmCheckoutResponse\x12j\n" +
 	"\x13CreatePortalSession\x12(.opensight.v1.CreatePortalSessionRequest\x1a).opensight.v1.CreatePortalSessionResponseB\xa2\x01\n" +
@@ -321,29 +561,41 @@ func file_opensight_v1_billing_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_billing_proto_rawDescData
 }
 
-var file_opensight_v1_billing_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_opensight_v1_billing_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_opensight_v1_billing_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_opensight_v1_billing_proto_goTypes = []any{
-	(*StartCheckoutRequest)(nil),        // 0: opensight.v1.StartCheckoutRequest
-	(*StartCheckoutResponse)(nil),       // 1: opensight.v1.StartCheckoutResponse
-	(*ConfirmCheckoutRequest)(nil),      // 2: opensight.v1.ConfirmCheckoutRequest
-	(*ConfirmCheckoutResponse)(nil),     // 3: opensight.v1.ConfirmCheckoutResponse
-	(*CreatePortalSessionRequest)(nil),  // 4: opensight.v1.CreatePortalSessionRequest
-	(*CreatePortalSessionResponse)(nil), // 5: opensight.v1.CreatePortalSessionResponse
-	(Access)(0),                         // 6: opensight.v1.Access
+	(BillingAction)(0),                  // 0: opensight.v1.BillingAction
+	(*GetBillingRequest)(nil),           // 1: opensight.v1.GetBillingRequest
+	(*GetBillingResponse)(nil),          // 2: opensight.v1.GetBillingResponse
+	(*StartCheckoutRequest)(nil),        // 3: opensight.v1.StartCheckoutRequest
+	(*StartCheckoutResponse)(nil),       // 4: opensight.v1.StartCheckoutResponse
+	(*ConfirmCheckoutRequest)(nil),      // 5: opensight.v1.ConfirmCheckoutRequest
+	(*ConfirmCheckoutResponse)(nil),     // 6: opensight.v1.ConfirmCheckoutResponse
+	(*CreatePortalSessionRequest)(nil),  // 7: opensight.v1.CreatePortalSessionRequest
+	(*CreatePortalSessionResponse)(nil), // 8: opensight.v1.CreatePortalSessionResponse
+	(Access)(0),                         // 9: opensight.v1.Access
+	(*Plan)(nil),                        // 10: opensight.v1.Plan
+	(*timestamppb.Timestamp)(nil),       // 11: google.protobuf.Timestamp
 }
 var file_opensight_v1_billing_proto_depIdxs = []int32{
-	6, // 0: opensight.v1.ConfirmCheckoutResponse.access:type_name -> opensight.v1.Access
-	0, // 1: opensight.v1.BillingService.StartCheckout:input_type -> opensight.v1.StartCheckoutRequest
-	2, // 2: opensight.v1.BillingService.ConfirmCheckout:input_type -> opensight.v1.ConfirmCheckoutRequest
-	4, // 3: opensight.v1.BillingService.CreatePortalSession:input_type -> opensight.v1.CreatePortalSessionRequest
-	1, // 4: opensight.v1.BillingService.StartCheckout:output_type -> opensight.v1.StartCheckoutResponse
-	3, // 5: opensight.v1.BillingService.ConfirmCheckout:output_type -> opensight.v1.ConfirmCheckoutResponse
-	5, // 6: opensight.v1.BillingService.CreatePortalSession:output_type -> opensight.v1.CreatePortalSessionResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	9,  // 0: opensight.v1.GetBillingResponse.access:type_name -> opensight.v1.Access
+	10, // 1: opensight.v1.GetBillingResponse.plan:type_name -> opensight.v1.Plan
+	11, // 2: opensight.v1.GetBillingResponse.current_period_end:type_name -> google.protobuf.Timestamp
+	0,  // 3: opensight.v1.GetBillingResponse.action:type_name -> opensight.v1.BillingAction
+	9,  // 4: opensight.v1.ConfirmCheckoutResponse.access:type_name -> opensight.v1.Access
+	1,  // 5: opensight.v1.BillingService.GetBilling:input_type -> opensight.v1.GetBillingRequest
+	3,  // 6: opensight.v1.BillingService.StartCheckout:input_type -> opensight.v1.StartCheckoutRequest
+	5,  // 7: opensight.v1.BillingService.ConfirmCheckout:input_type -> opensight.v1.ConfirmCheckoutRequest
+	7,  // 8: opensight.v1.BillingService.CreatePortalSession:input_type -> opensight.v1.CreatePortalSessionRequest
+	2,  // 9: opensight.v1.BillingService.GetBilling:output_type -> opensight.v1.GetBillingResponse
+	4,  // 10: opensight.v1.BillingService.StartCheckout:output_type -> opensight.v1.StartCheckoutResponse
+	6,  // 11: opensight.v1.BillingService.ConfirmCheckout:output_type -> opensight.v1.ConfirmCheckoutResponse
+	8,  // 12: opensight.v1.BillingService.CreatePortalSession:output_type -> opensight.v1.CreatePortalSessionResponse
+	9,  // [9:13] is the sub-list for method output_type
+	5,  // [5:9] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_billing_proto_init() }
@@ -357,13 +609,14 @@ func file_opensight_v1_billing_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_billing_proto_rawDesc), len(file_opensight_v1_billing_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   6,
+			NumEnums:      1,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_opensight_v1_billing_proto_goTypes,
 		DependencyIndexes: file_opensight_v1_billing_proto_depIdxs,
+		EnumInfos:         file_opensight_v1_billing_proto_enumTypes,
 		MessageInfos:      file_opensight_v1_billing_proto_msgTypes,
 	}.Build()
 	File_opensight_v1_billing_proto = out.File

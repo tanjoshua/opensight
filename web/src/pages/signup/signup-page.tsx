@@ -1,23 +1,26 @@
 import { type FormEvent, useState } from "react"
 import { useMutation, createConnectQueryKey } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
-import { LogIn } from "lucide-react"
+import { UserPlus } from "lucide-react"
 import { Link, Navigate, useNavigate } from "react-router"
 
 import { errorMessage } from "@/api/errors"
 import { useMe } from "@/api/hooks"
-import { getMe, login } from "@/gen/opensight/v1/auth-AuthService_connectquery"
+import { getMe, signup } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-export function LoginPage() {
+// Near-copy of login-page.tsx (design 08 "The funnel" — signup and login are
+// one shell). A successful signup lands authenticated and unpaid, so it
+// forwards to /billing rather than /overview (BILL-3, BILL-9).
+export function SignupPage() {
   const me = useMe()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  const loginMutation = useMutation(login, {
+  const signupMutation = useMutation(signup, {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -25,7 +28,7 @@ export function LoginPage() {
           cardinality: "finite",
         }),
       })
-      navigate("/overview", { replace: true })
+      navigate("/billing", { replace: true })
     },
   })
 
@@ -33,13 +36,16 @@ export function LoginPage() {
     return <Navigate to="/overview" replace />
   }
 
-  const error = loginMutation.isError
-    ? errorMessage(loginMutation.error, "Login failed. Try again.")
+  const error = signupMutation.isError
+    ? errorMessage(
+        signupMutation.error,
+        "Could not create your account. Try again."
+      )
     : undefined
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    loginMutation.mutate({ email, password })
+    signupMutation.mutate({ email, password })
   }
 
   return (
@@ -50,7 +56,9 @@ export function LoginPage() {
       >
         <div className="flex flex-col gap-1">
           <h1 className="font-heading text-xl font-semibold">OpenSight</h1>
-          <p className="text-sm text-muted-foreground">Log in to continue.</p>
+          <p className="text-sm text-muted-foreground">
+            Create an account to get started.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -61,8 +69,8 @@ export function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.currentTarget.value)}
-              disabled={loginMutation.isPending}
-              aria-invalid={loginMutation.isError}
+              disabled={signupMutation.isPending}
+              aria-invalid={signupMutation.isError}
               required
             />
           </label>
@@ -70,11 +78,11 @@ export function LoginPage() {
             Password
             <Input
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.currentTarget.value)}
-              disabled={loginMutation.isPending}
-              aria-invalid={loginMutation.isError}
+              disabled={signupMutation.isPending}
+              aria-invalid={signupMutation.isError}
               required
             />
           </label>
@@ -86,18 +94,18 @@ export function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" disabled={loginMutation.isPending}>
-          <LogIn data-icon="inline-start" />
-          {loginMutation.isPending ? "Logging in" : "Log in"}
+        <Button type="submit" disabled={signupMutation.isPending}>
+          <UserPlus data-icon="inline-start" />
+          {signupMutation.isPending ? "Creating account" : "Create account"}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          Already have an account?{" "}
           <Link
             className="font-medium text-foreground hover:underline"
-            to="/signup"
+            to="/login"
           >
-            Sign up
+            Log in
           </Link>
         </p>
       </form>

@@ -2,7 +2,45 @@ syntax = "proto3";
 
 package opensight.v1;
 
+import "google/protobuf/timestamp.proto";
 import "opensight/v1/common.proto";
+
+message GetBillingRequest {}
+
+enum BillingAction {
+  BILLING_ACTION_UNSPECIFIED = 0;
+  BILLING_ACTION_NONE = 1;
+  BILLING_ACTION_CHECKOUT = 2;
+  BILLING_ACTION_PORTAL = 3;
+}
+
+message GetBillingResponse {
+  Access access = 1;
+  Plan plan = 2;
+  // stripe_status is VERBATIM Stripe status, empty when the tenant has no
+  // subscription. The SPA maps it to copy; it is never invented locally
+  // (design 08 — subscriptions.stripe_status).
+  string stripe_status = 3;
+  // price_unit_amount is minor units (e.g. 5000 for S$50.00), fetched live
+  // from Stripe rather than a constant — Stripe Prices are immutable, so a
+  // displayed price can never disagree with the charge.
+  int64 price_unit_amount = 4;
+  string price_currency = 5;
+  string price_interval = 6;
+  // current_period_end and cancel_at_period_end together carry the
+  // "renewal or end date": current_period_end is the renewal date when
+  // cancel_at_period_end is false, and the end date when it is true.
+  google.protobuf.Timestamp current_period_end = 7;
+  bool cancel_at_period_end = 8;
+  // comped tenants have no Stripe objects at all (design 08 "comped is a
+  // separate boolean, not a status value") — stripe_status is empty and
+  // there is no portal to offer.
+  bool comped = 9;
+  // action is derived server-side from the tenant's subscription. The SPA
+  // does not interpret Stripe statuses to decide whether to create a new
+  // subscription or manage the existing one.
+  BillingAction action = 10;
+}
 
 // StartCheckoutRequest is deliberately empty. The plan being paid for is the
 // one already on the tenant's subscriptions row, and its Price id is resolved
@@ -42,6 +80,8 @@ message CreatePortalSessionResponse {
 }
 
 service BillingService {
+  // BILL-9
+  rpc GetBilling(GetBillingRequest) returns (GetBillingResponse);
   // BILL-4
   rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);
   // BILL-4

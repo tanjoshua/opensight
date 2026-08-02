@@ -16,6 +16,18 @@ const (
 	AccessLapsed
 )
 
+// Action is the one billing operation a tenant may take from the billing
+// page. It is derived alongside Access so the API and SPA cannot disagree
+// about whether an existing Stripe subscription should be managed or a new
+// one should be created.
+type Action int
+
+const (
+	ActionNone Action = iota
+	ActionCheckout
+	ActionPortal
+)
+
 // String renders Access for logging; it is not the wire format (see
 // internal/api's accessToProto for that).
 func (a Access) String() string {
@@ -83,4 +95,31 @@ func DeriveAccess(st State, now time.Time) Access {
 	// canceled, unpaid, incomplete, incomplete_expired, paused, and anything
 	// else: was paid, history stays readable.
 	return AccessLapsed
+}
+
+// DeriveAction prevents a tenant from creating a second Stripe subscription
+// alongside one the Customer Portal could still recover. The dividing line is
+// whether the subscription has ever been paid: past_due, unpaid and paused
+// all follow a successful first charge, so the portal can revive them and
+// owns them regardless of current access. Everything else — no subscription
+// at all, canceled, or an initial payment that never landed (incomplete,
+// incomplete_expired) — has no portal affordance, so Checkout owns it.
+//
+// incomplete belongs on the Checkout side deliberately: Stripe voids it
+// automatically (~23h) and never charged for it, so routing a customer who
+// is actively trying to pay into a portal that cannot recover it would
+// strand them for a day for no benefit.
+func DeriveAction(st State) Action {
+	if st.Comped {
+		return ActionNone
+	}
+	if st.StripeSubscriptionID == "" {
+		return ActionCheckout
+	}
+	switch st.StripeStatus {
+	case "canceled", "incomplete", "incomplete_expired":
+		return ActionCheckout
+	}
+	// past_due, unpaid, paused, active, trialing: the portal owns it.
+	return ActionPortal
 }

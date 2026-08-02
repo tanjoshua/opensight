@@ -22,7 +22,7 @@ import { Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
 import { useMe, usePlan } from "@/api/hooks"
-import { BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
+import { Access, BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
 import { ProposalPayloadSchema, type ProposalPayload } from "@/gen/opensight/v1/business_pb"
 import {
   createBusiness,
@@ -76,6 +76,11 @@ export function OnboardingPage() {
         />
       </OnboardingShell>
     )
+  }
+  // Onboarding renders outside AppLayout, so it needs its own copy of the
+  // never-paid redirect (BILL-9) — AppLayout's doesn't cover this route.
+  if (me.data.access === Access.NEVER) {
+    return <Navigate to="/billing" replace />
   }
 
   const businesses = me.data.businesses

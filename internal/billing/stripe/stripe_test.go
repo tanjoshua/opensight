@@ -235,6 +235,67 @@ func TestProviderGetSubscriptionForCustomerNoSubscription(t *testing.T) {
 	}
 }
 
+// TestProviderGetSubscriptionForCustomerScheduledCancellation covers BILL-9's
+// fix: flexible billing mode (the default from API version 2025-09-30.clover
+// onward, which our pinned APIVersion postdates) represents a Customer
+// Portal "cancel at period end" as CancelAt set to the effective end
+// instant, with CancelAtPeriodEnd left false — verified against a live
+// sandbox subscriptions.update call. subscriptionFromStripe must still map
+// this to CancelAtPeriodEnd=true and take the end date from CancelAt, or
+// design 08's lapse banner would never see the field it depends on.
+func TestProviderGetSubscriptionForCustomerScheduledCancellation(t *testing.T) {
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(t, w, `{"object":"list","data":[{"id":"sub_1","status":"active","cancel_at_period_end":false,"cancel_at":1788324610,"customer":"cus_1","items":{"object":"list","data":[{"id":"si_1","current_period_end":1785732610}]}}],"has_more":false}`)
+	})
+
+	sub, err := p.GetSubscriptionForCustomer(context.Background(), "cus_1")
+	if err != nil {
+		t.Fatalf("GetSubscriptionForCustomer: %v", err)
+	}
+	if !sub.CancelAtPeriodEnd {
+		t.Fatal("CancelAtPeriodEnd = false, want true (a non-zero cancel_at is itself a scheduled cancellation)")
+	}
+	if want := time.Unix(1788324610, 0).UTC(); !sub.CurrentPeriodEnd.Equal(want) {
+		t.Fatalf("CurrentPeriodEnd = %v, want %v (read off cancel_at, not the item's current_period_end)", sub.CurrentPeriodEnd, want)
+	}
+}
+
+func TestProviderGetPrice(t *testing.T) {
+	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(t, w, `{"id":"price_1","unit_amount":5000,"currency":"sgd","recurring":{"interval":"month"}}`)
+	})
+
+	got, err := p.GetPrice(context.Background(), "price_1")
+	if err != nil {
+		t.Fatalf("GetPrice: %v", err)
+	}
+	want := billing.Price{UnitAmount: 5000, Currency: "sgd", Interval: "month"}
+	if got != want {
+		t.Fatalf("Price = %+v, want %+v", got, want)
+	}
+	if captured.method != http.MethodGet || captured.path != "/v1/prices/price_1" {
+		t.Fatalf("request = %s %s, want GET /v1/prices/price_1", captured.method, captured.path)
+	}
+}
+
+// TestProviderGetPriceNoRecurring covers the nil-tolerant mapping
+// (subscriptionFromStripe's rule extended to priceFromStripe): a one-time
+// Price has no Recurring component, and must map to an empty Interval, not a
+// panic.
+func TestProviderGetPriceNoRecurring(t *testing.T) {
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(t, w, `{"id":"price_2","unit_amount":100,"currency":"usd"}`)
+	})
+
+	got, err := p.GetPrice(context.Background(), "price_2")
+	if err != nil {
+		t.Fatalf("GetPrice: %v", err)
+	}
+	if got.Interval != "" {
+		t.Fatalf("Interval = %q, want empty", got.Interval)
+	}
+}
+
 func TestProviderCreatePortalSessionRequiresConfiguration(t *testing.T) {
 	requests := 0
 	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {

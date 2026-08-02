@@ -1,5 +1,5 @@
-// Package stripe is the real adapter behind billing.Provider (design 08
-// "Stripe integration — Client"). It is
+// Package stripe is the Stripe client adapter (design 08 "Stripe integration
+// — Client"). It is
 // a separate package from internal/billing, not a file in it, so stripe-go
 // never becomes a transitive dependency of internal/store (which imports
 // internal/billing for the plan catalog).
@@ -36,12 +36,11 @@ type Config struct {
 	BaseURL string
 }
 
-// Provider is the real, Stripe-backed billing.Provider.
+// Provider is the concrete Stripe billing client. Its consumers declare the
+// narrow interfaces they need.
 type Provider struct {
 	client *stripesdk.Client
 }
-
-var _ billing.Provider = (*Provider)(nil)
 
 // New constructs a Provider. An empty API key is a construction error: a
 // misconfigured runtime must fail at startup, not at the first checkout.
@@ -137,6 +136,32 @@ func (p *Provider) GetSubscriptionForCustomer(ctx context.Context, customerID st
 	return subscriptionFromStripe(subs[0]), nil
 }
 
+// GetPrice retrieves a Stripe Price for display (design 08 "RPC surface",
+// BILL-9). Prices are immutable in Stripe — a changed amount is a new Price
+// object — so this never needs to distinguish "changed" from "stale."
+func (p *Provider) GetPrice(ctx context.Context, priceID string) (billing.Price, error) {
+	price, err := p.client.V1Prices.Retrieve(ctx, priceID, nil)
+	if err != nil {
+		return billing.Price{}, fmt.Errorf("stripe: get price %q: %w", priceID, err)
+	}
+	return priceFromStripe(price), nil
+}
+
+func priceFromStripe(p *stripesdk.Price) billing.Price {
+	price := billing.Price{
+		UnitAmount: p.UnitAmount,
+		Currency:   string(p.Currency),
+	}
+	// Recurring is nil for a one-time Price. The Starter Price is always
+	// recurring, but tolerating nil here (rather than assuming) matches
+	// subscriptionFromStripe's rule of never panicking on a sub-struct Stripe
+	// didn't populate.
+	if p.Recurring != nil {
+		price.Interval = string(p.Recurring.Interval)
+	}
+	return price
+}
+
 // CreatePortalSession starts a Customer Portal session pinned to the
 // explicitly provisioned configuration (design 08 "Customer Portal").
 func (p *Provider) CreatePortalSession(ctx context.Context, params billing.CreatePortalSessionParams) (billing.PortalSession, error) {
@@ -158,7 +183,7 @@ func (p *Provider) CreatePortalSession(ctx context.Context, params billing.Creat
 
 // ApplyPortalConfiguration updates the explicitly provisioned Billing Portal
 // Configuration to match cfg. It deliberately lives on *Provider, not
-// billing.Provider: it is an admin-only operation the serving path never
+// the serving interfaces: it is an admin-only operation the serving path never
 // calls, and adding it to the runtime seam would force a meaningless fake
 // implementation.
 func (p *Provider) ApplyPortalConfiguration(ctx context.Context, configurationID string, cfg billing.PortalConfig) error {
@@ -227,6 +252,18 @@ func subscriptionFromStripe(s *stripesdk.Subscription) billing.Subscription {
 	// means "period end unknown," handled as the zero time, not a crash.
 	if s.Items != nil && len(s.Items.Data) > 0 {
 		sub.CurrentPeriodEnd = time.Unix(s.Items.Data[0].CurrentPeriodEnd, 0).UTC()
+	}
+	// Flexible billing mode — the default from API version 2025-09-30.clover
+	// onward, which our pinned 2026-06-24.dahlia postdates — represents a
+	// Customer Portal "cancel at period end" as CancelAt set to the
+	// effective end instant, leaving CancelAtPeriodEnd false (verified
+	// against a live sandbox subscriptions.update call for BILL-9; classic
+	// mode sets both). A non-zero CancelAt is therefore itself a scheduled
+	// cancellation, and it's the better end-date source when set: unlike the
+	// item's CurrentPeriodEnd, it doesn't drift if a later period starts.
+	if s.CancelAt != 0 {
+		sub.CancelAtPeriodEnd = true
+		sub.CurrentPeriodEnd = time.Unix(s.CancelAt, 0).UTC()
 	}
 	return sub
 }

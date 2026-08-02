@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes, useSearchParams } from "react-router"
 
 import { AppLayout } from "@/components/app-layout"
+import { BillingPage } from "@/pages/billing/billing-page"
+import { CheckoutReturnPage } from "@/pages/checkout/checkout-return-page"
 import { CompetitorsPage } from "@/pages/competitors/competitors-page"
 import { LoginPage } from "@/pages/login/login-page"
 import { OnboardingPage } from "@/pages/onboarding/onboarding-page"
@@ -12,6 +14,7 @@ import { PromptsPage } from "@/pages/prompts/prompts-page"
 import { RunDetailPage } from "@/pages/runs/run-detail-page"
 import { RunsPage } from "@/pages/runs/runs-page"
 import { SetupPage } from "@/pages/setup/setup-page"
+import { SignupPage } from "@/pages/signup/signup-page"
 
 // ResponsesRedirect keeps the old /responses(?run=X) deep links working after
 // the RUNS-6 rename: a bare wildcard route would drop ?run=, so this reads it
@@ -30,6 +33,9 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/billing" element={<BillingPage />} />
+      <Route path="/checkout/return" element={<CheckoutReturnPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/overview" replace />} />

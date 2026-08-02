@@ -100,3 +100,23 @@ const citationSubjectLabels: Record<number, string> = {
 export function citationSubjectLabel(subject: CitationSubject): string {
   return citationSubjectLabels[subject] ?? "Unknown"
 }
+
+// stripeStatusLabel maps GetBillingResponse.stripe_status — VERBATIM Stripe
+// text, never a locally-invented value (design 08) — to display copy. Unlike
+// the maps above this is keyed by string, not a generated enum: stripe_status
+// is deliberately a plain string on the wire (billing.proto), since the set
+// of Stripe statuses isn't ours to close. Empty string covers "no
+// subscription" (never paid, or comped).
+const stripeStatusLabels: Record<string, string> = {
+  active: "Active",
+  trialing: "Trial",
+  past_due: "Payment past due",
+  canceled: "Canceled",
+  unpaid: "Unpaid",
+  incomplete: "Incomplete",
+  incomplete_expired: "Incomplete (expired)",
+  paused: "Paused",
+}
+export function stripeStatusLabel(status: string): string {
+  return stripeStatusLabels[status] ?? (status || "No subscription")
+}

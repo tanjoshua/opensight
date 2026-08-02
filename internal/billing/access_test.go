@@ -42,3 +42,29 @@ func TestDeriveAccess(t *testing.T) {
 		})
 	}
 }
+
+func TestDeriveAction(t *testing.T) {
+	tests := []struct {
+		name  string
+		state State
+		want  Action
+	}{
+		{"comped has no Stripe action", State{Comped: true}, ActionNone},
+		{"never paid starts checkout", State{}, ActionCheckout},
+		{"canceled starts a new checkout", State{StripeSubscriptionID: "sub_1", StripeStatus: "canceled"}, ActionCheckout},
+		{"expired incomplete starts a new checkout", State{StripeSubscriptionID: "sub_1", StripeStatus: "incomplete_expired"}, ActionCheckout},
+		{"incomplete starts a new checkout", State{StripeSubscriptionID: "sub_1", StripeStatus: "incomplete"}, ActionCheckout},
+		{"active is managed", State{StripeSubscriptionID: "sub_1", StripeStatus: "active"}, ActionPortal},
+		{"past due is managed", State{StripeSubscriptionID: "sub_1", StripeStatus: "past_due"}, ActionPortal},
+		{"unpaid is managed", State{StripeSubscriptionID: "sub_1", StripeStatus: "unpaid"}, ActionPortal},
+		{"paused is managed", State{StripeSubscriptionID: "sub_1", StripeStatus: "paused"}, ActionPortal},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := DeriveAction(tc.state); got != tc.want {
+				t.Fatalf("DeriveAction() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

@@ -21,6 +21,19 @@ func accessToProto(a billing.Access) opensightv1.Access {
 	}
 }
 
+func billingActionToProto(a billing.Action) opensightv1.BillingAction {
+	switch a {
+	case billing.ActionNone:
+		return opensightv1.BillingAction_BILLING_ACTION_NONE
+	case billing.ActionCheckout:
+		return opensightv1.BillingAction_BILLING_ACTION_CHECKOUT
+	case billing.ActionPortal:
+		return opensightv1.BillingAction_BILLING_ACTION_PORTAL
+	default:
+		return opensightv1.BillingAction_BILLING_ACTION_UNSPECIFIED
+	}
+}
+
 // planToProto maps a catalog billing.Plan onto the proto Plan message
 // (common.proto — moved here from business_conv.go, BILL-6: Plan now lives
 // alongside Access on GetMeResponse, not on BusinessProfile).
