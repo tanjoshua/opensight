@@ -34,8 +34,7 @@ func businessToProfile(b store.Business) (llm.ProposedProfile, error) {
 //
 //   - Every *ToProto function returns a non-nil message with non-nil required
 //     nested messages (so resp.GetLocation() chains never nil-panic on the
-//     client side) — this matches REST, which always emitted a location object
-//     even when empty.
+//     client side), even when empty.
 //   - proposalPayloadFromProto(nil) returns llm.ProposalPayload{}, NOT a panic.
 //     This lets ApplyProposal with an omitted payload fail llm.ValidateProposal
 //     naturally (empty name/category/country) rather than crashing.
@@ -43,7 +42,7 @@ func businessToProfile(b store.Business) (llm.ProposedProfile, error) {
 //     Prompts, Sources) to non-nil empty slices. Reason: json.Marshal(nil
 //     []string) produces null, but json.Marshal([]string{}) produces [], and
 //     ApplyProposal marshals Services straight into a jsonb column — a stray
-//     null would silently differ from what REST always wrote.
+//     null there would silently differ from an empty array.
 //   - *ToProto functions do NOT normalize the reverse direction — a nil llm
 //     slice becomes a nil proto slice, which is wire-identical to an empty
 //     one. This means the round-trip test needs a fully-populated fixture with
@@ -141,8 +140,8 @@ func proposalPayloadFromProto(p *opensightv1.ProposalPayload) llm.ProposalPayloa
 }
 
 // businessProfileToProto wraps businessToProfile above to build the full
-// BusinessProfile message. Plan entitlements are no longer a per-business
-// field (BILL-6, GetMe carries them instead), so this takes no plan.
+// BusinessProfile message. Plan entitlements are not a per-business field —
+// GetMe carries them.
 func businessProfileToProto(b store.Business) (*opensightv1.BusinessProfile, error) {
 	profile, err := businessToProfile(b)
 	if err != nil {
@@ -161,8 +160,8 @@ func businessProfileToProto(b store.Business) (*opensightv1.BusinessProfile, err
 	return resp, nil
 }
 
-// proposalStatusToProto maps the REST proposalStatus* string constants
-// (businesses.go) to the generated proto enum.
+// proposalStatusToProto maps the proposalStatus* string constants to the
+// generated proto enum.
 func proposalStatusToProto(status string) opensightv1.ProposalStatus {
 	switch status {
 	case proposalStatusGenerating:
@@ -190,7 +189,7 @@ func generationStageToProto(stage string) opensightv1.GenerationStage {
 }
 
 // businessStatusToProto maps the store's string-typed business status to the
-// generated proto enum. Moved from auth_rpc.go (GetMe uses it too).
+// generated proto enum.
 func businessStatusToProto(s store.BusinessStatus) opensightv1.BusinessStatus {
 	switch s {
 	case store.BusinessStatusDraft:

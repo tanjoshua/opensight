@@ -10,8 +10,7 @@ import (
 )
 
 // replayFS holds the recorded OpenAI raw_response payloads that back replay
-// mode. The corpus is derived from the SPK-1 validation-spike captures
-// (testdata/spk1); index.json maps prompt text to a payload file.
+// mode; index.json maps prompt text to a payload file.
 //
 //go:embed testdata/replay/index.json testdata/replay/*.json
 var replayFS embed.FS

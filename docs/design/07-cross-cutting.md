@@ -9,7 +9,7 @@ Depends on: all previous designs; closes their open questions.
 - Passwords hashed with argon2id; sessions are random tokens, stored hashed, in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
 - Rationale: a managed provider (Clerk/Auth0) adds an external dependency and an eventual cost floor for what is, at this scale, ~200 lines of well-trodden Go. Self-hosted identity servers (Keycloak/Ory) are overkill on a 4GB VPS. Revisit when password reset, email verification, SSO or multi-user tenants stack up — that is the point where a managed provider starts paying for itself.
 - **Signup** creates a tenant, a user and a subscription row in one transaction, then requires Stripe Checkout before any app surface opens (08). Taking the card first is what lets MVP ship without email verification: a completed charge is a stronger intent signal than a verified mailbox, and it removes the free-resource abuse that verification exists to stop.
-- **Password reset is operator-run** (`opensight user set-password`) until a transactional email provider exists. This is the one knowingly incomplete part of self-serve; reset volume is the trigger to add one.
+- Password reset is deferred while there is no transactional email provider. Account recovery and other sensitive account-management actions belong in a future admin portal.
 - Admin CLI account creation (`opensight user create --tenant …`) remains for operator-provisioned and comped tenants (08).
 - CSRF: every RPC handler requires the Connect protocol header (`connect.WithRequireConnectProtocolHeader()`, `internal/api/rpc.go`) — a header a cross-origin form or bare browser navigation cannot set — combined with SameSite=Lax cookies this is sufficient for an RPC-only API. This guarantee depends on no method ever being declared `idempotency_level = NO_SIDE_EFFECTS`: Connect treats such a method as safe to accept over a header-less GET with the request encoded in the query string, which would bypass the header check entirely. `TestNoRPCIsSideEffectFree` (`internal/api/rpc_test.go`) walks the compiled proto descriptors and fails if any method is ever annotated that way, so this can't regress silently as new RPCs are added.
 - API rate limiting: Caddy-level per-IP limit on `/rpc/`; nothing fancier until abuse exists.
@@ -24,26 +24,21 @@ Depends on: all previous designs; closes their open questions.
 
 `goose` migrations embedded in the binary, run explicitly via `opensight migrate` during deploy (not on startup — a bad migration shouldn't crash-loop the API).
 
-Application SQL is generated with sqlc from `internal/store/queries/`; tests
-reference a separate generated catalog in `internal/store/testqueries/`.
-`make sqlc` regenerates both packages and `make check-sql` rejects SQL embedded
-in non-generated Go. Migration files, migration tests that inspect SQL text,
-the Docker database initializer, and the operator cost report are the explicit
-raw-SQL boundaries.
+Application SQL is generated with sqlc from `internal/store/queries/`.
+`make sqlc` regenerates the package and `make check-sql` rejects SQL embedded
+in non-generated production Go. Migration files, the Docker database
+initializer, and the operator cost report are the explicit raw-SQL boundaries.
 
-Integration fixtures use the same pgx pool as the repository under test. Their
-small test-only dispatcher maps opaque catalog IDs to generated sqlc methods;
-it uses reflection only to preserve varied fixture parameter/result shapes
-without duplicating hundreds of wrappers. A catalog coverage test guarantees
-every dispatcher ID resolves to a generated method. Reflection is not used on
-production query paths.
+Tests are exempt from that rule: integration fixtures and assertions run plain
+SQL through the same pgx pool as the repository under test, written inline at
+the call site so a test reads top to bottom without a catalog lookup.
 
 ## Local development
 
 - `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/rpc`.
 - `docker compose -f compose.dev.yml up`: still available for infrastructure-only debugging.
 - **`PromptRunner` stub mode** (env-selected): development and tests must not spend OpenAI money or wait on real searches. Two flavors: `stub` (canned, deterministic fixtures — a fake clinic-recommendation response with citations) and `replay` (recorded real `raw_response` payloads checked into `testdata/`). The analysis pipeline (05) develops almost entirely against replay data — real responses, zero cost, deterministic tests.
-- **Stripe sandbox locally** (08): the serving path always uses Stripe, so local development exercises the real Checkout, Portal and webhook boundary with `stripe sandbox create` plus `stripe listen --forward-to localhost:8080/webhooks/stripe`. Tests inject the in-memory `StubProvider` and never call Stripe.
+- **Stripe sandbox locally** (08): the serving path always uses Stripe, so local development exercises the real Checkout, Portal and webhook boundary with `stripe sandbox create` plus `stripe listen --forward-to localhost:8080/webhooks/stripe`. Automated tests use narrow package-local fakes and never call Stripe.
 - Seed command: `opensight seed dev` creates only a comped tenant and login account. The developer completes the normal onboarding flow to create the business profile and initial prompts, keeping the end-to-end onboarding path exercised during local development.
 
 ## Deployment
@@ -79,4 +74,4 @@ The service is pre-production. Singapore hosting is planned before production, b
 
 ## Open items deliberately left post-MVP
 
-Email verification and password reset emails (08 — no transactional email provider yet), competitor merge (05), metrics/Prometheus, multi-VPS.
+Admin account management (including password reset and changing comp status), email verification and password-reset email (08 — no transactional email provider yet), competitor merge (05), metrics/Prometheus, multi-VPS.

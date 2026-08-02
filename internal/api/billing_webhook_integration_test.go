@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"opensight/internal/billing"
 	"opensight/internal/billing/reconcile"
@@ -21,10 +22,96 @@ import (
 	"github.com/stripe/stripe-go/v86/webhook"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
+	"go.temporal.io/sdk/client"
 )
 
 const webhookTestSecret = "whsec_integration_test"
+
+type webhookProvider struct {
+	subscriptions map[string]billing.Subscription
+}
+
+func newWebhookProvider(customerID string) *webhookProvider {
+	return &webhookProvider{subscriptions: map[string]billing.Subscription{
+		customerID: {
+			ID:               "sub_" + customerID,
+			CustomerID:       customerID,
+			Status:           "active",
+			CurrentPeriodEnd: time.Now().Add(30 * 24 * time.Hour),
+		},
+	}}
+}
+
+func (p *webhookProvider) GetSubscriptionForCustomer(_ context.Context, customerID string) (billing.Subscription, error) {
+	sub, ok := p.subscriptions[customerID]
+	if !ok {
+		return billing.Subscription{}, billing.ErrNoSubscription
+	}
+	return sub, nil
+}
+
+func (p *webhookProvider) setStatus(customerID, status string) {
+	sub := p.subscriptions[customerID]
+	sub.Status = status
+	p.subscriptions[customerID] = sub
+}
+
+type fakeTemporalClient struct {
+	client.Client
+	schedule *fakeScheduleClient
+	started  []client.StartWorkflowOptions
+}
+
+func (f *fakeTemporalClient) ExecuteWorkflow(_ context.Context, opts client.StartWorkflowOptions, _ interface{}, _ ...interface{}) (client.WorkflowRun, error) {
+	f.started = append(f.started, opts)
+	return nil, nil
+}
+
+func (f *fakeTemporalClient) ScheduleClient() client.ScheduleClient {
+	if f.schedule == nil {
+		f.schedule = &fakeScheduleClient{}
+	}
+	return f.schedule
+}
+
+type fakeScheduleClient struct {
+	client.ScheduleClient
+	pauses   []string
+	unpauses []string
+	paused   map[string]bool
+}
+
+func (f *fakeScheduleClient) GetHandle(_ context.Context, scheduleID string) client.ScheduleHandle {
+	if f.paused == nil {
+		f.paused = make(map[string]bool)
+	}
+	return &fakeScheduleHandle{id: scheduleID, client: f}
+}
+
+type fakeScheduleHandle struct {
+	client.ScheduleHandle
+	id     string
+	client *fakeScheduleClient
+}
+
+func (f *fakeScheduleHandle) Describe(context.Context) (*client.ScheduleDescription, error) {
+	return &client.ScheduleDescription{
+		Schedule: client.Schedule{State: &client.ScheduleState{Paused: f.client.paused[f.id]}},
+		Info:     client.ScheduleInfo{NextActionTimes: []time.Time{}},
+	}, nil
+}
+
+func (f *fakeScheduleHandle) Pause(context.Context, client.SchedulePauseOptions) error {
+	f.client.pauses = append(f.client.pauses, f.id)
+	f.client.paused[f.id] = true
+	return nil
+}
+
+func (f *fakeScheduleHandle) Unpause(context.Context, client.ScheduleUnpauseOptions) error {
+	f.client.unpauses = append(f.client.unpauses, f.id)
+	f.client.paused[f.id] = false
+	return nil
+}
 
 // mustDomainID generates a fresh UUIDv7, the shape tenants.id/businesses.id
 // require (a check constraint, not merely a UNIQUE column).
@@ -82,16 +169,16 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	businessID := mustDomainID(t)
 	customerID := "cus_" + tenantID.String()
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query001, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query002, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query003, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
-	if _, err := testdb.Exec(ctx, db, testdb.Query004, tenantID); err != nil {
+	if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Out Of Order Tenant')", tenantID); err != nil {
 		t.Fatalf("insert tenant: %v", err)
 	}
 
 	pool := db
-	businesses := store.NewBusinessStore(pool)
+	businesses := store.New(pool)
 	category := "clinic"
 	activatedAt := nowUTC()
 	if _, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
@@ -104,7 +191,7 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 		t.Fatalf("CreateBusiness: %v", err)
 	}
 
-	subscriptions := store.NewSubscriptionStore(pool)
+	subscriptions := store.New(pool)
 	subscriptionID := "sub_" + tenantID.String()
 	activeStatus := "active"
 	if err := subscriptions.Upsert(ctx, store.UpsertSubscriptionParams{
@@ -114,20 +201,12 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 		t.Fatalf("seed subscription: %v", err)
 	}
 
-	provider := billing.NewStubProvider()
-	// Seed the stub's own subscription record for this customer (mirrors
-	// what an earlier checkout would have done), then drive it to canceled —
-	// the state a customer.subscription.deleted webhook reflects.
-	if _, err := provider.CreateCheckoutSession(ctx, billing.CreateCheckoutSessionParams{
-		CustomerID: customerID, SuccessURL: "https://app.example.com/checkout/return",
-	}); err != nil {
-		t.Fatalf("seed stub checkout session: %v", err)
-	}
-	provider.SetSubscriptionStatus(customerID, "canceled")
+	provider := newWebhookProvider(customerID)
+	provider.setStatus(customerID, "canceled")
 
 	temporal := &fakeTemporalClient{}
 	monitoring := reconcile.NewMonitoring(businesses, temporal)
-	reconciler := reconcile.New(subscriptions, provider, monitoring, store.NewAdvisoryLocker(pool), nil)
+	reconciler := reconcile.New(subscriptions, provider, monitoring, subscriptions, nil)
 
 	srv := New(Deps{
 		Reconciler: reconciler,
@@ -211,16 +290,16 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	businessID := mustDomainID(t)
 	customerID := "cus_" + tenantID.String()
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query001, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query002, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query003, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
-	if _, err := testdb.Exec(ctx, db, testdb.Query004, tenantID); err != nil {
+	if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Out Of Order Tenant')", tenantID); err != nil {
 		t.Fatalf("insert tenant: %v", err)
 	}
 
 	pool := db
-	businesses := store.NewBusinessStore(pool)
+	businesses := store.New(pool)
 	category := "clinic"
 	activatedAt := nowUTC()
 	if _, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
@@ -233,7 +312,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 		t.Fatalf("CreateBusiness: %v", err)
 	}
 
-	subscriptions := store.NewSubscriptionStore(pool)
+	subscriptions := store.New(pool)
 	subscriptionID := "sub_" + tenantID.String()
 	activeStatus := "active"
 	if err := subscriptions.Upsert(ctx, store.UpsertSubscriptionParams{
@@ -245,7 +324,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 
 	// Seed a prompt and an analyzed run so there is real data for the lapse
 	// to leave untouched.
-	prompts := store.NewPromptStore(pool)
+	prompts := store.New(pool)
 	prompt, err := prompts.CreateActivePrompt(ctx, store.CreateActivePromptParams{
 		TenantID: tenantID, BusinessID: businessID, Text: "Who are the best clinics?",
 	})
@@ -253,7 +332,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 		t.Fatalf("seed prompt: %v", err)
 	}
 
-	runs := store.NewRunStore(pool)
+	runs := store.New(pool)
 	run, err := runs.UpsertRun(ctx, tenantID, store.UpsertRunParams{
 		BusinessID: businessID, Platform: store.PlatformChatGPT, Trigger: store.RunTriggerInitial,
 		ScheduledFor: activatedAt, WorkflowID: "wf_" + businessID.String(), ExpectedResults: 1,
@@ -262,16 +341,11 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 		t.Fatalf("seed run: %v", err)
 	}
 
-	provider := billing.NewStubProvider()
-	if _, err := provider.CreateCheckoutSession(ctx, billing.CreateCheckoutSessionParams{
-		CustomerID: customerID, SuccessURL: "https://app.example.com/checkout/return",
-	}); err != nil {
-		t.Fatalf("seed stub checkout session: %v", err)
-	}
+	provider := newWebhookProvider(customerID)
 
 	temporal := &fakeTemporalClient{}
 	monitoring := reconcile.NewMonitoring(businesses, temporal)
-	reconciler := reconcile.New(subscriptions, provider, monitoring, store.NewAdvisoryLocker(pool), nil)
+	reconciler := reconcile.New(subscriptions, provider, monitoring, subscriptions, nil)
 
 	srv := New(Deps{
 		Reconciler: reconciler,
@@ -316,7 +390,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 
 	// First delivery: customer.subscription.deleted — pauses monitoring and
 	// drops access to lapsed, touching only the subscriptions row.
-	provider.SetSubscriptionStatus(customerID, "canceled")
+	provider.setStatus(customerID, "canceled")
 	deletedPayload, deletedHeader := signWebhookEvent(t, "evt_lapse_1", "customer.subscription.deleted", customerID, "canceled")
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/webhooks/stripe", bytes.NewReader(deletedPayload))
@@ -348,7 +422,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 
 	// Second delivery: the subscription is live again — unpauses monitoring
 	// and restores full access, still against the same rows and customer id.
-	provider.SetSubscriptionStatus(customerID, "active")
+	provider.setStatus(customerID, "active")
 	updatedPayload, updatedHeader := signWebhookEvent(t, "evt_lapse_2", "customer.subscription.updated", customerID, "active")
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/webhooks/stripe", bytes.NewReader(updatedPayload))

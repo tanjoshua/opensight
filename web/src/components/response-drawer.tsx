@@ -38,6 +38,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatRunDate } from "@/lib/format"
 
 export function ResponseDrawer({
   evidence,
@@ -720,15 +721,5 @@ function formatDateTime(value: Timestamp | undefined): string {
   return date.toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
-  })
-}
-
-function formatRunDate(value: string): string {
-  const date = new Date(`${value}T00:00:00`)
-  if (Number.isNaN(date.valueOf())) return value
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
   })
 }

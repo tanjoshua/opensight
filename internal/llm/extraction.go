@@ -33,7 +33,7 @@ type ExtractionRunResult struct {
 }
 
 // ExtractedEntity is one organization the response recommended or discussed, in
-// order of first appearance. is_target is the model's hint; reconcile (ANA-4)
+// order of first appearance. is_target is the model's hint; reconcile
 // verifies it against normalized aliases before trusting it.
 type ExtractedEntity struct {
 	VerbatimName string `json:"verbatim_name"`
@@ -65,16 +65,13 @@ type ExtractionOutput struct {
 }
 
 // ExtractionRunner runs one structured-output extraction call per succeeded
-// prompt_result (design 05). Mirrors PromptRunner's mode split.
+// prompt_result (design 05).
 type ExtractionRunner interface {
 	RunExtraction(ctx context.Context, in ExtractionInput) (ExtractionRunResult, error)
 }
 
-// NewExtractionRunner selects an ExtractionRunner by mode, mirroring
-// NewPromptRunner. "stub" and "replay" spend no OpenAI money; "openai" is the
-// real call. "replay" is aliased to the stub for now — building a real
-// replay-fixture corpus for extraction is ANA-3's job. openAICfg is only
-// consulted for "openai".
+// NewExtractionRunner selects an ExtractionRunner by mode (see the package
+// doc). openAICfg is only consulted for "openai".
 func NewExtractionRunner(mode string, openAICfg OpenAIConfig) (ExtractionRunner, error) {
 	switch mode {
 	case "stub", "replay":

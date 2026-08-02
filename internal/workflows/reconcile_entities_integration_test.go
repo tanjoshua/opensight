@@ -12,7 +12,6 @@ import (
 	"opensight/internal/store"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // fakeMatcher resolves a verbatim name to a competitor by NAME using whatever
@@ -73,31 +72,37 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	bravoID := mustID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query260, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query261, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query262, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query263, runID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query264, promptID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query265, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query266, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query267, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM mentions WHERE prompt_result_id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM competitors WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompt_results WHERE id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Reconcile Tenant")
-	mustExec(t, db, ctx, testdb.Query268, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query269, promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic', 'active')", promptID, businessID)
 	// completed_at must be set: the analysis_completed_at CHECK forbids stamping
 	// analysis before the run is marked complete (FinalizeRun sets it in prod).
-	mustExec(t, db, ctx, testdb.Query270, runID, businessID)
-	mustExec(t, db, ctx, testdb.Query271, resultID, runID, promptID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'reconcile-wf', now())`, runID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
+		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb, 'text')`, resultID, runID, promptID)
 	// An existing competitor for the exact + LLM passes to match against.
-	mustExec(t, db, ctx, testdb.Query272, bravoID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, aliases, source, status)
+		VALUES ($1, $2, 'Bravo Clinic', ARRAY['bravo clinic']::text[], 'manual', 'tracked')`, bravoID, businessID)
 
-	pool := db
-	businesses := store.NewBusinessStore(pool)
-	analysis := store.NewAnalysisStore(pool)
+	store := store.New(db)
 	matcher := &fakeMatcher{matchNameToCompetitor: map[string]string{"Bravo Klinik": "Bravo Clinic"}}
-	acts := &Activities{Businesses: businesses, Analysis: analysis, Matcher: matcher}
+	acts := &Activities{Store: store, Matcher: matcher}
 
 	in := ReconcileEntitiesInput{
 		TenantID:   tenantID,
@@ -130,20 +135,20 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 
 	// The discovered competitor exists with the verbatim name as its sole alias.
 	var charlieStatus, charlieSource string
-	if err := testdb.QueryRow(ctx, db, testdb.Query273, businessID).Scan(&charlieStatus, &charlieSource); err != nil {
+	if err := db.QueryRow(ctx, "SELECT status, source FROM competitors WHERE business_id = $1 AND name = 'Charlie Medical'", businessID).Scan(&charlieStatus, &charlieSource); err != nil {
 		t.Fatalf("read discovered competitor: %v", err)
 	}
 	if charlieStatus != "discovered" || charlieSource != "discovered" {
 		t.Errorf("discovered competitor = (%q, %q), want (discovered, discovered)", charlieStatus, charlieSource)
 	}
-	charlieAliases := textArray(t, db, ctx, testdb.Query274, businessID)
+	charlieAliases := textArray(t, db, ctx, "SELECT to_jsonb(aliases) FROM competitors WHERE business_id = $1 AND name = 'Charlie Medical'", businessID)
 	if len(charlieAliases) != 1 || charlieAliases[0] != "Charlie Medical" {
 		t.Errorf("discovered aliases = %v, want [Charlie Medical]", charlieAliases)
 	}
 
 	// The LLM variant landed in suggested_aliases, never promoted to aliases.
-	bravoSuggested := textArray(t, db, ctx, testdb.Query275, bravoID)
-	bravoAliases := textArray(t, db, ctx, testdb.Query276, bravoID)
+	bravoSuggested := textArray(t, db, ctx, "SELECT to_jsonb(suggested_aliases) FROM competitors WHERE id = $1", bravoID)
+	bravoAliases := textArray(t, db, ctx, "SELECT to_jsonb(aliases) FROM competitors WHERE id = $1", bravoID)
 	if countOccurrences(bravoSuggested, "Bravo Klinik") == 0 {
 		t.Errorf("bravo suggested_aliases = %v, want to contain Bravo Klinik", bravoSuggested)
 	}
@@ -153,7 +158,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 
 	// Commit stamped analysis_completed_at.
 	var analysisCompleted *time.Time
-	if err := testdb.QueryRow(ctx, db, testdb.Query277, runID).Scan(&analysisCompleted); err != nil {
+	if err := db.QueryRow(ctx, "SELECT analysis_completed_at FROM monitoring_runs WHERE id = $1", runID).Scan(&analysisCompleted); err != nil {
 		t.Fatalf("read run: %v", err)
 	}
 	if analysisCompleted == nil {
@@ -171,13 +176,13 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	if out2.DiscoveredCreated != 0 {
 		t.Errorf("second run DiscoveredCreated = %d, want 0 (Charlie already exists)", out2.DiscoveredCreated)
 	}
-	if got := countRows(t, db, ctx, testdb.Query278, businessID); got != 1 {
+	if got := countRows(t, db, ctx, "SELECT count(*) FROM competitors WHERE business_id = $1 AND name = 'Charlie Medical'", businessID); got != 1 {
 		t.Errorf("Charlie competitor rows after rerun = %d, want 1 (no duplicate)", got)
 	}
-	if got := countRows(t, db, ctx, testdb.Query279, resultID); got != 4 {
+	if got := countRows(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 4 {
 		t.Errorf("mentions after rerun = %d, want 4 (delete-and-rewrite)", got)
 	}
-	bravoSuggested = textArray(t, db, ctx, testdb.Query280, bravoID)
+	bravoSuggested = textArray(t, db, ctx, "SELECT to_jsonb(suggested_aliases) FROM competitors WHERE id = $1", bravoID)
 	if n := countOccurrences(bravoSuggested, "Bravo Klinik"); n != 1 {
 		t.Errorf("Bravo Klinik appears %d times in suggested_aliases, want 1 (append idempotent)", n)
 	}
@@ -186,7 +191,8 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 func assertMention(t *testing.T, db *pgxpool.Pool, ctx context.Context, resultID domain.ID, subject string, order int, wantMatchedBy, wantVerbatim string) {
 	t.Helper()
 	var matchedBy, verbatimName string
-	if err := testdb.QueryRow(ctx, db, testdb.Query281, resultID, subject, order).Scan(&matchedBy, &verbatimName); err != nil {
+	if err := db.QueryRow(ctx, `
+		SELECT matched_by, verbatim_name FROM mentions WHERE prompt_result_id = $1 AND subject = $2 AND mention_order = $3`, resultID, subject, order).Scan(&matchedBy, &verbatimName); err != nil {
 		t.Fatalf("read mention (subject=%s order=%d): %v", subject, order, err)
 	}
 	if matchedBy != wantMatchedBy {
@@ -197,20 +203,20 @@ func assertMention(t *testing.T, db *pgxpool.Pool, ctx context.Context, resultID
 	}
 }
 
-func countRows(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, args ...any) int {
+func countRows(t *testing.T, db *pgxpool.Pool, ctx context.Context, query string, args ...any) int {
 	t.Helper()
 	var n int
-	if err := testdb.QueryRow(ctx, db, query, args...).Scan(&n); err != nil {
+	if err := db.QueryRow(ctx, query, args...).Scan(&n); err != nil {
 		t.Fatalf("count: %v", err)
 	}
 	return n
 }
 
 // textArray reads a single to_jsonb(text[]) column into []string.
-func textArray(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, args ...any) []string {
+func textArray(t *testing.T, db *pgxpool.Pool, ctx context.Context, query string, args ...any) []string {
 	t.Helper()
 	var raw []byte
-	if err := testdb.QueryRow(ctx, db, query, args...).Scan(&raw); err != nil {
+	if err := db.QueryRow(ctx, query, args...).Scan(&raw); err != nil {
 		t.Fatalf("read text array: %v", err)
 	}
 	var out []string

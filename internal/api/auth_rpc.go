@@ -27,15 +27,14 @@ func rpcLoginFailed() *connect.Error {
 // and sets the cookie. All three failure shapes — unknown email, user with no
 // password_hash, and wrong password — return a byte-identical error and each
 // burns one argon2id verify, so neither the response nor gross timing reveals
-// whether an account exists. Mirrors handleLogin (auth.go) statement-for-
-// statement.
+// whether an account exists.
 func (s *Server) Login(ctx context.Context, req *connect.Request[opensightv1.LoginRequest]) (*connect.Response[opensightv1.LoginResponse], error) {
 	email := strings.TrimSpace(req.Msg.Email)
 	if email == "" || req.Msg.Password == "" {
 		return nil, rpcInvalidArgument("email and password are required")
 	}
 
-	creds, err := s.auth.GetUserCredentials(ctx, email)
+	creds, err := s.store.GetUserCredentials(ctx, email)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		// Unknown email: burn a verify against the dummy hash so timing matches
@@ -61,7 +60,7 @@ func (s *Server) Login(ctx context.Context, req *connect.Request[opensightv1.Log
 	if err != nil {
 		return nil, s.rpcError("login: mint session token", err)
 	}
-	if err := s.auth.CreateSession(ctx, store.CreateSessionParams{
+	if err := s.store.CreateSession(ctx, store.CreateSessionParams{
 		TokenHash: tokenHash,
 		UserID:    creds.UserID,
 		ExpiresAt: nowUTC().Add(s.sessionTTL),
@@ -107,7 +106,7 @@ func (s *Server) Signup(ctx context.Context, req *connect.Request[opensightv1.Si
 		return nil, s.rpcError("signup: hash password", err)
 	}
 
-	tenant, user, err := s.accounts.CreateAccount(ctx, store.CreateAccountParams{
+	tenant, user, err := s.store.CreateAccount(ctx, store.CreateAccountParams{
 		Email:        email,
 		PasswordHash: passwordHash,
 	})
@@ -119,7 +118,7 @@ func (s *Server) Signup(ctx context.Context, req *connect.Request[opensightv1.Si
 	if err != nil {
 		return nil, s.rpcError("signup: mint session token", err)
 	}
-	if err := s.auth.CreateSession(ctx, store.CreateSessionParams{
+	if err := s.store.CreateSession(ctx, store.CreateSessionParams{
 		TokenHash: tokenHash,
 		UserID:    user.ID,
 		ExpiresAt: nowUTC().Add(s.sessionTTL),
@@ -140,7 +139,7 @@ func (s *Server) Signup(ctx context.Context, req *connect.Request[opensightv1.Si
 // before this runs.
 func (s *Server) Logout(ctx context.Context, req *connect.Request[opensightv1.LogoutRequest]) (*connect.Response[opensightv1.LogoutResponse], error) {
 	if raw := sessionTokenFromHeader(req.Header()); raw != "" {
-		if err := s.auth.DeleteSession(ctx, hashSessionToken(raw)); err != nil {
+		if err := s.store.DeleteSession(ctx, hashSessionToken(raw)); err != nil {
 			return nil, s.rpcError("logout: delete session", err)
 		}
 	}
@@ -151,13 +150,8 @@ func (s *Server) Logout(ctx context.Context, req *connect.Request[opensightv1.Lo
 }
 
 // GetMe returns the current session's user, tenant, businesses, access, and
-// plan (BILL-6: one authoritative payload, not a bare prompt limit) — the
-// SPA's one call site for its own billing state. It does not extend expiry.
+// plan — one authoritative payload, and the SPA's one call site for its own billing state. It does not extend expiry.
 func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.GetMeRequest]) (*connect.Response[opensightv1.GetMeResponse], error) {
-	if s.businesses == nil {
-		return nil, s.rpcError("me: store missing", errors.New("business store is required"))
-	}
-
 	su, ok := sessionUserFromContext(ctx)
 	if !ok {
 		// The interceptor should have set this for every non-public procedure;
@@ -169,11 +163,11 @@ func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.Get
 		return nil, s.rpcError("rpc: get me: missing access context", errors.New("missing access context"))
 	}
 
-	businesses, err := s.businesses.ListBusinesses(ctx, su.TenantID)
+	businesses, err := s.store.ListBusinesses(ctx, su.TenantID)
 	if err != nil {
 		return nil, s.rpcError("me: list businesses", err)
 	}
-	// No store round trip: the plan_code came off the session (BILL-6).
+	// No store round trip: the plan_code came off the session.
 	plan, err := billing.PlanFor(su.PlanCode)
 	if err != nil {
 		return nil, s.rpcInternal("me: resolve plan", err)

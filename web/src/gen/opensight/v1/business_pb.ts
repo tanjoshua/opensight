@@ -51,10 +51,9 @@ export const LocationSchema: GenMessage<Location> = /*@__PURE__*/
   messageDesc(file_opensight_v1_business, 0);
 
 /**
- * BusinessProfile is the full business detail (internal/api/businesses.go
- * businessDetailResponse). Plan entitlements are not a per-business fact —
- * they live on AuthService.GetMe (BILL-6) — so field 9 (the old `plan`
- * field) is reserved rather than reused.
+ * BusinessProfile is the full business detail. Plan entitlements live on
+ * AuthService.GetMe because they are tenant facts, not per-business facts.
+ * Field 9 is reserved rather than reused to preserve wire compatibility.
  *
  * @generated from message opensight.v1.BusinessProfile
  */
@@ -229,8 +228,7 @@ export const ProposalPayloadSchema: GenMessage<ProposalPayload> = /*@__PURE__*/
   messageDesc(file_opensight_v1_business, 5);
 
 /**
- * ProposalState is the GET/regen proposal body (internal/api/businesses.go
- * proposalStatusResponse).
+ * ProposalState is the profile-generation state returned while onboarding.
  *
  * @generated from message opensight.v1.ProposalState
  */

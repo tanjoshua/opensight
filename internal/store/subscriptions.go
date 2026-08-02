@@ -11,12 +11,11 @@ import (
 	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Subscription is a persisted subscriptions row: a tenant's permanent billing
 // record (migration 00010, design 08 Schema). One row per tenant, created at
-// signup (or, pre-BILL-3, by CreateTenantInTx) with every Stripe column null.
+// signup with every Stripe column null.
 type Subscription struct {
 	TenantID             domain.ID
 	PlanCode             string
@@ -37,16 +36,16 @@ type Subscription struct {
 // (internal/store imports internal/billing for the plan catalog, so the
 // derivation cannot take a Subscription directly without an import cycle;
 // this is the one adapter). Delegates to billingStateFromRow, shared with
-// AuthStore.GetSession's joined-column path (BILL-6) so the two dereferences
-// can't drift.
+// GetSession's joined-column path so the two dereferences can't
+// drift.
 func (s Subscription) AccessState() billing.State {
 	return billingStateFromRow(s.Comped, s.StripeSubscriptionID, s.StripeStatus, s.PastDueSince)
 }
 
 // billingStateFromRow builds a billing.State from the nullable Stripe
 // columns shared by a subscriptions row (Subscription.AccessState) and
-// GetSession's LEFT JOINed columns (AuthStore.GetSession) — the one place
-// both paths dereference, so they can't drift (BILL-6). A nil
+// GetSession's LEFT JOINed columns — the one place
+// both paths dereference, so they can't drift. A nil
 // *string/*time.Time dereferences to its zero value, which billing.DeriveAccess
 // treats correctly (empty StripeStatus falls through to the never/lapsed
 // arms; a zero PastDueSince is handled explicitly).
@@ -79,24 +78,11 @@ type UpsertSubscriptionParams struct {
 	CancelAtPeriodEnd    bool
 }
 
-// SubscriptionStore reads and writes subscriptions rows.
-type SubscriptionStore struct {
-	db *pgxpool.Pool
-}
-
-// NewSubscriptionStore returns a SubscriptionStore backed by db.
-func NewSubscriptionStore(db *pgxpool.Pool) *SubscriptionStore {
-	return &SubscriptionStore{db: db}
-}
-
 // GetByTenant loads a tenant's subscription row. A missing row (no tenant, or
 // a tenant somehow created without one) returns ErrNotFound.
-func (s *SubscriptionStore) GetByTenant(ctx context.Context, tenantID domain.ID) (Subscription, error) {
-	if s == nil || s.db == nil {
-		return Subscription{}, errors.New("subscription store database is required")
-	}
+func (s *Store) GetByTenant(ctx context.Context, tenantID domain.ID) (Subscription, error) {
 
-	row, err := queries(ctx, s.db).GetSubscriptionByTenant(ctx, tenantID)
+	row, err := s.q(ctx).GetSubscriptionByTenant(ctx, tenantID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Subscription{}, ErrNotFound
@@ -107,15 +93,12 @@ func (s *SubscriptionStore) GetByTenant(ctx context.Context, tenantID domain.ID)
 }
 
 // GetByCustomer loads the subscription row for a Stripe Customer id — the
-// webhook's lookup (BILL-5): a delivery only ever carries a Customer id,
+// webhook's lookup: a delivery only ever carries a Customer id,
 // never a tenant id. stripe_customer_id is UNIQUE, so at most one row can
 // match; no match returns ErrNotFound.
-func (s *SubscriptionStore) GetByCustomer(ctx context.Context, customerID string) (Subscription, error) {
-	if s == nil || s.db == nil {
-		return Subscription{}, errors.New("subscription store database is required")
-	}
+func (s *Store) GetByCustomer(ctx context.Context, customerID string) (Subscription, error) {
 
-	row, err := queries(ctx, s.db).GetSubscriptionByCustomer(ctx, &customerID)
+	row, err := s.q(ctx).GetSubscriptionByCustomer(ctx, &customerID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Subscription{}, ErrNotFound
@@ -128,12 +111,9 @@ func (s *SubscriptionStore) GetByCustomer(ctx context.Context, customerID string
 // Upsert writes every subscription column, inserting the row if absent and
 // otherwise overwriting it in full (bumping updated_at). This is the seam a
 // future reconcile (design 08) writes through.
-func (s *SubscriptionStore) Upsert(ctx context.Context, params UpsertSubscriptionParams) error {
-	if s == nil || s.db == nil {
-		return errors.New("subscription store database is required")
-	}
+func (s *Store) Upsert(ctx context.Context, params UpsertSubscriptionParams) error {
 
-	err := queries(ctx, s.db).UpsertSubscription(ctx, storesqlc.UpsertSubscriptionParams{
+	err := s.q(ctx).UpsertSubscription(ctx, storesqlc.UpsertSubscriptionParams{
 		TenantID: params.TenantID, PlanCode: params.PlanCode, StripeCustomerID: params.StripeCustomerID,
 		StripeSubscriptionID: params.StripeSubscriptionID, StripeStatus: params.StripeStatus,
 		PastDueSince: params.PastDueSince, Comped: params.Comped, CurrentPeriodEnd: params.CurrentPeriodEnd,
@@ -156,12 +136,9 @@ func (s *SubscriptionStore) Upsert(ctx context.Context, params UpsertSubscriptio
 // to have reissued an id already assigned to another tenant — that is our
 // bug, not the caller's, and is left to the generic rpcError→CodeInternal
 // mapping rather than a dedicated sentinel.
-func (s *SubscriptionStore) SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error) {
-	if s == nil || s.db == nil {
-		return "", errors.New("subscription store database is required")
-	}
+func (s *Store) SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error) {
 
-	won, err := queries(ctx, s.db).SetStripeCustomerID(ctx, storesqlc.SetStripeCustomerIDParams{
+	won, err := s.q(ctx).SetStripeCustomerID(ctx, storesqlc.SetStripeCustomerIDParams{
 		TenantID: tenantID, StripeCustomerID: &customerID,
 	})
 	if err != nil {
@@ -175,7 +152,7 @@ func (s *SubscriptionStore) SetStripeCustomerID(ctx context.Context, tenantID do
 
 // CreateSubscriptionInTx inserts a starter subscription row for a
 // just-created tenant, in the same transaction as the tenant insert
-// (AccountStore.CreateTenant and AccountStore.CreateAccount). Every Stripe
+// (CreateTenant and CreateAccount). Every Stripe
 // column stays null.
 func CreateSubscriptionInTx(ctx context.Context, q *storesqlc.Queries, tenantID domain.ID, planCode string, comped bool) error {
 	if err := q.InsertSubscription(ctx, storesqlc.InsertSubscriptionParams{TenantID: tenantID, PlanCode: planCode, Comped: comped}); err != nil {

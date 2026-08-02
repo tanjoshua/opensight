@@ -12,7 +12,7 @@
 //
 // Missing and cross-tenant rows are indistinguishable: both return ErrNotFound,
 // so the layer is never a cross-tenant existence oracle. The sole
-// tenant-unscoped business query is BusinessStore.ResolveTenantID, the
+// tenant-unscoped business query is ResolveTenantID, the
 // context-establishing bootstrap that callers without ambient tenant context
 // (Temporal activities, CLI) use once before switching to the tenant-checked
 // repositories.

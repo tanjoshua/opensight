@@ -8,14 +8,9 @@ import type {
   CitationSubjectStat,
 } from "@/gen/opensight/v1/citation_pb"
 import { listCitationSources } from "@/gen/opensight/v1/citation-CitationService_connectquery"
+import { SectionMessage } from "@/components/section-message"
+import { pluralize } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import {
   Sheet,
   SheetContent,
@@ -55,7 +50,7 @@ export function CitationSourcesDrilldown({
           </SheetTitle>
           <SheetDescription>
             {source
-              ? `${source.frequency} ${plural(source.frequency, "response")}`
+              ? `${source.frequency} ${pluralize(source.frequency, "response")}`
               : "Citation source detail"}
           </SheetDescription>
         </SheetHeader>
@@ -64,12 +59,14 @@ export function CitationSourcesDrilldown({
           {sources.isLoading && <DrilldownSkeleton />}
           {sources.isError && (
             <SectionMessage
+              icon={Link2}
               title="Something went wrong"
               description="The citation source could not be loaded."
             />
           )}
           {sources.data && !source && (
             <SectionMessage
+              icon={Link2}
               title="No citations"
               description="This source is not present in analyzed responses."
             />
@@ -277,26 +274,6 @@ function SubjectMiniSplit({
   )
 }
 
-function SectionMessage({
-  title,
-  description,
-}: {
-  title: string
-  description: string
-}) {
-  return (
-    <Empty className="border">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <Link2 />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
-  )
-}
-
 function DrilldownSkeleton() {
   return (
     <div className="flex flex-col gap-4">
@@ -306,8 +283,4 @@ function DrilldownSkeleton() {
       <Skeleton className="h-28 w-full" />
     </div>
   )
-}
-
-function plural(count: number, noun: string): string {
-  return count === 1 ? noun : `${noun}s`
 }

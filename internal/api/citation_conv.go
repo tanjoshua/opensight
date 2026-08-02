@@ -5,7 +5,6 @@ import (
 	"opensight/internal/metrics"
 )
 
-// citationSourceToProto mirrors citationSourceToResponse (citations.go).
 func citationSourceToProto(source metrics.CitationSource) *opensightv1.CitationSource {
 	resp := &opensightv1.CitationSource{
 		Domain:    source.Domain,
@@ -35,7 +34,7 @@ func citationSourceToProto(source metrics.CitationSource) *opensightv1.CitationS
 	return resp
 }
 
-// citationSubjectsToProto mirrors citationSubjectsToResponse. All subject
+// citationSubjectsToProto shapes a subject breakdown. All subject
 // buckets and the returned message are always non-nil, even when zero-valued.
 func citationSubjectsToProto(subjects metrics.CitationSubjectBreakdown) *opensightv1.CitationSubjects {
 	return &opensightv1.CitationSubjects{

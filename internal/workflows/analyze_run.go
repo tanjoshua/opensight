@@ -14,7 +14,7 @@ import (
 
 // MaxAnalyzeResultAttempts and MaxReconcileAttempts are AnalyzeRun's own retry
 // budgets, independent of RunWorkflow's ExecutePrompt policy — a failed analysis
-// must never re-spend prompt executions (ANA-7).
+// must never re-spend prompt executions.
 const (
 	MaxAnalyzeResultAttempts = 3
 	MaxReconcileAttempts     = 3
@@ -29,10 +29,10 @@ type AnalyzeRunInput struct {
 }
 
 // LoadAnalyzeRunSpec resolves a run's business and succeeded result ids for the
-// AnalyzeRun fan-out (ANA-7). A missing or cross-tenant run is non-retryable: it
+// AnalyzeRun fan-out. A missing or cross-tenant run is non-retryable: it
 // will not fix itself, and analysis of a bad run id should fail fast.
 func (a *Activities) LoadAnalyzeRunSpec(ctx context.Context, in AnalyzeRunInput) (store.AnalyzeRunSpec, error) {
-	spec, err := a.Analysis.LoadAnalyzeRunSpec(ctx, in.TenantID, in.RunID)
+	spec, err := a.Store.LoadAnalyzeRunSpec(ctx, in.TenantID, in.RunID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return store.AnalyzeRunSpec{}, temporal.NewNonRetryableApplicationError(

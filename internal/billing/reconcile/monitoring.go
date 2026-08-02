@@ -10,7 +10,7 @@ import (
 	"opensight/internal/workflows"
 )
 
-// businessLister is the one BusinessStore method Monitoring needs. Returns an
+// businessLister is the one store method Monitoring needs. Returns an
 // empty slice, not an error, for a tenant with no business yet (design 08:
 // "tolerating a tenant with no business or no schedule yet").
 type businessLister interface {

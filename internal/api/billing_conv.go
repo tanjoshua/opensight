@@ -35,9 +35,8 @@ func billingActionToProto(a billing.Action) opensightv1.BillingAction {
 }
 
 // planToProto maps a catalog billing.Plan onto the proto Plan message
-// (common.proto — moved here from business_conv.go, BILL-6: Plan now lives
-// alongside Access on GetMeResponse, not on BusinessProfile).
-// billing.Plan.Code fills the wire's code field (renamed from the old slug).
+// (common.proto). Plan travels with Access on GetMeResponse, not on
+// BusinessProfile.
 func planToProto(p billing.Plan) *opensightv1.Plan {
 	return &opensightv1.Plan{
 		Code:        p.Code,

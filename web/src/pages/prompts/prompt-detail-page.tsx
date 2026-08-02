@@ -27,20 +27,15 @@ import {
 } from "@/gen/opensight/v1/prompt-PromptService_connectquery"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { ResponseDrawer } from "@/components/response-drawer"
+import { SectionMessage } from "@/components/section-message"
 import {
   evidenceSelection,
   type EvidenceSelection,
 } from "@/components/evidence-selection"
+import { formatDateOnly } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -84,6 +79,7 @@ export function PromptDetailPage() {
   if (promptQuery.isError) {
     return (
       <SectionMessage
+        icon={MessageSquareText}
         title="Prompt not found"
         description="This prompt could not be loaded. It may have been removed."
       />
@@ -96,6 +92,7 @@ export function PromptDetailPage() {
   if (!prompt) {
     return (
       <SectionMessage
+        icon={MessageSquareText}
         title="Prompt not found"
         description="This prompt could not be loaded. It may have been removed."
       />
@@ -307,26 +304,6 @@ function buildReplacements(prompt: Prompt, lineage: Prompt[]): Replacement[] {
   return out
 }
 
-function SectionMessage({
-  title,
-  description,
-}: {
-  title: string
-  description: string
-}) {
-  return (
-    <Empty className="border">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <MessageSquareText />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
-  )
-}
-
 function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-4">
@@ -345,9 +322,5 @@ function formatDate(value: Timestamp | undefined): string {
   if (value === undefined) return "-"
   const date = timestampDate(value)
   if (Number.isNaN(date.valueOf())) return "-"
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
+  return formatDateOnly(date)
 }

@@ -26,7 +26,7 @@ RunWorkflow(businessID, platform, scheduledFor)
  │                     pause (08 gate 2), which both depend on one arriving.
  │                     Access is read once, here — a run already in flight
  │                     when access drops is allowed to finish.
- ├─ LoadRunSpec        activity: resolve tenant via BusinessStore.ResolveTenantID,
+ ├─ LoadRunSpec        activity: resolve tenant via store.ResolveTenantID,
  │                     then upsert monitoring_runs(status=running,
  │                     expected_results=len(prompts)); snapshot active prompts
  │                     (already entitlement-bounded: prompt_limit is enforced

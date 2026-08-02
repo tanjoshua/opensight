@@ -95,9 +95,9 @@ export const BusinessSummarySchema: GenMessage<BusinessSummary> = /*@__PURE__*/
   messageDesc(file_opensight_v1_common, 2);
 
 /**
- * AccessDenied is the error detail attached to a rejected RPC (BILL-6
- * "Enforcement gate 1"): the access the caller actually has, so the SPA can
- * render the right billing state without parsing the error string.
+ * AccessDenied is the error detail attached to a rejected RPC: the access the
+ * caller actually has, so the SPA can render the right billing state without
+ * parsing the error string.
  *
  * @generated from message opensight.v1.AccessDenied
  */
@@ -116,10 +116,9 @@ export const AccessDeniedSchema: GenMessage<AccessDenied> = /*@__PURE__*/
   messageDesc(file_opensight_v1_common, 3);
 
 /**
- * Plan is the tenant's plan config (internal/billing catalog). Lives here,
- * not business.proto: AuthService.GetMe (BILL-6) carries it alongside
- * Access, and BusinessProfile no longer does (a business's plan is the
- * tenant's plan, not a per-business fact).
+ * Plan is the tenant's plan config (internal/billing catalog). It lives here
+ * because AuthService.GetMe carries it alongside Access; a business's plan is
+ * a tenant fact, not a per-business fact.
  *
  * @generated from message opensight.v1.Plan
  */
@@ -555,10 +554,9 @@ export const CitationSubjectSchema: GenEnum<CitationSubject> = /*@__PURE__*/
   enumDesc(file_opensight_v1_common, 10);
 
 /**
- * ProposalStatus is the onboarding profile-proposal workflow status
- * (internal/api/businesses.go: generating/ready/failed). This is distinct
- * from internal/store's ProfileProposalStatus (pending/applied/discarded),
- * which is a storage-layer concept never exposed over the API.
+ * ProposalStatus is the onboarding profile-proposal workflow status. It is
+ * distinct from the store's pending/applied/discarded lifecycle, which is a
+ * persistence detail never exposed over the API.
  *
  * @generated from enum opensight.v1.ProposalStatus
  */
@@ -585,10 +583,9 @@ export const ProposalStatus = {
 } as const;
 
 /**
- * ProposalStatus is the onboarding profile-proposal workflow status
- * (internal/api/businesses.go: generating/ready/failed). This is distinct
- * from internal/store's ProfileProposalStatus (pending/applied/discarded),
- * which is a storage-layer concept never exposed over the API.
+ * ProposalStatus is the onboarding profile-proposal workflow status. It is
+ * distinct from the store's pending/applied/discarded lifecycle, which is a
+ * persistence detail never exposed over the API.
  *
  * @generated from enum opensight.v1.ProposalStatus
  */

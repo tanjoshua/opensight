@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // TestAnalysisSchemaWipeAndRebuild exercises the ANA-1 guarantees that prose
@@ -39,54 +38,74 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	t.Cleanup(func() {
 		// prompt_results / businesses cascades cover the derived rows, but delete
 		// explicitly so a mid-test failure still leaves a clean table.
-		_, _ = testdb.Exec(ctx, db, testdb.Query066, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query067, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query068, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query069, competitorID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query070, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query071, runID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query072, promptID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query073, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query074, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query075, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM mentions WHERE prompt_result_id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM citations WHERE prompt_result_id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM result_analyses WHERE prompt_result_id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM competitors WHERE id = $1", competitorID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompt_results WHERE id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Analysis Tenant")
-	mustExec(t, db, ctx, testdb.Query076, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query077, promptID, businessID)
-	mustExec(t, db, ctx, testdb.Query078, runID, businessID)
-	mustExec(t, db, ctx, testdb.Query079, resultID, runID, promptID)
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'analysis-workflow', now())`, runID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
+		VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_1"}'::jsonb, 'Analysis Clinic and Rival Clinic are options.')`, resultID, runID, promptID)
 
 	// Derived rows across all four tables — proves the schema is writable from
 	// Go end to end.
-	mustExec(t, db, ctx, testdb.Query080, competitorID, businessID)
-	mustExec(t, db, ctx, testdb.Query081, resultID)
-	mustExec(t, db, ctx, testdb.Query082, citationID, resultID)
-	mustExec(t, db, ctx, testdb.Query083, selfMentionID, resultID)
-	mustExec(t, db, ctx, testdb.Query084, competitorMentionID, resultID, competitorID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, aliases, source, status)
+		VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], 'discovered', 'discovered')`, competitorID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
+		VALUES ($1, 'positive', ARRAY['friendly']::text[], '["Analysis Clinic is a good option."]'::jsonb, 'gpt-5-mini', 1)`, resultID)
+	mustExec(t, db, ctx, `
+		INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order)
+		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'business', 0)`, citationID, resultID)
+	mustExec(t, db, ctx, `
+		INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
+		VALUES ($1, $2, 'self', 'exact', 0, 'Analysis Clinic ... options.')`, selfMentionID, resultID)
+	mustExec(t, db, ctx, `
+		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+		VALUES ($1, $2, 'competitor', $3, 'exact', 1, 'Rival Clinic ... options.')`, competitorMentionID, resultID, competitorID)
 
 	// The canonical mention invariant: competitor_id is required iff
 	// subject = 'competitor'.
-	if _, err := testdb.Exec(ctx, db, testdb.Query085, mustNewID(t), resultID, competitorID); err == nil {
+	if _, err := db.Exec(ctx, `
+		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+		VALUES ($1, $2, 'self', $3, 'exact', 2, 'bad')`, mustNewID(t), resultID, competitorID); err == nil {
 		t.Fatal("self mention with competitor_id inserted; want CHECK violation")
 	}
-	if _, err := testdb.Exec(ctx, db, testdb.Query086, mustNewID(t), resultID); err == nil {
+	if _, err := db.Exec(ctx, `
+		INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
+		VALUES ($1, $2, 'competitor', 'exact', 2, 'bad')`, mustNewID(t), resultID); err == nil {
 		t.Fatal("competitor mention without competitor_id inserted; want CHECK violation")
 	}
 
-	analysisStore := NewAnalysisStore(db)
+	analysisStore := New(db)
 
 	// Wipe per-result outputs; mentions belong to the run wipe and must survive.
 	if err := analysisStore.DeleteResultAnalysis(ctx, tenantID, resultID); err != nil {
 		t.Fatalf("DeleteResultAnalysis: %v", err)
 	}
-	if got := count(t, db, ctx, testdb.Query087, resultID); got != 0 {
+	if got := count(t, db, ctx, "SELECT count(*) FROM result_analyses WHERE prompt_result_id = $1", resultID); got != 0 {
 		t.Fatalf("result_analyses after wipe = %d, want 0", got)
 	}
-	if got := count(t, db, ctx, testdb.Query088, resultID); got != 0 {
+	if got := count(t, db, ctx, "SELECT count(*) FROM citations WHERE prompt_result_id = $1", resultID); got != 0 {
 		t.Fatalf("citations after wipe = %d, want 0", got)
 	}
-	if got := count(t, db, ctx, testdb.Query089, resultID); got != 2 {
+	if got := count(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 2 {
 		t.Fatalf("mentions after result wipe = %d, want 2 (untouched by result wipe)", got)
 	}
 
@@ -94,15 +113,15 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	if err := analysisStore.DeleteRunMentions(ctx, tenantID, runID); err != nil {
 		t.Fatalf("DeleteRunMentions: %v", err)
 	}
-	if got := count(t, db, ctx, testdb.Query090, resultID); got != 0 {
+	if got := count(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 0 {
 		t.Fatalf("mentions after run wipe = %d, want 0", got)
 	}
 
 	// Raw tables are never touched by the derived-data wipes.
-	if got := count(t, db, ctx, testdb.Query091, resultID); got != 1 {
+	if got := count(t, db, ctx, "SELECT count(*) FROM prompt_results WHERE id = $1", resultID); got != 1 {
 		t.Fatalf("prompt_results after wipes = %d, want 1 (raw untouched)", got)
 	}
-	if got := count(t, db, ctx, testdb.Query092, runID); got != 1 {
+	if got := count(t, db, ctx, "SELECT count(*) FROM monitoring_runs WHERE id = $1", runID); got != 1 {
 		t.Fatalf("monitoring_runs after wipes = %d, want 1 (raw untouched)", got)
 	}
 }
@@ -132,23 +151,31 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 	otherID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query093, businessID, otherBusinessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query094, businessID, otherBusinessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query095, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query096, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM competitors WHERE business_id IN ($1, $2)", businessID, otherBusinessID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id IN ($1, $2)", businessID, otherBusinessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Competitors Tenant")
-	mustExec(t, db, ctx, testdb.Query097, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query098, otherBusinessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')", otherBusinessID, tenantID)
 
-	mustExec(t, db, ctx, testdb.Query099, discoveredID, businessID)
-	mustExec(t, db, ctx, testdb.Query100, trackedID, businessID)
-	mustExec(t, db, ctx, testdb.Query101, dismissedID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, aliases, source, status)
+		VALUES ($1, $2, 'Discovered Co', ARRAY['disco']::text[], 'discovered', 'discovered')`, discoveredID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, source, status)
+		VALUES ($1, $2, 'Tracked Co', 'manual', 'tracked')`, trackedID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, source, status)
+		VALUES ($1, $2, 'Dismissed Co', 'discovered', 'dismissed')`, dismissedID, businessID)
 	// A competitor of a different business must not appear in the result.
-	mustExec(t, db, ctx, testdb.Query102, otherID, otherBusinessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, source, status)
+		VALUES ($1, $2, 'Other Co', 'discovered', 'discovered')`, otherID, otherBusinessID)
 
-	got, err := NewAnalysisStore(db).ListCompetitors(ctx, tenantID, businessID)
+	got, err := New(db).ListCompetitors(ctx, tenantID, businessID)
 	if err != nil {
 		t.Fatalf("ListCompetitors: %v", err)
 	}
@@ -170,18 +197,18 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 	}
 }
 
-func mustExec(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, args ...any) {
+func mustExec(t *testing.T, db *pgxpool.Pool, ctx context.Context, query string, args ...any) {
 	t.Helper()
-	if _, err := testdb.Exec(ctx, db, query, args...); err != nil {
-		t.Fatalf("exec test query %d: %v", query, err)
+	if _, err := db.Exec(ctx, query, args...); err != nil {
+		t.Fatalf("exec %s: %v", query, err)
 	}
 }
 
-func count(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, args ...any) int {
+func count(t *testing.T, db *pgxpool.Pool, ctx context.Context, query string, args ...any) int {
 	t.Helper()
 	var n int
-	if err := testdb.QueryRow(ctx, db, query, args...).Scan(&n); err != nil {
-		t.Fatalf("count test query %d: %v", query, err)
+	if err := db.QueryRow(ctx, query, args...).Scan(&n); err != nil {
+		t.Fatalf("count %s: %v", query, err)
 	}
 	return n
 }

@@ -12,7 +12,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrPendingProposalExists is returned when a pending profile proposal already
@@ -43,26 +42,11 @@ type ProfileProposal struct {
 	ResolvedAt *time.Time
 }
 
-// ProfileProposalStore reads and writes profile_proposals rows. It is the thin
-// version needed by Phase-1 callers; epic 10 owns the apply/discard state
-// machine.
-type ProfileProposalStore struct {
-	db *pgxpool.Pool
-}
-
-// NewProfileProposalStore returns a ProfileProposalStore backed by db.
-func NewProfileProposalStore(db *pgxpool.Pool) *ProfileProposalStore {
-	return &ProfileProposalStore{db: db}
-}
-
 // CreatePending inserts a pending proposal for the business, entering through
 // the tenant-checked business lookup in the same transaction as the write. A
 // missing or cross-tenant business returns ErrNotFound; an existing pending
 // proposal returns ErrPendingProposalExists.
-func (s *ProfileProposalStore) CreatePending(ctx context.Context, tenantID, businessID domain.ID, payload json.RawMessage) (ProfileProposal, error) {
-	if s == nil || s.db == nil {
-		return ProfileProposal{}, errors.New("profile proposal store database is required")
-	}
+func (s *Store) CreatePending(ctx context.Context, tenantID, businessID domain.ID, payload json.RawMessage) (ProfileProposal, error) {
 	if len(payload) == 0 {
 		return ProfileProposal{}, errors.New("proposal payload is required")
 	}
@@ -78,7 +62,7 @@ func (s *ProfileProposalStore) CreatePending(ctx context.Context, tenantID, busi
 		Payload:    payload,
 		Status:     ProfileProposalStatusPending,
 	}
-	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 			return err
 		}
@@ -102,12 +86,9 @@ func (s *ProfileProposalStore) CreatePending(ctx context.Context, tenantID, busi
 // GetPending returns the business's pending proposal. It enters through the
 // tenant-checked business lookup; a missing or cross-tenant business, or a
 // business with no pending proposal, returns ErrNotFound.
-func (s *ProfileProposalStore) GetPending(ctx context.Context, tenantID, businessID domain.ID) (ProfileProposal, error) {
-	if s == nil || s.db == nil {
-		return ProfileProposal{}, errors.New("profile proposal store database is required")
-	}
+func (s *Store) GetPending(ctx context.Context, tenantID, businessID domain.ID) (ProfileProposal, error) {
 
-	q := queries(ctx, s.db)
+	q := s.q(ctx)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return ProfileProposal{}, err
 	}
@@ -126,15 +107,12 @@ func (s *ProfileProposalStore) GetPending(ctx context.Context, tenantID, busines
 }
 
 // DiscardPending marks the business's pending proposal (if any) discarded. It is
-// the discard half of regenerate (ONB-4): a safe no-op when there is no pending
+// the discard half of regenerate: a safe no-op when there is no pending
 // row, so the caller can always call it before starting a fresh generation. It
 // enters through the tenant-checked business lookup in the same transaction as
 // the update; a missing or cross-tenant business returns ErrNotFound.
-func (s *ProfileProposalStore) DiscardPending(ctx context.Context, tenantID, businessID domain.ID) error {
-	if s == nil || s.db == nil {
-		return errors.New("profile proposal store database is required")
-	}
-	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+func (s *Store) DiscardPending(ctx context.Context, tenantID, businessID domain.ID) error {
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 			return err
 		}

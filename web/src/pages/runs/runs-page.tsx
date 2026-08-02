@@ -10,8 +10,11 @@ import { useCurrentBusiness, useRuns } from "@/api/hooks"
 import { runStatusLabel, runTriggerLabel } from "@/api/labels"
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { Run } from "@/gen/opensight/v1/result_pb"
+import { ListSkeleton } from "@/components/list-skeleton"
 import { RunStageStrip } from "@/components/run-stage-strip"
 import { PageHeader } from "@/components/page-header"
+import { SectionMessage } from "@/components/section-message"
+import { formatDateOnly, formatPercent, formatRunDate } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,14 +24,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -46,6 +41,7 @@ export function RunsPage() {
   if (isError) {
     return (
       <SectionMessage
+        icon={History}
         title="Something went wrong"
         description="The runs could not be loaded. Try reloading the page."
       />
@@ -60,6 +56,7 @@ export function RunsPage() {
   if (runsQuery.isError) {
     return (
       <SectionMessage
+        icon={History}
         title="Something went wrong"
         description="The runs could not be loaded. Try reloading the page."
       />
@@ -88,6 +85,7 @@ export function RunsPage() {
 
       {runs.length === 0 ? (
         <SectionMessage
+          icon={History}
           title="No runs yet"
           description="Runs appear here after your first weekly monitoring run. Check back once it has started."
         />
@@ -246,54 +244,4 @@ function RunStatusBadge({ status }: { status: RunStatus }) {
         ? ("secondary" as const)
         : ("outline" as const)
   return <Badge variant={variant}>{runStatusLabel(status)}</Badge>
-}
-
-function SectionMessage({
-  title,
-  description,
-}: {
-  title: string
-  description: string
-}) {
-  return (
-    <Empty className="border">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <History />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
-  )
-}
-
-function ListSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-7 w-32" />
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function formatPercent(value: number): string {
-  return `${(Math.round(value * 10) / 10).toFixed(1)}%`
-}
-
-// scheduled_for is a plain date (YYYY-MM-DD); parse as local, not UTC.
-function formatRunDate(scheduledFor: string): string {
-  return formatDateOnly(new Date(`${scheduledFor}T00:00:00`))
-}
-
-function formatDateOnly(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
 }

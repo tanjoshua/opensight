@@ -23,7 +23,7 @@ var _ opensightv1connect.BillingServiceHandler = (*Server)(nil)
 const checkoutIntegrationIdentifier = "opensight-signup-vqmzhrtk"
 
 // GetBilling returns the calling tenant's billing state for the billing page
-// (BILL-9, design 08 "RPC surface"): derived access, plan entitlements, the
+// (design 08 "RPC surface"): derived access, plan entitlements, the
 // verbatim Stripe status, a live price for display, and the renewal-or-end
 // date pair (current_period_end + cancel_at_period_end).
 func (s *Server) GetBilling(ctx context.Context, _ *connect.Request[opensightv1.GetBillingRequest]) (*connect.Response[opensightv1.GetBillingResponse], error) {
@@ -32,7 +32,7 @@ func (s *Server) GetBilling(ctx context.Context, _ *connect.Request[opensightv1.
 		return nil, cerr
 	}
 
-	sub, err := s.subscriptions.GetByTenant(ctx, su.TenantID)
+	sub, err := s.store.GetByTenant(ctx, su.TenantID)
 	if err != nil {
 		// Signup guarantees the row; a miss here is our bug, not the client's.
 		return nil, s.rpcInternal("get billing: get subscription", err)
@@ -106,7 +106,7 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 		return nil, cerr
 	}
 
-	sub, err := s.subscriptions.GetByTenant(ctx, su.TenantID)
+	sub, err := s.store.GetByTenant(ctx, su.TenantID)
 	if err != nil {
 		// Signup guarantees the row; a miss here is our bug, not the client's.
 		return nil, s.rpcInternal("start checkout: get subscription", err)
@@ -141,7 +141,7 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 		}
 		// The id that won, not necessarily cus.ID: a concurrent request may
 		// already have installed a different Customer (write-once).
-		won, err := s.subscriptions.SetStripeCustomerID(ctx, su.TenantID, cus.ID)
+		won, err := s.store.SetStripeCustomerID(ctx, su.TenantID, cus.ID)
 		if err != nil {
 			return nil, s.rpcError("start checkout: set stripe customer id", err)
 		}
@@ -228,7 +228,7 @@ func (s *Server) CreatePortalSession(ctx context.Context, _ *connect.Request[ope
 		return nil, cerr
 	}
 
-	sub, err := s.subscriptions.GetByTenant(ctx, su.TenantID)
+	sub, err := s.store.GetByTenant(ctx, su.TenantID)
 	if err != nil {
 		// Signup guarantees the row; a miss here is our bug, not the client's.
 		return nil, s.rpcInternal("create portal session: get subscription", err)

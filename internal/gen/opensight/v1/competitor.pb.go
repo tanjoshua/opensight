@@ -770,8 +770,8 @@ func (x *AddCompetitorResponse) GetCompetitor() *CompetitorRecord {
 // SetCompetitorStatusRequest merges the track/dismiss pair into one RPC — the
 // server already funnels both through one store method, and the frontend
 // already calls both through one function with a discriminator argument.
-// Only TRACKED and DISMISSED are valid inputs; that is enforced server-side
-// (added in RPC-6, not this schema-only story).
+// Only TRACKED and DISMISSED are valid inputs; the server rejects every other
+// enum value.
 type SetCompetitorStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CompetitorId  string                 `protobuf:"bytes,1,opt,name=competitor_id,json=competitorId,proto3" json:"competitor_id,omitempty"`

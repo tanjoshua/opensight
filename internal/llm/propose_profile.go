@@ -72,8 +72,8 @@ type ProposedPrompt struct {
 }
 
 // ProposalPayload is the decoded proposal (design 03, "Proposal payload"). It is
-// what the ProposeProfile activity returns and what ONB-4 marshals verbatim into
-// profile_proposals.payload.
+// what the ProposeProfile activity returns and what the workflow marshals
+// verbatim into profile_proposals.payload.
 type ProposalPayload struct {
 	LowConfidence bool             `json:"low_confidence"`
 	Profile       ProposedProfile  `json:"profile"`
@@ -84,16 +84,13 @@ type ProposalPayload struct {
 }
 
 // ProposeProfileRunner runs one structured-output proposal call per onboarding
-// (design 03 step 3). Mirrors ExtractionRunner's mode split.
+// (design 03 step 3).
 type ProposeProfileRunner interface {
 	RunProposeProfile(ctx context.Context, in ProposeProfileInput) (ProposeProfileRunResult, error)
 }
 
-// NewProposeProfileRunner selects a ProposeProfileRunner by mode, mirroring
-// NewExtractionRunner. "stub" and "replay" spend no OpenAI money; "openai" is
-// the real call. "replay" is aliased to the stub — building a proposal
-// replay-fixture corpus is not worth it for a once-per-onboarding call.
-// openAICfg is only consulted for "openai".
+// NewProposeProfileRunner selects a ProposeProfileRunner by mode (see the
+// package doc). openAICfg is only consulted for "openai".
 func NewProposeProfileRunner(mode string, openAICfg OpenAIConfig) (ProposeProfileRunner, error) {
 	switch mode {
 	case "stub", "replay":

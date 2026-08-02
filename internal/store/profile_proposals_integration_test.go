@@ -10,7 +10,6 @@ import (
 	"opensight/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // seedProposalBusiness inserts a plan, tenant, and draft business for proposal
@@ -21,14 +20,14 @@ func seedProposalBusiness(t *testing.T, ctx context.Context, db *pgxpool.Pool) (
 	businessID := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query131, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query132, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query133, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query134, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Proposal Tenant")
-	if _, err := testdb.Exec(ctx, db, testdb.Query135, businessID, tenantID); err != nil {
+	if _, err := db.Exec(ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Proposal Clinic')", businessID, tenantID); err != nil {
 		t.Fatalf("insert business: %v", err)
 	}
 	return tenantID, businessID
@@ -52,7 +51,7 @@ func TestProfileProposalStoreDiscardPending(t *testing.T) {
 	t.Cleanup(db.Close)
 
 	tenantID, businessID := seedProposalBusiness(t, ctx, db)
-	proposals := NewProfileProposalStore(db)
+	proposals := New(db)
 	payload := json.RawMessage(`{"low_confidence":false}`)
 
 	// Discard with no pending row is a no-op (returns nil, does not error).

@@ -13,12 +13,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrDuplicateResult is returned when a prompt result already exists for a
-// (run, prompt) pair. The store never silently absorbs the conflict: RUN-4's
-// retry path re-gets the existing row on this error.
+// (run, prompt) pair. The store never silently absorbs the conflict: the
+// ExecutePrompt activity's retry path re-gets the existing row on this error.
 var ErrDuplicateResult = errors.New("prompt result already exists for run and prompt")
 
 // ResultStatus is the persisted outcome of a single prompt call.
@@ -76,7 +75,7 @@ type CreateResultParams struct {
 // ResultListItem is one Responses-list row: the result joined to its prompt
 // text (design 06 Phase 1 — the list is unreadable without the question asked).
 // Analyzed is true when the result has a result_analyses row; a succeeded result
-// without one is the "not yet analyzed" badge state (design 06, MET-5).
+// without one is the "not yet analyzed" badge state (design 06).
 type ResultListItem struct {
 	PromptResult
 	PromptText string
@@ -87,7 +86,7 @@ type ResultListItem struct {
 // apply as given when > 0 (the handler chooses defaults and caps). ResultIDs,
 // when non-empty, restrict results and preserve the requested order. Mentioned,
 // when set, keeps only results whose analysis found (true) or did not find
-// (false) a self mention — the Responses "mentioned" filter (design 06, MET-5).
+// (false) a self mention — the Responses "mentioned" filter (design 06).
 type ResultFilter struct {
 	ResultIDs []domain.ID
 	RunID     *domain.ID
@@ -100,7 +99,7 @@ type ResultFilter struct {
 
 // ResultMention is one mention row for the Response drawer: the self/competitor
 // occurrence with its exact extracted name, match method, first-appearance
-// order, and evidence excerpt (design 06, MET-5). Competitor identity is
+// order, and evidence excerpt (design 06). Competitor identity is
 // deliberately omitted — the drawer highlights occurrences, it does not re-list
 // competitors.
 type ResultMention struct {
@@ -112,7 +111,7 @@ type ResultMention struct {
 }
 
 // ResultCitation is one citation row for the Response drawer: the cited source
-// with its inferred subject and first-appearance order (design 06, MET-5). The
+// with its inferred subject and first-appearance order (design 06). The
 // inline-marker annotation span is reconstructed by the API layer from
 // raw_response, not stored here.
 type ResultCitation struct {
@@ -124,7 +123,7 @@ type ResultCitation struct {
 }
 
 // ResultAnalysis is the derived-analysis enrichment for one result's drawer
-// (design 06, MET-5). Analyzed is false for a succeeded-but-unanalyzed result —
+// (design 06). Analyzed is false for a succeeded-but-unanalyzed result —
 // no result_analyses row — in which case the other fields are empty. Sentiment
 // is nil when the business was not mentioned even though the result was analyzed.
 type ResultAnalysis struct {
@@ -136,25 +135,12 @@ type ResultAnalysis struct {
 	Citations []ResultCitation
 }
 
-// ResultStore reads and writes prompt_results rows.
-type ResultStore struct {
-	db *pgxpool.Pool
-}
-
-// NewResultStore returns a ResultStore backed by db.
-func NewResultStore(db *pgxpool.Pool) *ResultStore {
-	return &ResultStore{db: db}
-}
-
 // CreateResult appends a prompt result, scoped by a tenant-predicated lookup of
 // the run's business inside one transaction. A missing or cross-tenant run
 // returns ErrNotFound; a UNIQUE (run_id, prompt_id) violation returns
-// ErrDuplicateResult. RUN-4's activity retry re-gets the existing row on the
+// ErrDuplicateResult. ExecutePrompt's retry re-gets the existing row on the
 // latter (get -> miss -> create -> on ErrDuplicateResult re-get).
-func (s *ResultStore) CreateResult(ctx context.Context, tenantID domain.ID, params CreateResultParams) (PromptResult, error) {
-	if s == nil || s.db == nil {
-		return PromptResult{}, errors.New("result store database is required")
-	}
+func (s *Store) CreateResult(ctx context.Context, tenantID domain.ID, params CreateResultParams) (PromptResult, error) {
 
 	params, err := normalizeCreateResultParams(params)
 	if err != nil {
@@ -175,7 +161,7 @@ func (s *ResultStore) CreateResult(ctx context.Context, tenantID domain.ID, para
 		ResponseText: params.ResponseText,
 		Error:        params.Error,
 	}
-	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if _, err := q.RunPromptOwned(ctx, storesqlc.RunPromptOwnedParams{
 			ID: params.RunID, ID_2: params.PromptID, TenantID: tenantID,
 		}); err != nil {
@@ -210,15 +196,12 @@ func (s *ResultStore) CreateResult(ctx context.Context, tenantID domain.ID, para
 }
 
 // GetResultByRunAndPrompt loads the result for a (run, prompt) pair, tenant
-// scoped via the business join (deep-by-id). No row returns ErrNotFound. RUN-4
-// calls this first for its idempotency check and after an ErrDuplicateResult
-// race.
-func (s *ResultStore) GetResultByRunAndPrompt(ctx context.Context, tenantID, runID, promptID domain.ID) (PromptResult, error) {
-	if s == nil || s.db == nil {
-		return PromptResult{}, errors.New("result store database is required")
-	}
+// scoped via the business join (deep-by-id). No row returns ErrNotFound.
+// ExecutePrompt calls this first for its idempotency check and after an
+// ErrDuplicateResult race.
+func (s *Store) GetResultByRunAndPrompt(ctx context.Context, tenantID, runID, promptID domain.ID) (PromptResult, error) {
 
-	row, err := queries(ctx, s.db).GetResultByRunAndPrompt(ctx, storesqlc.GetResultByRunAndPromptParams{
+	row, err := s.q(ctx).GetResultByRunAndPrompt(ctx, storesqlc.GetResultByRunAndPromptParams{
 		RunID: runID, PromptID: promptID, TenantID: tenantID,
 	})
 	if err != nil {
@@ -231,14 +214,11 @@ func (s *ResultStore) GetResultByRunAndPrompt(ctx context.Context, tenantID, run
 }
 
 // GetResult loads a single result by id, tenant scoped via
-// prompt_results -> monitoring_runs -> businesses (WEB-2 GET /results/:id). A
-// missing or cross-tenant result returns ErrNotFound.
-func (s *ResultStore) GetResult(ctx context.Context, tenantID, resultID domain.ID) (PromptResult, error) {
-	if s == nil || s.db == nil {
-		return PromptResult{}, errors.New("result store database is required")
-	}
+// prompt_results -> monitoring_runs -> businesses. A missing or cross-tenant
+// result returns ErrNotFound.
+func (s *Store) GetResult(ctx context.Context, tenantID, resultID domain.ID) (PromptResult, error) {
 
-	row, err := queries(ctx, s.db).GetResult(ctx, storesqlc.GetResultParams{ID: resultID, TenantID: tenantID})
+	row, err := s.q(ctx).GetResult(ctx, storesqlc.GetResultParams{ID: resultID, TenantID: tenantID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return PromptResult{}, ErrNotFound
@@ -250,12 +230,9 @@ func (s *ResultStore) GetResult(ctx context.Context, tenantID, resultID domain.I
 
 // GetResultDetail loads one result with its prompt text and run metadata,
 // tenant scoped through prompt_results -> monitoring_runs -> businesses.
-func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (ResultDetail, error) {
-	if s == nil || s.db == nil {
-		return ResultDetail{}, errors.New("result store database is required")
-	}
+func (s *Store) GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (ResultDetail, error) {
 
-	row, err := queries(ctx, s.db).GetResultDetail(ctx, storesqlc.GetResultDetailParams{ID: resultID, TenantID: tenantID})
+	row, err := s.q(ctx).GetResultDetail(ctx, storesqlc.GetResultDetailParams{ID: resultID, TenantID: tenantID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ResultDetail{}, ErrNotFound
@@ -276,17 +253,14 @@ func (s *ResultStore) GetResultDetail(ctx context.Context, tenantID, resultID do
 
 // GetResultAnalysis loads the derived-analysis enrichment for one result — its
 // result_analyses row (if any), mentions, and citations — for the Response
-// drawer (design 06, MET-5). All reads are tenant-scoped, so a missing or
+// drawer (design 06). All reads are tenant-scoped, so a missing or
 // cross-tenant result returns an empty, unanalyzed ResultAnalysis rather than
 // leaking. Ownership and existence of the result itself are proven by the
 // caller's GetResultDetail; this method only fetches the child rows.
-func (s *ResultStore) GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (ResultAnalysis, error) {
-	if s == nil || s.db == nil {
-		return ResultAnalysis{}, errors.New("result store database is required")
-	}
+func (s *Store) GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (ResultAnalysis, error) {
 
 	var out ResultAnalysis
-	row, err := queries(ctx, s.db).GetResultAnalysisRow(ctx, storesqlc.GetResultAnalysisRowParams{
+	row, err := s.q(ctx).GetResultAnalysisRow(ctx, storesqlc.GetResultAnalysisRowParams{
 		PromptResultID: resultID, TenantID: tenantID,
 	})
 	switch {
@@ -317,8 +291,8 @@ func (s *ResultStore) GetResultAnalysis(ctx context.Context, tenantID, resultID 
 	return out, nil
 }
 
-func (s *ResultStore) listResultMentions(ctx context.Context, tenantID, resultID domain.ID) ([]ResultMention, error) {
-	rows, err := queries(ctx, s.db).ListResultMentions(ctx, storesqlc.ListResultMentionsParams{
+func (s *Store) listResultMentions(ctx context.Context, tenantID, resultID domain.ID) ([]ResultMention, error) {
+	rows, err := s.q(ctx).ListResultMentions(ctx, storesqlc.ListResultMentionsParams{
 		PromptResultID: resultID, TenantID: tenantID,
 	})
 	if err != nil {
@@ -334,8 +308,8 @@ func (s *ResultStore) listResultMentions(ctx context.Context, tenantID, resultID
 	return mentions, nil
 }
 
-func (s *ResultStore) listResultCitations(ctx context.Context, tenantID, resultID domain.ID) ([]ResultCitation, error) {
-	rows, err := queries(ctx, s.db).ListResultCitations(ctx, storesqlc.ListResultCitationsParams{
+func (s *Store) listResultCitations(ctx context.Context, tenantID, resultID domain.ID) ([]ResultCitation, error) {
+	rows, err := s.q(ctx).ListResultCitations(ctx, storesqlc.ListResultCitationsParams{
 		PromptResultID: resultID, TenantID: tenantID,
 	})
 	if err != nil {
@@ -350,16 +324,13 @@ func (s *ResultStore) listResultCitations(ctx context.Context, tenantID, resultI
 	return citations, nil
 }
 
-// ListResults returns a business's results with optional hard-coded predicates
-// (WEB-2). It enters through the tenant-checked business lookup, then joins
+// ListResults returns a business's results with optional hard-coded
+// predicates. It enters through the tenant-checked business lookup, then joins
 // results up to the business so foreign run/prompt filters yield nothing rather
 // than leaking across tenants.
-func (s *ResultStore) ListResults(ctx context.Context, tenantID, businessID domain.ID, filter ResultFilter) ([]ResultListItem, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("result store database is required")
-	}
+func (s *Store) ListResults(ctx context.Context, tenantID, businessID domain.ID, filter ResultFilter) ([]ResultListItem, error) {
 
-	q := queries(ctx, s.db)
+	q := s.q(ctx)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return nil, err
 	}

@@ -1,18 +1,17 @@
 // Command opensight is the single OpenSight binary. Its mode is selected by
 // subcommand:
 //
-//	opensight serve         # HTTP API server (01-D2)
-//	opensight work          # Temporal worker (01-D2)
-//	opensight migrate       # apply database migrations, then exit (07)
-//	opensight tenant create # create an invite-only tenant (AUTH-2)
-//	opensight user create   # create an invite-only user (AUTH-2)
-//	opensight business create # seed an active business from a spec file (RUN-5)
-//	opensight seed dev      # seed a dev tenant and login account
+//	opensight serve           # HTTP API server (01-D2)
+//	opensight work            # Temporal worker (01-D2)
+//	opensight migrate         # apply database migrations, then exit
+//	opensight tenant create   # create an invite-only tenant
+//	opensight user create     # create an invite-only user
+//	opensight business create # seed an active business from a spec file
+//	opensight seed dev        # seed a dev tenant and login account
+//	opensight stripe portal-config # apply the Billing Portal configuration
 //
 // The same image runs serve and work via a command override in deployment
-// (07 "Deployment"). Foundation stories wire the first health server, Temporal
-// connection, and migration stub; later stories add real routes, workflows, and
-// migrations.
+// (design 07 "Deployment").
 package main
 
 import (
@@ -74,18 +73,6 @@ func newLogger(w io.Writer) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelInfo}))
 }
 
-type commandDeps struct {
-	migrate           func(context.Context, config.Config) error
-	createTenant      func(context.Context, config.Config, tenantCreateOptions, io.Writer) error
-	createUser        func(context.Context, config.Config, userCreateOptions, io.Writer) error
-	createBusiness    func(context.Context, config.Config, businessCreateOptions, io.Writer) error
-	seedDev           func(context.Context, config.Config, io.Writer) error
-	applyPortalConfig func(context.Context, config.Config, io.Writer) error
-	generatePassword  func() (string, error)
-	stdin             io.Reader
-	stdout            io.Writer
-}
-
 type tenantCreateOptions struct {
 	Name string
 }
@@ -100,14 +87,9 @@ type userCreateOptions struct {
 // run dispatches the chosen subcommand. It is separated from main so it can be
 // tested without spawning the process.
 func run(ctx context.Context, args []string) error {
-	return runWithDeps(ctx, args, defaultCommandDeps())
-}
-
-func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 	if len(args) == 0 {
 		return fmt.Errorf("no subcommand given; %s", usage)
 	}
-	deps = deps.withDefaults()
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -120,69 +102,23 @@ func runWithDeps(ctx context.Context, args []string, deps commandDeps) error {
 	case "work":
 		return work(ctx, cfg)
 	case "migrate":
-		return deps.migrate(ctx, cfg)
+		return migrate(ctx, cfg)
 	case "tenant":
-		return runTenantCommand(ctx, cfg, args[1:], deps)
+		return runTenantCommand(ctx, cfg, args[1:])
 	case "user":
-		return runUserCommand(ctx, cfg, args[1:], deps)
+		return runUserCommand(ctx, cfg, args[1:])
 	case "business":
-		return runBusinessCommand(ctx, cfg, args[1:], deps)
+		return runBusinessCommand(ctx, cfg, args[1:])
 	case "seed":
-		return runSeedCommand(ctx, cfg, args[1:], deps)
+		return runSeedCommand(ctx, cfg, args[1:])
 	case "stripe":
-		return runStripeCommand(ctx, cfg, args[1:], deps)
+		return runStripeCommand(ctx, cfg, args[1:])
 	default:
 		return fmt.Errorf("unknown subcommand %q; %s", cmd, usage)
 	}
 }
 
-func defaultCommandDeps() commandDeps {
-	return commandDeps{
-		migrate:           migrate,
-		createTenant:      createTenantCLI,
-		createUser:        createUserCLI,
-		createBusiness:    createBusinessCLI,
-		seedDev:           seedDevCLI,
-		applyPortalConfig: applyPortalConfigCLI,
-		generatePassword:  generatePassword,
-		stdin:             os.Stdin,
-		stdout:            os.Stdout,
-	}
-}
-
-func (d commandDeps) withDefaults() commandDeps {
-	defaults := defaultCommandDeps()
-	if d.migrate == nil {
-		d.migrate = defaults.migrate
-	}
-	if d.createTenant == nil {
-		d.createTenant = defaults.createTenant
-	}
-	if d.createUser == nil {
-		d.createUser = defaults.createUser
-	}
-	if d.createBusiness == nil {
-		d.createBusiness = defaults.createBusiness
-	}
-	if d.seedDev == nil {
-		d.seedDev = defaults.seedDev
-	}
-	if d.applyPortalConfig == nil {
-		d.applyPortalConfig = defaults.applyPortalConfig
-	}
-	if d.generatePassword == nil {
-		d.generatePassword = defaults.generatePassword
-	}
-	if d.stdin == nil {
-		d.stdin = defaults.stdin
-	}
-	if d.stdout == nil {
-		d.stdout = defaults.stdout
-	}
-	return d
-}
-
-func runTenantCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+func runTenantCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("tenant subcommand required; %s", tenantCreateUsage)
 	}
@@ -192,29 +128,29 @@ func runTenantCommand(ctx context.Context, cfg config.Config, args []string, dep
 		if err != nil {
 			return err
 		}
-		return deps.createTenant(ctx, cfg, opts, deps.stdout)
+		return createTenantCLI(ctx, cfg, opts, os.Stdout)
 	default:
 		return fmt.Errorf("unknown tenant subcommand %q; %s", args[0], tenantCreateUsage)
 	}
 }
 
-func runUserCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+func runUserCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("user subcommand required; %s", userCreateUsage)
 	}
 	switch args[0] {
 	case "create":
-		opts, err := parseUserCreateArgs(args[1:], deps.generatePassword, deps.stdin)
+		opts, err := parseUserCreateArgs(args[1:], generatePassword, os.Stdin)
 		if err != nil {
 			return err
 		}
-		return deps.createUser(ctx, cfg, opts, deps.stdout)
+		return createUserCLI(ctx, cfg, opts, os.Stdout)
 	default:
 		return fmt.Errorf("unknown user subcommand %q; %s", args[0], userCreateUsage)
 	}
 }
 
-func runBusinessCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+func runBusinessCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("business subcommand required; %s", businessCreateUsage)
 	}
@@ -224,13 +160,13 @@ func runBusinessCommand(ctx context.Context, cfg config.Config, args []string, d
 		if err != nil {
 			return err
 		}
-		return deps.createBusiness(ctx, cfg, opts, deps.stdout)
+		return createBusinessCLI(ctx, cfg, opts, os.Stdout)
 	default:
 		return fmt.Errorf("unknown business subcommand %q; %s", args[0], businessCreateUsage)
 	}
 }
 
-func runSeedCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+func runSeedCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("seed subcommand required; %s", seedUsage)
 	}
@@ -239,7 +175,7 @@ func runSeedCommand(ctx context.Context, cfg config.Config, args []string, deps 
 		if len(args) > 1 {
 			return fmt.Errorf("unexpected argument %q; %s", args[1], seedUsage)
 		}
-		return deps.seedDev(ctx, cfg, deps.stdout)
+		return seedDevCLI(ctx, cfg, os.Stdout)
 	default:
 		return fmt.Errorf("unknown seed subcommand %q; %s", args[0], seedUsage)
 	}
@@ -382,12 +318,12 @@ func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOption
 	return nil
 }
 
-func openAccountStore(cfg config.Config) (*store.AccountStore, func(), error) {
+func openAccountStore(cfg config.Config) (*store.Store, func(), error) {
 	db, err := store.Open(context.Background(), cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
 	if err != nil {
 		return nil, nil, err
 	}
-	return store.NewAccountStore(db), db.Close, nil
+	return store.New(db), db.Close, nil
 }
 
 func generatePassword() (string, error) {
@@ -416,7 +352,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 	defer db.Close()
 
 	// serve starts GenerateProfileWorkflow on the same task queue the worker
-	// consumes (ONB-4), so it needs a Temporal client too.
+	// consumes, so it needs a Temporal client too.
 	temporalClient, err := dialTemporal(ctx, cfg)
 	if err != nil {
 		return err
@@ -430,32 +366,18 @@ func serve(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	// Shared between Deps.Subscriptions and the Reconciler, same store, no
-	// duplicate connection pooling.
-	subscriptions := store.NewSubscriptionStore(db)
-	// businesses and temporalClient are already in scope for Deps.Businesses
-	// and Deps.Temporal below; the monitoring gate reuses both rather than
-	// opening a second store or client.
-	businesses := store.NewBusinessStore(db)
-	monitoring := reconcile.NewMonitoring(businesses, temporalClient)
-	locks := store.NewAdvisoryLocker(db)
-	reconciler := reconcile.New(subscriptions, billingProvider, monitoring, locks, nil)
+	// One store over one pool, shared by the API server, the monitoring gate,
+	// and the reconciler — no duplicate connection pooling.
+	dataStore := store.New(db)
+	monitoring := reconcile.NewMonitoring(dataStore, temporalClient)
+	reconciler := reconcile.New(dataStore, billingProvider, monitoring, dataStore, nil)
 
 	webhookVerifier := stripe.NewWebhookVerifier(cfg.StripeWebhookSecret)
 
-	// Secure cookies everywhere except plain-HTTP local dev (FND-2). Prod runs
-	// behind Caddy TLS, where Secure must be set.
+	// Secure cookies everywhere except plain-HTTP local dev. Prod runs behind
+	// Caddy TLS, where Secure must be set.
 	apiServer := api.New(api.Deps{
-		Auth:                        store.NewAuthStore(db),
-		Accounts:                    store.NewAccountStore(db),
-		Businesses:                  businesses,
-		Subscriptions:               subscriptions,
-		Proposals:                   store.NewProfileProposalStore(db),
-		Apply:                       store.NewApplyProposalStore(db),
-		Prompts:                     store.NewPromptStore(db),
-		Competitors:                 store.NewCompetitorStore(db),
-		Runs:                        store.NewRunStore(db),
-		Results:                     store.NewResultStore(db),
+		Store:                       dataStore,
 		Metrics:                     metrics.New(db),
 		Temporal:                    temporalClient,
 		TemporalTaskQueue:           cfg.TemporalTaskQueue,
@@ -511,8 +433,8 @@ func serve(ctx context.Context, cfg config.Config) error {
 	}
 }
 
-// work connects to Temporal, registers RunWorkflow and its activities, and runs
-// the worker until shutdown (RUN-3).
+// work connects to Temporal, registers the workflows and their activities, and
+// runs the worker until shutdown.
 func work(ctx context.Context, cfg config.Config) error {
 	if ctx.Err() != nil {
 		return nil
@@ -571,17 +493,11 @@ func work(ctx context.Context, cfg config.Config) error {
 	)
 
 	activities := &workflows.Activities{
-		Businesses:    store.NewBusinessStore(db),
-		Prompts:       store.NewPromptStore(db),
-		Runs:          store.NewRunStore(db),
-		Results:       store.NewResultStore(db),
-		Runner:        runner,
-		Analysis:      store.NewAnalysisStore(db),
-		Extractor:     extractor,
-		Matcher:       matcher,
-		Proposer:      proposer,
-		Proposals:     store.NewProfileProposalStore(db),
-		Subscriptions: store.NewSubscriptionStore(db),
+		Store:     store.New(db),
+		Runner:    runner,
+		Extractor: extractor,
+		Matcher:   matcher,
+		Proposer:  proposer,
 	}
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{

@@ -12,7 +12,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.temporal.io/sdk/testsuite"
-	testdb "opensight/internal/store/testdb"
 )
 
 // fakeExtractor returns a fixed extraction payload and counts invocations, so
@@ -63,32 +62,33 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 	resultID := mustID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query236, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query237, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query238, resultID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query239, runID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query240, promptID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query241, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query242, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query243, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM citations WHERE prompt_result_id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM result_analyses WHERE prompt_result_id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompt_results WHERE id = $1", resultID)
+		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Analyze Tenant")
-	mustExec(t, db, ctx, testdb.Query244, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query245, promptID, businessID)
-	mustExec(t, db, ctx, testdb.Query246, runID, businessID)
-	mustExec(t, db, ctx, testdb.Query247, resultID, runID, promptID, analyzeRawResponse, analyzeResponseText)
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic for braces', 'active')", promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'analyze-wf', now())`, runID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
+		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, $4::jsonb, $5)`, resultID, runID, promptID, analyzeRawResponse, analyzeResponseText)
 
-	pool := db
-	businesses := store.NewBusinessStore(pool)
-	prompts := store.NewPromptStore(pool)
-	runs := store.NewRunStore(pool)
-	results := store.NewResultStore(pool)
-	analysis := store.NewAnalysisStore(pool)
+	store := store.New(db)
 
 	t.Run("writes analysis and citations, always re-extracts", func(t *testing.T) {
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Analysis: analysis, Extractor: extractor}
+		acts := &Activities{Store: store, Extractor: extractor}
 
 		out, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID})
 		if err != nil {
@@ -104,7 +104,8 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		var sentiment string
 		var model string
 		var version int
-		if err := testdb.QueryRow(ctx, db, testdb.Query248, resultID).Scan(&sentiment, &model, &version); err != nil {
+		if err := db.QueryRow(ctx, `
+			SELECT sentiment, analysis_model, extraction_version FROM result_analyses WHERE prompt_result_id = $1`, resultID).Scan(&sentiment, &model, &version); err != nil {
 			t.Fatalf("read result_analyses: %v", err)
 		}
 		if sentiment != "positive" || model != "fake-mini" || version != llm.ExtractionPromptVersion {
@@ -113,7 +114,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 
 		var citeURL, citeDomain, citeSubject string
 		var citeOrder int
-		if err := testdb.QueryRow(ctx, db, testdb.Query249, resultID).Scan(&citeURL, &citeDomain, &citeSubject, &citeOrder); err != nil {
+		if err := db.QueryRow(ctx, "SELECT url, domain, subject, cite_order FROM citations WHERE prompt_result_id = $1", resultID).Scan(&citeURL, &citeDomain, &citeSubject, &citeOrder); err != nil {
 			t.Fatalf("read citations: %v", err)
 		}
 		// utm stripped, host lowercased, domain grouped.
@@ -142,7 +143,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 
 	t.Run("cross-tenant result is ErrNotFound", func(t *testing.T) {
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Analysis: analysis, Extractor: extractor}
+		acts := &Activities{Store: store, Extractor: extractor}
 
 		_, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: mustID(t), ResultID: resultID})
 		if err == nil {
@@ -155,11 +156,11 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 
 	t.Run("invalid output flags after MaxExtractionAttempts", func(t *testing.T) {
 		// Wipe the row written by the success subtest so we can assert none exists.
-		mustExec(t, db, ctx, testdb.Query250, resultID)
-		mustExec(t, db, ctx, testdb.Query251, resultID)
+		mustExec(t, db, ctx, "DELETE FROM citations WHERE prompt_result_id = $1", resultID)
+		mustExec(t, db, ctx, "DELETE FROM result_analyses WHERE prompt_result_id = $1", resultID)
 
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(invalidExtraction)}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Analysis: analysis, Extractor: extractor}
+		acts := &Activities{Store: store, Extractor: extractor}
 
 		// The flagged path calls activity.GetLogger, so run it through a real
 		// activity context (as the ExecutePrompt terminal-failure test does).
@@ -182,7 +183,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 			t.Fatalf("extractor calls = %d, want %d", extractor.calls, llm.MaxExtractionAttempts)
 		}
 		var n int
-		if err := testdb.QueryRow(ctx, db, testdb.Query252, resultID).Scan(&n); err != nil {
+		if err := db.QueryRow(ctx, "SELECT count(*) FROM result_analyses WHERE prompt_result_id = $1", resultID).Scan(&n); err != nil {
 			t.Fatalf("count analyses: %v", err)
 		}
 		if n != 0 {
@@ -193,7 +194,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 	t.Run("reanalysis failure clears a prior successful analysis", func(t *testing.T) {
 		// Seed a successful analysis first, as if from an earlier extraction_version.
 		validExtractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Analysis: analysis, Extractor: validExtractor}
+		acts := &Activities{Store: store, Extractor: validExtractor}
 		if _, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID}); err != nil {
 			t.Fatalf("seed AnalyzeResult: %v", err)
 		}
@@ -204,7 +205,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		// A ReanalyzeRun-style re-run whose new extraction attempt fails must not
 		// leave the prior row's stale sentiment/keywords counting toward metrics.
 		invalidExtractor := &fakeExtractor{rawJSON: json.RawMessage(invalidExtraction)}
-		acts = &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Analysis: analysis, Extractor: invalidExtractor}
+		acts = &Activities{Store: store, Extractor: invalidExtractor}
 		var ts testsuite.WorkflowTestSuite
 		env := ts.NewTestActivityEnvironment()
 		env.RegisterActivity(acts.AnalyzeResult)
@@ -222,7 +223,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		}
 
 		var n int
-		if err := testdb.QueryRow(ctx, db, testdb.Query253, resultID).Scan(&n); err != nil {
+		if err := db.QueryRow(ctx, "SELECT count(*) FROM result_analyses WHERE prompt_result_id = $1", resultID).Scan(&n); err != nil {
 			t.Fatalf("count analyses: %v", err)
 		}
 		if n != 0 {
@@ -237,7 +238,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 func citationCount(t *testing.T, db *pgxpool.Pool, ctx context.Context, resultID domain.ID) int {
 	t.Helper()
 	var n int
-	if err := testdb.QueryRow(ctx, db, testdb.Query254, resultID).Scan(&n); err != nil {
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM citations WHERE prompt_result_id = $1", resultID).Scan(&n); err != nil {
 		t.Fatalf("count citations: %v", err)
 	}
 	return n

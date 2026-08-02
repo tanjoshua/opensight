@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrPromptLimitExceeded is returned when adding an active prompt would exceed
@@ -64,28 +63,15 @@ type ReplacePromptParams struct {
 	Text        string
 }
 
-// PromptStore writes prompt rows while enforcing prompt-specific invariants.
-type PromptStore struct {
-	db *pgxpool.Pool
-}
-
-// NewPromptStore returns a PromptStore backed by db.
-func NewPromptStore(db *pgxpool.Pool) *PromptStore {
-	return &PromptStore{db: db}
-}
-
 // CreateActivePrompt inserts an active prompt only if the business belongs to
 // params.TenantID and doing so keeps count(active prompts) <= billing.Plan.PromptLimit
 // for the business. It locks the business row (scoped by tenant) before counting
 // so concurrent prompt inserts for the same business serialize through this code
 // path. A missing or cross-tenant business returns ErrNotFound.
-func (s *PromptStore) CreateActivePrompt(ctx context.Context, params CreateActivePromptParams) (Prompt, error) {
-	if s == nil || s.db == nil {
-		return Prompt{}, errors.New("prompt store database is required")
-	}
+func (s *Store) CreateActivePrompt(ctx context.Context, params CreateActivePromptParams) (Prompt, error) {
 
 	var prompt Prompt
-	err := withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err := s.withTx(ctx, func(q *storesqlc.Queries) error {
 		created, err := createActivePromptInTx(ctx, q, params)
 		if err != nil {
 			return err
@@ -107,13 +93,10 @@ func (s *PromptStore) CreateActivePrompt(ctx context.Context, params CreateActiv
 // transaction (the retired old prompt no longer counts). Lock order is
 // prompt-row then business-row, consistent with CreateActivePrompt only ever
 // locking the business row.
-func (s *PromptStore) ReplacePrompt(ctx context.Context, params ReplacePromptParams) (Prompt, error) {
-	if s == nil || s.db == nil {
-		return Prompt{}, errors.New("prompt store database is required")
-	}
+func (s *Store) ReplacePrompt(ctx context.Context, params ReplacePromptParams) (Prompt, error) {
 
 	var prompt Prompt
-	err := withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err := s.withTx(ctx, func(q *storesqlc.Queries) error {
 		created, err := replacePromptInTx(ctx, q, params)
 		if err != nil {
 			return err
@@ -156,12 +139,9 @@ func replacePromptInTx(ctx context.Context, q *storesqlc.Queries, params Replace
 // enters through the tenant-checked business lookup so an empty result for a
 // business the tenant does not own is reported as ErrNotFound rather than an
 // empty slice.
-func (s *PromptStore) ListActivePrompts(ctx context.Context, tenantID, businessID domain.ID) ([]Prompt, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("prompt store database is required")
-	}
+func (s *Store) ListActivePrompts(ctx context.Context, tenantID, businessID domain.ID) ([]Prompt, error) {
 
-	q := queries(ctx, s.db)
+	q := s.q(ctx)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return nil, err
 	}
@@ -180,12 +160,9 @@ func (s *PromptStore) ListActivePrompts(ctx context.Context, tenantID, businessI
 // GetPrompt loads a single prompt by id, scoped to the tenant via the business
 // join in one statement (deep-by-id). A missing or cross-tenant prompt returns
 // ErrNotFound.
-func (s *PromptStore) GetPrompt(ctx context.Context, tenantID, promptID domain.ID) (Prompt, error) {
-	if s == nil || s.db == nil {
-		return Prompt{}, errors.New("prompt store database is required")
-	}
+func (s *Store) GetPrompt(ctx context.Context, tenantID, promptID domain.ID) (Prompt, error) {
 
-	row, err := queries(ctx, s.db).GetPrompt(ctx, storesqlc.GetPromptParams{ID: promptID, TenantID: tenantID})
+	row, err := s.q(ctx).GetPrompt(ctx, storesqlc.GetPromptParams{ID: promptID, TenantID: tenantID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound

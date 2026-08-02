@@ -31,7 +31,7 @@ func TestAdvisoryLockerSerializesSameKey(t *testing.T) {
 	errs := make(chan error, 2)
 
 	go func() {
-		errs <- NewAdvisoryLocker(pool).WithLock(ctx, key, func(lockedCtx context.Context) error {
+		errs <- New(pool).WithLock(ctx, key, func(lockedCtx context.Context) error {
 			close(firstEntered)
 			<-releaseFirst
 			return nil
@@ -40,7 +40,7 @@ func TestAdvisoryLockerSerializesSameKey(t *testing.T) {
 	<-firstEntered
 
 	go func() {
-		errs <- NewAdvisoryLocker(pool).WithLock(ctx, key, func(context.Context) error {
+		errs <- New(pool).WithLock(ctx, key, func(context.Context) error {
 			close(secondEntered)
 			return nil
 		})

@@ -12,7 +12,6 @@ import (
 	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ErrBusinessNotDraft is returned when an apply-only operation targets a
@@ -40,32 +39,17 @@ type ApplyProposalResult struct {
 	Prompts  []Prompt
 }
 
-// ApplyProposalStore performs the cross-domain apply operation in one
-// transaction: activate the business, insert its active prompts, and resolve the
-// pending proposal. It owns no independent SQL beyond the business and proposal
-// updates — prompt insertion delegates to createActivePromptInTx so the plan
-// prompt-limit invariant is enforced identically.
-type ApplyProposalStore struct {
-	db *pgxpool.Pool
-}
-
-// NewApplyProposalStore returns an ApplyProposalStore backed by db.
-func NewApplyProposalStore(db *pgxpool.Pool) *ApplyProposalStore {
-	return &ApplyProposalStore{db: db}
-}
-
-// Apply activates a draft business with the reviewed profile and prompts. It is
+// Apply activates a draft business with the reviewed profile and prompts, in
+// one transaction. Prompt insertion delegates to createActivePromptInTx so the
+// plan prompt-limit invariant is enforced identically. It is
 // the only path that writes profile values to businesses (the 02 invariant). A
 // missing or cross-tenant business returns ErrNotFound; a non-draft business
 // returns ErrBusinessNotDraft; exceeding the plan prompt limit returns
 // ErrPromptLimitExceeded. All-or-nothing: any failure rolls the whole tx back.
-func (s *ApplyProposalStore) Apply(ctx context.Context, params ApplyProposalParams) (ApplyProposalResult, error) {
-	if s == nil || s.db == nil {
-		return ApplyProposalResult{}, errors.New("apply proposal store database is required")
-	}
+func (s *Store) Apply(ctx context.Context, params ApplyProposalParams) (ApplyProposalResult, error) {
 
 	var result ApplyProposalResult
-	err := withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err := s.withTx(ctx, func(q *storesqlc.Queries) error {
 		applied, err := applyProposalInTx(ctx, q, params)
 		if err != nil {
 			return err

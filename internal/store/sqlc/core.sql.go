@@ -229,7 +229,7 @@ type GetSessionRow struct {
 }
 
 // LEFT JOIN deliberately, not INNER: a missing subscriptions row must surface
-// to the caller as an explicit error (BILL-6), not silently masquerade as an
+// to the caller as an explicit error, not silently masquerade as an
 // expired/absent session by disappearing from the result set.
 func (q *Queries) GetSession(ctx context.Context, tokenHash []byte) (GetSessionRow, error) {
 	row := q.db.QueryRow(ctx, getSession, tokenHash)

@@ -16,28 +16,8 @@ import (
 
 var _ opensightv1connect.PromptServiceHandler = (*Server)(nil)
 
-// promptStore is the consumer-side seam over *store.PromptStore for the Prompts
-// endpoints. ListActivePrompts doubles as the business→tenant ownership gate for
-// ListPrompts (ErrNotFound for a missing/cross-tenant business); GetPrompt is
-// tenant-scoped and reaches retired prompts, so lineage walks and detail
-// lookups can never cross a tenant boundary.
-type promptStore interface {
-	ListActivePrompts(ctx context.Context, tenantID, businessID domain.ID) ([]store.Prompt, error)
-	GetPrompt(ctx context.Context, tenantID, promptID domain.ID) (store.Prompt, error)
-	CreateActivePrompt(ctx context.Context, params store.CreateActivePromptParams) (store.Prompt, error)
-	ReplacePrompt(ctx context.Context, params store.ReplacePromptParams) (store.Prompt, error)
-}
-
-// promptsMetrics is the metrics seam for the Prompts section. Both methods are
-// tenant-scoped and compute over the shared analyzed base (MET-1), so a prompt's
-// latest-result summary and its spark-trend can never disagree with Overview.
-type promptsMetrics interface {
-	PromptLatestStats(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.PromptLatest, error)
-	PromptTrends(ctx context.Context, tenantID, businessID domain.ID) (map[domain.ID][]metrics.PromptTrendPoint, error)
-}
-
 // ListPrompts serves every active prompt with its latest-result summary and
-// spark-trend (MET-3). ListActivePrompts is the ownership gate — it must run
+// spark-trend. ListActivePrompts is the ownership gate — it must run
 // before the metrics calls, which return empty (not an error) for an unowned
 // business.
 func (s *Server) ListPrompts(ctx context.Context, req *connect.Request[opensightv1.ListPromptsRequest]) (*connect.Response[opensightv1.ListPromptsResponse], error) {
@@ -50,16 +30,16 @@ func (s *Server) ListPrompts(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	prompts, err := s.prompts.ListActivePrompts(ctx, su.TenantID, businessID)
+	prompts, err := s.store.ListActivePrompts(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list prompts: list active prompts", err)
 	}
 
-	latest, err := s.promptMetrics.PromptLatestStats(ctx, su.TenantID, businessID)
+	latest, err := s.metrics.PromptLatestStats(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list prompts: prompt latest stats", err)
 	}
-	trends, err := s.promptMetrics.PromptTrends(ctx, su.TenantID, businessID)
+	trends, err := s.metrics.PromptTrends(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list prompts: prompt trends", err)
 	}
@@ -89,10 +69,8 @@ func (s *Server) ListPrompts(ctx context.Context, req *connect.Request[opensight
 	return connect.NewResponse(resp), nil
 }
 
-// AddPrompt adds a new active prompt, mirroring handleAddPrompt
-// (prompts.go). Text is validated trimmed but stored raw, matching REST's
-// existing wart — a data-quality fix is out of scope for this transport
-// migration.
+// AddPrompt adds a new active prompt. Text is validated trimmed but stored
+// raw.
 func (s *Server) AddPrompt(ctx context.Context, req *connect.Request[opensightv1.AddPromptRequest]) (*connect.Response[opensightv1.AddPromptResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "add prompt")
 	if cerr != nil {
@@ -106,7 +84,7 @@ func (s *Server) AddPrompt(ctx context.Context, req *connect.Request[opensightv1
 		return nil, rpcInvalidArgument("text is required")
 	}
 
-	prompt, err := s.prompts.CreateActivePrompt(ctx, store.CreateActivePromptParams{
+	prompt, err := s.store.CreateActivePrompt(ctx, store.CreateActivePromptParams{
 		TenantID:   su.TenantID,
 		BusinessID: businessID,
 		Text:       req.Msg.Text,
@@ -119,8 +97,7 @@ func (s *Server) AddPrompt(ctx context.Context, req *connect.Request[opensightv1
 }
 
 // GetPrompt serves the prompt (active or retired), its full result history,
-// and its lineage chain (MET-3), mirroring handleGetPrompt (prompts.go).
-// GetPrompt is the tenant gate; the result history is scoped through
+// and its lineage chain. GetPrompt is the tenant gate; the result history is scoped through
 // prompt.BusinessID from the fetched row, never the request.
 func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1.GetPromptRequest]) (*connect.Response[opensightv1.GetPromptResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "get prompt")
@@ -132,7 +109,7 @@ func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1
 		return nil, cerr
 	}
 
-	prompt, err := s.prompts.GetPrompt(ctx, su.TenantID, promptID)
+	prompt, err := s.store.GetPrompt(ctx, su.TenantID, promptID)
 	if err != nil {
 		return nil, s.rpcError("get prompt", err)
 	}
@@ -142,7 +119,7 @@ func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1
 		return nil, s.rpcError("get prompt: lineage", err)
 	}
 
-	results, err := s.results.ListResults(ctx, su.TenantID, prompt.BusinessID, store.ResultFilter{PromptID: &promptID})
+	results, err := s.store.ListResults(ctx, su.TenantID, prompt.BusinessID, store.ResultFilter{PromptID: &promptID})
 	if err != nil {
 		return nil, s.rpcError("get prompt: list results", err)
 	}
@@ -158,16 +135,15 @@ func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1
 	for _, item := range results {
 		row := promptResultToProto(item.PromptResult)
 		row.Unanalyzed = isUnanalyzed(item.Status, item.Analyzed)
-		// Prompt/Run/Analysis are left nil: matches REST's
-		// resultToResponse(item, false) with no .Prompt assignment here.
+		// Prompt/Run/Analysis are left nil: the response already carries
+		// the prompt once, at the top level.
 		resp.Results = append(resp.Results, row)
 	}
 	return connect.NewResponse(resp), nil
 }
 
 // ReplacePrompt retires the old prompt and inserts a new active prompt
-// recording replaces_prompt_id, mirroring handleReplacePrompt (prompts.go).
-// The confirmed check comes first, before the text check and before any
+// recording replaces_prompt_id. The confirmed check comes first, before the text check and before any
 // store call: the server-side enforcement of design 06's "structurally
 // unskippable" warning, and a request with both an empty text and
 // confirmed=false must report the confirmation failure.
@@ -187,7 +163,7 @@ func (s *Server) ReplacePrompt(ctx context.Context, req *connect.Request[opensig
 		return nil, rpcInvalidArgument("text is required")
 	}
 
-	prompt, err := s.prompts.ReplacePrompt(ctx, store.ReplacePromptParams{
+	prompt, err := s.store.ReplacePrompt(ctx, store.ReplacePromptParams{
 		TenantID:    su.TenantID,
 		OldPromptID: promptID,
 		Text:        req.Msg.Text,
@@ -213,7 +189,7 @@ func (s *Server) promptLineage(ctx context.Context, tenantID domain.ID, prompt s
 			break
 		}
 		visited[*cur] = true
-		ancestor, err := s.prompts.GetPrompt(ctx, tenantID, *cur)
+		ancestor, err := s.store.GetPrompt(ctx, tenantID, *cur)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				break

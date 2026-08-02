@@ -22,11 +22,13 @@ import { ResultStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { PromptResult } from "@/gen/opensight/v1/result_pb"
 import { listResults } from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { ResponseDrawer } from "@/components/response-drawer"
+import { SectionMessage } from "@/components/section-message"
 import {
   evidenceSelection,
   type EvidenceSelection,
 } from "@/components/evidence-selection"
 import { RunStageStrip } from "@/components/run-stage-strip"
+import { formatRunDate } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,13 +38,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import {
   Select,
   SelectContent,
@@ -123,6 +118,7 @@ export function RunDetailPage() {
   if (runsQuery.isError) {
     return (
       <SectionMessage
+        icon={History}
         title="Something went wrong"
         description="The run could not be loaded. Try reloading the page."
       />
@@ -134,6 +130,7 @@ export function RunDetailPage() {
   if (!run) {
     return (
       <SectionMessage
+        icon={History}
         title="Run not found"
         description="This run could not be loaded. It may have been removed."
       />
@@ -207,6 +204,7 @@ export function RunDetailPage() {
       {results.length === 0 ? (
         <div className="md:hidden">
           <SectionMessage
+            icon={History}
             title="No matching responses"
             description="No responses match the current filters."
           />
@@ -495,26 +493,6 @@ function ResultStatusBadge({ status }: { status: ResultStatus }) {
   )
 }
 
-function SectionMessage({
-  title,
-  description,
-}: {
-  title: string
-  description: string
-}) {
-  return (
-    <Empty className="border">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <History />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
-  )
-}
-
 function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-4">
@@ -527,14 +505,4 @@ function DetailSkeleton() {
       </div>
     </div>
   )
-}
-
-function formatRunDate(scheduledFor: string): string {
-  // scheduled_for is a plain date (YYYY-MM-DD); parse as local, not UTC.
-  const date = new Date(`${scheduledFor}T00:00:00`)
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
 }

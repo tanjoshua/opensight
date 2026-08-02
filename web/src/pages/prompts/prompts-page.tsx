@@ -25,9 +25,11 @@ import {
   addPrompt,
   listPrompts,
 } from "@/gen/opensight/v1/prompt-PromptService_connectquery"
+import { ListSkeleton } from "@/components/list-skeleton"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { PageHeader } from "@/components/page-header"
 import { ResponseDrawer } from "@/components/response-drawer"
+import { SectionMessage } from "@/components/section-message"
 import {
   evidenceSelection,
   type EvidenceSelection,
@@ -41,14 +43,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -84,6 +78,7 @@ export function PromptsPage() {
   if (isError || promptsQuery.isError) {
     return (
       <SectionMessage
+        icon={MessageSquareText}
         title="Something went wrong"
         description="The prompts could not be loaded. Try reloading the page."
       />
@@ -140,6 +135,7 @@ export function PromptsPage() {
       {prompts.length === 0 ? (
         <div className="md:hidden">
           <SectionMessage
+            icon={MessageSquareText}
             title="No questions yet"
             description="Questions appear here once monitoring is set up."
           />
@@ -460,37 +456,4 @@ function ordinal(zeroBased: number): string {
     default:
       return `${n}th`
   }
-}
-
-function SectionMessage({
-  title,
-  description,
-}: {
-  title: string
-  description: string
-}) {
-  return (
-    <Empty className="border">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <MessageSquareText />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
-  )
-}
-
-function ListSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-7 w-32" />
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    </div>
-  )
 }

@@ -15,16 +15,16 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 04 | [Run pipeline](04-run-pipeline.md) | RUN | 6 | 1 |
 | 05 | [App shell & Responses UI](05-responses-ui.md) | WEB | 5 | 1 |
 | 06 | [Ops & checkpoint](06-ops.md) | OPS | 3 | 1 |
-| 07 | [Analysis pipeline](07-analysis.md) | ANA | 7 | 2 |
+| 07 | [Analysis pipeline](07-analysis.md) | ANA | 6 | 2 |
 | 08 | [Metrics API](08-metrics-api.md) | MET | 6 | 2 |
 | 09 | [Insight UI](09-insight-ui.md) | INS | 4 | 2 |
-| 10 | [Onboarding automation](10-onboarding.md) | ONB | 6 | 3 |
+| 10 | [Onboarding automation](10-onboarding.md) | ONB | 5 | 3 |
 | 11 | [Self-serve polish](11-selfserve-polish.md) | POL | 7 | 3 |
 | 12 | [Protobuf/Connect RPC migration](12-rpc-migration.md) | RPC | 9 | 3 |
 | 13 | [Runs UI](13-runs-ui.md) | RUNS | 6 | 3 |
 | 14 | [Self-serve signup & billing](14-billing.md) | BILL | 12 | 4 |
 
-**87 stories: Phase 1 = 30, Phase 2 = 17, Phase 3 = 28, Phase 4 = 12.**
+**85 stories: Phase 1 = 30, Phase 2 = 16, Phase 3 = 27, Phase 4 = 12.**
 
 ## Phases and milestones
 
@@ -50,6 +50,7 @@ Epic 14 (billing) runs after the Phase 3 MVP milestone: it takes payment for a p
 already be worth paying for. BILL-1 (schema) and BILL-2 (Stripe adapter) gate the rest of the epic;
 BILL-7 (spend backstop) must land before any real card is charged.
 
-Explicitly **not** in this backlog: email verification and password-reset emails (design 08 — no
-transactional email provider yet), additional platforms, alerts, competitor merge,
+Explicitly **not** in this backlog: an admin portal and its account-management actions (including
+password reset and changing comp status), email verification and password-reset email (design 08 —
+no transactional email provider yet), additional platforms, alerts, competitor merge,
 Prometheus/metrics, multi-VPS.

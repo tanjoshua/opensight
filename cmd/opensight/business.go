@@ -166,8 +166,8 @@ func marshalJSONSlice(name string, value []map[string]any) (json.RawMessage, err
 
 // createBusinessCLI seeds an active business (profile + prompts) from a spec
 // file, creates its recurring monitoring Schedule, and triggers the first run
-// with trigger=initial (RUN-5). Onboarding UI is Phase 3; this is how internal
-// test businesses go live meanwhile (design README, Phase 1).
+// with trigger=initial — the operator path for seeding internal test
+// businesses without going through onboarding.
 func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCreateOptions, out io.Writer) error {
 	if ctx.Err() != nil {
 		return nil
@@ -179,13 +179,11 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 	}
 	defer db.Close()
 
-	businesses := store.NewBusinessStore(db)
-	prompts := store.NewPromptStore(db)
-	subscriptions := store.NewSubscriptionStore(db)
+	dataStore := store.New(db)
 
 	// Fail fast on plan lookup: the schedule spec derives from run_interval, and a
 	// missing tenant/subscription should stop us before we write a business.
-	sub, err := subscriptions.GetByTenant(ctx, opts.TenantID)
+	sub, err := dataStore.GetByTenant(ctx, opts.TenantID)
 	if err != nil {
 		return fmt.Errorf("load tenant subscription: %w", err)
 	}
@@ -195,7 +193,7 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 	}
 
 	activatedAt := time.Now().UTC()
-	business, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
+	business, err := dataStore.CreateBusiness(ctx, store.CreateBusinessParams{
 		TenantID:    opts.TenantID,
 		Status:      store.BusinessStatusActive,
 		Name:        opts.Spec.Name,
@@ -211,7 +209,7 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 	}
 
 	for _, text := range opts.Spec.Prompts {
-		if _, err := prompts.CreateActivePrompt(ctx, store.CreateActivePromptParams{
+		if _, err := dataStore.CreateActivePrompt(ctx, store.CreateActivePromptParams{
 			TenantID:   opts.TenantID,
 			BusinessID: business.ID,
 			Text:       text,

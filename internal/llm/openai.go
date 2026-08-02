@@ -70,7 +70,7 @@ func (r *OpenAIPromptRunner) RunPrompt(ctx context.Context, req PromptRequest) (
 	}
 
 	// From here on the request body exists, so every failure path carries
-	// RequestJSON: ExecutePrompt (RUN-4) persists a failed row whose NOT NULL
+	// RequestJSON: ExecutePrompt persists a failed row whose NOT NULL
 	// request column is this body, even when the provider fails.
 	parsed, body, err := r.call(ctx, params)
 	if err != nil {

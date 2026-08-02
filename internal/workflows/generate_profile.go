@@ -60,7 +60,7 @@ type GenerateProfileWorkflowInput struct {
 // GenerateProfileWorkflow chains FetchSite -> ProposeProfile -> PersistProposal
 // (design 03). ProposeProfile is the combined research+draft call: it does its
 // own web_search (opening pages, including the site itself). FetchSite is the
-// free, deterministic primary evidence source and no longer gates success on its
+// free, deterministic primary evidence source but does not gate success on its
 // own — its text feeds the combined call and, on failure, the model still has
 // web research. Failure posture: FetchSite failing forces low_confidence UNLESS
 // the model read the site itself (an open_page on its own domain), in which case

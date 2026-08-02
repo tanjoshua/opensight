@@ -7,9 +7,10 @@ import (
 	"strings"
 )
 
-// NewPromptRunner selects a PromptRunner implementation by mode (07 "Local
-// development"): "stub" and "replay" spend no OpenAI money, "openai" is the real
-// Responses runner. openAICfg is only consulted for the "openai" mode.
+// NewPromptRunner selects a PromptRunner implementation by mode (design 07
+// "Local development"): "stub" is canned, "replay" plays the recorded corpus
+// (replay.go), "openai" is the real Responses runner. openAICfg is only
+// consulted for the "openai" mode.
 func NewPromptRunner(mode string, openAICfg OpenAIConfig) (PromptRunner, error) {
 	switch mode {
 	case "stub":
@@ -47,7 +48,7 @@ func resultFromRawResponse(prompt string, location Location, raw json.RawMessage
 
 	// Build the request body from the parsed model as soon as the payload parses,
 	// so every modeled-failure early return below still carries RequestJSON for
-	// ExecutePrompt (RUN-4) to persist a failed row.
+	// ExecutePrompt to persist a failed row.
 	requestJSON, err := buildResponsesRequestJSON(parsed.Model, p, loc)
 	if err != nil {
 		return PromptRunResult{}, err

@@ -43,16 +43,17 @@ proto:
 sqlc:
 	go tool sqlc generate
 
-# Application queries belong in sqlc catalogs. Goose's private adapter and
-# migration tests that inspect migration text are the only Go exceptions.
+# Application queries belong in sqlc catalogs; Goose's private adapter is the
+# only production exception. Tests are exempt from the SQL-literal rule: their
+# fixture and assertion SQL is read at the call site, not routed through a
+# catalog.
 check-sql:
 	@! rg -n 'database/sql' \
 		--glob '*.go' \
-		--glob '!internal/store/sqlc/**' --glob '!internal/store/testsql/**' \
+		--glob '!internal/store/sqlc/**' \
 		--glob '!internal/store/migrations.go' .
 	@! rg -U -n '["`][[:space:]]*(SELECT|INSERT|UPDATE|DELETE|WITH)[[:space:]]' \
-		--glob '*.go' --glob '!internal/store/sqlc/**' --glob '!internal/store/testsql/**' \
-		--glob '!internal/store/migrations_test.go' .
+		--glob '*.go' --glob '!*_test.go' --glob '!internal/store/sqlc/**' .
 
 up:
 	./scripts/dev-up

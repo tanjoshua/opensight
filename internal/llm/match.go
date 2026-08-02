@@ -33,17 +33,14 @@ type MatchRunResult struct {
 }
 
 // MatchRunner runs one conservative cheap-model match call per run for the
-// still-unmatched names (design 05 step 3). Mirrors ExtractionRunner's mode
-// split.
+// still-unmatched names (design 05 step 3).
 type MatchRunner interface {
 	RunMatch(ctx context.Context, in MatchInput) (MatchRunResult, error)
 }
 
-// NewMatchRunner selects a MatchRunner by mode, mirroring NewExtractionRunner.
-// "stub" and "replay" spend no OpenAI money (both return the offline stub, which
-// matches nothing — so a still-unmatched name always degrades to a new
-// discovered competitor); "openai" is the real call. openAICfg is only consulted
-// for "openai".
+// NewMatchRunner selects a MatchRunner by mode (see the package doc). The stub
+// matches nothing, so a still-unmatched name always degrades to a new
+// discovered competitor. openAICfg is only consulted for "openai".
 func NewMatchRunner(mode string, openAICfg OpenAIConfig) (MatchRunner, error) {
 	switch mode {
 	case "stub", "replay":

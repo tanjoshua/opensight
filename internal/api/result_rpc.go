@@ -8,7 +8,6 @@ import (
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
-	"opensight/internal/metrics"
 	"opensight/internal/store"
 	"opensight/internal/workflows"
 
@@ -22,23 +21,6 @@ const (
 	defaultResultLimit = 50
 	maxResultLimit     = 100
 )
-
-type runStore interface {
-	ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]store.RunListItem, error)
-}
-
-// runsMetrics is the metrics seam for the Runs endpoint: per-run visibility %
-// comes from the same shared analyzed base as Overview (MET-1), so a run's
-// visibility can never disagree with the trend line.
-type runsMetrics interface {
-	VisibilityTrend(ctx context.Context, tenantID, businessID domain.ID) ([]metrics.VisibilityPoint, error)
-}
-
-type resultStore interface {
-	ListResults(ctx context.Context, tenantID, businessID domain.ID, filter store.ResultFilter) ([]store.ResultListItem, error)
-	GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (store.ResultDetail, error)
-	GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (store.ResultAnalysis, error)
-}
 
 // ListRuns serves every monitoring run for a business with its per-run
 // visibility %. ListRuns is the ownership gate — it must run before
@@ -55,12 +37,12 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 		return nil, cerr
 	}
 
-	runs, err := s.runs.ListRuns(ctx, su.TenantID, businessID)
+	runs, err := s.store.ListRuns(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list runs", err)
 	}
 
-	points, err := s.runMetrics.VisibilityTrend(ctx, su.TenantID, businessID)
+	points, err := s.metrics.VisibilityTrend(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list runs: visibility trend", err)
 	}
@@ -82,7 +64,7 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 }
 
 // nextRunAt looks up the business's monitoring Schedule for its next fire
-// time (RUNS-2). It is best-effort: a nil temporal client (handler unit
+// time. It is best-effort: a nil temporal client (handler unit
 // tests that don't wire one), a missing schedule, or an unreachable Temporal
 // all return nil rather than failing the ListRuns request — this is a "next
 // run" hint, not a correctness-critical field. Given a short deadline so a
@@ -107,8 +89,8 @@ func (s *Server) nextRunAt(ctx context.Context, businessID domain.ID) *timestamp
 }
 
 // resultFilterFromProto parses ListResultsRequest into a store.ResultFilter
-// plus the normalized limit/offset, mirroring resultFilterFromRequest
-// (responses.go). Returns a concrete *connect.Error (not error) — callers
+// plus the normalized limit/offset. Returns a concrete *connect.Error (not
+// error) — callers
 // must check `if cerr != nil`.
 func resultFilterFromProto(msg *opensightv1.ListResultsRequest) (store.ResultFilter, int, int, *connect.Error) {
 	limit, offset := rpcPaging(msg.Limit, msg.Offset, defaultResultLimit, maxResultLimit)
@@ -159,8 +141,7 @@ func resultFilterFromProto(msg *opensightv1.ListResultsRequest) (store.ResultFil
 }
 
 // ListResults serves a business's results with optional filters and
-// limit/offset pagination, mirroring handleListResults (responses.go).
-// ListResults has its own internal ownership check, so no separate
+// limit/offset pagination. ListResults has its own internal ownership check, so no separate
 // GetBusiness call is needed here (unlike ListCompetitors/ListRuns).
 func (s *Server) ListResults(ctx context.Context, req *connect.Request[opensightv1.ListResultsRequest]) (*connect.Response[opensightv1.ListResultsResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "list results")
@@ -176,7 +157,7 @@ func (s *Server) ListResults(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	results, err := s.results.ListResults(ctx, su.TenantID, businessID, filter)
+	results, err := s.store.ListResults(ctx, su.TenantID, businessID, filter)
 	if err != nil {
 		return nil, s.rpcError("list results", err)
 	}
@@ -195,8 +176,8 @@ func (s *Server) ListResults(ctx context.Context, req *connect.Request[opensight
 }
 
 // GetResult serves the Response drawer's full detail — the result, its
-// prompt/run context, and (when analyzed) its evidence — mirroring
-// handleGetResult (responses.go). GetResultDetail is the tenant gate.
+// prompt/run context, and (when analyzed) its evidence. GetResultDetail is
+// the tenant gate.
 func (s *Server) GetResult(ctx context.Context, req *connect.Request[opensightv1.GetResultRequest]) (*connect.Response[opensightv1.GetResultResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "get result")
 	if cerr != nil {
@@ -207,11 +188,11 @@ func (s *Server) GetResult(ctx context.Context, req *connect.Request[opensightv1
 		return nil, cerr
 	}
 
-	detail, err := s.results.GetResultDetail(ctx, su.TenantID, resultID)
+	detail, err := s.store.GetResultDetail(ctx, su.TenantID, resultID)
 	if err != nil {
 		return nil, s.rpcError("get result", err)
 	}
-	analysis, err := s.results.GetResultAnalysis(ctx, su.TenantID, resultID)
+	analysis, err := s.store.GetResultAnalysis(ctx, su.TenantID, resultID)
 	if err != nil {
 		return nil, s.rpcError("get result: analysis", err)
 	}

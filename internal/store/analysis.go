@@ -11,10 +11,9 @@ import (
 	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// AnalysisStore performs the wipe half of the derived-analysis tables'
+// The methods below perform the wipe half of the derived-analysis tables'
 // wipe-and-rebuild contract (design 02, 05). Analysis data is derived from
 // prompt_results and rebuildable, so the pipeline overwrites its own outputs
 // idempotently: AnalyzeResult re-runs delete a result's analysis before
@@ -23,16 +22,7 @@ import (
 // by these deletes.
 //
 // The insert/upsert surface (result_analyses, citations, competitors, mentions
-// writes) is owned by the later analysis stories that define it — ANA-2 through
-// ANA-6 — and deliberately not built here.
-type AnalysisStore struct {
-	db *pgxpool.Pool
-}
-
-// NewAnalysisStore returns an AnalysisStore backed by db.
-func NewAnalysisStore(db *pgxpool.Pool) *AnalysisStore {
-	return &AnalysisStore{db: db}
-}
+// writes) lives in the workflow activities, not here.
 
 // CitationWrite is one citation row for SaveResultAnalysis, already normalized
 // (URL cleaned, domain extracted) and ordered by first appearance.
@@ -63,10 +53,7 @@ type SaveResultAnalysisParams struct {
 // never skips — it always overwrites, so a re-analysis pass can re-extract onto
 // a bumped extraction_version even when a row already exists. A missing or
 // cross-tenant result returns ErrNotFound.
-func (s *AnalysisStore) SaveResultAnalysis(ctx context.Context, tenantID domain.ID, params SaveResultAnalysisParams) error {
-	if s == nil || s.db == nil {
-		return errors.New("analysis store database is required")
-	}
+func (s *Store) SaveResultAnalysis(ctx context.Context, tenantID domain.ID, params SaveResultAnalysisParams) error {
 	if err := validateUUIDv7("tenant id", tenantID); err != nil {
 		return err
 	}
@@ -90,7 +77,7 @@ func (s *AnalysisStore) SaveResultAnalysis(ctx context.Context, tenantID domain.
 		return fmt.Errorf("marshal excerpts: %w", err)
 	}
 
-	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if _, err := q.ResultOwned(ctx, storesqlc.ResultOwnedParams{
 			ID: params.PromptResultID, TenantID: tenantID,
 		}); err != nil {
@@ -132,10 +119,7 @@ func (s *AnalysisStore) SaveResultAnalysis(ctx context.Context, tenantID domain.
 // re-run rewrites onto a clean slate (design 05, "AnalyzeResult upserts by
 // prompt_result_id"). It is idempotent: a result with no analysis yet deletes
 // nothing and returns nil. Cross-tenant results are invisible to the delete.
-func (s *AnalysisStore) DeleteResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) error {
-	if s == nil || s.db == nil {
-		return errors.New("analysis store database is required")
-	}
+func (s *Store) DeleteResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) error {
 	if err := validateUUIDv7("tenant id", tenantID); err != nil {
 		return err
 	}
@@ -143,7 +127,7 @@ func (s *AnalysisStore) DeleteResultAnalysis(ctx context.Context, tenantID, resu
 		return err
 	}
 
-	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if err := q.DeleteResultAnalysis(ctx, storesqlc.DeleteResultAnalysisParams{
 			PromptResultID: resultID, TenantID: tenantID,
 		}); err != nil {
@@ -160,7 +144,7 @@ func (s *AnalysisStore) DeleteResultAnalysis(ctx context.Context, tenantID, resu
 
 // Competitor is one competitor row as read for reconcile — the matching keys
 // (name + approved aliases) plus id, status, and website. website is nil unless
-// set; it feeds the ANA-5 LLM match pass's candidate list. suggested_aliases is
+// set; it feeds the LLM match pass's candidate list. suggested_aliases is
 // deliberately omitted: neither pass keys off unapproved variants.
 type Competitor struct {
 	ID      domain.ID
@@ -173,10 +157,7 @@ type Competitor struct {
 // ListCompetitors returns every competitor of businessID regardless of status,
 // oldest first, for reconcile's exact pass (design 05 Phase 2). Scoped to
 // tenantID; a missing or cross-tenant business returns an empty slice.
-func (s *AnalysisStore) ListCompetitors(ctx context.Context, tenantID, businessID domain.ID) ([]Competitor, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("analysis store database is required")
-	}
+func (s *Store) ListCompetitors(ctx context.Context, tenantID, businessID domain.ID) ([]Competitor, error) {
 	if err := validateUUIDv7("tenant id", tenantID); err != nil {
 		return nil, err
 	}
@@ -184,7 +165,7 @@ func (s *AnalysisStore) ListCompetitors(ctx context.Context, tenantID, businessI
 		return nil, err
 	}
 
-	rows, err := queries(ctx, s.db).ListAnalysisCompetitors(ctx, storesqlc.ListAnalysisCompetitorsParams{
+	rows, err := s.q(ctx).ListAnalysisCompetitors(ctx, storesqlc.ListAnalysisCompetitorsParams{
 		BusinessID: businessID, TenantID: tenantID,
 	})
 	if err != nil {
@@ -204,10 +185,7 @@ func (s *AnalysisStore) ListCompetitors(ctx context.Context, tenantID, businessI
 // step 5). Mentions reach run_id through their prompt_results join. It is
 // idempotent and tenant-scoped: an unanalyzed or cross-tenant run deletes
 // nothing and returns nil.
-func (s *AnalysisStore) DeleteRunMentions(ctx context.Context, tenantID, runID domain.ID) error {
-	if s == nil || s.db == nil {
-		return errors.New("analysis store database is required")
-	}
+func (s *Store) DeleteRunMentions(ctx context.Context, tenantID, runID domain.ID) error {
 	if err := validateUUIDv7("tenant id", tenantID); err != nil {
 		return err
 	}
@@ -215,7 +193,7 @@ func (s *AnalysisStore) DeleteRunMentions(ctx context.Context, tenantID, runID d
 		return err
 	}
 
-	if err := queries(ctx, s.db).DeleteRunMentions(ctx, storesqlc.DeleteRunMentionsParams{
+	if err := s.q(ctx).DeleteRunMentions(ctx, storesqlc.DeleteRunMentionsParams{
 		ID: runID, TenantID: tenantID,
 	}); err != nil {
 		return fmt.Errorf("delete run mentions: %w", err)
@@ -223,7 +201,7 @@ func (s *AnalysisStore) DeleteRunMentions(ctx context.Context, tenantID, runID d
 	return nil
 }
 
-// AnalyzeRunSpec is what AnalyzeRun (ANA-7) needs to fan out: the run's owning
+// AnalyzeRunSpec is what AnalyzeRun needs to fan out: the run's owning
 // business and its succeeded result ids in first-appearance order. An empty
 // ResultIDs slice is valid — a run whose prompts all failed has nothing to
 // analyze, which is not an error.
@@ -233,13 +211,10 @@ type AnalyzeRunSpec struct {
 }
 
 // LoadAnalyzeRunSpec resolves a run's business and its succeeded result ids for
-// the AnalyzeRun workflow (ANA-7). It is tenant-scoped: a missing or
+// the AnalyzeRun workflow. It is tenant-scoped: a missing or
 // cross-tenant run returns ErrNotFound before any result rows are read, so a
 // bad run id never leaks another tenant's results.
-func (s *AnalysisStore) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID domain.ID) (AnalyzeRunSpec, error) {
-	if s == nil || s.db == nil {
-		return AnalyzeRunSpec{}, errors.New("analysis store database is required")
-	}
+func (s *Store) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID domain.ID) (AnalyzeRunSpec, error) {
 	if err := validateUUIDv7("tenant id", tenantID); err != nil {
 		return AnalyzeRunSpec{}, err
 	}
@@ -247,7 +222,7 @@ func (s *AnalysisStore) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID 
 		return AnalyzeRunSpec{}, err
 	}
 
-	businessID, err := queries(ctx, s.db).RunBusinessOwned(ctx, storesqlc.RunBusinessOwnedParams{
+	businessID, err := s.q(ctx).RunBusinessOwned(ctx, storesqlc.RunBusinessOwnedParams{
 		ID: runID, TenantID: tenantID,
 	})
 	if err != nil {
@@ -257,7 +232,7 @@ func (s *AnalysisStore) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID 
 		return AnalyzeRunSpec{}, fmt.Errorf("resolve run business: %w", err)
 	}
 
-	resultIDs, err := queries(ctx, s.db).ListSucceededResultIDs(ctx, runID)
+	resultIDs, err := s.q(ctx).ListSucceededResultIDs(ctx, runID)
 	if err != nil {
 		return AnalyzeRunSpec{}, fmt.Errorf("list succeeded results: %w", err)
 	}
@@ -276,7 +251,7 @@ type DiscoveredCompetitor struct {
 
 // SuggestedAliasWrite records an LLM-proposed variant on an existing competitor
 // (design 05 step 3): appended to suggested_aliases, never promoted to aliases
-// (user approval in POL-4 promotes it). Idempotent — a variant already present
+// (ReviewSuggestedAlias promotes an approved one). Idempotent — a variant already present
 // as a suggestion or an approved alias is skipped. CommitReconcile trims the
 // variant before persistence so the stored value is the exact review key.
 type SuggestedAliasWrite struct {
@@ -316,10 +291,7 @@ type ReconcileCommitParams struct {
 // reloads them fresh), so the delete-and-rewrite converges rather than
 // duplicating. The business and run are re-verified against tenantID inside the
 // transaction; a missing or cross-tenant business or run returns ErrNotFound.
-func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessID domain.ID, params ReconcileCommitParams) error {
-	if s == nil || s.db == nil {
-		return errors.New("analysis store database is required")
-	}
+func (s *Store) CommitReconcile(ctx context.Context, tenantID, businessID domain.ID, params ReconcileCommitParams) error {
 	if err := validateUUIDv7("tenant id", tenantID); err != nil {
 		return err
 	}
@@ -330,7 +302,7 @@ func (s *AnalysisStore) CommitReconcile(ctx context.Context, tenantID, businessI
 		return err
 	}
 
-	return withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 			return err
 		}

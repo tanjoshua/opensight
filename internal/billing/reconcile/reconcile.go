@@ -1,5 +1,5 @@
 // Package reconcile is the single path that writes billing state (design 08
-// "Reconcile"). The webhook (BILL-5) and the checkout return (BILL-4) both
+// "Reconcile"). The webhook and the checkout return both
 // funnel into the unexported apply, so the two entry points cannot disagree.
 //
 // This is a package of its own, not a method on api.Server and not a file in
@@ -26,7 +26,7 @@ import (
 
 // subscriptionStore is the seam reconcile needs: load a tenant's row (by
 // tenant id or by Stripe Customer id — the webhook only ever carries the
-// latter) and write it back in full. Narrower than *store.SubscriptionStore
+// latter) and write it back in full. Narrower than *store.Store
 // so a test can fake it with no database.
 type subscriptionStore interface {
 	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
@@ -85,8 +85,8 @@ func New(subscriptions subscriptionStore, provider subscriptionProvider, monitor
 }
 
 // Tenant loads tenantID's subscription row and reconciles it against Stripe.
-// This is BILL-4's entry point (ConfirmCheckout reconciles by tenant, since
-// the session carries the tenant id).
+// This is ConfirmCheckout's entry point: it reconciles by tenant, since the
+// session carries the tenant id.
 func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error) {
 	sub, err := r.subscriptions.GetByTenant(ctx, tenantID)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subs
 }
 
 // ByCustomer loads the subscription row for a Stripe Customer id and
-// reconciles it against Stripe. This is the webhook's entry point (BILL-5):
+// reconciles it against Stripe. This is the webhook's entry point:
 // a delivery only ever carries a Customer id, never a tenant id. A customer
 // id with no matching row returns store.ErrNotFound wrapped, so the handler
 // can tell an orphan Customer (accepted crash window, design 08) from a real
@@ -140,7 +140,7 @@ func (r *Reconciler) withCustomerLock(ctx context.Context, customerID string, fn
 //  1. No Customer yet → ErrNoCustomer, nothing written.
 //  2. Customer exists but has never completed a checkout (ErrNoSubscription)
 //     → write nothing, return sub unchanged. Any other provider error
-//     propagates wrapped, so a Stripe retry (BILL-5) means something.
+//     propagates wrapped, so a Stripe retry means something.
 //  3. Otherwise upsert the full row: identity fields (TenantID, PlanCode,
 //     Comped, StripeCustomerID) carried verbatim from the loaded row, never
 //     invented here — that is what makes the full-row overwrite safe. Stripe
@@ -217,11 +217,11 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 	return written, nil
 }
 
-// dunningAnchor computes past_due_since for a write. Its AC and test belong
-// to BILL-5 (repeated updates during one dunning cycle must not push the
-// anchor forward), but apply needs it correct now: without it, apply either
-// writes NULL over a live anchor on every reconcile, or (if it instead always
-// carried the previous value forward) never clears it once dunning ends.
+// dunningAnchor computes past_due_since for a write. Repeated updates during
+// one dunning cycle must not push the anchor forward: without this, apply
+// would either write NULL over a live anchor on every reconcile, or (if it
+// instead always carried the previous value forward) never clear it once
+// dunning ends.
 func dunningAnchor(previous *time.Time, remoteStatus string, now time.Time) *time.Time {
 	if remoteStatus != "past_due" {
 		return nil

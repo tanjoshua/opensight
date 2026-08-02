@@ -36,7 +36,7 @@ type PromptRunResult struct {
 	Model        string
 }
 
-// ErrNonRetryable marks a runner error that RUN-4 should not retry.
+// ErrNonRetryable marks a runner error that ExecutePrompt should not retry.
 var ErrNonRetryable = errors.New("non-retryable prompt runner error")
 
 // RunnerError carries provider failure details without losing retry posture.

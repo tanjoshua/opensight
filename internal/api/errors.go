@@ -20,8 +20,8 @@ import (
 func (s *Server) rpcError(op string, err error) *connect.Error {
 	switch {
 	case errors.Is(err, errNoSession):
-		// Today's REST middleware doesn't log this either — an absent session
-		// is an expected client state, not an operational error.
+		// Not logged: an absent session is an expected client state, not an
+		// operational error.
 		cerr := connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required"))
 		cerr.Meta().Add("Set-Cookie", s.expiredSessionCookie().String())
 		return cerr
@@ -69,7 +69,7 @@ func rpcFailedPrecondition(msg string) *connect.Error {
 	return connect.NewError(connect.CodeFailedPrecondition, errors.New(msg))
 }
 
-// rpcAccessDenied is the RPC access gate's rejection (BILL-6, design 08
+// rpcAccessDenied is the RPC access gate's rejection (design 08
 // "Enforcement gate 1"): a is the access the caller actually has, carried as
 // an error detail so the SPA can render the right billing state rather than
 // parse the message string.

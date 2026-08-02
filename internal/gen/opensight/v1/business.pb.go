@@ -91,10 +91,9 @@ func (x *Location) GetCountry() string {
 	return ""
 }
 
-// BusinessProfile is the full business detail (internal/api/businesses.go
-// businessDetailResponse). Plan entitlements are not a per-business fact —
-// they live on AuthService.GetMe (BILL-6) — so field 9 (the old `plan`
-// field) is reserved rather than reused.
+// BusinessProfile is the full business detail. Plan entitlements live on
+// AuthService.GetMe because they are tenant facts, not per-business facts.
+// Field 9 is reserved rather than reused to preserve wire compatibility.
 type BusinessProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -447,8 +446,7 @@ func (x *ProposalPayload) GetSources() []*ProposalSource {
 	return nil
 }
 
-// ProposalState is the GET/regen proposal body (internal/api/businesses.go
-// proposalStatusResponse).
+// ProposalState is the profile-generation state returned while onboarding.
 type ProposalState struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Status ProposalStatus         `protobuf:"varint,1,opt,name=status,proto3,enum=opensight.v1.ProposalStatus" json:"status,omitempty"`

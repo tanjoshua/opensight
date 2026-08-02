@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // insertTenant inserts a tenant row plus its comped starter subscription — the
@@ -18,8 +17,8 @@ import (
 // starter plan is a valid tenant for all of them.
 func insertTenant(t *testing.T, db *pgxpool.Pool, ctx context.Context, tenantID domain.ID, name string) {
 	t.Helper()
-	mustExec(t, db, ctx, testdb.Query225, tenantID, name)
-	mustExec(t, db, ctx, testdb.Query226, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", tenantID, name)
+	mustExec(t, db, ctx, "INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, 'starter', true)", tenantID)
 }
 
 func mustUUIDV7(t *testing.T, value string) uuid.UUID {

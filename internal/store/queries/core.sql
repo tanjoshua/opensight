@@ -23,7 +23,7 @@ DELETE FROM sessions WHERE user_id = $1 AND expires_at <= now();
 
 -- name: GetSession :one
 -- LEFT JOIN deliberately, not INNER: a missing subscriptions row must surface
--- to the caller as an explicit error (BILL-6), not silently masquerade as an
+-- to the caller as an explicit error, not silently masquerade as an
 -- expired/absent session by disappearing from the result set.
 SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at,
        sub.plan_code, sub.comped, sub.stripe_subscription_id, sub.stripe_status, sub.past_due_since

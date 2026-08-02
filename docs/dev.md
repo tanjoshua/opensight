@@ -119,12 +119,10 @@ make check-sql
 ```
 
 Production queries and metrics share `internal/store/queries/` and generate to
-`internal/store/sqlc/`. Integration-test fixtures and assertions live in
-`internal/store/testqueries/` and generate to `internal/store/testsql/`. Both
-use the embedded Goose migrations as their schema source. Integration fixtures
-share one pgx pool with the stores they exercise and route opaque test query IDs
-through generated methods; production code does not use that test-only
-dispatcher.
+`internal/store/sqlc/`, using the embedded Goose migrations as the schema
+source. `make check-sql` keeps SQL literals out of production Go. Integration
+tests are exempt: they share one pgx pool with the stores they exercise and run
+their fixture and assertion SQL inline, so the SQL is readable where it is used.
 
 All generated output is committed — CI re-runs `make proto` and `make sqlc`
 and fails the build on any diff, so checked-in generated code cannot drift from
@@ -144,11 +142,10 @@ Runtime config is env-driven with development-safe defaults:
 - `PROMPT_RUNNER_MODE` defaults to `stub`; valid values are `stub`, `replay`, `openai`
 - `OPENAI_RESPONSES_MODEL` defaults to `chat-latest`
 - `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
-- `DEV_PROMPT_LIMIT` defaults to `3` for real-call smoke tests
 - `PROMPT_CONCURRENCY` defaults to `2`
 - `APP_BASE_URL` has no default and must be an absolute `http`/`https` URL; local `.env` should set `http://localhost:5173`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PORTAL_CONFIGURATION_ID` have no default and are required by `opensight serve`; other commands validate only the settings they use
 
-Local development should use `stub` or `replay` unless a story explicitly requires a real OpenAI smoke test. For a low-cost real test, set `PROMPT_RUNNER_MODE=openai`, lower `DEV_PROMPT_LIMIT`, and override `OPENAI_RESPONSES_MODEL` to a cheaper web-search-capable model. `OPENAI_API_KEY` has no default and must stay in local uncommitted env only.
+Local development should use `stub` or `replay` unless a story explicitly requires a real OpenAI smoke test. For a low-cost real test, set `PROMPT_RUNNER_MODE=openai` and override `OPENAI_RESPONSES_MODEL` to a cheaper web-search-capable model. `OPENAI_API_KEY` has no default and must stay in local uncommitted env only.
 
 The serving path always uses Stripe. For local development, run `stripe sandbox create`, provision one Portal Configuration in that sandbox, and put its `bpc_...` id in `.env` as `STRIPE_PORTAL_CONFIGURATION_ID`. Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_STARTER_MONTHLY`, and `APP_BASE_URL`, then run `opensight stripe portal-config` to apply the repo-owned settings to that exact configuration. Forward webhooks with `stripe listen --forward-to localhost:8080/webhooks/stripe` and set its signing secret as `STRIPE_WEBHOOK_SECRET`. Automated tests still use the injected in-memory provider and make no network calls. Production authenticates with a restricted key (`rk_`), never a secret key — see the go-live checklist in design 08.

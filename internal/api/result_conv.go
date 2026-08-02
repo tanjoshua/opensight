@@ -64,8 +64,8 @@ func timestampOrNil(t *time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(*t)
 }
 
-// int32OrNil converts an optional *int (e.g. Run.ExpectedResults, nullable
-// pre-RUNS-1) to a *int32, preserving nil.
+// int32OrNil converts an optional *int (e.g. Run.ExpectedResults) to a
+// *int32, preserving nil.
 func int32OrNil(n *int) *int32 {
 	if n == nil {
 		return nil
@@ -74,10 +74,9 @@ func int32OrNil(n *int) *int32 {
 	return &v
 }
 
-// runToProto mirrors runToResponse (responses.go) field-for-field.
-// Visibility and the three result counts are deliberately left unset here —
-// only ListRuns/GetOverview populate them via runListItemToProto (matches
-// latestRunToResponse's REST behavior, which never set visibility).
+// runToProto shapes a store.Run. Visibility and the three result counts are
+// deliberately left unset here — only ListRuns/GetOverview populate them via
+// runListItemToProto.
 func runToProto(run store.Run) *opensightv1.Run {
 	return &opensightv1.Run{
 		Id:                  run.ID.String(),
@@ -95,7 +94,7 @@ func runToProto(run store.Run) *opensightv1.Run {
 }
 
 // runListItemToProto extends runToProto with the per-run result counts that
-// only ListRuns and GetOverview.latest_run populate (RUNS-2).
+// only ListRuns and GetOverview.latest_run populate.
 func runListItemToProto(item store.RunListItem) *opensightv1.Run {
 	row := runToProto(item.Run)
 	row.SucceededResults = int32(item.SucceededResults)
@@ -104,8 +103,8 @@ func runListItemToProto(item store.RunListItem) *opensightv1.Run {
 	return row
 }
 
-// promptResultToProto mirrors resultToResponse(result, includeRaw=false)
-// (responses.go): raw_response_json always stays "" here. Unanalyzed and
+// promptResultToProto shapes a store.PromptResult: raw_response_json always
+// stays "" here. Unanalyzed and
 // Prompt/Run/Analysis are left at zero value; each caller (GetPrompt,
 // ListResults, GetResult) sets the extra fields it owns on the returned
 // struct after the call — GetResult additionally sets RawResponseJson when
@@ -169,8 +168,8 @@ func resultCitationSubjectToProto(s string) opensightv1.CitationSubject {
 
 // citationSpansToProto returns the response's url_citation annotation spans
 // in first-appearance (StartIndex-ascending) order — the same order
-// cite_order was assigned in (ANA-2's buildCitationWrites). A malformed or
-// empty raw_response yields no spans. Mirrors citationSpans (responses.go).
+// cite_order was assigned in (workflows.buildCitationWrites). A malformed or
+// empty raw_response yields no spans.
 func citationSpansToProto(rawResponse json.RawMessage) []*opensightv1.CitationSpan {
 	annotations, err := llm.ParseCitationAnnotations(rawResponse)
 	if err != nil || len(annotations) == 0 {
@@ -186,8 +185,8 @@ func citationSpansToProto(rawResponse json.RawMessage) []*opensightv1.CitationSp
 	return spans
 }
 
-// resultAnalysisToProto mirrors analysisToResponse (responses.go), including
-// the span-index reconstruction: citations were written one-per-annotation
+// resultAnalysisToProto shapes a store.ResultAnalysis, including the
+// span-index reconstruction: citations were written one-per-annotation
 // in StartIndex order with cite_order equal to that index, so cite_order
 // indexes directly into the sorted span slice from citationSpansToProto — no
 // URL matching needed.

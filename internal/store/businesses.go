@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // BusinessStatus is the persisted lifecycle status for a business.
@@ -71,27 +70,12 @@ type UpdateBusinessProfileParams struct {
 	Location   *json.RawMessage
 }
 
-// BusinessStore reads and writes business rows. It is the tenant-checked entry
-// point every deeper repository call funnels through.
-type BusinessStore struct {
-	db *pgxpool.Pool
-}
-
-// NewBusinessStore returns a BusinessStore backed by db.
-func NewBusinessStore(db *pgxpool.Pool) *BusinessStore {
-	return &BusinessStore{db: db}
-}
-
-// CreateBusiness inserts a business owned by params.TenantID (RUN-5 CLI
-// `opensight business create`). Tenant existence is enforced by the FK. In
+// CreateBusiness inserts a business owned by params.TenantID. Tenant existence is enforced by the FK. In
 // the same transaction it renames the tenant to the business name: signup
-// seeds tenants.name from the email local part (AccountStore.CreateAccount),
+// seeds tenants.name from the email local part (CreateAccount),
 // and onboarding's first business is what replaces that placeholder with the
 // real name (design 08 "Signup").
-func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusinessParams) (Business, error) {
-	if s == nil || s.db == nil {
-		return Business{}, errors.New("business store database is required")
-	}
+func (s *Store) CreateBusiness(ctx context.Context, params CreateBusinessParams) (Business, error) {
 
 	params, err := normalizeCreateBusinessParams(params)
 	if err != nil {
@@ -110,7 +94,7 @@ func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusines
 		Location:    params.Location,
 		ActivatedAt: params.ActivatedAt,
 	}
-	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		var location *json.RawMessage
 		if len(params.Location) > 0 {
 			location = &params.Location
@@ -134,14 +118,11 @@ func (s *BusinessStore) CreateBusiness(ctx context.Context, params CreateBusines
 	return business, nil
 }
 
-// GetBusiness loads a business scoped to tenantID (AUTH-3 ownership validation,
-// Setup read). A missing or cross-tenant business returns ErrNotFound.
-func (s *BusinessStore) GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (Business, error) {
-	if s == nil || s.db == nil {
-		return Business{}, errors.New("business store database is required")
-	}
+// GetBusiness loads a business scoped to tenantID — the ownership gate for
+// business-scoped reads. A missing or cross-tenant business returns ErrNotFound.
+func (s *Store) GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (Business, error) {
 
-	row, err := queries(ctx, s.db).GetBusiness(ctx, storesqlc.GetBusinessParams{ID: businessID, TenantID: tenantID})
+	row, err := s.q(ctx).GetBusiness(ctx, storesqlc.GetBusinessParams{ID: businessID, TenantID: tenantID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Business{}, ErrNotFound
@@ -151,10 +132,7 @@ func (s *BusinessStore) GetBusiness(ctx context.Context, tenantID, businessID do
 	return businessFromSQLC(row), nil
 }
 
-func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBusinessProfileParams) (Business, error) {
-	if s == nil || s.db == nil {
-		return Business{}, errors.New("business store database is required")
-	}
+func (s *Store) UpdateActiveProfile(ctx context.Context, params UpdateBusinessProfileParams) (Business, error) {
 	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
 		return Business{}, err
 	}
@@ -184,7 +162,7 @@ func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBu
 	if params.Location != nil {
 		location = *params.Location
 	}
-	row, err := queries(ctx, s.db).UpdateActiveBusinessProfile(ctx, storesqlc.UpdateActiveBusinessProfileParams{
+	row, err := s.q(ctx).UpdateActiveBusinessProfile(ctx, storesqlc.UpdateActiveBusinessProfileParams{
 		BusinessID: params.BusinessID, TenantID: params.TenantID,
 		NameSet: params.Name != nil, Name: name, WebsiteSet: params.WebsiteSet, Website: params.Website,
 		AliasesSet: params.Aliases != nil, Aliases: aliases, CategorySet: params.Category != nil,
@@ -202,12 +180,9 @@ func (s *BusinessStore) UpdateActiveProfile(ctx context.Context, params UpdateBu
 
 // ListBusinesses returns the tenant's businesses, oldest first (GET /me / SPA
 // bootstrap). Scoped by the tenant_id column.
-func (s *BusinessStore) ListBusinesses(ctx context.Context, tenantID domain.ID) ([]Business, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("business store database is required")
-	}
+func (s *Store) ListBusinesses(ctx context.Context, tenantID domain.ID) ([]Business, error) {
 
-	rows, err := queries(ctx, s.db).ListBusinesses(ctx, tenantID)
+	rows, err := s.q(ctx).ListBusinesses(ctx, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("list businesses: %w", err)
 	}
@@ -224,12 +199,9 @@ func (s *BusinessStore) ListBusinesses(ctx context.Context, tenantID domain.ID) 
 // context (Temporal activities via LoadRunSpec, CLI) to bootstrap the tenant
 // before every subsequent call uses the normal tenant-checked methods
 // (design 02). A missing business returns ErrNotFound.
-func (s *BusinessStore) ResolveTenantID(ctx context.Context, businessID domain.ID) (domain.ID, error) {
-	if s == nil || s.db == nil {
-		return uuid.Nil, errors.New("business store database is required")
-	}
+func (s *Store) ResolveTenantID(ctx context.Context, businessID domain.ID) (domain.ID, error) {
 
-	tenantID, err := queries(ctx, s.db).ResolveTenantID(ctx, businessID)
+	tenantID, err := s.q(ctx).ResolveTenantID(ctx, businessID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return uuid.Nil, ErrNotFound

@@ -9,7 +9,6 @@ import (
 	"opensight/internal/billing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 func TestAccountStoreCreateTenantAndUser(t *testing.T) {
@@ -25,15 +24,15 @@ func TestAccountStoreCreateTenantAndUser(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	admin := NewAccountStore(db)
+	admin := New(db)
 	tenant, err := admin.CreateTenant(ctx, CreateTenantParams{Name: "  Admin Tenant  "})
 	if err != nil {
 		t.Fatalf("CreateTenant: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query051, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query052, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query053, tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenant.ID)
 	})
 
 	if tenant.Name != "Admin Tenant" {
@@ -45,7 +44,7 @@ func TestAccountStoreCreateTenantAndUser(t *testing.T) {
 	// comps").
 	var planCode string
 	var comped bool
-	if err := testdb.QueryRow(ctx, db, testdb.Query054, tenant.ID).Scan(&planCode, &comped); err != nil {
+	if err := db.QueryRow(ctx, "SELECT plan_code, comped FROM subscriptions WHERE tenant_id = $1", tenant.ID).Scan(&planCode, &comped); err != nil {
 		t.Fatalf("load tenant subscription: %v", err)
 	}
 	if planCode != billing.Starter.Code {
@@ -73,7 +72,7 @@ func TestAccountStoreCreateTenantAndUser(t *testing.T) {
 	}
 
 	var storedHash string
-	if err := testdb.QueryRow(ctx, db, testdb.Query055, user.ID).Scan(&storedHash); err != nil {
+	if err := db.QueryRow(ctx, "SELECT password_hash FROM users WHERE id = $1", user.ID).Scan(&storedHash); err != nil {
 		t.Fatalf("load user password hash: %v", err)
 	}
 	if storedHash != passwordHash {
@@ -82,7 +81,7 @@ func TestAccountStoreCreateTenantAndUser(t *testing.T) {
 
 	// SubscriptionStore.GetByTenant plus the catalog resolves the entitlements
 	// the RUN-5 schedule derives its interval from.
-	subscriptions := NewSubscriptionStore(db)
+	subscriptions := New(db)
 	sub, err := subscriptions.GetByTenant(ctx, tenant.ID)
 	if err != nil {
 		t.Fatalf("GetByTenant: %v", err)
@@ -118,7 +117,7 @@ func TestAccountStoreCreateAccount(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	accounts := NewAccountStore(db)
+	accounts := New(db)
 	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
 
 	tenant, user, err := accounts.CreateAccount(ctx, CreateAccountParams{
@@ -129,10 +128,10 @@ func TestAccountStoreCreateAccount(t *testing.T) {
 		t.Fatalf("CreateAccount: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query056, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query057, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query058, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query059, tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenant.ID)
 	})
 
 	if tenant.Name != "founder" {
@@ -148,7 +147,8 @@ func TestAccountStoreCreateAccount(t *testing.T) {
 	var planCode string
 	var comped bool
 	var stripeCustomerID, stripeSubscriptionID, stripeStatus *string
-	if err := testdb.QueryRow(ctx, db, testdb.Query060, tenant.ID).Scan(&planCode, &comped, &stripeCustomerID, &stripeSubscriptionID, &stripeStatus); err != nil {
+	if err := db.QueryRow(ctx, `
+		SELECT plan_code, comped, stripe_customer_id, stripe_subscription_id, stripe_status FROM subscriptions WHERE tenant_id = $1`, tenant.ID).Scan(&planCode, &comped, &stripeCustomerID, &stripeSubscriptionID, &stripeStatus); err != nil {
 		t.Fatalf("load tenant subscription: %v", err)
 	}
 	if planCode != billing.Starter.Code {
@@ -161,7 +161,7 @@ func TestAccountStoreCreateAccount(t *testing.T) {
 		t.Fatalf("stripe columns not all null: customer=%v subscription=%v status=%v", stripeCustomerID, stripeSubscriptionID, stripeStatus)
 	}
 
-	businesses := NewBusinessStore(db)
+	businesses := New(db)
 	list, err := businesses.ListBusinesses(ctx, tenant.ID)
 	if err != nil {
 		t.Fatalf("ListBusinesses: %v", err)
@@ -187,7 +187,7 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	accounts := NewAccountStore(db)
+	accounts := New(db)
 	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
 
 	tenant, _, err := accounts.CreateAccount(ctx, CreateAccountParams{
@@ -198,13 +198,13 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 		t.Fatalf("first CreateAccount: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query061, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query062, tenant.ID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query063, tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenant.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenant.ID)
 	})
 
 	var tenantsBefore int
-	if err := testdb.QueryRow(ctx, db, testdb.Query064).Scan(&tenantsBefore); err != nil {
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM tenants").Scan(&tenantsBefore); err != nil {
 		t.Fatalf("count tenants before: %v", err)
 	}
 
@@ -217,7 +217,7 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 	}
 
 	var tenantsAfter int
-	if err := testdb.QueryRow(ctx, db, testdb.Query065).Scan(&tenantsAfter); err != nil {
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM tenants").Scan(&tenantsAfter); err != nil {
 		t.Fatalf("count tenants after: %v", err)
 	}
 	if tenantsAfter != tenantsBefore {

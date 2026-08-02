@@ -102,7 +102,7 @@ func (p *Provider) CreateCheckoutSession(ctx context.Context, params billing.Cre
 
 // GetCheckoutSession retrieves a Checkout Session by id (design 08
 // "Checkout return"). An unknown id maps to billing.ErrCheckoutSessionNotFound
-// so callers (BILL-4's ConfirmCheckout) get the same error semantics
+// so callers (ConfirmCheckout) get the same error semantics
 // regardless of which Provider is active — the stub returns the same
 // sentinel for an unknown id.
 func (p *Provider) GetCheckoutSession(ctx context.Context, sessionID string) (billing.CheckoutSession, error) {
@@ -136,8 +136,8 @@ func (p *Provider) GetSubscriptionForCustomer(ctx context.Context, customerID st
 	return subscriptionFromStripe(subs[0]), nil
 }
 
-// GetPrice retrieves a Stripe Price for display (design 08 "RPC surface",
-// BILL-9). Prices are immutable in Stripe — a changed amount is a new Price
+// GetPrice retrieves a Stripe Price for display (design 08 "RPC surface").
+// Prices are immutable in Stripe — a changed amount is a new Price
 // object — so this never needs to distinguish "changed" from "stale."
 func (p *Provider) GetPrice(ctx context.Context, priceID string) (billing.Price, error) {
 	price, err := p.client.V1Prices.Retrieve(ctx, priceID, nil)
@@ -257,7 +257,7 @@ func subscriptionFromStripe(s *stripesdk.Subscription) billing.Subscription {
 	// onward, which our pinned 2026-06-24.dahlia postdates — represents a
 	// Customer Portal "cancel at period end" as CancelAt set to the
 	// effective end instant, leaving CancelAtPeriodEnd false (verified
-	// against a live sandbox subscriptions.update call for BILL-9; classic
+	// against a live sandbox subscriptions.update call; classic
 	// mode sets both). A non-zero CancelAt is therefore itself a scheduled
 	// cancellation, and it's the better end-date source when set: unlike the
 	// item's CurrentPeriodEnd, it doesn't drift if a later period starts.

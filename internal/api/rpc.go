@@ -14,8 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// maxRPCRequestBytes matches today's REST body cap (64 KiB, applied via
-// http.MaxBytesReader in ~9 handlers).
+// maxRPCRequestBytes caps a decoded RPC request body at 64 KiB.
 const maxRPCRequestBytes = 64 << 10
 
 // accessClass is a procedure's required billing access (design 08 "Access
@@ -66,8 +65,7 @@ func (c accessClass) satisfiedBy(a billing.Access) bool {
 // changing access. Completeness (every procedure classified, not just every
 // classified procedure valid) is enforced at test time by
 // TestEveryProcedureIsClassified (rpc_test.go) and at runtime by
-// accessInterceptor's default-deny fallthrough below. This replaces the old
-// publicProcedures allowlist with one total map spanning all four classes.
+// accessInterceptor's default-deny fallthrough below.
 var procedureAccess = map[string]accessClass{
 	// classPublic — no session.
 	opensightv1connect.AuthServiceLoginProcedure:  classPublic,
@@ -123,15 +121,15 @@ var procedureAccess = map[string]accessClass{
 	opensightv1connect.BusinessServiceApplyProposalProcedure:      classActive,
 }
 
-// accessInterceptor is the RPC access gate (BILL-6, design 08 "Enforcement gate
-// 1"): every procedure carries one of four access classes, resolved once per
+// accessInterceptor is the RPC access gate (design 08 "Enforcement gate 1"):
+// every procedure carries one of four access classes, resolved once per
 // request alongside the session, with no extra round trip.
 //
 //  1. An unclassified procedure is denied — default-deny, so adding an RPC
 //     without classifying it fails closed rather than admitting it.
 //  2. classPublic passes through with no session at all.
-//  3. Every other class resolves the session first (unchanged 401/cookie-clear
-//     behavior on failure).
+//  3. Every other class resolves the session first (401 and a cookie clear on
+//     failure).
 //  4. Access is derived fresh from the session's billing state and the
 //     current time — never cached on the session — which is what makes the
 //     dunning bound take effect the moment it passes, with no scheduled job.
@@ -184,8 +182,8 @@ func (s *Server) rpcHandler() http.Handler {
 	return http.StripPrefix("/rpc", mux)
 }
 
-// rpcID parses a request's id field, mirroring pathID's 400 on a malformed
-// UUID. Returns a concrete *connect.Error (never a typed-nil through the
+// rpcID parses a request's id field, rejecting a malformed UUID with
+// InvalidArgument. Returns a concrete *connect.Error (never a typed-nil through the
 // error interface) — every call site must check `if cerr != nil`.
 func rpcID(name, raw string) (domain.ID, *connect.Error) {
 	id, err := uuid.Parse(raw)
@@ -195,9 +193,8 @@ func rpcID(name, raw string) (domain.ID, *connect.Error) {
 	return id, nil
 }
 
-// rpcPaging normalizes a list RPC's limit/offset. Unlike REST's
-// positiveIntParam/nonNegativeIntParam, nothing here errors: proto3 cannot
-// distinguish an omitted int32 from an explicit 0, so non-positive limit
+// rpcPaging normalizes a list RPC's limit/offset. Nothing here errors: proto3
+// cannot distinguish an omitted int32 from an explicit 0, so non-positive limit
 // means "not provided" and takes the default; an over-max limit clamps; a
 // negative offset floors to 0 (load-bearing: prevents slice-arithmetic panics
 // downstream).

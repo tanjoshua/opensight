@@ -12,8 +12,7 @@ import (
 )
 
 // ErrNoSubscription is returned by GetSubscriptionForCustomer when a Stripe
-// Customer exists but has never completed a checkout. Reconcile (BILL-5)
-// needs to tell "no subscription" from "call failed"; a zero value would not.
+// Customer exists but has never completed a checkout. Reconcile needs to tell "no subscription" from "call failed"; a zero value would not.
 var ErrNoSubscription = errors.New("no subscription for customer")
 
 // ErrCheckoutSessionNotFound is returned by GetCheckoutSession for a session
@@ -33,8 +32,8 @@ type Customer struct {
 }
 
 // CreateCheckoutSessionParams builds a `mode: subscription` Checkout Session
-// (design 08 "Checkout Session"). BILL-4 owns computing these; the provider
-// owns mapping them onto Stripe (or the stub's local state).
+// (design 08 "Checkout Session"). StartCheckout owns computing these; the
+// provider owns mapping them onto Stripe.
 type CreateCheckoutSessionParams struct {
 	CustomerID string
 	PriceID    string
@@ -76,7 +75,7 @@ type CreatePortalSessionParams struct {
 	CustomerID string
 	ReturnURL  string
 	// ConfigurationID pins the session to the repo-owned Billing Portal
-	// Configuration (BILL-8, internal/billing/portal.go) rather than the
+	// Configuration (internal/billing/portal.go) rather than the
 	// account default. The Stripe adapter requires it; test fakes may ignore it.
 	ConfigurationID string
 }
@@ -86,8 +85,8 @@ type PortalSession struct {
 	URL string
 }
 
-// Price mirrors the subset of a Stripe Price callers need for display
-// (BILL-9). Interval is empty when the Price has no Recurring component —
+// Price mirrors the subset of a Stripe Price callers need for display.
+// Interval is empty when the Price has no Recurring component —
 // tolerated, not a construction error, mirroring subscriptionFromStripe's
 // nil-tolerant mapping.
 type Price struct {

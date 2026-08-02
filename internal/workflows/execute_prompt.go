@@ -47,7 +47,7 @@ func isTerminalFailure(err error, attempt, maxAttempts int32) bool {
 // or the final attempt of a transient one) durably records a failed result and
 // returns nil — a refusal is a recorded finding, not an outage to keep retrying.
 func (a *Activities) ExecutePrompt(ctx context.Context, in ExecutePromptInput) (ExecutePromptOutput, error) {
-	if existing, err := a.Results.GetResultByRunAndPrompt(ctx, in.TenantID, in.RunID, in.Prompt.ID); err == nil {
+	if existing, err := a.Store.GetResultByRunAndPrompt(ctx, in.TenantID, in.RunID, in.Prompt.ID); err == nil {
 		return ExecutePromptOutput{ResultID: existing.ID, Status: existing.Status}, nil
 	} else if !errors.Is(err, store.ErrNotFound) {
 		return ExecutePromptOutput{}, err
@@ -99,9 +99,9 @@ func (a *Activities) ExecutePrompt(ctx context.Context, in ExecutePromptInput) (
 // createResult writes the result, treating an ErrDuplicateResult race (a
 // concurrent activity attempt won) as success by re-fetching the winning row.
 func (a *Activities) createResult(ctx context.Context, in ExecutePromptInput, params store.CreateResultParams) (store.PromptResult, error) {
-	created, err := a.Results.CreateResult(ctx, in.TenantID, params)
+	created, err := a.Store.CreateResult(ctx, in.TenantID, params)
 	if errors.Is(err, store.ErrDuplicateResult) {
-		return a.Results.GetResultByRunAndPrompt(ctx, in.TenantID, in.RunID, in.Prompt.ID)
+		return a.Store.GetResultByRunAndPrompt(ctx, in.TenantID, in.RunID, in.Prompt.ID)
 	}
 	return created, err
 }

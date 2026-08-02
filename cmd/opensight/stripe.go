@@ -4,18 +4,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"opensight/internal/billing"
 	billingstripe "opensight/internal/billing/stripe"
 	"opensight/internal/config"
 )
 
-// stripePortalConfigUsage documents `opensight stripe portal-config` (BILL-8A,
-// design 08 "Customer Portal"): applies internal/billing.DesiredPortalConfig
-// to the explicitly provisioned STRIPE_PORTAL_CONFIGURATION_ID.
+// stripePortalConfigUsage documents `opensight stripe portal-config` (design 08
+// "Customer Portal"): applies internal/billing.DesiredPortalConfig to the
+// explicitly provisioned STRIPE_PORTAL_CONFIGURATION_ID.
 const stripePortalConfigUsage = "usage: opensight stripe portal-config"
 
-func runStripeCommand(ctx context.Context, cfg config.Config, args []string, deps commandDeps) error {
+func runStripeCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("stripe subcommand required; %s", stripePortalConfigUsage)
 	}
@@ -24,7 +25,7 @@ func runStripeCommand(ctx context.Context, cfg config.Config, args []string, dep
 		if len(args) > 1 {
 			return fmt.Errorf("unexpected argument %q; %s", args[1], stripePortalConfigUsage)
 		}
-		return deps.applyPortalConfig(ctx, cfg, deps.stdout)
+		return applyPortalConfigCLI(ctx, cfg, os.Stdout)
 	default:
 		return fmt.Errorf("unknown stripe subcommand %q; %s", args[0], stripePortalConfigUsage)
 	}

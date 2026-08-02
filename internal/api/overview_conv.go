@@ -14,11 +14,11 @@ const (
 	// sections.
 	overviewPanelLimit = 5
 	// overviewDiscoveredLimit is the "top-3 discovered by coverage" the Overview
-	// competitor panel shows alongside every tracked competitor (MET-2 AC).
+	// competitor panel shows alongside every tracked competitor.
 	overviewDiscoveredLimit = 3
 )
 
-// visibilitySummaryToProto mirrors the Overview panel shaping rules. Trend
+// visibilitySummaryToProto applies the Overview panel shaping rules. Trend
 // is oldest-first; Current is the latest point's percent (n > 0), Delta the
 // difference from the previous point (n > 1). Always returns non-nil, even
 // for an empty trend.
@@ -74,8 +74,8 @@ func promptChangesToProto(changes []metrics.PromptChange) []*opensightv1.PromptC
 	return out
 }
 
-// topCompetitorsToProto mirrors topCompetitorsToResponse (overview.go)
-// including its exact switch shape.
+// topCompetitorsToProto returns every tracked competitor plus the top
+// discovered ones, and the total discovered count.
 func topCompetitorsToProto(stats metrics.CompetitorStats) ([]*opensightv1.CompetitorSummary, int) {
 	out := []*opensightv1.CompetitorSummary{}
 	shown, total := 0, 0

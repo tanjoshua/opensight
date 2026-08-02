@@ -12,7 +12,6 @@ import (
 	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Tenant is a persisted tenants row used by admin CLI account creation.
@@ -28,19 +27,6 @@ type User struct {
 	TenantID  domain.ID
 	Email     string
 	CreatedAt time.Time
-}
-
-// AccountStore owns account creation: both operator-provisioned (CLI,
-// invite-only) and self-serve (signup) tenants. It is intentionally
-// tenant-unscoped because these commands create the tenant context that normal
-// repositories later require.
-type AccountStore struct {
-	db *pgxpool.Pool
-}
-
-// NewAccountStore returns an AccountStore backed by db.
-func NewAccountStore(db *pgxpool.Pool) *AccountStore {
-	return &AccountStore{db: db}
 }
 
 // ErrEmailTaken is returned when a signup hits the users.email unique index.
@@ -61,12 +47,12 @@ type CreateUserParams struct {
 }
 
 // CreateTenant creates a tenant and its subscription row, in one transaction.
+// Account creation — this method, CreateUser, and CreateAccount — is
+// intentionally tenant-unscoped: it creates the tenant context every other
+// method requires.
 // CLI-provisioned tenants are operator tenants: comped = true, no Stripe
 // objects (design 08 "Operator comps").
-func (s *AccountStore) CreateTenant(ctx context.Context, params CreateTenantParams) (Tenant, error) {
-	if s == nil || s.db == nil {
-		return Tenant{}, errors.New("account store database is required")
-	}
+func (s *Store) CreateTenant(ctx context.Context, params CreateTenantParams) (Tenant, error) {
 
 	params, err := normalizeCreateTenantParams(params)
 	if err != nil {
@@ -77,7 +63,7 @@ func (s *AccountStore) CreateTenant(ctx context.Context, params CreateTenantPara
 		ID:   params.ID,
 		Name: params.Name,
 	}
-	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		tenant.CreatedAt, err = q.InsertTenant(ctx, storesqlc.InsertTenantParams{ID: tenant.ID, Name: tenant.Name})
 		if err != nil {
 			return fmt.Errorf("insert tenant: %w", err)
@@ -95,10 +81,7 @@ func (s *AccountStore) CreateTenant(ctx context.Context, params CreateTenantPara
 
 // CreateUser creates a user under an existing tenant with a pre-hashed password.
 // The raw password belongs to the CLI layer and is never accepted here.
-func (s *AccountStore) CreateUser(ctx context.Context, params CreateUserParams) (User, error) {
-	if s == nil || s.db == nil {
-		return User{}, errors.New("account store database is required")
-	}
+func (s *Store) CreateUser(ctx context.Context, params CreateUserParams) (User, error) {
 
 	params, err := normalizeCreateUserParams(params)
 	if err != nil {
@@ -110,7 +93,7 @@ func (s *AccountStore) CreateUser(ctx context.Context, params CreateUserParams) 
 		TenantID: params.TenantID,
 		Email:    params.Email,
 	}
-	user.CreatedAt, err = queries(ctx, s.db).InsertUser(ctx, storesqlc.InsertUserParams{
+	user.CreatedAt, err = s.q(ctx).InsertUser(ctx, storesqlc.InsertUserParams{
 		ID: user.ID, TenantID: user.TenantID, Email: user.Email, PasswordHash: &params.PasswordHash,
 	})
 	if err != nil {
@@ -132,11 +115,8 @@ type CreateAccountParams struct {
 // impossible: any failure rolls back the whole thing. Unlike CreateTenant
 // (CLI-provisioned, comped = true), self-serve accounts are never comped and
 // carry no Stripe objects. tenants.name is seeded from the email's local
-// part; onboarding renames it to the business name (BusinessStore.CreateBusiness).
-func (s *AccountStore) CreateAccount(ctx context.Context, params CreateAccountParams) (Tenant, User, error) {
-	if s == nil || s.db == nil {
-		return Tenant{}, User{}, errors.New("account store database is required")
-	}
+// part; onboarding renames it to the business name (CreateBusiness).
+func (s *Store) CreateAccount(ctx context.Context, params CreateAccountParams) (Tenant, User, error) {
 
 	params, tenantName, err := normalizeCreateAccountParams(params)
 	if err != nil {
@@ -146,7 +126,7 @@ func (s *AccountStore) CreateAccount(ctx context.Context, params CreateAccountPa
 	tenant := Tenant{ID: params.TenantID, Name: tenantName}
 	user := User{ID: params.UserID, TenantID: params.TenantID, Email: params.Email}
 
-	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		tenant.CreatedAt, err = q.InsertTenant(ctx, storesqlc.InsertTenantParams{ID: tenant.ID, Name: tenant.Name})
 		if err != nil {
 			return fmt.Errorf("insert tenant: %w", err)

@@ -13,7 +13,7 @@ As the developer, I want entitlements in a versioned code catalog and Stripe sta
 - [x] `internal/billing` catalog: `Starter` plan (`code`, `prompt_limit` 20, `run_interval` weekly, `platforms` chatgpt, price env key). Unknown `plan_code` is an error, never a default.
 - [x] Migrations create `subscriptions` (tenant_id PK, plan_code, stripe_customer_id, stripe_subscription_id, stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end); webhook deliveries are not retained locally.
 - [x] Same migration backfills one `subscriptions` row per existing tenant with `comped = true`, then **drops `tenants.plan_id` and the `plans` table**.
-- [x] `store.SubscriptionStore` with tenant-keyed read/upsert; `GetTenantPlan` and every `plans` reference removed app-wide (prompt limit, profile generation, schedule interval all read the catalog).
+- [x] tenant-keyed subscription read/upsert on `store.Store`; `GetTenantPlan` and every `plans` reference removed app-wide (prompt limit, profile generation, schedule interval all read the catalog).
 
 Deps: — · Phase 4 · Ref: design 08 (Entitlements move from a table to code; Schema), 02 (Plans and tenancy)
 
@@ -132,17 +132,6 @@ As a lapsed customer, I want to browse everything I collected with a clear path 
 
 Deps: BILL-9, BILL-7 · Phase 4 · Ref: design 08 (Lapse and reactivation), 04 (charts show observed values only)
 
-## BILL-11 — Operator comps and dev seed
-
-As the operator, I want to grant access without Stripe objects, so that design partners and dev tenants work without fake subscriptions.
-
-- [ ] An operator can grant and revoke full access for a tenant that has no Stripe objects at all.
-- [ ] An operator can set a user's password — the documented reset path while there is no email provider.
-- [ ] A fresh local environment reaches onboarding with no billing setup and no fake Stripe state.
-- [ ] No CLI path still references the dropped plans table.
-
-Deps: BILL-1 · Phase 4 · Ref: design 08 (Operator comps; Signup — password reset deferred)
-
 ## BILL-12 — Stripe go-live configuration and marketing wiring
 
 As the operator, I want the live Stripe account and the marketing funnel configured and rehearsed, so that the first real payment is not the first test.
@@ -155,4 +144,4 @@ As the operator, I want the live Stripe account and the marketing funnel configu
 - [ ] Marketing CTAs point at signup; pricing and FAQ copy match what is actually charged and what cancellation actually does.
 - [ ] Sandbox rehearsal passes end to end: signup → checkout → onboarding → first run → portal cancel → monitoring paused with history readable → reactivate → monitoring resumed.
 
-Deps: BILL-10, BILL-11 · Phase 4 · Ref: design 08 (Go-live checklist; Commercial model)
+Deps: BILL-10 · Phase 4 · Ref: design 08 (Go-live checklist; Commercial model)

@@ -9,7 +9,6 @@ import (
 	"opensight/internal/store"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // TestPersistProposalIdempotent proves PersistProposal survives Temporal's
@@ -33,16 +32,16 @@ func TestPersistProposalIdempotent(t *testing.T) {
 	tenantID := mustID(t)
 	businessID := mustID(t)
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query255, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query256, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query257, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query258, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Persist Tenant")
-	mustExec(t, db, ctx, testdb.Query259, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Persist Clinic')", businessID, tenantID)
 
-	acts := &Activities{Proposals: store.NewProfileProposalStore(db)}
+	acts := &Activities{Store: store.New(db)}
 	in := PersistProposalInput{
 		TenantID:   tenantID,
 		BusinessID: businessID,

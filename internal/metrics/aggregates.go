@@ -52,8 +52,8 @@ type CitationSubjectBreakdown struct {
 	Unknown    CitationSubjectStat
 }
 
-// CitationSource is the full citation-sources drill-down for one cited domain
-// (MET-6). Frequency is the number of distinct analyzed responses citing this
+// CitationSource is the full citation-sources drill-down for one cited
+// domain. Frequency is the number of distinct analyzed responses citing this
 // domain; ResultIDs is the door behind that number.
 type CitationSource struct {
 	Domain    string

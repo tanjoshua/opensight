@@ -12,7 +12,6 @@ import (
 
 	"opensight/internal/billing"
 	"opensight/internal/billing/reconcile"
-	"opensight/internal/domain"
 	"opensight/internal/metrics"
 	"opensight/internal/store"
 
@@ -27,78 +26,26 @@ import (
 // product, so re-login roughly monthly is fine).
 const defaultSessionTTL = 30 * 24 * time.Hour
 
-// authStore is the consumer-side seam over *store.AuthStore, so handler unit
-// tests run against a fake with no Postgres. It mirrors the four AuthStore
-// methods exactly.
-type authStore interface {
-	GetUserCredentials(ctx context.Context, email string) (store.UserCredentials, error)
-	CreateSession(ctx context.Context, params store.CreateSessionParams) error
-	GetSession(ctx context.Context, tokenHash []byte) (store.SessionUser, error)
-	DeleteSession(ctx context.Context, tokenHash []byte) error
-}
-
-// accountStore is the consumer-side seam over *store.AccountStore's signup
-// method. It is a separate seam from authStore rather than a fifth method
-// bolted on there: AuthStore's doc comment (internal/store/auth.go) pins that
-// type to exactly its four session/credential methods, and CreateAccount is a
-// tenant-creation write, not a credential read.
-type accountStore interface {
-	CreateAccount(ctx context.Context, params store.CreateAccountParams) (store.Tenant, store.User, error)
-}
-
-// businessStore is the consumer-side seam over *store.BusinessStore. /me lists
-// the tenant's businesses so the SPA can bootstrap section URLs (design 06:
-// URLs carry businessID; MVP has one business per tenant). GetBusiness is the
-// tenant-ownership gate for business-scoped endpoints that have no other
-// natural gate (it returns ErrNotFound for a missing/cross-tenant business).
-type businessStore interface {
-	ListBusinesses(ctx context.Context, tenantID domain.ID) ([]store.Business, error)
-	GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (store.Business, error)
-	CreateBusiness(ctx context.Context, params store.CreateBusinessParams) (store.Business, error)
-	UpdateActiveProfile(ctx context.Context, params store.UpdateBusinessProfileParams) (store.Business, error)
-}
-
-// subscriptionStore is the seam over *store.SubscriptionStore, still used by
-// StartCheckout to read/write the tenant's Stripe Customer id. Plan
-// resolution off a session's plan_code no longer needs a store round trip
-// (BILL-6: billing.PlanFor(su.PlanCode) reads the catalog directly) —
-// SetStripeCustomerID (BILL-4) is StartCheckout's write-once Customer id
-// persistence.
-type subscriptionStore interface {
-	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
-	SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error)
-}
-
-// billingProvider is the Stripe operations the RPC layer consumes.
+// billingProvider is the Stripe operations the RPC layer consumes. It stays a
+// seam — unlike the store and metrics, which the Server holds concretely —
+// because the calls behind it leave the process, so tests need a stub.
 // GetSubscriptionForCustomer belongs to reconcile's separate narrow seam.
 type billingProvider interface {
 	CreateCustomer(ctx context.Context, params billing.CreateCustomerParams) (billing.Customer, error)
 	CreateCheckoutSession(ctx context.Context, params billing.CreateCheckoutSessionParams) (billing.CheckoutSession, error)
 	GetCheckoutSession(ctx context.Context, sessionID string) (billing.CheckoutSession, error)
 	CreatePortalSession(ctx context.Context, params billing.CreatePortalSessionParams) (billing.PortalSession, error)
-	// GetPrice backs GetBilling's price display (BILL-9); cachedPrice
+	// GetPrice backs GetBilling's price display; cachedPrice
 	// (billing_rpc.go) is the only caller.
 	GetPrice(ctx context.Context, priceID string) (billing.Price, error)
-}
-
-// billingReconciler is the seam over *reconcile.Reconciler: ConfirmCheckout's
-// (BILL-4) and the webhook's (BILL-5) one write path (design 08 "Reconcile").
-type billingReconciler interface {
-	Tenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
-	ByCustomer(ctx context.Context, customerID string) (store.Subscription, error)
-}
-
-// proposalStore is the seam over *store.ProfileProposalStore for the proposal
-// endpoints: read the pending proposal, and discard it on regenerate.
-type proposalStore interface {
-	GetPending(ctx context.Context, tenantID, businessID domain.ID) (store.ProfileProposal, error)
-	DiscardPending(ctx context.Context, tenantID, businessID domain.ID) error
 }
 
 // temporalClient is the narrow slice of client.Client the API server needs:
 // start GenerateProfileWorkflow/RunWorkflow, describe generation status, query
 // the current generation stage, and (via ScheduleClient) create the monitoring
-// Schedule on apply.
+// Schedule on apply. Like billingProvider it stays a seam: dispatching a
+// workflow is an out-of-process side effect tests must observe without a
+// Temporal server.
 type temporalClient interface {
 	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
 	DescribeWorkflowExecution(ctx context.Context, workflowID, runID string) (*workflowservice.DescribeWorkflowExecutionResponse, error)
@@ -106,62 +53,36 @@ type temporalClient interface {
 	ScheduleClient() client.ScheduleClient
 }
 
-// applyStore is the seam over *store.ApplyProposalStore: the transactional
-// activate-business-and-insert-prompts operation ONB-6 runs on apply.
-type applyStore interface {
-	Apply(ctx context.Context, params store.ApplyProposalParams) (store.ApplyProposalResult, error)
-}
-
 // Server holds the API dependencies and configuration.
 type Server struct {
-	auth        authStore
-	accounts    accountStore
-	businesses  businessStore
-	prompts     promptStore
-	competitors competitorStore
-	runs        runStore
-	results     resultStore
-	metrics     overviewMetrics
-	// runMetrics is the metrics seam for the Runs endpoint's per-run visibility %
-	// (MET-5) — a second view over the same *metrics.Metrics as Overview.
-	runMetrics runsMetrics
-	// promptMetrics is a second seam over the same *metrics.Metrics: the Prompts
-	// section needs PromptLatestStats/PromptTrends, which the Overview seam does
-	// not expose. Splitting the seams keeps each handler's fake minimal.
-	promptMetrics promptsMetrics
-	// competitorMetrics is a third seam over the same *metrics.Metrics for the
-	// Competitors section (MET-4): just CompetitorStats, so its fake stays minimal.
-	competitorMetrics competitorsMetrics
-	// citationMetrics is a fourth seam for MET-6's citation-sources drill-down.
-	citationMetrics citationsMetrics
-	// subscriptions, proposals, temporal, and temporalTaskQueue drive onboarding
-	// (ONB-4): create a draft business and start GenerateProfileWorkflow, poll
-	// its status, and regenerate. temporal is nil in handler unit tests that
-	// don't exercise these endpoints.
-	subscriptions     subscriptionStore
-	proposals         proposalStore
-	apply             applyStore
+	// store and metrics are the two concrete backends every handler reads and
+	// writes through. Both are pure Postgres, so handler tests exercise them
+	// against a real test database rather than a fake.
+	store   *store.Store
+	metrics *metrics.Metrics
+	// temporal and temporalTaskQueue drive onboarding: create a draft business
+	// and start GenerateProfileWorkflow, poll its status, and regenerate.
 	temporal          temporalClient
 	temporalTaskQueue string
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
-	// (FND-2 local dev is plain HTTP); prod runs behind Caddy TLS.
+	// (local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
 	// sessionTTL is a field (not a bare const) so tests can shrink it.
 	sessionTTL time.Duration
-	// billing, reconciler, stripePriceIDs, and appBaseURL drive checkout
-	// (BILL-4): create/reuse the tenant's Stripe Customer, start a Checkout
+	// billing, reconciler, stripePriceIDs, and appBaseURL drive checkout:
+	// create/reuse the tenant's Stripe Customer, start a Checkout
 	// Session against the plan's Price, and reconcile on return.
 	billing        billingProvider
-	reconciler     billingReconciler
+	reconciler     *reconcile.Reconciler
 	stripePriceIDs map[string]string
 	appBaseURL     string
-	// stripePortalConfigurationID pins CreatePortalSession (BILL-8) to the
+	// stripePortalConfigurationID pins CreatePortalSession to the
 	// repo-owned Billing Portal Configuration rather than the account
 	// default (design 08 "Customer Portal").
 	stripePortalConfigurationID string
-	// webhooks verifies /webhooks/stripe deliveries (BILL-5).
+	// webhooks verifies /webhooks/stripe deliveries.
 	webhooks billing.WebhookVerifier
-	// priceCache holds GetBilling's (BILL-9) fetched Stripe Prices, keyed by
+	// priceCache holds GetBilling's fetched Stripe Prices, keyed by
 	// price id. Safe to keep for the process lifetime: Stripe Prices are
 	// immutable, so a cache entry can never go stale.
 	priceCache struct {
@@ -171,34 +92,24 @@ type Server struct {
 }
 
 // Deps are api.New's dependencies. A struct rather than a positional argument
-// list: the billing stories add several more dependencies, and adjacent
-// same-typed fields (temporalTaskQueue, appBaseURL) can silently swap at a
+// list: there are many of them, and adjacent same-typed fields (temporalTaskQueue, appBaseURL) can silently swap at a
 // positional call site.
 type Deps struct {
-	Auth              *store.AuthStore
-	Accounts          *store.AccountStore
-	Businesses        *store.BusinessStore
-	Subscriptions     *store.SubscriptionStore
-	Proposals         *store.ProfileProposalStore
-	Apply             *store.ApplyProposalStore
-	Prompts           *store.PromptStore
-	Competitors       *store.CompetitorStore
-	Runs              *store.RunStore
-	Results           *store.ResultStore
+	Store             *store.Store
 	Metrics           *metrics.Metrics
 	Temporal          client.Client
 	TemporalTaskQueue string
 	SecureCookies     bool
 
-	// Billing (BILL-4).
+	// Billing.
 	Billing        billingProvider
 	Reconciler     *reconcile.Reconciler
 	StripePriceIDs map[string]string
 	AppBaseURL     string
-	// StripePortalConfigurationID (BILL-8) — see Server.stripePortalConfigurationID.
+	// StripePortalConfigurationID — see Server.stripePortalConfigurationID.
 	StripePortalConfigurationID string
 
-	// Webhook (BILL-5).
+	// Webhook.
 	Webhooks billing.WebhookVerifier
 }
 
@@ -206,21 +117,8 @@ type Deps struct {
 // plain-HTTP local dev (computed in serve() as cfg.Env != "dev").
 func New(d Deps) *Server {
 	s := &Server{
-		auth:                        d.Auth,
-		accounts:                    d.Accounts,
-		businesses:                  d.Businesses,
-		subscriptions:               d.Subscriptions,
-		proposals:                   d.Proposals,
-		apply:                       d.Apply,
-		prompts:                     d.Prompts,
-		competitors:                 d.Competitors,
-		runs:                        d.Runs,
-		results:                     d.Results,
+		store:                       d.Store,
 		metrics:                     d.Metrics,
-		promptMetrics:               d.Metrics,
-		competitorMetrics:           d.Metrics,
-		citationMetrics:             d.Metrics,
-		runMetrics:                  d.Metrics,
 		temporal:                    d.Temporal,
 		temporalTaskQueue:           d.TemporalTaskQueue,
 		secureCookies:               d.SecureCookies,
@@ -267,10 +165,9 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok\n"))
 }
 
-// writeProblem writes an RFC 7807 problem+json response (design 06). It
-// survives REST's removal (RPC-8) because the SPA static-file route
-// (static.go) and the router-level MethodNotAllowed handler above still use
-// it for the handful of non-RPC responses that aren't the SPA shell itself.
+// writeProblem writes an RFC 7807 problem+json response (design 06). Its
+// callers are the handful of non-RPC error responses: the SPA static-file
+// route (static.go) and the router-level MethodNotAllowed handler above.
 func writeProblem(w http.ResponseWriter, status int, title, detail string) {
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(status)

@@ -12,7 +12,6 @@ import (
 	"opensight/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // TestRepositoriesEnforceTenantScoping is the SCH-4 acceptance test: every
@@ -37,24 +36,24 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	businessA := mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query216, businessA)
-		_, _ = testdb.Exec(ctx, db, testdb.Query217, businessA)
-		_, _ = testdb.Exec(ctx, db, testdb.Query218, businessA)
-		_, _ = testdb.Exec(ctx, db, testdb.Query219, businessA)
-		_, _ = testdb.Exec(ctx, db, testdb.Query220, businessA)
-		_, _ = testdb.Exec(ctx, db, testdb.Query221, []domain.ID{tenantA, tenantB})
-		_, _ = testdb.Exec(ctx, db, testdb.Query222, []domain.ID{tenantA, tenantB})
+		_, _ = db.Exec(ctx, "DELETE FROM prompt_results WHERE run_id IN (SELECT id FROM monitoring_runs WHERE business_id = $1)", businessA)
+		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessA)
+		_, _ = db.Exec(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessA)
+		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id = $1", businessA)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessA)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = ANY($1)", []domain.ID{tenantA, tenantB})
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = ANY($1)", []domain.ID{tenantA, tenantB})
 	})
 
 	insertTenant(t, db, ctx, tenantA, "Tenant A")
 	insertTenant(t, db, ctx, tenantB, "Tenant B")
 
 	pool := db
-	businesses := NewBusinessStore(pool)
-	prompts := NewPromptStore(pool)
-	runs := NewRunStore(pool)
-	results := NewResultStore(pool)
-	proposals := NewProfileProposalStore(pool)
+	businesses := New(pool)
+	prompts := New(pool)
+	runs := New(pool)
+	results := New(pool)
+	proposals := New(pool)
 
 	// --- BusinessStore: create (write) + direct tenant-scoped lookups. ---
 	created, err := businesses.CreateBusiness(ctx, CreateBusinessParams{
@@ -77,7 +76,7 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	// insert (BILL-3): onboarding's first business replaces signup's
 	// email-local-part placeholder name with the real business name.
 	var tenantAName string
-	if err := testdb.QueryRow(ctx, db, testdb.Query223, tenantA).Scan(&tenantAName); err != nil {
+	if err := db.QueryRow(ctx, "SELECT name FROM tenants WHERE id = $1", tenantA).Scan(&tenantAName); err != nil {
 		t.Fatalf("load tenant name: %v", err)
 	}
 	if tenantAName != "Acme Clinic" {
@@ -166,7 +165,7 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	}
 	// The rejected cross-tenant write must not have inserted a row.
 	var promptCount int
-	if err := testdb.QueryRow(ctx, db, testdb.Query224, businessA).Scan(&promptCount); err != nil {
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM prompts WHERE business_id = $1", businessA).Scan(&promptCount); err != nil {
 		t.Fatalf("count prompts: %v", err)
 	}
 	if promptCount != 1 {

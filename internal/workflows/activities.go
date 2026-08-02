@@ -22,17 +22,11 @@ import (
 // exercising one activity leave the rest at their nil zero value instead of
 // padding a long positional constructor call.
 type Activities struct {
-	Businesses    *store.BusinessStore
-	Prompts       *store.PromptStore
-	Runs          *store.RunStore
-	Results       *store.ResultStore
-	Runner        llm.PromptRunner
-	Analysis      *store.AnalysisStore
-	Extractor     llm.ExtractionRunner
-	Matcher       llm.MatchRunner
-	Proposer      llm.ProposeProfileRunner
-	Proposals     *store.ProfileProposalStore
-	Subscriptions *store.SubscriptionStore
+	Store     *store.Store
+	Runner    llm.PromptRunner
+	Extractor llm.ExtractionRunner
+	Matcher   llm.MatchRunner
+	Proposer  llm.ProposeProfileRunner
 }
 
 // PromptSnapshot is one active prompt captured at run start. The workflow
@@ -76,7 +70,7 @@ type CheckRunAccessOutput struct {
 // recomputes access fresh against the current time on every run start, so a
 // missed webhook can never turn into spend.
 func (a *Activities) CheckRunAccess(ctx context.Context, in CheckRunAccessInput) (CheckRunAccessOutput, error) {
-	tenantID, err := a.Businesses.ResolveTenantID(ctx, in.BusinessID)
+	tenantID, err := a.Store.ResolveTenantID(ctx, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return CheckRunAccessOutput{}, temporal.NewNonRetryableApplicationError(
@@ -85,7 +79,7 @@ func (a *Activities) CheckRunAccess(ctx context.Context, in CheckRunAccessInput)
 		return CheckRunAccessOutput{}, err
 	}
 
-	sub, err := a.Subscriptions.GetByTenant(ctx, tenantID)
+	sub, err := a.Store.GetByTenant(ctx, tenantID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Every tenant is supposed to have exactly one subscriptions row
@@ -120,7 +114,7 @@ type LoadRunSpecInput struct {
 // avoids leaving a stuck running row for a data problem. Transient DB errors
 // return the plain error so Temporal retries.
 func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunSpec, error) {
-	tenantID, err := a.Businesses.ResolveTenantID(ctx, in.BusinessID)
+	tenantID, err := a.Store.ResolveTenantID(ctx, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return RunSpec{}, temporal.NewNonRetryableApplicationError(
@@ -129,7 +123,7 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 		return RunSpec{}, err
 	}
 
-	business, err := a.Businesses.GetBusiness(ctx, tenantID, in.BusinessID)
+	business, err := a.Store.GetBusiness(ctx, tenantID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return RunSpec{}, temporal.NewNonRetryableApplicationError(
@@ -146,7 +140,7 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 			"invalid business location", "BadBusinessData", err)
 	}
 
-	prompts, err := a.Prompts.ListActivePrompts(ctx, tenantID, in.BusinessID)
+	prompts, err := a.Store.ListActivePrompts(ctx, tenantID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return RunSpec{}, temporal.NewNonRetryableApplicationError(
@@ -160,7 +154,7 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 		snapshots = append(snapshots, PromptSnapshot{ID: p.ID, Text: p.Text})
 	}
 
-	run, err := a.Runs.UpsertRun(ctx, tenantID, store.UpsertRunParams{
+	run, err := a.Store.UpsertRun(ctx, tenantID, store.UpsertRunParams{
 		BusinessID:      in.BusinessID,
 		Platform:        in.Platform,
 		Trigger:         in.Trigger,
@@ -190,7 +184,7 @@ type FinalizeRunInput struct {
 // against the run's stored expected_results. It is a pure recomputation, safe
 // to retry.
 func (a *Activities) FinalizeRun(ctx context.Context, in FinalizeRunInput) (store.Run, error) {
-	return a.Runs.FinalizeRun(ctx, in.TenantID, in.RunID)
+	return a.Store.FinalizeRun(ctx, in.TenantID, in.RunID)
 }
 
 // PersistProposalInput carries the generated proposal to persist as the
@@ -223,10 +217,10 @@ func (a *Activities) PersistProposal(ctx context.Context, in PersistProposalInpu
 			"marshal proposal payload", "BadPayload", err)
 	}
 
-	proposal, err := a.Proposals.CreatePending(ctx, in.TenantID, in.BusinessID, raw)
+	proposal, err := a.Store.CreatePending(ctx, in.TenantID, in.BusinessID, raw)
 	if err != nil {
 		if errors.Is(err, store.ErrPendingProposalExists) {
-			existing, getErr := a.Proposals.GetPending(ctx, in.TenantID, in.BusinessID)
+			existing, getErr := a.Store.GetPending(ctx, in.TenantID, in.BusinessID)
 			if getErr != nil {
 				return PersistProposalOutput{}, getErr
 			}

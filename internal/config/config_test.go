@@ -41,9 +41,6 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.PromptRunnerMode != defaultPromptRunnerMode {
 		t.Errorf("PromptRunnerMode = %q, want %q", cfg.PromptRunnerMode, defaultPromptRunnerMode)
 	}
-	if cfg.DevPromptLimit != defaultDevPromptLimit {
-		t.Errorf("DevPromptLimit = %d, want %d", cfg.DevPromptLimit, defaultDevPromptLimit)
-	}
 	if cfg.AppBaseURL != "" {
 		t.Errorf("AppBaseURL = %q, want empty", cfg.AppBaseURL)
 	}
@@ -68,7 +65,6 @@ func TestLoadOverrides(t *testing.T) {
 		"OPENAI_RESPONSES_MODEL": "gpt-5.6-luna",
 		"OPENAI_ANALYSIS_MODEL":  "gpt-5.6-luna",
 		"PROMPT_RUNNER_MODE":     "replay",
-		"DEV_PROMPT_LIMIT":       "2",
 		"PROMPT_CONCURRENCY":     "4",
 	}
 
@@ -110,9 +106,6 @@ func TestLoadOverrides(t *testing.T) {
 	if cfg.PromptRunnerMode != PromptRunnerReplay {
 		t.Errorf("PromptRunnerMode = %q", cfg.PromptRunnerMode)
 	}
-	if cfg.DevPromptLimit != 2 {
-		t.Errorf("DevPromptLimit = %d", cfg.DevPromptLimit)
-	}
 	if cfg.PromptConcurrency != 4 {
 		t.Errorf("PromptConcurrency = %d", cfg.PromptConcurrency)
 	}
@@ -127,10 +120,10 @@ func TestLoadRejectsInvalidPromptRunnerMode(t *testing.T) {
 }
 
 func TestLoadRejectsInvalidPositiveInt(t *testing.T) {
-	env := map[string]string{"DEV_PROMPT_LIMIT": "0"}
+	env := map[string]string{"PROMPT_CONCURRENCY": "0"}
 
 	if _, err := LoadFromEnv(func(key string) string { return env[key] }); err == nil {
-		t.Fatal("expected zero DEV_PROMPT_LIMIT to return error")
+		t.Fatal("expected zero PROMPT_CONCURRENCY to return error")
 	}
 }
 

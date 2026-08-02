@@ -30,7 +30,7 @@ const (
 var _ opensightv1connect.BusinessServiceHandler = (*Server)(nil)
 
 // CreateBusiness inserts a draft business and starts GenerateProfileWorkflow
-// (design 03), mirroring handleCreateBusiness (businesses.go).
+// (design 03).
 func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensightv1.CreateBusinessRequest]) (*connect.Response[opensightv1.CreateBusinessResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "create business")
 	if cerr != nil {
@@ -56,7 +56,7 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 	if website != "" {
 		params.Website = &website
 	}
-	business, err := s.businesses.CreateBusiness(ctx, params)
+	business, err := s.store.CreateBusiness(ctx, params)
 	if err != nil {
 		return nil, s.rpcInternal("create business: insert", err)
 	}
@@ -76,8 +76,7 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 	}), nil
 }
 
-// GetBusiness returns the full business profile and plan, mirroring
-// handleGetBusiness (businesses.go).
+// GetBusiness returns the full business profile and plan.
 func (s *Server) GetBusiness(ctx context.Context, req *connect.Request[opensightv1.GetBusinessRequest]) (*connect.Response[opensightv1.GetBusinessResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "get business")
 	if cerr != nil {
@@ -88,7 +87,7 @@ func (s *Server) GetBusiness(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	business, err := s.businesses.GetBusiness(ctx, su.TenantID, businessID)
+	business, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get business", err)
 	}
@@ -100,8 +99,7 @@ func (s *Server) GetBusiness(ctx context.Context, req *connect.Request[opensight
 }
 
 // UpdateBusiness merges the request's present fields into the current active
-// profile and writes only the changed columns, mirroring handlePatchBusiness
-// (businesses.go).
+// profile and writes only the changed columns.
 func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensightv1.UpdateBusinessRequest]) (*connect.Response[opensightv1.UpdateBusinessResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "update business")
 	if cerr != nil {
@@ -112,7 +110,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, cerr
 	}
 
-	current, err := s.businesses.GetBusiness(ctx, su.TenantID, businessID)
+	current, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("update business", err)
 	}
@@ -181,7 +179,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 		location = &raw
 	}
 
-	updated, err := s.businesses.UpdateActiveProfile(ctx, store.UpdateBusinessProfileParams{
+	updated, err := s.store.UpdateActiveProfile(ctx, store.UpdateBusinessProfileParams{
 		TenantID: su.TenantID, BusinessID: businessID, Name: req.Msg.Name,
 		WebsiteSet: req.Msg.Website != nil, Website: website, Aliases: aliasesParam, Category: req.Msg.Category,
 		Services: services, Location: location,
@@ -198,7 +196,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 }
 
 // GetProposal reports generation status and, when ready, the pending
-// proposal payload (design 03), mirroring handleGetProposal (businesses.go).
+// proposal payload (design 03).
 func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensightv1.GetProposalRequest]) (*connect.Response[opensightv1.GetProposalResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "get proposal")
 	if cerr != nil {
@@ -209,7 +207,7 @@ func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	proposal, err := s.proposals.GetPending(ctx, su.TenantID, businessID)
+	proposal, err := s.store.GetPending(ctx, su.TenantID, businessID)
 	if err == nil {
 		payload, derr := llm.DecodeProposalPayload(proposal.Payload)
 		if derr != nil {
@@ -227,7 +225,7 @@ func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensight
 	// GetPending's ErrNotFound is ambiguous (missing/foreign business OR no
 	// pending row). Confirm ownership so a bad id 404s instead of masquerading
 	// as generating.
-	if _, err := s.businesses.GetBusiness(ctx, su.TenantID, businessID); err != nil {
+	if _, err := s.store.GetBusiness(ctx, su.TenantID, businessID); err != nil {
 		return nil, s.rpcError("get proposal", err)
 	}
 
@@ -242,7 +240,7 @@ func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensight
 }
 
 // RegenerateProposal discards the pending proposal and re-runs generation
-// (design 03), mirroring handleRegenProposal (businesses.go).
+// (design 03).
 func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[opensightv1.RegenerateProposalRequest]) (*connect.Response[opensightv1.RegenerateProposalResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "regen proposal")
 	if cerr != nil {
@@ -253,7 +251,7 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, cerr
 	}
 
-	business, err := s.businesses.GetBusiness(ctx, su.TenantID, businessID)
+	business, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("regen proposal", err)
 	}
@@ -261,7 +259,7 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, rpcFailedPrecondition("proposal can only be regenerated while the business is in draft")
 	}
 
-	if err := s.proposals.DiscardPending(ctx, su.TenantID, businessID); err != nil {
+	if err := s.store.DiscardPending(ctx, su.TenantID, businessID); err != nil {
 		return nil, s.rpcInternal("regen proposal: discard pending", err)
 	}
 
@@ -278,7 +276,7 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 	}}), nil
 }
 
-// ApplyProposal is the apply transaction plus first run (ONB-6, design 03
+// ApplyProposal is the apply transaction plus first run (design 03
 // "Review and apply"): it takes the final user-edited payload verbatim, activates
 // the business and inserts its prompts in one DB transaction (the only path that
 // writes profile values to businesses), then creates the weekly monitoring
@@ -287,7 +285,6 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 // commits but a Temporal call fails, the business is active and a client retry
 // gets FailedPrecondition (ErrBusinessNotDraft) — an accepted MVP gap,
 // mitigated by the idempotent schedule/run creation for any manual recovery.
-// Mirrors handleApplyBusiness (businesses.go).
 func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensightv1.ApplyProposalRequest]) (*connect.Response[opensightv1.ApplyProposalResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "apply business")
 	if cerr != nil {
@@ -327,7 +324,7 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 	}
 
 	now := nowUTC()
-	result, err := s.apply.Apply(ctx, store.ApplyProposalParams{
+	result, err := s.store.Apply(ctx, store.ApplyProposalParams{
 		TenantID:    su.TenantID,
 		BusinessID:  businessID,
 		Name:        payload.Profile.Name,

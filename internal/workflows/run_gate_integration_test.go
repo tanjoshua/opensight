@@ -8,7 +8,6 @@ import (
 
 	"opensight/internal/llm"
 	"opensight/internal/store"
-	testdb "opensight/internal/store/testdb"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/mock"
@@ -40,20 +39,22 @@ func TestRunWorkflowGateAgainstPostgres(t *testing.T) {
 	promptID := mustID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query229, promptID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query230, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query231, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query232, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Gate Tenant")
-	mustExec(t, db, ctx, testdb.Query233, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query234, promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 
 	// insertTenant leaves the subscription comped (AccessFull). Flip it to a
 	// never-paid state: comped=false and no Stripe subscription id at all,
 	// which billing.DeriveAccess maps to AccessNever.
-	subs := store.NewSubscriptionStore(db)
+	subs := store.New(db)
 	if err := subs.Upsert(ctx, store.UpsertSubscriptionParams{
 		TenantID: tenantID,
 		PlanCode: "starter",
@@ -68,14 +69,7 @@ func TestRunWorkflowGateAgainstPostgres(t *testing.T) {
 	}
 	runner := &countingRunner{inner: stub}
 
-	acts := &Activities{
-		Businesses:    store.NewBusinessStore(db),
-		Prompts:       store.NewPromptStore(db),
-		Runs:          store.NewRunStore(db),
-		Results:       store.NewResultStore(db),
-		Runner:        runner,
-		Subscriptions: subs,
-	}
+	acts := &Activities{Store: subs, Runner: runner}
 
 	var ts testsuite.WorkflowTestSuite
 	env := ts.NewTestWorkflowEnvironment()
@@ -110,7 +104,7 @@ func TestRunWorkflowGateAgainstPostgres(t *testing.T) {
 	}
 
 	var count int
-	if err := testdb.QueryRow(ctx, db, testdb.Query235, businessID, scheduledFor).Scan(&count); err != nil {
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM monitoring_runs WHERE business_id = $1 AND scheduled_for = $2", businessID, scheduledFor).Scan(&count); err != nil {
 		t.Fatalf("count runs: %v", err)
 	}
 	if count != 0 {

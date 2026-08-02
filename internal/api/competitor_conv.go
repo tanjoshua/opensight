@@ -68,9 +68,9 @@ func competitorStatusFromProto(s opensightv1.CompetitorStatus) (store.Competitor
 	}
 }
 
-// competitorRecordToProto mirrors competitorRecordToResponse (competitors.go):
-// the write-path shape returned by AddCompetitor, SetCompetitorStatus,
-// ReviewSuggestedAlias, and UpdateCompetitorAliases.
+// competitorRecordToProto builds the write-path shape returned by
+// AddCompetitor, SetCompetitorStatus, ReviewSuggestedAlias, and
+// UpdateCompetitorAliases.
 func competitorRecordToProto(record store.CompetitorRecord) *opensightv1.CompetitorRecord {
 	return &opensightv1.CompetitorRecord{
 		Id:               record.ID.String(),
@@ -83,8 +83,8 @@ func competitorRecordToProto(record store.CompetitorRecord) *opensightv1.Competi
 	}
 }
 
-// competitorSelfToProto mirrors competitorSelfResponse (competitors.go): the
-// business's own coverage over the shared analyzed base. Always non-nil.
+// competitorSelfToProto reports the business's own coverage over the shared
+// analyzed base. Always non-nil.
 func competitorSelfToProto(stats metrics.CompetitorStats) *opensightv1.CompetitorSelf {
 	return &opensightv1.CompetitorSelf{
 		TotalAnalyzed: int32(stats.TotalAnalyzed),
@@ -94,8 +94,8 @@ func competitorSelfToProto(stats metrics.CompetitorStats) *opensightv1.Competito
 	}
 }
 
-// competitorStatToProto mirrors competitorToResponse (competitors.go): one
-// competitor's full comparison stats (design 06/PRD §6).
+// competitorStatToProto builds one competitor's full comparison stats
+// (design 06/PRD §6).
 func competitorStatToProto(c metrics.CompetitorStat) *opensightv1.Competitor {
 	resp := &opensightv1.Competitor{
 		Id:               c.CompetitorID.String(),

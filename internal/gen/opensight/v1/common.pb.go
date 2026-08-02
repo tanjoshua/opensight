@@ -591,10 +591,9 @@ func (CitationSubject) EnumDescriptor() ([]byte, []int) {
 	return file_opensight_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
-// ProposalStatus is the onboarding profile-proposal workflow status
-// (internal/api/businesses.go: generating/ready/failed). This is distinct
-// from internal/store's ProfileProposalStatus (pending/applied/discarded),
-// which is a storage-layer concept never exposed over the API.
+// ProposalStatus is the onboarding profile-proposal workflow status. It is
+// distinct from the store's pending/applied/discarded lifecycle, which is a
+// persistence detail never exposed over the API.
 type ProposalStatus int32
 
 const (
@@ -925,9 +924,9 @@ func (x *BusinessSummary) GetStatus() BusinessStatus {
 	return BusinessStatus_BUSINESS_STATUS_UNSPECIFIED
 }
 
-// AccessDenied is the error detail attached to a rejected RPC (BILL-6
-// "Enforcement gate 1"): the access the caller actually has, so the SPA can
-// render the right billing state without parsing the error string.
+// AccessDenied is the error detail attached to a rejected RPC: the access the
+// caller actually has, so the SPA can render the right billing state without
+// parsing the error string.
 type AccessDenied struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Access        Access                 `protobuf:"varint,1,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
@@ -972,10 +971,9 @@ func (x *AccessDenied) GetAccess() Access {
 	return Access_ACCESS_UNSPECIFIED
 }
 
-// Plan is the tenant's plan config (internal/billing catalog). Lives here,
-// not business.proto: AuthService.GetMe (BILL-6) carries it alongside
-// Access, and BusinessProfile no longer does (a business's plan is the
-// tenant's plan, not a per-business fact).
+// Plan is the tenant's plan config (internal/billing catalog). It lives here
+// because AuthService.GetMe carries it alongside Access; a business's plan is
+// a tenant fact, not a per-business fact.
 type Plan struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Code        string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`

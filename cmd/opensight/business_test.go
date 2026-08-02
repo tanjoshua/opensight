@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"opensight/internal/config"
 )
 
 const validSpecYAML = `name: Roots! Advanced Endodontics
@@ -34,29 +30,15 @@ func writeSpec(t *testing.T, contents string) string {
 	return path
 }
 
-// TestRunBusinessCreateDispatches confirms the spec file is parsed into
-// store-ready fields and handed to createBusiness.
-func TestRunBusinessCreateDispatches(t *testing.T) {
-	var got businessCreateOptions
-	called := 0
-	deps := commandDeps{
-		createBusiness: func(_ context.Context, _ config.Config, opts businessCreateOptions, w io.Writer) error {
-			called++
-			got = opts
-			return nil
-		},
-	}
-
-	err := runWithDeps(context.Background(), []string{
-		"business", "create",
+// TestParseBusinessCreateArgs confirms the spec file is parsed into store-ready
+// fields.
+func TestParseBusinessCreateArgs(t *testing.T) {
+	got, err := parseBusinessCreateArgs([]string{
 		"--tenant", tenantIDForTest,
 		"--file", writeSpec(t, validSpecYAML),
-	}, deps)
+	})
 	if err != nil {
-		t.Fatalf("business create returned error: %v", err)
-	}
-	if called != 1 {
-		t.Fatalf("createBusiness called %d times, want 1", called)
+		t.Fatalf("parseBusinessCreateArgs: %v", err)
 	}
 	if got.TenantID.String() != tenantIDForTest {
 		t.Fatalf("tenant id = %s, want %s", got.TenantID, tenantIDForTest)
@@ -97,24 +79,17 @@ func TestBusinessCreateRejectsBadSpecs(t *testing.T) {
 }
 
 func TestBusinessCreateRequiresTenantAndFile(t *testing.T) {
-	deps := commandDeps{
-		createBusiness: func(context.Context, config.Config, businessCreateOptions, io.Writer) error {
-			t.Fatal("createBusiness should not be called")
-			return nil
-		},
-	}
-
 	for _, tc := range []struct {
 		name string
 		args []string
 		want string
 	}{
-		{"missing tenant", []string{"business", "create", "--file", "x.yaml"}, "--tenant is required"},
-		{"missing file", []string{"business", "create", "--tenant", tenantIDForTest}, "--file is required"},
-		{"bad tenant", []string{"business", "create", "--tenant", "nope", "--file", "x.yaml"}, "--tenant must be a UUID"},
+		{"missing tenant", []string{"--file", "x.yaml"}, "--tenant is required"},
+		{"missing file", []string{"--tenant", tenantIDForTest}, "--file is required"},
+		{"bad tenant", []string{"--tenant", "nope", "--file", "x.yaml"}, "--tenant must be a UUID"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := runWithDeps(context.Background(), tc.args, deps)
+			_, err := parseBusinessCreateArgs(tc.args)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error = %v, want containing %q", err, tc.want)
 			}

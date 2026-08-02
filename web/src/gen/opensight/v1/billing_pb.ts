@@ -269,8 +269,6 @@ export const BillingActionSchema: GenEnum<BillingAction> = /*@__PURE__*/
  */
 export const BillingService: GenService<{
   /**
-   * BILL-9
-   *
    * @generated from rpc opensight.v1.BillingService.GetBilling
    */
   getBilling: {
@@ -279,8 +277,6 @@ export const BillingService: GenService<{
     output: typeof GetBillingResponseSchema;
   },
   /**
-   * BILL-4
-   *
    * @generated from rpc opensight.v1.BillingService.StartCheckout
    */
   startCheckout: {
@@ -289,8 +285,6 @@ export const BillingService: GenService<{
     output: typeof StartCheckoutResponseSchema;
   },
   /**
-   * BILL-4
-   *
    * @generated from rpc opensight.v1.BillingService.ConfirmCheckout
    */
   confirmCheckout: {
@@ -299,8 +293,6 @@ export const BillingService: GenService<{
     output: typeof ConfirmCheckoutResponseSchema;
   },
   /**
-   * BILL-8
-   *
    * @generated from rpc opensight.v1.BillingService.CreatePortalSession
    */
   createPortalSession: {

@@ -13,7 +13,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.temporal.io/sdk/testsuite"
-	testdb "opensight/internal/store/testdb"
 )
 
 // countingRunner wraps a PromptRunner and records how many times RunPrompt was
@@ -57,23 +56,21 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 	promptID := mustID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query227, promptID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query228, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query229, promptID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query230, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query231, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query232, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompt_results WHERE prompt_id = $1", promptID)
+		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Activities Tenant")
-	mustExec(t, db, ctx, testdb.Query233, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query234, promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 
-	pool := db
-	businesses := store.NewBusinessStore(pool)
-	prompts := store.NewPromptStore(pool)
-	runs := store.NewRunStore(pool)
-	results := store.NewResultStore(pool)
+	repository := store.New(db)
 
 	loadInput := func(date time.Time) LoadRunSpecInput {
 		return LoadRunSpecInput{
@@ -90,7 +87,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stub runner: %v", err)
 		}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Runner: stub}
+		acts := &Activities{Store: repository, Runner: stub}
 		date := time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC)
 
 		first, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -112,7 +109,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		}
 
 		var count int
-		if err := testdb.QueryRow(ctx, db, testdb.Query235, businessID, date).Scan(&count); err != nil {
+		if err := db.QueryRow(ctx, "SELECT count(*) FROM monitoring_runs WHERE business_id = $1 AND scheduled_for = $2", businessID, date).Scan(&count); err != nil {
 			t.Fatalf("count runs: %v", err)
 		}
 		if count != 1 {
@@ -126,7 +123,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			t.Fatalf("stub runner: %v", err)
 		}
 		runner := &countingRunner{inner: stub}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Runner: runner}
+		acts := &Activities{Store: repository, Runner: runner}
 		date := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -160,7 +157,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 	})
 
 	t.Run("ExecutePrompt records terminal failure and returns nil", func(t *testing.T) {
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Runner: nonRetryableRunner{}}
+		acts := &Activities{Store: repository, Runner: nonRetryableRunner{}}
 		date := time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -192,7 +189,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			t.Fatalf("status = %q, want failed", out.Status)
 		}
 
-		result, err := results.GetResultByRunAndPrompt(ctx, spec.TenantID, spec.RunID, spec.Prompts[0].ID)
+		result, err := repository.GetResultByRunAndPrompt(ctx, spec.TenantID, spec.RunID, spec.Prompts[0].ID)
 		if err != nil {
 			t.Fatalf("get recorded result: %v", err)
 		}
@@ -206,7 +203,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stub runner: %v", err)
 		}
-		acts := &Activities{Businesses: businesses, Prompts: prompts, Runs: runs, Results: results, Runner: stub}
+		acts := &Activities{Store: repository, Runner: stub}
 		date := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -230,9 +227,9 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 	})
 }
 
-func mustExec(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, args ...any) {
+func mustExec(t *testing.T, db *pgxpool.Pool, ctx context.Context, query string, args ...any) {
 	t.Helper()
-	if _, err := testdb.Exec(ctx, db, query, args...); err != nil {
-		t.Fatalf("exec test query %d: %v", query, err)
+	if _, err := db.Exec(ctx, query, args...); err != nil {
+		t.Fatalf("exec %s: %v", query, err)
 	}
 }

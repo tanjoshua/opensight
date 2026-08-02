@@ -95,7 +95,7 @@ func (netIPResolver) LookupIPAddr(ctx context.Context, host string) ([]net.IPAdd
 
 type dialContextFunc func(context.Context, string, string) (net.Conn, error)
 
-// FetchSiteInput is the ONB-1 website fetch request.
+// FetchSiteInput is the website fetch request.
 type FetchSiteInput struct {
 	Website string
 }

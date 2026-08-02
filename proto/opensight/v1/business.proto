@@ -13,10 +13,9 @@ message Location {
   string country = 4;
 }
 
-// BusinessProfile is the full business detail (internal/api/businesses.go
-// businessDetailResponse). Plan entitlements are not a per-business fact —
-// they live on AuthService.GetMe (BILL-6) — so field 9 (the old `plan`
-// field) is reserved rather than reused.
+// BusinessProfile is the full business detail. Plan entitlements live on
+// AuthService.GetMe because they are tenant facts, not per-business facts.
+// Field 9 is reserved rather than reused to preserve wire compatibility.
 message BusinessProfile {
   string id = 1;
   BusinessStatus status = 2;
@@ -59,8 +58,7 @@ message ProposalPayload {
   repeated ProposalSource sources = 4;
 }
 
-// ProposalState is the GET/regen proposal body (internal/api/businesses.go
-// proposalStatusResponse).
+// ProposalState is the profile-generation state returned while onboarding.
 message ProposalState {
   ProposalStatus status = 1;
   // stage is present only while status is GENERATING.

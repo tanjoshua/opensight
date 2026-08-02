@@ -80,12 +80,8 @@ message CreatePortalSessionResponse {
 }
 
 service BillingService {
-  // BILL-9
   rpc GetBilling(GetBillingRequest) returns (GetBillingResponse);
-  // BILL-4
   rpc StartCheckout(StartCheckoutRequest) returns (StartCheckoutResponse);
-  // BILL-4
   rpc ConfirmCheckout(ConfirmCheckoutRequest) returns (ConfirmCheckoutResponse);
-  // BILL-8
   rpc CreatePortalSession(CreatePortalSessionRequest) returns (CreatePortalSessionResponse);
 }

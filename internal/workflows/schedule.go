@@ -114,8 +114,8 @@ func CreateMonitorSchedule(ctx context.Context, c ScheduleCreator, params Create
 }
 
 // SetMonitorSchedulePaused pauses or resumes a business's monitoring
-// Schedule on platform (design 08 "Schedule gate" — reconcile's gate 2,
-// BILL-5). A schedule that does not exist yet is success, not failure,
+// Schedule on platform (design 08 "Schedule gate" — reconcile's gate 2).
+// A schedule that does not exist yet is success, not failure,
 // mirroring CreateMonitorSchedule's AlreadyExists swallow: a tenant that
 // lapses before onboarding ever created a Schedule (or before an admin
 // re-seeds one) is a normal state, not an error the caller should surface.

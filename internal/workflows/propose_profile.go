@@ -10,7 +10,7 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-// ProposeProfileInput is the ONB-3 proposal request: the user-entered
+// ProposeProfileInput is the proposal request: the user-entered
 // name/website plus the FetchSite text (primary evidence, "" on fetch failure),
 // the web_search location hint, and the plan's prompt limit. The model does its
 // own web research; there is no separate research summary.
@@ -23,10 +23,10 @@ type ProposeProfileInput struct {
 }
 
 // ProposeProfileOutput carries the decoded proposal payload (Sources already
-// populated) for ONB-4 to persist. Proposed is false when validation still
-// failed after llm.MaxProposeProfileAttempts (mirrors AnalyzeResultOutput.
-// Analyzed) — ONB-4 must not write a profile_proposals row in that case; treat
-// it like a hard generation failure. OpenedOwnSite is true when the model's
+// populated) for GenerateProfileWorkflow to persist. Proposed is false when
+// validation still failed after llm.MaxProposeProfileAttempts — no
+// profile_proposals row may be written in that case; treat it like a hard
+// generation failure. OpenedOwnSite is true when the model's
 // web-search actions include an open_page on the business website's own domain,
 // i.e. it read the site itself — the workflow uses this to decide whether to
 // override low_confidence when FetchSite failed.
@@ -45,8 +45,8 @@ type ProposeProfileOutput struct {
 // runner error the runner marks non-retryable (400-class, content-policy
 // refusal) won't fix on retry, so it becomes non-retryable too; every other
 // error propagates for Temporal's default retry. A proposal that still fails
-// validation after the retry returns Proposed=false (not an error) so ONB-4's
-// failure posture decides what to do.
+// validation after the retry returns Proposed=false (not an error) so the
+// calling workflow's failure posture decides what to do.
 func (a *Activities) ProposeProfile(ctx context.Context, in ProposeProfileInput) (ProposeProfileOutput, error) {
 	name := strings.TrimSpace(in.Name)
 	if name == "" {

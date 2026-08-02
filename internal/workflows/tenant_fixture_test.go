@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"opensight/internal/domain"
-	testdb "opensight/internal/store/testdb"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -17,6 +16,6 @@ import (
 // comped=true on the starter plan is a valid tenant for all of them.
 func insertTenant(t *testing.T, db *pgxpool.Pool, ctx context.Context, tenantID domain.ID, name string) {
 	t.Helper()
-	mustExec(t, db, ctx, testdb.Query282, tenantID, name)
-	mustExec(t, db, ctx, testdb.Query283, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", tenantID, name)
+	mustExec(t, db, ctx, "INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, 'starter', true)", tenantID)
 }

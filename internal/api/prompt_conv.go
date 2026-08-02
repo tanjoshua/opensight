@@ -52,8 +52,7 @@ func int32Ptr(v *int) *int32 {
 	return &out
 }
 
-// promptToProto mirrors promptToLineageNode (prompts.go). CreatedAt is a
-// Timestamp here (unlike the date-only scheduled_for elsewhere).
+// promptToProto shapes a store.Prompt. CreatedAt is a Timestamp here (unlike the date-only scheduled_for elsewhere).
 func promptToProto(p store.Prompt) *opensightv1.Prompt {
 	node := &opensightv1.Prompt{
 		Id:        p.ID.String(),

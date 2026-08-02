@@ -49,13 +49,9 @@ const (
 
 // BillingServiceClient is a client for the opensight.v1.BillingService service.
 type BillingServiceClient interface {
-	// BILL-9
 	GetBilling(context.Context, *connect.Request[v1.GetBillingRequest]) (*connect.Response[v1.GetBillingResponse], error)
-	// BILL-4
 	StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error)
-	// BILL-4
 	ConfirmCheckout(context.Context, *connect.Request[v1.ConfirmCheckoutRequest]) (*connect.Response[v1.ConfirmCheckoutResponse], error)
-	// BILL-8
 	CreatePortalSession(context.Context, *connect.Request[v1.CreatePortalSessionRequest]) (*connect.Response[v1.CreatePortalSessionResponse], error)
 }
 
@@ -127,13 +123,9 @@ func (c *billingServiceClient) CreatePortalSession(ctx context.Context, req *con
 
 // BillingServiceHandler is an implementation of the opensight.v1.BillingService service.
 type BillingServiceHandler interface {
-	// BILL-9
 	GetBilling(context.Context, *connect.Request[v1.GetBillingRequest]) (*connect.Response[v1.GetBillingResponse], error)
-	// BILL-4
 	StartCheckout(context.Context, *connect.Request[v1.StartCheckoutRequest]) (*connect.Response[v1.StartCheckoutResponse], error)
-	// BILL-4
 	ConfirmCheckout(context.Context, *connect.Request[v1.ConfirmCheckoutRequest]) (*connect.Response[v1.ConfirmCheckoutResponse], error)
-	// BILL-8
 	CreatePortalSession(context.Context, *connect.Request[v1.CreatePortalSessionRequest]) (*connect.Response[v1.CreatePortalSessionResponse], error)
 }
 

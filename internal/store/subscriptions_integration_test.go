@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // TestSubscriptionStoreUpsertRoundTrips covers SubscriptionStore against real
@@ -29,12 +28,12 @@ func TestSubscriptionStoreUpsertRoundTrips(t *testing.T) {
 
 	tenantID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query210, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query211, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
-	mustExec(t, db, ctx, testdb.Query212, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Subscription Tenant')", tenantID)
 
-	subs := NewSubscriptionStore(db)
+	subs := New(db)
 
 	if _, err := subs.GetByTenant(ctx, tenantID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetByTenant before upsert = %v, want ErrNotFound", err)
@@ -123,12 +122,12 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 
 	tenantID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query213, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query214, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
-	mustExec(t, db, ctx, testdb.Query215, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Customer Id Tenant')", tenantID)
 
-	subs := NewSubscriptionStore(db)
+	subs := New(db)
 
 	if _, err := subs.SetStripeCustomerID(ctx, mustNewID(t), "cus_ghost"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("SetStripeCustomerID(unknown tenant) = %v, want ErrNotFound", err)

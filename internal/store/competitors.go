@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CompetitorStatus string
@@ -62,25 +61,13 @@ type UpdateCompetitorAliasesParams struct {
 	Aliases      []string
 }
 
-type CompetitorStore struct {
-	db *pgxpool.Pool
-}
-
-func NewCompetitorStore(db *pgxpool.Pool) *CompetitorStore {
-	return &CompetitorStore{db: db}
-}
-
-func (s *CompetitorStore) CreateManual(ctx context.Context, params CreateManualCompetitorParams) (CompetitorRecord, error) {
-	if s == nil || s.db == nil {
-		return CompetitorRecord{}, errors.New("competitor store database is required")
-	}
-
+func (s *Store) CreateManual(ctx context.Context, params CreateManualCompetitorParams) (CompetitorRecord, error) {
 	params, err := normalizeCreateManualCompetitorParams(params)
 	if err != nil {
 		return CompetitorRecord{}, err
 	}
 
-	row, err := queries(ctx, s.db).CreateManualCompetitor(ctx, storesqlc.CreateManualCompetitorParams{
+	row, err := s.q(ctx).CreateManualCompetitor(ctx, storesqlc.CreateManualCompetitorParams{
 		ID: params.ID, ID_2: params.BusinessID, TenantID: params.TenantID,
 		Name: params.Name, Website: params.Website, Aliases: params.Aliases,
 	})
@@ -93,10 +80,7 @@ func (s *CompetitorStore) CreateManual(ctx context.Context, params CreateManualC
 	return competitorFromSQLC(row), nil
 }
 
-func (s *CompetitorStore) SetStatus(ctx context.Context, params SetCompetitorStatusParams) (CompetitorRecord, error) {
-	if s == nil || s.db == nil {
-		return CompetitorRecord{}, errors.New("competitor store database is required")
-	}
+func (s *Store) SetStatus(ctx context.Context, params SetCompetitorStatusParams) (CompetitorRecord, error) {
 	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
 		return CompetitorRecord{}, err
 	}
@@ -107,7 +91,7 @@ func (s *CompetitorStore) SetStatus(ctx context.Context, params SetCompetitorSta
 		return CompetitorRecord{}, errors.New("competitor status must be tracked or dismissed")
 	}
 
-	row, err := queries(ctx, s.db).SetCompetitorStatus(ctx, storesqlc.SetCompetitorStatusParams{
+	row, err := s.q(ctx).SetCompetitorStatus(ctx, storesqlc.SetCompetitorStatusParams{
 		ID: params.CompetitorID, TenantID: params.TenantID, Status: string(params.Status),
 	})
 	if err != nil {
@@ -119,18 +103,15 @@ func (s *CompetitorStore) SetStatus(ctx context.Context, params SetCompetitorSta
 	return competitorFromSQLC(row), nil
 }
 
-func (s *CompetitorStore) ApproveSuggestedAlias(ctx context.Context, params SuggestedAliasParams) (CompetitorRecord, error) {
+func (s *Store) ApproveSuggestedAlias(ctx context.Context, params SuggestedAliasParams) (CompetitorRecord, error) {
 	return s.updateSuggestedAlias(ctx, params, true)
 }
 
-func (s *CompetitorStore) RejectSuggestedAlias(ctx context.Context, params SuggestedAliasParams) (CompetitorRecord, error) {
+func (s *Store) RejectSuggestedAlias(ctx context.Context, params SuggestedAliasParams) (CompetitorRecord, error) {
 	return s.updateSuggestedAlias(ctx, params, false)
 }
 
-func (s *CompetitorStore) UpdateAliases(ctx context.Context, params UpdateCompetitorAliasesParams) (CompetitorRecord, error) {
-	if s == nil || s.db == nil {
-		return CompetitorRecord{}, errors.New("competitor store database is required")
-	}
+func (s *Store) UpdateAliases(ctx context.Context, params UpdateCompetitorAliasesParams) (CompetitorRecord, error) {
 	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
 		return CompetitorRecord{}, err
 	}
@@ -138,7 +119,7 @@ func (s *CompetitorStore) UpdateAliases(ctx context.Context, params UpdateCompet
 		return CompetitorRecord{}, err
 	}
 	params.Aliases = normalizeAliases(params.Aliases)
-	row, err := queries(ctx, s.db).UpdateCompetitorAliases(ctx, storesqlc.UpdateCompetitorAliasesParams{
+	row, err := s.q(ctx).UpdateCompetitorAliases(ctx, storesqlc.UpdateCompetitorAliasesParams{
 		ID: params.CompetitorID, TenantID: params.TenantID, Aliases: params.Aliases,
 	})
 	if err != nil {
@@ -150,15 +131,12 @@ func (s *CompetitorStore) UpdateAliases(ctx context.Context, params UpdateCompet
 	return competitorFromSQLC(row), nil
 }
 
-func (s *CompetitorStore) updateSuggestedAlias(ctx context.Context, params SuggestedAliasParams, approve bool) (CompetitorRecord, error) {
-	if s == nil || s.db == nil {
-		return CompetitorRecord{}, errors.New("competitor store database is required")
-	}
+func (s *Store) updateSuggestedAlias(ctx context.Context, params SuggestedAliasParams, approve bool) (CompetitorRecord, error) {
 	params, err := normalizeSuggestedAliasParams(params)
 	if err != nil {
 		return CompetitorRecord{}, err
 	}
-	q := queries(ctx, s.db)
+	q := s.q(ctx)
 	var row storesqlc.Competitor
 	if approve {
 		row, err = q.ApproveSuggestedAlias(ctx, storesqlc.ApproveSuggestedAliasParams{

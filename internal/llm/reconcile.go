@@ -115,7 +115,7 @@ const (
 	SubjectSelf MatchSubject = "self"
 	// SubjectCompetitor is an existing competitor (see ExactMatch.CompetitorID).
 	SubjectCompetitor MatchSubject = "competitor"
-	// SubjectUnmatched found no exact match; the ANA-5 LLM pass judges these.
+	// SubjectUnmatched found no exact match; the LLM match pass judges these.
 	SubjectUnmatched MatchSubject = "unmatched"
 )
 

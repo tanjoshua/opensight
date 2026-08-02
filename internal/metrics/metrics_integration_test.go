@@ -8,7 +8,6 @@ import (
 	"opensight/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	testdb "opensight/internal/store/testdb"
 )
 
 // TestGatingRules is the one test suite the story asks for: it pins the metrics
@@ -46,31 +45,45 @@ func TestGatingRules(t *testing.T) {
 	b1 := mustNewID(t) // p1: has result_analyses + mentions, but run gate excludes it
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query020, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query021, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query022, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Metrics Tenant")
-	mustExec(t, db, ctx, testdb.Query023, businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
 	for _, p := range []domain.ID{p1, p2, p3, p4} {
-		mustExec(t, db, ctx, testdb.Query024, p, businessID)
+		mustExec(t, db, ctx, `
+			INSERT INTO prompts (id, business_id, text, status, created_at)
+			VALUES ($1, $2, 'q', 'active', '2026-07-06T00:00:00Z')`, p, businessID)
 	}
-	mustExec(t, db, ctx, testdb.Query025, rivalID, businessID)
-	mustExec(t, db, ctx, testdb.Query026, manualRivalID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, aliases, suggested_aliases, source, status)
+		VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], ARRAY['Rival Medical']::text[], 'discovered', 'discovered')`, rivalID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, source, status)
+		VALUES ($1, $2, 'Manual Rival', 'manual', 'tracked')`, manualRivalID, businessID)
 
 	// Run A: completed AND reconciled — the only run in the metrics base.
-	mustExec(t, db, ctx, testdb.Query027, runA, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-a', now(), now())`, runA, businessID)
 	// Run B: completed but analysis_completed_at NULL — must be excluded whole.
-	mustExec(t, db, ctx, testdb.Query028, runB, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-b', now())`, runB, businessID)
 
 	succeeded := func(id, runID, promptID domain.ID, at string) {
-		mustExec(t, db, ctx, testdb.Query029, id, runID, promptID, at)
+		mustExec(t, db, ctx, `
+			INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
+			VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}'::jsonb, '{"id":"r"}'::jsonb, 'text', $4, $4)`, id, runID, promptID, at)
 	}
 	succeeded(a1, runA, p1, "2026-07-06T00:00:00Z")
 	succeeded(a2, runA, p2, "2026-07-06T00:00:00Z")
 	succeeded(a3, runA, p3, "2026-07-06T00:00:00Z")
-	mustExec(t, db, ctx, testdb.Query030, a4, runA, p4)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompt_results (id, run_id, prompt_id, status, error, request, requested_at, completed_at)
+		VALUES ($1, $2, $3, 'failed', 'boom', '{}'::jsonb, now(), now())`, a4, runA, p4)
 	succeeded(b1, runB, p1, "2026-07-13T00:00:00Z") // later week; excluded by run gate
 
 	// result_analyses rows: a1, a2 (in base), and b1 (present but its run is not
@@ -82,7 +95,9 @@ func TestGatingRules(t *testing.T) {
 		} else {
 			s = sentiment
 		}
-		mustExec(t, db, ctx, testdb.Query031, id, s, keyword)
+		mustExec(t, db, ctx, `
+			INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
+			VALUES ($1, $2, ARRAY[$3::text]::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, id, s, keyword)
 	}
 	analysis(a1, "positive", "friendly")
 	analysis(a2, "", "expensive")
@@ -90,7 +105,9 @@ func TestGatingRules(t *testing.T) {
 
 	// citations: a1 -> example.com, a2 -> other.com, b1 -> excluded.com (run gate).
 	citation := func(id, resultID domain.ID, domainName string) {
-		mustExec(t, db, ctx, testdb.Query032, mustNewID(t), resultID, domainName)
+		mustExec(t, db, ctx, `
+			INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order)
+			VALUES ($1, $2, 'https://x', $3, 'other', 0)`, mustNewID(t), resultID, domainName)
 	}
 	citation(mustNewID(t), a1, "example.com")
 	citation(mustNewID(t), a2, "other.com")
@@ -99,10 +116,14 @@ func TestGatingRules(t *testing.T) {
 	// mentions (canonical). a3 gets a self mention despite having no analysis row,
 	// to prove the result_analyses gate — not the mention presence — decides.
 	selfM := func(resultID domain.ID, order int) {
-		mustExec(t, db, ctx, testdb.Query033, mustNewID(t), resultID, order)
+		mustExec(t, db, ctx, `
+			INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
+			VALUES ($1, $2, 'self', 'exact', $3, 'ex')`, mustNewID(t), resultID, order)
 	}
 	rivalM := func(resultID domain.ID, order int) {
-		mustExec(t, db, ctx, testdb.Query034, mustNewID(t), resultID, rivalID, order)
+		mustExec(t, db, ctx, `
+			INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+			VALUES ($1, $2, 'competitor', $3, 'exact', $4, 'ex')`, mustNewID(t), resultID, rivalID, order)
 	}
 	selfM(a1, 0)
 	rivalM(a1, 1)
@@ -245,9 +266,13 @@ func TestGatingRules(t *testing.T) {
 	// retire. This is the real-DB check of the per-day (added, retired, replaced)
 	// query. ---
 	p5, p6 := mustNewID(t), mustNewID(t)
-	mustExec(t, db, ctx, testdb.Query035, p2)
-	mustExec(t, db, ctx, testdb.Query036, p5, businessID, p2)
-	mustExec(t, db, ctx, testdb.Query037, p6, businessID)
+	mustExec(t, db, ctx, "UPDATE prompts SET status = 'retired', retired_at = '2026-07-20T10:00:00Z' WHERE id = $1", p2)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompts (id, business_id, text, status, replaces_prompt_id, created_at)
+		VALUES ($1, $2, 'q2', 'active', $3, '2026-07-20T10:00:00Z')`, p5, businessID, p2)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompts (id, business_id, text, status, created_at)
+		VALUES ($1, $2, 'q3', 'active', '2026-07-20T10:00:00Z')`, p6, businessID)
 
 	changes, err := m.PromptChanges(ctx, tenantID, businessID)
 	if err != nil {
@@ -289,25 +314,37 @@ func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
 	resultA, resultB := mustNewID(t), mustNewID(t)
 
 	t.Cleanup(func() {
-		_, _ = testdb.Exec(ctx, db, testdb.Query038, businessID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query039, tenantID)
-		_, _ = testdb.Exec(ctx, db, testdb.Query040, tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Competitor Trend Tenant")
-	mustExec(t, db, ctx, testdb.Query041, businessID, tenantID)
-	mustExec(t, db, ctx, testdb.Query042, promptID, businessID)
-	mustExec(t, db, ctx, testdb.Query043, competitorID, businessID)
-	mustExec(t, db, ctx, testdb.Query044, runA, businessID)
-	mustExec(t, db, ctx, testdb.Query045, runB, businessID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
+	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO competitors (id, business_id, name, aliases, source, status)
+		VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], 'manual', 'tracked')`, competitorID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-zero-a', now(), now())`, runA, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-zero-b', now(), now())`, runB, businessID)
 
 	succeeded := func(id, runID domain.ID, at string) {
-		mustExec(t, db, ctx, testdb.Query046, id, runID, promptID, at)
-		mustExec(t, db, ctx, testdb.Query047, id)
+		mustExec(t, db, ctx, `
+			INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
+			VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}'::jsonb, '{"id":"r"}'::jsonb, 'text', $4, $4)`, id, runID, promptID, at)
+		mustExec(t, db, ctx, `
+			INSERT INTO result_analyses (prompt_result_id, keywords, excerpts, analysis_model, extraction_version)
+			VALUES ($1, ARRAY['useful']::text[], '[]'::jsonb, 'gpt-5-mini', 1)`, id)
 	}
 	succeeded(resultA, runA, "2026-07-06T00:00:00Z")
 	succeeded(resultB, runB, "2026-07-13T00:00:00Z")
-	mustExec(t, db, ctx, testdb.Query048, mustNewID(t), resultA, competitorID)
+	mustExec(t, db, ctx, `
+		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+		VALUES ($1, $2, 'competitor', $3, 'exact', 0, 'Rival Clinic appears.')`, mustNewID(t), resultA, competitorID)
 
 	stats, err := New(db).CompetitorStats(ctx, tenantID, businessID)
 	if err != nil {
@@ -354,9 +391,9 @@ func mustNewID(t *testing.T) domain.ID {
 	return id
 }
 
-func mustExec(t *testing.T, db *pgxpool.Pool, ctx context.Context, query testdb.Query, args ...any) {
+func mustExec(t *testing.T, db *pgxpool.Pool, ctx context.Context, query string, args ...any) {
 	t.Helper()
-	if _, err := testdb.Exec(ctx, db, query, args...); err != nil {
-		t.Fatalf("exec test query %d: %v", query, err)
+	if _, err := db.Exec(ctx, query, args...); err != nil {
+		t.Fatalf("exec %s: %v", query, err)
 	}
 }

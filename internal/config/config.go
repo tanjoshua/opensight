@@ -33,7 +33,6 @@ const (
 	defaultAnalysisModel     = "gpt-5.6-luna"
 	defaultOnboardingModel   = "gpt-5.6-luna"
 	defaultPromptRunnerMode  = PromptRunnerStub
-	defaultDevPromptLimit    = 3
 	defaultPromptConcurrency = 2
 )
 
@@ -50,7 +49,6 @@ type Config struct {
 	OpenAIAnalysisModel   string
 	OpenAIOnboardingModel string
 	PromptRunnerMode      PromptRunnerMode
-	DevPromptLimit        int
 	PromptConcurrency     int
 	StripeSecretKey       string
 	StripeWebhookSecret   string
@@ -84,11 +82,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 	}
 
 	dbMaxOpenConns, err := getenvPositiveInt(getenv, "APP_DB_MAX_OPEN_CONNS", defaultDBMaxOpenConns)
-	if err != nil {
-		return Config{}, err
-	}
-
-	devPromptLimit, err := getenvPositiveInt(getenv, "DEV_PROMPT_LIMIT", defaultDevPromptLimit)
 	if err != nil {
 		return Config{}, err
 	}
@@ -132,7 +125,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		OpenAIAnalysisModel:         getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
 		OpenAIOnboardingModel:       getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
 		PromptRunnerMode:            mode,
-		DevPromptLimit:              devPromptLimit,
 		PromptConcurrency:           promptConcurrency,
 		StripeSecretKey:             stripeSecretKey,
 		StripeWebhookSecret:         stripeWebhookSecret,

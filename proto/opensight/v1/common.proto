@@ -12,7 +12,7 @@ package opensight.v1;
 //   - No RPC method in this schema is ever declared side-effect-free /
 //     idempotent-safe-for-GET. Doing so would let Connect accept the RPC as a
 //     header-less GET with a query-string-encoded payload, which bypasses
-//     `connect.WithRequireConnectProtocolHeader()` (RPC-3) — that header is
+//     `connect.WithRequireConnectProtocolHeader()` — that header is
 //     this API's CSRF guarantee, since a cross-site GET/form-POST cannot set
 //     custom headers. Every mutation and every read alike goes over POST with
 //     the Connect protocol header required.
@@ -124,10 +124,9 @@ enum CitationSubject {
   CITATION_SUBJECT_UNKNOWN = 4;
 }
 
-// ProposalStatus is the onboarding profile-proposal workflow status
-// (internal/api/businesses.go: generating/ready/failed). This is distinct
-// from internal/store's ProfileProposalStatus (pending/applied/discarded),
-// which is a storage-layer concept never exposed over the API.
+// ProposalStatus is the onboarding profile-proposal workflow status. It is
+// distinct from the store's pending/applied/discarded lifecycle, which is a
+// persistence detail never exposed over the API.
 enum ProposalStatus {
   PROPOSAL_STATUS_UNSPECIFIED = 0;
   PROPOSAL_STATUS_GENERATING = 1;
@@ -153,17 +152,16 @@ enum Access {
   ACCESS_LAPSED = 3;
 }
 
-// AccessDenied is the error detail attached to a rejected RPC (BILL-6
-// "Enforcement gate 1"): the access the caller actually has, so the SPA can
-// render the right billing state without parsing the error string.
+// AccessDenied is the error detail attached to a rejected RPC: the access the
+// caller actually has, so the SPA can render the right billing state without
+// parsing the error string.
 message AccessDenied {
   Access access = 1;
 }
 
-// Plan is the tenant's plan config (internal/billing catalog). Lives here,
-// not business.proto: AuthService.GetMe (BILL-6) carries it alongside
-// Access, and BusinessProfile no longer does (a business's plan is the
-// tenant's plan, not a per-business fact).
+// Plan is the tenant's plan config (internal/billing catalog). It lives here
+// because AuthService.GetMe carries it alongside Access; a business's plan is
+// a tenant fact, not a per-business fact.
 message Plan {
   string code = 1;
   int32 prompt_limit = 2;

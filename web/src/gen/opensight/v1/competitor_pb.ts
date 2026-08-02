@@ -367,8 +367,8 @@ export const AddCompetitorResponseSchema: GenMessage<AddCompetitorResponse> = /*
  * SetCompetitorStatusRequest merges the track/dismiss pair into one RPC — the
  * server already funnels both through one store method, and the frontend
  * already calls both through one function with a discriminator argument.
- * Only TRACKED and DISMISSED are valid inputs; that is enforced server-side
- * (added in RPC-6, not this schema-only story).
+ * Only TRACKED and DISMISSED are valid inputs; the server rejects every other
+ * enum value.
  *
  * @generated from message opensight.v1.SetCompetitorStatusRequest
  */

@@ -8,24 +8,24 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 
-// Placeholder body for sections whose real UI lands in a later story.
-export function SectionPlaceholder({
+// The standard body for a section that has nothing to show: an error, an
+// empty list, or a not-found. Each section passes the icon it is identified
+// by, so the message still reads as part of that section.
+export function SectionMessage({
   title,
   description,
   icon: Icon,
 }: {
   title: string
   description: string
-  icon?: LucideIcon
+  icon: LucideIcon
 }) {
   return (
     <Empty className="border">
       <EmptyHeader>
-        {Icon && (
-          <EmptyMedia variant="icon">
-            <Icon />
-          </EmptyMedia>
-        )}
+        <EmptyMedia variant="icon">
+          <Icon />
+        </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>
       </EmptyHeader>

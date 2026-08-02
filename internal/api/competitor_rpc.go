@@ -4,10 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
-	"opensight/internal/metrics"
 	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
@@ -20,25 +18,9 @@ const (
 	maxCompetitorLimit     = 100
 )
 
-// competitorsMetrics is the metrics seam for the Competitors section (MET-4).
-// CompetitorStats is tenant-scoped and computes over the shared analyzed base
-// (MET-1), so a competitor's mention % and the business's own visibility % are
-// always measured against the identical result set.
-type competitorsMetrics interface {
-	CompetitorStats(ctx context.Context, tenantID, businessID domain.ID) (metrics.CompetitorStats, error)
-}
-
-type competitorStore interface {
-	CreateManual(ctx context.Context, params store.CreateManualCompetitorParams) (store.CompetitorRecord, error)
-	SetStatus(ctx context.Context, params store.SetCompetitorStatusParams) (store.CompetitorRecord, error)
-	ApproveSuggestedAlias(ctx context.Context, params store.SuggestedAliasParams) (store.CompetitorRecord, error)
-	RejectSuggestedAlias(ctx context.Context, params store.SuggestedAliasParams) (store.CompetitorRecord, error)
-	UpdateAliases(ctx context.Context, params store.UpdateCompetitorAliasesParams) (store.CompetitorRecord, error)
-}
-
 // ListCompetitors serves every competitor's comparison stats, coverage-
-// ranked, with an optional status filter and limit/offset pagination
-// (MET-4). GetBusiness is the ownership gate — it must run before
+// ranked, with an optional status filter and limit/offset pagination.
+// GetBusiness is the ownership gate — it must run before
 // CompetitorStats, which returns an empty-but-successful result (not an
 // error) for an unowned business.
 func (s *Server) ListCompetitors(ctx context.Context, req *connect.Request[opensightv1.ListCompetitorsRequest]) (*connect.Response[opensightv1.ListCompetitorsResponse], error) {
@@ -61,11 +43,11 @@ func (s *Server) ListCompetitors(ctx context.Context, req *connect.Request[opens
 	}
 	limit, offset := rpcPaging(req.Msg.Limit, req.Msg.Offset, defaultCompetitorLimit, maxCompetitorLimit)
 
-	if _, err := s.businesses.GetBusiness(ctx, su.TenantID, businessID); err != nil {
+	if _, err := s.store.GetBusiness(ctx, su.TenantID, businessID); err != nil {
 		return nil, s.rpcError("list competitors", err)
 	}
 
-	stats, err := s.competitorMetrics.CompetitorStats(ctx, su.TenantID, businessID)
+	stats, err := s.metrics.CompetitorStats(ctx, su.TenantID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list competitors: competitor stats", err)
 	}
@@ -73,7 +55,7 @@ func (s *Server) ListCompetitors(ctx context.Context, req *connect.Request[opens
 	// Filter by status (display filter), then page. CompetitorStats is
 	// already coverage-desc, so the filtered slice keeps that ranking. The
 	// [:0:0] re-slice prevents append from clobbering the shared metrics
-	// slice (mirrors handleListCompetitors).
+	// slice.
 	filtered := stats.Competitors
 	if statusFilter != "" {
 		filtered = stats.Competitors[:0:0]
@@ -98,10 +80,9 @@ func (s *Server) ListCompetitors(ctx context.Context, req *connect.Request[opens
 	return connect.NewResponse(resp), nil
 }
 
-// AddCompetitor adds a manually-tracked competitor, mirroring
-// handleAddCompetitor (competitors.go). Name is validated trimmed but stored
-// raw, matching REST's existing wart. Blank alias members are not validated
-// here — only UpdateCompetitorAliases does that, matching REST's asymmetry.
+// AddCompetitor adds a manually-tracked competitor. Name is validated trimmed
+// but stored raw. Blank alias members are not validated here — only
+// UpdateCompetitorAliases does that.
 func (s *Server) AddCompetitor(ctx context.Context, req *connect.Request[opensightv1.AddCompetitorRequest]) (*connect.Response[opensightv1.AddCompetitorResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "add competitor")
 	if cerr != nil {
@@ -119,7 +100,7 @@ func (s *Server) AddCompetitor(ctx context.Context, req *connect.Request[opensig
 		website = &value
 	}
 
-	record, err := s.competitors.CreateManual(ctx, store.CreateManualCompetitorParams{
+	record, err := s.store.CreateManual(ctx, store.CreateManualCompetitorParams{
 		TenantID:   su.TenantID,
 		BusinessID: businessID,
 		Name:       req.Msg.Name,
@@ -133,14 +114,13 @@ func (s *Server) AddCompetitor(ctx context.Context, req *connect.Request[opensig
 	return connect.NewResponse(&opensightv1.AddCompetitorResponse{Competitor: competitorRecordToProto(record)}), nil
 }
 
-// SetCompetitorStatus merges the track/dismiss pair into one RPC (schema
-// decision from RPC-2), mirroring handleSetCompetitorStatus (competitors.go).
+// SetCompetitorStatus merges the track/dismiss pair into one RPC.
 // Only TRACKED and DISMISSED are settable; the switch below must catch
 // UNSPECIFIED, DISCOVERED, and any unrecognized enum number before the store
 // call — the store also rejects DISCOVERED, but with a plain error that
 // rpcError maps to CodeInternal, the wrong code for a client fault.
 // Re-setting an already-tracked/dismissed competitor is allowed and
-// idempotent, matching REST's unconditional UPDATE.
+// idempotent: the store issues an unconditional UPDATE.
 func (s *Server) SetCompetitorStatus(ctx context.Context, req *connect.Request[opensightv1.SetCompetitorStatusRequest]) (*connect.Response[opensightv1.SetCompetitorStatusResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "set competitor status")
 	if cerr != nil {
@@ -161,7 +141,7 @@ func (s *Server) SetCompetitorStatus(ctx context.Context, req *connect.Request[o
 		return nil, rpcInvalidArgument("status must be tracked or dismissed")
 	}
 
-	record, err := s.competitors.SetStatus(ctx, store.SetCompetitorStatusParams{
+	record, err := s.store.SetStatus(ctx, store.SetCompetitorStatusParams{
 		TenantID:     su.TenantID,
 		CompetitorID: competitorID,
 		Status:       status,
@@ -173,8 +153,7 @@ func (s *Server) SetCompetitorStatus(ctx context.Context, req *connect.Request[o
 	return connect.NewResponse(&opensightv1.SetCompetitorStatusResponse{Competitor: competitorRecordToProto(record)}), nil
 }
 
-// ReviewSuggestedAlias merges the approve/reject pair into one RPC (schema
-// decision from RPC-2), mirroring handleSuggestedAlias (competitors.go). The
+// ReviewSuggestedAlias merges the approve/reject pair into one RPC. The
 // decision check runs before the alias check — a request with both an
 // invalid decision and a blank alias must report the decision failure (same
 // precedent as ReplacePrompt's confirmed-before-text ordering). The alias is
@@ -209,9 +188,9 @@ func (s *Server) ReviewSuggestedAlias(ctx context.Context, req *connect.Request[
 	var record store.CompetitorRecord
 	var err error
 	if approve {
-		record, err = s.competitors.ApproveSuggestedAlias(ctx, params)
+		record, err = s.store.ApproveSuggestedAlias(ctx, params)
 	} else {
-		record, err = s.competitors.RejectSuggestedAlias(ctx, params)
+		record, err = s.store.RejectSuggestedAlias(ctx, params)
 	}
 	if err != nil {
 		return nil, s.rpcError("review suggested alias", err)
@@ -220,8 +199,8 @@ func (s *Server) ReviewSuggestedAlias(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&opensightv1.ReviewSuggestedAliasResponse{Competitor: competitorRecordToProto(record)}), nil
 }
 
-// UpdateCompetitorAliases replaces a competitor's approved alias list,
-// mirroring handlePatchCompetitorAliases (competitors.go). The StringList
+// UpdateCompetitorAliases replaces a competitor's approved alias list. The
+// StringList
 // wrapper distinguishes three states a bare repeated field cannot: the field
 // entirely omitted (nil pointer, 400), present-but-empty (legitimate
 // clear-all), and present-with-values (replace).
@@ -248,7 +227,7 @@ func (s *Server) UpdateCompetitorAliases(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	record, err := s.competitors.UpdateAliases(ctx, store.UpdateCompetitorAliasesParams{
+	record, err := s.store.UpdateAliases(ctx, store.UpdateCompetitorAliasesParams{
 		TenantID:     su.TenantID,
 		CompetitorID: competitorID,
 		Aliases:      aliases,

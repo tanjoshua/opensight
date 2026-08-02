@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -17,6 +15,8 @@ func TestRunKnownSubcommands(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
+	// serve, work, and migrate all short-circuit on a cancelled context before
+	// touching the database or Temporal, so this exercises dispatch only.
 	for _, cmd := range []string{"serve", "work", "migrate"} {
 		if err := run(ctx, []string{cmd}); err != nil {
 			t.Errorf("run(%q) returned error: %v", cmd, err)
@@ -24,53 +24,32 @@ func TestRunKnownSubcommands(t *testing.T) {
 	}
 }
 
-func TestRunNoSubcommand(t *testing.T) {
-	if err := run(context.Background(), nil); err == nil {
-		t.Fatal("expected error when no subcommand is given")
-	}
-}
-
-func TestRunUnknownSubcommand(t *testing.T) {
-	if err := run(context.Background(), []string{"bogus"}); err == nil {
-		t.Fatal("expected error for unknown subcommand")
-	}
-}
-
-func TestRunDoesNotMigrateOnServeOrWorkStartup(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	deps := commandDeps{
-		migrate: func(context.Context, config.Config) error {
-			t.Fatal("migrate should not be called by serve or work")
-			return nil
-		},
-	}
-
-	for _, cmd := range []string{"serve", "work"} {
-		if err := runWithDeps(ctx, []string{cmd}, deps); err != nil {
-			t.Errorf("runWithDeps(%q) returned error: %v", cmd, err)
-		}
-	}
-}
-
-func TestRunMigrateUsesExplicitMigrateSubcommand(t *testing.T) {
-	wantErr := errors.New("sentinel")
-	called := 0
-
-	deps := commandDeps{
-		migrate: func(context.Context, config.Config) error {
-			called++
-			return wantErr
-		},
-	}
-
-	err := runWithDeps(context.Background(), []string{"migrate"}, deps)
-	if !errors.Is(err, wantErr) {
-		t.Fatalf("runWithDeps(migrate) error = %v, want %v", err, wantErr)
-	}
-	if called != 1 {
-		t.Fatalf("migrate called %d times, want 1", called)
+func TestRunRejectsUnknownAndMissingSubcommands(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"no subcommand", nil, "no subcommand given"},
+		{"unknown subcommand", []string{"bogus"}, "unknown subcommand"},
+		{"missing tenant subcommand", []string{"tenant"}, "tenant subcommand required"},
+		{"unknown tenant subcommand", []string{"tenant", "bogus"}, "unknown tenant subcommand"},
+		{"missing user subcommand", []string{"user"}, "user subcommand required"},
+		{"unknown user subcommand", []string{"user", "bogus"}, "unknown user subcommand"},
+		{"missing business subcommand", []string{"business"}, "business subcommand required"},
+		{"unknown business subcommand", []string{"business", "bogus"}, "unknown business subcommand"},
+		{"missing seed subcommand", []string{"seed"}, "seed subcommand required"},
+		{"unknown seed subcommand", []string{"seed", "prod"}, "unknown seed subcommand"},
+		{"seed dev extra argument", []string{"seed", "dev", "extra"}, "unexpected argument"},
+		{"missing stripe subcommand", []string{"stripe"}, "stripe subcommand required"},
+		{"unknown stripe subcommand", []string{"stripe", "bogus"}, "unknown stripe subcommand"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := run(context.Background(), tc.args)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want containing %q", err, tc.want)
+			}
+		})
 	}
 }
 
@@ -108,213 +87,100 @@ func TestValidateStripeRuntimeConfig(t *testing.T) {
 	}
 }
 
-func TestRunTenantCreateDispatches(t *testing.T) {
-	var out bytes.Buffer
-	var got tenantCreateOptions
-	called := 0
-
-	deps := commandDeps{
-		stdout: &out,
-		createTenant: func(_ context.Context, _ config.Config, opts tenantCreateOptions, w io.Writer) error {
-			called++
-			got = opts
-			_, _ = fmt.Fprintln(w, "created")
-			return nil
-		},
+func TestParseTenantCreateArgs(t *testing.T) {
+	opts, err := parseTenantCreateArgs([]string{"--name", "  Acme Clinic  "})
+	if err != nil {
+		t.Fatalf("parseTenantCreateArgs: %v", err)
+	}
+	if opts.Name != "Acme Clinic" {
+		t.Fatalf("tenant name = %q, want %q", opts.Name, "Acme Clinic")
 	}
 
-	if err := runWithDeps(context.Background(), []string{"tenant", "create", "--name", "  Acme Clinic  "}, deps); err != nil {
-		t.Fatalf("tenant create returned error: %v", err)
-	}
-	if called != 1 {
-		t.Fatalf("createTenant called %d times, want 1", called)
-	}
-	if got.Name != "Acme Clinic" {
-		t.Fatalf("tenant name = %q, want %q", got.Name, "Acme Clinic")
-	}
-	if out.String() != "created\n" {
-		t.Fatalf("stdout = %q, want created line", out.String())
+	if _, err := parseTenantCreateArgs(nil); err == nil || !strings.Contains(err.Error(), "--name is required") {
+		t.Fatalf("error = %v, want missing-name error", err)
 	}
 }
 
-func TestRunSeedDevDispatches(t *testing.T) {
-	var out bytes.Buffer
-	called := 0
-	deps := commandDeps{
-		stdout: &out,
-		seedDev: func(_ context.Context, _ config.Config, w io.Writer) error {
-			called++
-			_, _ = fmt.Fprintln(w, "seeded")
-			return nil
-		},
-	}
-
-	if err := runWithDeps(context.Background(), []string{"seed", "dev"}, deps); err != nil {
-		t.Fatalf("seed dev returned error: %v", err)
-	}
-	if called != 1 {
-		t.Fatalf("seedDev called %d times, want 1", called)
-	}
-	if out.String() != "seeded\n" {
-		t.Fatalf("stdout = %q, want seeded line", out.String())
-	}
-}
-
-func TestRunSeedRejectsUnknownSubcommand(t *testing.T) {
-	deps := commandDeps{
-		seedDev: func(context.Context, config.Config, io.Writer) error {
-			t.Fatal("seedDev should not be called")
-			return nil
-		},
-	}
-
-	if err := runWithDeps(context.Background(), []string{"seed", "prod"}, deps); err == nil {
-		t.Fatal("expected error for unknown seed subcommand")
-	}
-}
-
-func TestRunTenantCreateRequiresName(t *testing.T) {
-	deps := commandDeps{
-		createTenant: func(context.Context, config.Config, tenantCreateOptions, io.Writer) error {
-			t.Fatal("createTenant should not be called")
-			return nil
-		},
-	}
-
-	err := runWithDeps(context.Background(), []string{"tenant", "create"}, deps)
-	if err == nil || !strings.Contains(err.Error(), "--name is required") {
-		t.Fatalf("tenant create error = %v, want missing-name error", err)
-	}
-}
-
-func TestRunUserCreateDispatchesWithStdinPassword(t *testing.T) {
-	var got userCreateOptions
-	called := 0
+func TestParseUserCreateArgsStdinPassword(t *testing.T) {
 	generateCalled := false
-
-	deps := commandDeps{
-		stdin: strings.NewReader("set-password\n"),
-		createUser: func(_ context.Context, _ config.Config, opts userCreateOptions, _ io.Writer) error {
-			called++
-			got = opts
-			return nil
-		},
-		generatePassword: func() (string, error) {
-			generateCalled = true
-			return "generated-password", nil
-		},
+	generate := func() (string, error) {
+		generateCalled = true
+		return "generated-password", nil
 	}
 
-	err := runWithDeps(context.Background(), []string{
-		"user", "create",
+	opts, err := parseUserCreateArgs([]string{
 		"--tenant", tenantIDForTest,
 		"--email", "  Owner@Example.com  ",
 		"--password-stdin",
-	}, deps)
+	}, generate, strings.NewReader("set-password\n"))
 	if err != nil {
-		t.Fatalf("user create returned error: %v", err)
-	}
-	if called != 1 {
-		t.Fatalf("createUser called %d times, want 1", called)
+		t.Fatalf("parseUserCreateArgs: %v", err)
 	}
 	if generateCalled {
-		t.Fatal("generatePassword was called despite --password")
+		t.Fatal("generatePassword was called despite --password-stdin")
 	}
-	if got.TenantID.String() != tenantIDForTest {
-		t.Fatalf("tenant id = %s, want %s", got.TenantID, tenantIDForTest)
+	if opts.TenantID.String() != tenantIDForTest {
+		t.Fatalf("tenant id = %s, want %s", opts.TenantID, tenantIDForTest)
 	}
-	if got.Email != "Owner@Example.com" {
-		t.Fatalf("email = %q, want trimmed email preserving case", got.Email)
+	if opts.Email != "Owner@Example.com" {
+		t.Fatalf("email = %q, want trimmed email preserving case", opts.Email)
 	}
-	if got.Password != "set-password" {
-		t.Fatalf("password = %q, want stdin password", got.Password)
+	if opts.Password != "set-password" {
+		t.Fatalf("password = %q, want stdin password", opts.Password)
 	}
-	if got.GeneratedPassword {
+	if opts.GeneratedPassword {
 		t.Fatal("GeneratedPassword = true for stdin password")
 	}
 }
 
-func TestRunUserCreateGeneratesPasswordByDefault(t *testing.T) {
-	var got userCreateOptions
-	deps := commandDeps{
-		createUser: func(_ context.Context, _ config.Config, opts userCreateOptions, _ io.Writer) error {
-			got = opts
-			return nil
-		},
-		generatePassword: func() (string, error) {
-			return "generated-password", nil
-		},
-	}
+func TestParseUserCreateArgsGeneratesPasswordByDefault(t *testing.T) {
+	generate := func() (string, error) { return "generated-password", nil }
 
-	err := runWithDeps(context.Background(), []string{
-		"user", "create",
+	opts, err := parseUserCreateArgs([]string{
 		"--tenant", tenantIDForTest,
 		"--email", "owner@example.com",
-	}, deps)
+	}, generate, nil)
 	if err != nil {
-		t.Fatalf("user create returned error: %v", err)
+		t.Fatalf("parseUserCreateArgs: %v", err)
 	}
-	if got.Password != "generated-password" {
-		t.Fatalf("password = %q, want generated password", got.Password)
+	if opts.Password != "generated-password" {
+		t.Fatalf("password = %q, want generated password", opts.Password)
 	}
-	if !got.GeneratedPassword {
+	if !opts.GeneratedPassword {
 		t.Fatal("GeneratedPassword = false, want true")
 	}
 }
 
-func TestRunUserCreateRejectsEmptyStdinPassword(t *testing.T) {
-	deps := commandDeps{
-		stdin: strings.NewReader("\n"),
-		createUser: func(context.Context, config.Config, userCreateOptions, io.Writer) error {
-			t.Fatal("createUser should not be called")
-			return nil
-		},
-	}
+func TestParseUserCreateArgsRejectsBadInput(t *testing.T) {
+	generate := func() (string, error) { return "generated-password", nil }
 
-	err := runWithDeps(context.Background(), []string{
-		"user", "create",
-		"--tenant", tenantIDForTest,
-		"--email", "owner@example.com",
-		"--password-stdin",
-	}, deps)
-	if err == nil || !strings.Contains(err.Error(), "password from stdin is required") {
-		t.Fatalf("user create error = %v, want empty-stdin error", err)
-	}
-}
-
-func TestRunUserCreateRequiresTenantUUIDAndEmail(t *testing.T) {
 	for _, tc := range []struct {
-		name string
-		args []string
-		want string
+		name  string
+		args  []string
+		stdin io.Reader
+		want  string
 	}{
+		{"missing tenant", []string{"--email", "owner@example.com"}, nil, "--tenant is required"},
+		{"bad tenant", []string{"--tenant", "not-a-uuid", "--email", "owner@example.com"}, nil, "--tenant must be a UUID"},
+		{"missing email", []string{"--tenant", tenantIDForTest}, nil, "--email is required"},
 		{
-			name: "missing tenant",
-			args: []string{"user", "create", "--email", "owner@example.com"},
-			want: "--tenant is required",
-		},
-		{
-			name: "bad tenant",
-			args: []string{"user", "create", "--tenant", "not-a-uuid", "--email", "owner@example.com"},
-			want: "--tenant must be a UUID",
-		},
-		{
-			name: "missing email",
-			args: []string{"user", "create", "--tenant", tenantIDForTest},
-			want: "--email is required",
+			name:  "empty stdin password",
+			args:  []string{"--tenant", tenantIDForTest, "--email", "owner@example.com", "--password-stdin"},
+			stdin: strings.NewReader("\n"),
+			want:  "password from stdin is required",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := runWithDeps(context.Background(), tc.args, commandDeps{
-				createUser: func(context.Context, config.Config, userCreateOptions, io.Writer) error {
-					t.Fatal("createUser should not be called")
-					return nil
-				},
-			})
-			if err == nil || !strings.Contains(err.Error(), tc.want) {
+			if _, err := parseUserCreateArgs(tc.args, generate, tc.stdin); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error = %v, want containing %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestReadPasswordFromStdinRejectsOverlongInput(t *testing.T) {
+	if _, err := readPasswordFromStdin(strings.NewReader(strings.Repeat("a", 2049))); err == nil {
+		t.Fatal("expected error for an over-long stdin password")
 	}
 }
 

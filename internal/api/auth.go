@@ -20,7 +20,7 @@ const sessionCookieName = "opensight_session"
 var errNoSession = errors.New("no session")
 
 // requestContext holds the session and its derived access under one context
-// key (BILL-6), so the two can never be set independently of each other by
+// key, so the two can never be set independently of each other by
 // accident. hasAccess distinguishes "access was derived this request" from
 // the zero billing.AccessNever, for callers (like handler tests) that set
 // only a session via withSessionUser and never call accessFromContext.
@@ -59,7 +59,7 @@ func sessionUserFromContext(ctx context.Context) (store.SessionUser, bool) {
 	return rc.su, true
 }
 
-// accessFromContext returns the request's derived access (BILL-6), set by
+// accessFromContext returns the request's derived access, set by
 // accessInterceptor for every non-public procedure. Handler unit tests that
 // construct a context via withSessionUser alone (bypassing the interceptor)
 // get ok=false.
@@ -133,7 +133,7 @@ func (s *Server) sessionFromHeader(ctx context.Context, h http.Header) (store.Se
 		return store.SessionUser{}, errNoSession
 	}
 
-	su, err := s.auth.GetSession(ctx, hashSessionToken(raw))
+	su, err := s.store.GetSession(ctx, hashSessionToken(raw))
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return store.SessionUser{}, errNoSession

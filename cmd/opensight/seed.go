@@ -38,10 +38,8 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 	}
 	defer db.Close()
 
-	account := store.NewAccountStore(db)
-	authStore := store.NewAuthStore(db)
-	subscriptions := store.NewSubscriptionStore(db)
-	if _, err := authStore.GetUserCredentials(ctx, seedEmail); err == nil {
+	dataStore := store.New(db)
+	if _, err := dataStore.GetUserCredentials(ctx, seedEmail); err == nil {
 		_, err = fmt.Fprintln(out, "dev account already seeded; nothing to do")
 		return err
 	} else if !errors.Is(err, store.ErrNotFound) {
@@ -50,8 +48,8 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 
 	// If a previous attempt stopped after creating the tenant, reuse it and
 	// finish creating the account.
-	if _, err := subscriptions.GetByTenant(ctx, seedTenantID); errors.Is(err, store.ErrNotFound) {
-		if _, err := account.CreateTenant(ctx, store.CreateTenantParams{ID: seedTenantID, Name: seedTenantName}); err != nil {
+	if _, err := dataStore.GetByTenant(ctx, seedTenantID); errors.Is(err, store.ErrNotFound) {
+		if _, err := dataStore.CreateTenant(ctx, store.CreateTenantParams{ID: seedTenantID, Name: seedTenantName}); err != nil {
 			return err
 		}
 	} else if err != nil {
@@ -62,7 +60,7 @@ func seedDevCLI(ctx context.Context, cfg config.Config, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if _, err := account.CreateUser(ctx, store.CreateUserParams{
+	if _, err := dataStore.CreateUser(ctx, store.CreateUserParams{
 		ID:           seedUserID,
 		TenantID:     seedTenantID,
 		Email:        seedEmail,

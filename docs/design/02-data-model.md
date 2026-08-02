@@ -28,7 +28,7 @@ erDiagram
     competitors ||--o{ mentions : ""
 ```
 
-All IDs are UUIDv7 (time-ordered, index-friendly). `tenant_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through a tenant-checked business lookup. Callers without ambient tenant context (Temporal activities, CLI) first resolve the business's tenant via a single bootstrap lookup (`BusinessStore.ResolveTenantID`), then use the same tenant-checked repositories.
+All IDs are UUIDv7 (time-ordered, index-friendly). `tenant_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through a tenant-checked business lookup. Callers without ambient tenant context (Temporal activities, CLI) first resolve the business's tenant via a single bootstrap lookup (`store.Store.ResolveTenantID`), then use the same tenant-checked repositories.
 
 All application and metrics statements are named sqlc queries in the unified
 `internal/store/queries/` catalog. Generated row types stay inside the

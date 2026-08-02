@@ -1,6 +1,6 @@
-// Package auth holds password hashing shared by the API login handler (AUTH-1)
-// and the invite-only user-create CLI (AUTH-2). Keeping it in its own package
-// lets both callers depend on it without importing each other.
+// Package auth holds password hashing shared by the API login handler and the
+// invite-only user-create CLI. Keeping it in its own package lets both callers
+// depend on it without importing each other.
 package auth
 
 import (

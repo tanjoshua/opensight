@@ -5,29 +5,21 @@
 import { BillingService } from "./billing_pb";
 
 /**
- * BILL-9
- *
  * @generated from rpc opensight.v1.BillingService.GetBilling
  */
 export const getBilling = BillingService.method.getBilling;
 
 /**
- * BILL-4
- *
  * @generated from rpc opensight.v1.BillingService.StartCheckout
  */
 export const startCheckout = BillingService.method.startCheckout;
 
 /**
- * BILL-4
- *
  * @generated from rpc opensight.v1.BillingService.ConfirmCheckout
  */
 export const confirmCheckout = BillingService.method.confirmCheckout;
 
 /**
- * BILL-8
- *
  * @generated from rpc opensight.v1.BillingService.CreatePortalSession
  */
 export const createPortalSession = BillingService.method.createPortalSession;

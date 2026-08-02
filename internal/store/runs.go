@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // RunStatus is the persisted status of a monitoring run.
@@ -57,8 +56,7 @@ type Run struct {
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
 	// ExpectedResults is the prompt-snapshot size at run start (the "N" in
-	// "k of N"). Nullable: runs created before RUNS-1 stay null, never
-	// backfilled — null means "unknown," not zero.
+	// "k of N"). Nullable: null means "unknown," not zero.
 	ExpectedResults *int
 }
 
@@ -74,26 +72,13 @@ type UpsertRunParams struct {
 	ExpectedResults int
 }
 
-// RunStore reads and writes monitoring_runs rows.
-type RunStore struct {
-	db *pgxpool.Pool
-}
-
-// NewRunStore returns a RunStore backed by db.
-func NewRunStore(db *pgxpool.Pool) *RunStore {
-	return &RunStore{db: db}
-}
-
 // UpsertRun idempotently creates (or converges on) the run for
-// (business_id, platform, scheduled_for). It is LoadRunSpec's primitive
-// (RUN-3): the tenant-checked business lookup, the conflict-tolerant insert, and
-// the read-back run in one transaction, so a duplicate trigger returns the
+// (business_id, platform, scheduled_for). It is LoadRunSpec's primitive: the
+// tenant-checked business lookup, the conflict-tolerant insert, and the
+// read-back run in one transaction, so a duplicate trigger returns the
 // existing run (any status) rather than erroring. A missing or cross-tenant
 // business returns ErrNotFound.
-func (s *RunStore) UpsertRun(ctx context.Context, tenantID domain.ID, params UpsertRunParams) (Run, error) {
-	if s == nil || s.db == nil {
-		return Run{}, errors.New("run store database is required")
-	}
+func (s *Store) UpsertRun(ctx context.Context, tenantID domain.ID, params UpsertRunParams) (Run, error) {
 
 	params, err := normalizeUpsertRunParams(params)
 	if err != nil {
@@ -104,7 +89,7 @@ func (s *RunStore) UpsertRun(ctx context.Context, tenantID domain.ID, params Ups
 	}
 
 	var run Run
-	err = withTx(ctx, s.db, func(q *storesqlc.Queries) error {
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if err := businessOwned(ctx, q, tenantID, params.BusinessID); err != nil {
 			return err
 		}
@@ -136,12 +121,9 @@ func (s *RunStore) UpsertRun(ctx context.Context, tenantID domain.ID, params Ups
 // prompt whose activity never wrote a row still counts against completion).
 // It is tenant-scoped and safe under retry. A missing or cross-tenant run
 // returns ErrNotFound.
-func (s *RunStore) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (Run, error) {
-	if s == nil || s.db == nil {
-		return Run{}, errors.New("run store database is required")
-	}
+func (s *Store) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (Run, error) {
 
-	row, err := queries(ctx, s.db).FinalizeRun(ctx, storesqlc.FinalizeRunParams{ID: runID, TenantID: tenantID})
+	row, err := s.q(ctx).FinalizeRun(ctx, storesqlc.FinalizeRunParams{ID: runID, TenantID: tenantID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Run{}, ErrNotFound
@@ -151,8 +133,8 @@ func (s *RunStore) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (
 	return runFromSQLC(row), nil
 }
 
-// RunListItem is a run plus its per-run result counts (RUNS-2), mirroring
-// ResultListItem's shape (row + derived fields). Only ListRuns populates the
+// RunListItem is a run plus its per-run result counts, shaped like
+// ResultListItem (row + derived fields). Only ListRuns populates the
 // counts; other Run readers leave them zero.
 type RunListItem struct {
 	Run
@@ -162,15 +144,12 @@ type RunListItem struct {
 }
 
 // ListRuns returns the business's runs with per-run result counts, newest
-// scheduled first (WEB-2/WEB-5, RUNS-2). It enters through the tenant-checked
+// scheduled first. It enters through the tenant-checked
 // business lookup so an empty result for a business the tenant does not own
 // is ErrNotFound, not an empty slice.
-func (s *RunStore) ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]RunListItem, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("run store database is required")
-	}
+func (s *Store) ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]RunListItem, error) {
 
-	q := queries(ctx, s.db)
+	q := s.q(ctx)
 	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
 		return nil, err
 	}
