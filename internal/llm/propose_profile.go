@@ -9,16 +9,16 @@ import (
 
 // ProposeProfileInput is one ProposeProfile request: the user-entered
 // name/website plus the FetchSite text (primary evidence, "" when FetchSite
-// failed) the model researches and turns into a structured profile proposal, and
-// the number of monitoring prompts to generate (billing.Plan.PromptLimit —
-// never hardcoded). The model does its own web_search over the name/website; there is
-// no separate research step.
+// failed) the model researches and turns into a structured profile proposal.
+// The model does its own web_search over the name/website; there is no
+// separate research step. Customer questions are a separate on-demand call
+// (QuestionsInput) fired after the user reviews Services — this input carries
+// no prompt count.
 type ProposeProfileInput struct {
-	Name        string
-	Website     string
-	SiteText    string
-	Location    Location // web_search user_location hint (SG for the MVP market)
-	PromptLimit int
+	Name     string
+	Website  string
+	SiteText string
+	Location Location // web_search user_location hint (SG for the MVP market)
 
 	// Set only on the one allowed validation retry: the model's prior output and
 	// the deterministic validation failures to correct.
@@ -73,7 +73,11 @@ type ProposedPrompt struct {
 
 // ProposalPayload is the decoded proposal (design 03, "Proposal payload"). It is
 // what the ProposeProfile activity returns and what the workflow marshals
-// verbatim into profile_proposals.payload.
+// verbatim into profile_proposals.payload. Prompts is always empty out of the
+// workflow: customer questions are generated on demand by GenerateQuestions
+// once the user has reviewed Services, not by ProposeProfile. The field stays
+// on this shared shape because ApplyProposal's payload (the client's final,
+// edited draft) still carries the approved questions through to persistence.
 type ProposalPayload struct {
 	LowConfidence bool             `json:"low_confidence"`
 	Profile       ProposedProfile  `json:"profile"`
@@ -103,8 +107,7 @@ func NewProposeProfileRunner(mode string, openAICfg OpenAIConfig) (ProposeProfil
 }
 
 // StubProposeProfileRunner returns a trivially-valid proposal built from the
-// input: exactly PromptLimit generic prompts (none containing the business
-// name), so the dev default boots without an OpenAI key.
+// input, so the dev default boots without an OpenAI key.
 type StubProposeProfileRunner struct{}
 
 // NewStubProposeProfileRunner returns the offline stub proposer.
@@ -112,18 +115,10 @@ func NewStubProposeProfileRunner() (*StubProposeProfileRunner, error) {
 	return &StubProposeProfileRunner{}, nil
 }
 
-// stubProposalPrompts are varied, name-free consumer questions the stub cycles
-// through to satisfy validation offline.
-var stubProposalPrompts = []ProposedPrompt{
-	{Text: "best orthopaedic clinic in Singapore"},
-	{Text: "where can I get ACL reconstruction in Singapore"},
-	{Text: "knee pain that won't go away, who should I see in Singapore"},
-	{Text: "top rated orthopaedic specialist in Singapore"},
-}
-
 // RunProposeProfile returns a canned proposal shaped by the input. LowConfidence
 // is true because a stub has done no real research; the model id is a fixed stub
-// marker so a stubbed proposal is distinguishable from a real one.
+// marker so a stubbed proposal is distinguishable from a real one. Prompts is
+// left empty — see ProposalPayload's doc comment.
 func (r *StubProposeProfileRunner) RunProposeProfile(_ context.Context, in ProposeProfileInput) (ProposeProfileRunResult, error) {
 	if r == nil {
 		return ProposeProfileRunResult{}, fmt.Errorf("stub propose profile runner is nil")
@@ -131,10 +126,6 @@ func (r *StubProposeProfileRunner) RunProposeProfile(_ context.Context, in Propo
 	name := strings.TrimSpace(in.Name)
 	if name == "" {
 		name = "Sample Clinic"
-	}
-	prompts := make([]ProposedPrompt, 0, in.PromptLimit)
-	for i := 0; i < in.PromptLimit; i++ {
-		prompts = append(prompts, stubProposalPrompts[i%len(stubProposalPrompts)])
 	}
 	payload := ProposalPayload{
 		LowConfidence: true,
@@ -145,7 +136,6 @@ func (r *StubProposeProfileRunner) RunProposeProfile(_ context.Context, in Propo
 			Services: []string{"consultation"},
 			Location: ProposedLocation{City: "Singapore", Country: "SG"},
 		},
-		Prompts: prompts,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

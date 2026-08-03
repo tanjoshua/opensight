@@ -47,14 +47,14 @@ func GenerateProfileWorkflowID(businessID domain.ID) string {
 }
 
 // GenerateProfileWorkflowInput starts profile generation for a freshly created
-// draft business. PromptLimit is billing.Plan.PromptLimit, resolved by the
-// caller (the count is never hardcoded — design 03).
+// draft business. Customer questions are generated separately, on demand, by
+// GenerateQuestions once the user reviews Services (design 03) — this input
+// carries no prompt limit.
 type GenerateProfileWorkflowInput struct {
-	TenantID    domain.ID
-	BusinessID  domain.ID
-	Name        string
-	Website     string
-	PromptLimit int
+	TenantID   domain.ID
+	BusinessID domain.ID
+	Name       string
+	Website    string
 }
 
 // GenerateProfileWorkflow chains FetchSite -> ProposeProfile -> PersistProposal
@@ -107,11 +107,10 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 	})
 	var proposeOut ProposeProfileOutput
 	if err := workflow.ExecuteActivity(proposeCtx, acts.ProposeProfile, ProposeProfileInput{
-		Name:        input.Name,
-		Website:     input.Website,
-		SiteText:    siteText,
-		Location:    onboardingResearchLocationHint,
-		PromptLimit: input.PromptLimit,
+		Name:     input.Name,
+		Website:  input.Website,
+		SiteText: siteText,
+		Location: onboardingResearchLocationHint,
 	}).Get(ctx, &proposeOut); err != nil {
 		return err
 	}

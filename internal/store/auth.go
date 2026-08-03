@@ -13,19 +13,19 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// The credential and session methods below are deliberately NOT tenant-scoped:
+// The identity and session methods below are deliberately NOT tenant-scoped:
 // they are the sanctioned unscoped path that *establishes* tenant context (the
-// login/session equivalent of ResolveTenantID). Login looks up a user by email
-// before any tenant is known, and a session token resolves to exactly one
-// user/tenant.
+// login/session equivalent of ResolveTenantID). The Google callback looks up a
+// user by google_sub or email before any tenant is known, and a session token
+// resolves to exactly one user/tenant.
 
-// UserCredentials is the login-time view of a user joined to its tenant.
-type UserCredentials struct {
-	UserID       domain.ID
-	TenantID     domain.ID
-	Email        string
-	TenantName   string
-	PasswordHash *string // NULL until the user-create CLI sets a credential.
+// UserIdentity is the sign-in-time view of a user joined to its tenant.
+type UserIdentity struct {
+	UserID     domain.ID
+	TenantID   domain.ID
+	Email      string
+	TenantName string
+	GoogleSub  *string // NULL until the first Google sign-in links this row.
 }
 
 // SessionUser is a live session resolved to its owning user and tenant, plus
@@ -53,20 +53,44 @@ type CreateSessionParams struct {
 	ExpiresAt time.Time
 }
 
-// GetUserCredentials loads a user's credentials by email. Matching is
-// case-insensitive because email is a citext column. An unknown email returns
-// ErrNotFound; the login handler makes that indistinguishable from a wrong
-// password so there is no user-existence oracle.
-func (s *Store) GetUserCredentials(ctx context.Context, email string) (UserCredentials, error) {
+// GetUserByGoogleSub loads a user by Google's stable subject claim — the fast
+// path for every sign-in after the first. An unmatched sub returns
+// ErrNotFound; the caller falls back to GetUserByEmail.
+func (s *Store) GetUserByGoogleSub(ctx context.Context, sub string) (UserIdentity, error) {
 
-	row, err := s.q(ctx).GetUserCredentials(ctx, email)
+	row, err := s.q(ctx).GetUserByGoogleSub(ctx, &sub)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return UserCredentials{}, ErrNotFound
+			return UserIdentity{}, ErrNotFound
 		}
-		return UserCredentials{}, fmt.Errorf("get user credentials: %w", err)
+		return UserIdentity{}, fmt.Errorf("get user by google sub: %w", err)
 	}
-	return UserCredentials{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, PasswordHash: row.PasswordHash}, nil
+	return UserIdentity{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, GoogleSub: row.GoogleSub}, nil
+}
+
+// GetUserByEmail loads a user by email. Matching is case-insensitive because
+// email is a citext column. This is the first-Google-sign-in path: a row
+// created by the operator CLI (or a prior Google account with the same
+// address) has no google_sub yet, so the caller links it via SetUserGoogleSub.
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (UserIdentity, error) {
+
+	row, err := s.q(ctx).GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return UserIdentity{}, ErrNotFound
+		}
+		return UserIdentity{}, fmt.Errorf("get user by email: %w", err)
+	}
+	return UserIdentity{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, GoogleSub: row.GoogleSub}, nil
+}
+
+// SetUserGoogleSub links a user row to its Google subject claim on first
+// sign-in (either an operator-created row or a row found by email).
+func (s *Store) SetUserGoogleSub(ctx context.Context, userID domain.ID, sub string) error {
+	if err := s.q(ctx).SetUserGoogleSub(ctx, storesqlc.SetUserGoogleSubParams{ID: userID, GoogleSub: &sub}); err != nil {
+		return fmt.Errorf("set user google sub: %w", err)
+	}
+	return nil
 }
 
 // CreateSession inserts the session row and, in the same transaction, purges

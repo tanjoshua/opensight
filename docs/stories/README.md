@@ -51,6 +51,4 @@ already be worth paying for. BILL-1 (schema) and BILL-2 (Stripe adapter) gate th
 BILL-7 (spend backstop) must land before any real card is charged.
 
 Explicitly **not** in this backlog: an admin portal and its account-management actions (including
-password reset and changing comp status), email verification and password-reset email (design 08 —
-no transactional email provider yet), additional platforms, alerts, competitor merge,
-Prometheus/metrics, multi-VPS.
+changing comp status), additional platforms, alerts, competitor merge, Prometheus/metrics, multi-VPS.

@@ -163,9 +163,9 @@ type Tenant struct {
 }
 
 type User struct {
-	ID           uuid.UUID
-	TenantID     uuid.UUID
-	Email        string
-	CreatedAt    time.Time
-	PasswordHash *string
+	ID        uuid.UUID
+	TenantID  uuid.UUID
+	Email     string
+	CreatedAt time.Time
+	GoogleSub *string
 }

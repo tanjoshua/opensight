@@ -54,11 +54,12 @@ func TestAccountStoreCreateTenantAndUser(t *testing.T) {
 		t.Fatal("comped = false, want true for a CLI-provisioned tenant")
 	}
 
-	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
+	// CreateUser leaves google_sub unset: the operator provisions the row, and
+	// the user's first Google sign-in links it (design 07 "Auth and
+	// accounts").
 	user, err := admin.CreateUser(ctx, CreateUserParams{
-		TenantID:     tenant.ID,
-		Email:        "  Owner@Example.com  ",
-		PasswordHash: passwordHash,
+		TenantID: tenant.ID,
+		Email:    "  Owner@Example.com  ",
 	})
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
@@ -71,12 +72,12 @@ func TestAccountStoreCreateTenantAndUser(t *testing.T) {
 		t.Fatalf("user email = %q, want lowercase trimmed email", user.Email)
 	}
 
-	var storedHash string
-	if err := db.QueryRow(ctx, "SELECT password_hash FROM users WHERE id = $1", user.ID).Scan(&storedHash); err != nil {
-		t.Fatalf("load user password hash: %v", err)
+	var googleSub *string
+	if err := db.QueryRow(ctx, "SELECT google_sub FROM users WHERE id = $1", user.ID).Scan(&googleSub); err != nil {
+		t.Fatalf("load user google_sub: %v", err)
 	}
-	if storedHash != passwordHash {
-		t.Fatalf("stored password hash = %q, want provided hash", storedHash)
+	if googleSub != nil {
+		t.Fatalf("google_sub = %v, want NULL until the first Google sign-in", *googleSub)
 	}
 
 	// SubscriptionStore.GetByTenant plus the catalog resolves the entitlements
@@ -118,11 +119,10 @@ func TestAccountStoreCreateAccount(t *testing.T) {
 	t.Cleanup(db.Close)
 
 	accounts := New(db)
-	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
 
 	tenant, user, err := accounts.CreateAccount(ctx, CreateAccountParams{
-		Email:        "  Founder@Example.com  ",
-		PasswordHash: passwordHash,
+		Email:     "  Founder@Example.com  ",
+		GoogleSub: "google-sub-founder",
 	})
 	if err != nil {
 		t.Fatalf("CreateAccount: %v", err)
@@ -188,11 +188,10 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 	t.Cleanup(db.Close)
 
 	accounts := New(db)
-	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
 
 	tenant, _, err := accounts.CreateAccount(ctx, CreateAccountParams{
-		Email:        "duplicate@example.com",
-		PasswordHash: passwordHash,
+		Email:     "duplicate@example.com",
+		GoogleSub: "google-sub-duplicate-1",
 	})
 	if err != nil {
 		t.Fatalf("first CreateAccount: %v", err)
@@ -209,8 +208,8 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 	}
 
 	_, _, err = accounts.CreateAccount(ctx, CreateAccountParams{
-		Email:        "Duplicate@Example.com",
-		PasswordHash: passwordHash,
+		Email:     "Duplicate@Example.com",
+		GoogleSub: "google-sub-duplicate-2",
 	})
 	if !errors.Is(err, ErrEmailTaken) {
 		t.Fatalf("second CreateAccount error = %v, want ErrEmailTaken", err)

@@ -51,8 +51,7 @@ func TestProposeProfileBadInputNonRetryable(t *testing.T) {
 		name string
 		in   ProposeProfileInput
 	}{
-		{"empty name", ProposeProfileInput{Name: "  ", PromptLimit: 4}},
-		{"non-positive prompt limit", ProposeProfileInput{Name: "Clinic", PromptLimit: 0}},
+		{"empty name", ProposeProfileInput{Name: "  "}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := &proposeRunner{}
@@ -73,7 +72,7 @@ func TestProposeProfileRunnerErrorPropagates(t *testing.T) {
 	// A transient runner error propagates unchanged for Temporal's default retry.
 	transient := errors.New("openai: status 503")
 	a := &Activities{Proposer: &proposeRunner{err: transient}}
-	_, err := a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic", PromptLimit: 4})
+	_, err := a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic"})
 	if !errors.Is(err, transient) {
 		t.Fatalf("want transient error propagated, got %v", err)
 	}
@@ -85,7 +84,7 @@ func TestProposeProfileRunnerErrorPropagates(t *testing.T) {
 	// A runner error marked non-retryable becomes a non-retryable activity error.
 	refused := errors.Join(errors.New("refused"), llm.ErrNonRetryable)
 	a = &Activities{Proposer: &proposeRunner{err: refused}}
-	_, err = a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic", PromptLimit: 4})
+	_, err = a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic"})
 	if !errors.As(err, &appErr) || !appErr.NonRetryable() {
 		t.Fatalf("want non-retryable ApplicationError for refusal, got %T: %v", err, err)
 	}
@@ -94,7 +93,7 @@ func TestProposeProfileRunnerErrorPropagates(t *testing.T) {
 func TestProposeProfileHappyPath(t *testing.T) {
 	runner := &proposeRunner{result: llm.ProposeProfileRunResult{RawJSON: validProposalJSON(t), Model: "gpt-x"}}
 	a := &Activities{Proposer: runner}
-	out, err := a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Novena Ortho Clinic", PromptLimit: 4})
+	out, err := a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Novena Ortho Clinic"})
 	if err != nil {
 		t.Fatalf("ProposeProfile: %v", err)
 	}

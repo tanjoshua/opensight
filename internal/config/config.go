@@ -31,7 +31,11 @@ const (
 	defaultTemporalTaskQueue = "opensight"
 	defaultResponsesModel    = "chat-latest"
 	defaultAnalysisModel     = "gpt-5.6-luna"
-	defaultOnboardingModel   = "gpt-5.6-luna"
+	defaultOnboardingModel   = "gpt-5.6-terra"
+	// defaultQuestionsModel is deliberately a cheap non-reasoning model: customer
+	// question generation does no research (design 03), unlike ProposeProfile's
+	// reasoning model above.
+	defaultQuestionsModel    = "gpt-5-mini"
 	defaultPromptRunnerMode  = PromptRunnerStub
 	defaultPromptConcurrency = 2
 )
@@ -48,6 +52,7 @@ type Config struct {
 	OpenAIResponsesModel  string
 	OpenAIAnalysisModel   string
 	OpenAIOnboardingModel string
+	OpenAIQuestionsModel  string
 	PromptRunnerMode      PromptRunnerMode
 	PromptConcurrency     int
 	StripeSecretKey       string
@@ -63,6 +68,11 @@ type Config struct {
 	// pairing is one Go value"). A plan added to the catalog gets a required
 	// env var here for free.
 	StripePriceIDs map[string]string
+	// GoogleClientID and GoogleClientSecret authenticate the Google OAuth
+	// client behind /auth/google/* (design 07 "Auth and accounts"). The
+	// redirect URI is derived from AppBaseURL, not configured separately.
+	GoogleClientID     string
+	GoogleClientSecret string
 }
 
 // Load reads runtime settings from the process environment. It first loads a
@@ -124,6 +134,7 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		OpenAIResponsesModel:        getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
 		OpenAIAnalysisModel:         getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
 		OpenAIOnboardingModel:       getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
+		OpenAIQuestionsModel:        getenvString(getenv, "OPENAI_QUESTIONS_MODEL", defaultQuestionsModel),
 		PromptRunnerMode:            mode,
 		PromptConcurrency:           promptConcurrency,
 		StripeSecretKey:             stripeSecretKey,
@@ -131,6 +142,8 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		StripePortalConfigurationID: stripePortalConfigurationID,
 		AppBaseURL:                  appBaseURL,
 		StripePriceIDs:              stripePriceIDs,
+		GoogleClientID:              getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret:          getenv("GOOGLE_CLIENT_SECRET"),
 	}, nil
 }
 

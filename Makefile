@@ -75,8 +75,9 @@ dev-serve:
 dev-work:
 	go tool air -c .air.work.toml
 
+# EMAIL=you@gmail.com make seed-dev  (or set OPENSIGHT_DEV_EMAIL)
 seed-dev:
-	go run ./cmd/opensight seed dev
+	go run ./cmd/opensight seed dev $(if $(EMAIL),--email $(EMAIL),)
 
 # Drops and recreates the opensight app database, then reapplies migrations.
 # Leaves containers running and doesn't touch Temporal's databases.

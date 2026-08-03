@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"strings"
 	"testing"
 
@@ -53,16 +52,18 @@ func TestRunRejectsUnknownAndMissingSubcommands(t *testing.T) {
 	}
 }
 
-func TestValidateStripeRuntimeConfig(t *testing.T) {
+func TestValidateServeRuntimeConfig(t *testing.T) {
 	complete := config.Config{
 		StripeSecretKey:             "sk_test_123",
 		StripeWebhookSecret:         "whsec_123",
 		StripePortalConfigurationID: "bpc_123",
 		StripePriceIDs:              map[string]string{"starter": "price_123"},
 		AppBaseURL:                  "https://app.example.com",
+		GoogleClientID:              "client-id",
+		GoogleClientSecret:          "client-secret",
 	}
-	if err := validateStripeRuntimeConfig(complete); err != nil {
-		t.Fatalf("complete Stripe config: %v", err)
+	if err := validateServeRuntimeConfig(complete); err != nil {
+		t.Fatalf("complete config: %v", err)
 	}
 
 	cases := []struct {
@@ -75,12 +76,14 @@ func TestValidateStripeRuntimeConfig(t *testing.T) {
 		{"portal configuration", func(c *config.Config) { c.StripePortalConfigurationID = "" }, "STRIPE_PORTAL_CONFIGURATION_ID"},
 		{"app base URL", func(c *config.Config) { c.AppBaseURL = "" }, "APP_BASE_URL"},
 		{"price", func(c *config.Config) { c.StripePriceIDs = nil }, "STRIPE_PRICE_STARTER_MONTHLY"},
+		{"google client id", func(c *config.Config) { c.GoogleClientID = "" }, "GOOGLE_CLIENT_ID"},
+		{"google client secret", func(c *config.Config) { c.GoogleClientSecret = "" }, "GOOGLE_CLIENT_SECRET"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := complete
 			tc.edit(&cfg)
-			if err := validateStripeRuntimeConfig(cfg); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if err := validateServeRuntimeConfig(cfg); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error = %v, want containing %q", err, tc.want)
 			}
 		})
@@ -101,23 +104,13 @@ func TestParseTenantCreateArgs(t *testing.T) {
 	}
 }
 
-func TestParseUserCreateArgsStdinPassword(t *testing.T) {
-	generateCalled := false
-	generate := func() (string, error) {
-		generateCalled = true
-		return "generated-password", nil
-	}
-
+func TestParseUserCreateArgs(t *testing.T) {
 	opts, err := parseUserCreateArgs([]string{
 		"--tenant", tenantIDForTest,
 		"--email", "  Owner@Example.com  ",
-		"--password-stdin",
-	}, generate, strings.NewReader("set-password\n"))
+	})
 	if err != nil {
 		t.Fatalf("parseUserCreateArgs: %v", err)
-	}
-	if generateCalled {
-		t.Fatal("generatePassword was called despite --password-stdin")
 	}
 	if opts.TenantID.String() != tenantIDForTest {
 		t.Fatalf("tenant id = %s, want %s", opts.TenantID, tenantIDForTest)
@@ -125,79 +118,49 @@ func TestParseUserCreateArgsStdinPassword(t *testing.T) {
 	if opts.Email != "Owner@Example.com" {
 		t.Fatalf("email = %q, want trimmed email preserving case", opts.Email)
 	}
-	if opts.Password != "set-password" {
-		t.Fatalf("password = %q, want stdin password", opts.Password)
-	}
-	if opts.GeneratedPassword {
-		t.Fatal("GeneratedPassword = true for stdin password")
-	}
-}
-
-func TestParseUserCreateArgsGeneratesPasswordByDefault(t *testing.T) {
-	generate := func() (string, error) { return "generated-password", nil }
-
-	opts, err := parseUserCreateArgs([]string{
-		"--tenant", tenantIDForTest,
-		"--email", "owner@example.com",
-	}, generate, nil)
-	if err != nil {
-		t.Fatalf("parseUserCreateArgs: %v", err)
-	}
-	if opts.Password != "generated-password" {
-		t.Fatalf("password = %q, want generated password", opts.Password)
-	}
-	if !opts.GeneratedPassword {
-		t.Fatal("GeneratedPassword = false, want true")
-	}
 }
 
 func TestParseUserCreateArgsRejectsBadInput(t *testing.T) {
-	generate := func() (string, error) { return "generated-password", nil }
-
 	for _, tc := range []struct {
-		name  string
-		args  []string
-		stdin io.Reader
-		want  string
+		name string
+		args []string
+		want string
 	}{
-		{"missing tenant", []string{"--email", "owner@example.com"}, nil, "--tenant is required"},
-		{"bad tenant", []string{"--tenant", "not-a-uuid", "--email", "owner@example.com"}, nil, "--tenant must be a UUID"},
-		{"missing email", []string{"--tenant", tenantIDForTest}, nil, "--email is required"},
-		{
-			name:  "empty stdin password",
-			args:  []string{"--tenant", tenantIDForTest, "--email", "owner@example.com", "--password-stdin"},
-			stdin: strings.NewReader("\n"),
-			want:  "password from stdin is required",
-		},
+		{"missing tenant", []string{"--email", "owner@example.com"}, "--tenant is required"},
+		{"bad tenant", []string{"--tenant", "not-a-uuid", "--email", "owner@example.com"}, "--tenant must be a UUID"},
+		{"missing email", []string{"--tenant", tenantIDForTest}, "--email is required"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := parseUserCreateArgs(tc.args, generate, tc.stdin); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if _, err := parseUserCreateArgs(tc.args); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error = %v, want containing %q", err, tc.want)
 			}
 		})
 	}
 }
 
-func TestReadPasswordFromStdinRejectsOverlongInput(t *testing.T) {
-	if _, err := readPasswordFromStdin(strings.NewReader(strings.Repeat("a", 2049))); err == nil {
-		t.Fatal("expected error for an over-long stdin password")
-	}
-}
+func TestParseSeedDevArgs(t *testing.T) {
+	noEnv := func(string) string { return "" }
 
-func TestGeneratePasswordShape(t *testing.T) {
-	first, err := generatePassword()
+	got, err := parseSeedDevArgs([]string{"--email", "  Owner@Example.com  "}, noEnv)
 	if err != nil {
-		t.Fatalf("generatePassword: %v", err)
+		t.Fatalf("parseSeedDevArgs: %v", err)
 	}
-	second, err := generatePassword()
-	if err != nil {
-		t.Fatalf("second generatePassword: %v", err)
+	if got != "Owner@Example.com" {
+		t.Fatalf("email = %q, want trimmed email preserving case", got)
 	}
-	if len(first) != 24 {
-		t.Fatalf("password length = %d, want 24", len(first))
+
+	envFallback := func(key string) string {
+		if key == "OPENSIGHT_DEV_EMAIL" {
+			return "dev@example.com"
+		}
+		return ""
 	}
-	if first == second {
-		t.Fatal("two generated passwords are identical")
+	if got, err := parseSeedDevArgs(nil, envFallback); err != nil || got != "dev@example.com" {
+		t.Fatalf("parseSeedDevArgs(nil) = (%q, %v), want (\"dev@example.com\", nil)", got, err)
+	}
+
+	if _, err := parseSeedDevArgs(nil, noEnv); err == nil || !strings.Contains(err.Error(), "--email or OPENSIGHT_DEV_EMAIL is required") {
+		t.Fatalf("error = %v, want missing-email error", err)
 	}
 }
 

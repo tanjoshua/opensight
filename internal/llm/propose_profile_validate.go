@@ -12,11 +12,6 @@ import (
 // and orthogonal to Temporal's own ActivityOptions.RetryPolicy.
 const MaxProposeProfileAttempts = 2
 
-// minNameLeakLength skips name needles shorter than this when checking prompts
-// for business-name leakage: a business literally named "Q" would otherwise
-// false-positive against ordinary words that happen to contain that letter.
-const minNameLeakLength = 3
-
 // DecodeProposalPayload repairs the known double-escaped-unicode model artifact
 // (RepairDoubleEscapedUnicode — the same artifact can occur here) and unmarshals
 // the result. Unknown fields are intentionally ignored so proposals persisted
@@ -26,28 +21,6 @@ func DecodeProposalPayload(raw json.RawMessage) (ProposalPayload, error) {
 	var out ProposalPayload
 	err := json.Unmarshal(RepairDoubleEscapedUnicode(raw), &out)
 	return out, err
-}
-
-// ValidateProposal runs every deterministic check on a decoded proposal before
-// a user sees it (design 03 step 3 and the "Prompt generation rules"): required
-// profile fields, a two-letter ISO country, no empty array entries, the exact
-// billing.Plan.PromptLimit prompt count, and no business-name leakage into any prompt.
-// It returns one human-readable message per violation; an empty result means
-// valid. It is pure.
-func ValidateProposal(payload ProposalPayload, in ProposeProfileInput) []string {
-	errs := ValidateProfile(payload.Profile)
-	if len(payload.Prompts) != in.PromptLimit {
-		errs = append(errs, fmt.Sprintf("prompts has %d entries, want exactly %d (billing.Plan.PromptLimit)", len(payload.Prompts), in.PromptLimit))
-	}
-	for i, pr := range payload.Prompts {
-		if strings.TrimSpace(pr.Text) == "" {
-			errs = append(errs, fmt.Sprintf("prompts[%d].text is empty", i))
-		}
-	}
-
-	errs = append(errs, validatePromptNameLeakage(payload, in)...)
-
-	return errs
 }
 
 // ValidateProfile applies the profile invariants shared by onboarding and
@@ -74,35 +47,6 @@ func ValidateProfile(p ProposedProfile) []string {
 	for i, s := range p.Services {
 		if strings.TrimSpace(s) == "" {
 			errs = append(errs, fmt.Sprintf("profile.services[%d] is empty", i))
-		}
-	}
-	return errs
-}
-
-// validatePromptNameLeakage flags any prompt whose text contains the business
-// name or an alias. Needles come from both the user-entered in.Name and the
-// model's own profile.name/aliases (the model may paraphrase the name
-// differently than the user typed it). Matching is whitespace-normalized and
-// case-insensitive; needles shorter than minNameLeakLength are skipped.
-func validatePromptNameLeakage(payload ProposalPayload, in ProposeProfileInput) []string {
-	seen := map[string]bool{}
-	var needles []string
-	for _, n := range append([]string{in.Name, payload.Profile.Name}, payload.Profile.Aliases...) {
-		norm := strings.ToLower(normalizeForVerbatimCheck(n))
-		if len(norm) < minNameLeakLength || seen[norm] {
-			continue
-		}
-		seen[norm] = true
-		needles = append(needles, norm)
-	}
-
-	var errs []string
-	for i, pr := range payload.Prompts {
-		hay := strings.ToLower(normalizeForVerbatimCheck(pr.Text))
-		for _, needle := range needles {
-			if strings.Contains(hay, needle) {
-				errs = append(errs, fmt.Sprintf("prompts[%d].text contains the business name/alias %q; prompts must never name the business", i, needle))
-			}
 		}
 	}
 	return errs
@@ -135,7 +79,7 @@ func ProposeWithRetry(ctx context.Context, runner ProposeProfileRunner, in Propo
 		if decodeErr != nil {
 			validationErrs = []string{fmt.Sprintf("output is not valid JSON matching the schema: %v", decodeErr)}
 		} else {
-			validationErrs = ValidateProposal(parsed, in)
+			validationErrs = ValidateProfile(parsed.Profile)
 		}
 
 		if len(validationErrs) == 0 {

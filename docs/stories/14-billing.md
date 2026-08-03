@@ -32,8 +32,7 @@ Deps: BILL-1 · Phase 4 · Ref: design 08 (Stripe integration — Client; Local 
 
 As a prospective customer, I want to create an account from the marketing site, so that I can start without talking to anyone.
 
-- [x] Email and password are the whole form; a successful signup lands authenticated, on the Starter plan, with no payment taken yet and no Stripe objects created.
-- [x] Signing up twice with the same email is refused with a clear reason. Signup is knowingly an email-enumeration oracle; login's uniform-failure guarantee must remain intact (regression test).
+- [x] Signing in with Google is the whole form: a first-time sign-in provisions a tenant, lands authenticated, on the Starter plan, with no payment taken yet and no Stripe objects created.
 - [x] A half-created account is impossible: either the whole tenant exists or none of it does.
 - [x] The account survives with no business — onboarding names it later.
 
@@ -114,7 +113,7 @@ Deps: BILL-8, FND-5 · Phase 4 · Ref: design 08 (Customer Portal; Config and se
 
 As a new customer, I want signup → payment → onboarding to be one uninterrupted path, so that nothing about setup requires help.
 
-- [x] A signup page consistent with login; a new account reaches payment without a detour.
+- [x] Signup is login: `/signup` redirects to `/login`, and a first-time Google sign-in reaches payment without a detour.
 - [x] Returning from a successful payment shows a brief settling state and then continues into onboarding; abandoning checkout returns to billing with no error framing — nothing went wrong.
 - [x] A billing page states plan, price, status and the renewal or end date, and offers the server-derived action: manage an already-paid subscription in the portal, or start Checkout when none exists or the prior one never completed a payment.
 - [x] An account that has never paid cannot wander into the app; it arrives at billing instead.

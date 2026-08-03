@@ -33,3 +33,8 @@ export const regenerateProposal = BusinessService.method.regenerateProposal;
  * @generated from rpc opensight.v1.BusinessService.ApplyProposal
  */
 export const applyProposal = BusinessService.method.applyProposal;
+
+/**
+ * @generated from rpc opensight.v1.BusinessService.GenerateQuestions
+ */
+export const generateQuestions = BusinessService.method.generateQuestions;

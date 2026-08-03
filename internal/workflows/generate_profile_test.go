@@ -13,11 +13,10 @@ import (
 func genInput(t *testing.T) GenerateProfileWorkflowInput {
 	t.Helper()
 	return GenerateProfileWorkflowInput{
-		TenantID:    mustID(t),
-		BusinessID:  mustID(t),
-		Name:        "Acme Clinic",
-		Website:     "https://acme.example",
-		PromptLimit: 20,
+		TenantID:   mustID(t),
+		BusinessID: mustID(t),
+		Name:       "Acme Clinic",
+		Website:    "https://acme.example",
 	}
 }
 

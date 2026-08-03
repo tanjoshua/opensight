@@ -4,14 +4,15 @@ Depends on: all previous designs; closes their open questions.
 
 ## Auth and accounts
 
-**Email + password with server-side sessions, hand-rolled in Go. Self-serve signup, gated on payment (08).**
+**Google is the only sign-in method. Server-side sessions, hand-rolled in Go. Self-serve provisioning, gated on payment (08).**
 
-- Passwords hashed with argon2id; sessions are random tokens, stored hashed, in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
-- Rationale: a managed provider (Clerk/Auth0) adds an external dependency and an eventual cost floor for what is, at this scale, ~200 lines of well-trodden Go. Self-hosted identity servers (Keycloak/Ory) are overkill on a 4GB VPS. Revisit when password reset, email verification, SSO or multi-user tenants stack up — that is the point where a managed provider starts paying for itself.
-- **Signup** creates a tenant, a user and a subscription row in one transaction, then requires Stripe Checkout before any app surface opens (08). Taking the card first is what lets MVP ship without email verification: a completed charge is a stronger intent signal than a verified mailbox, and it removes the free-resource abuse that verification exists to stop.
-- Password reset is deferred while there is no transactional email provider. Account recovery and other sensitive account-management actions belong in a future admin portal.
-- Admin CLI account creation (`opensight user create --tenant …`) remains for operator-provisioned and comped tenants (08).
-- CSRF: every RPC handler requires the Connect protocol header (`connect.WithRequireConnectProtocolHeader()`, `internal/api/rpc.go`) — a header a cross-origin form or bare browser navigation cannot set — combined with SameSite=Lax cookies this is sufficient for an RPC-only API. This guarantee depends on no method ever being declared `idempotency_level = NO_SIDE_EFFECTS`: Connect treats such a method as safe to accept over a header-less GET with the request encoded in the query string, which would bypass the header check entirely. `TestNoRPCIsSideEffectFree` (`internal/api/rpc_test.go`) walks the compiled proto descriptors and fails if any method is ever annotated that way, so this can't regress silently as new RPCs are added.
+- Sign-in is a plain HTTP redirect flow, not an RPC: `GET /auth/google/start` mints a CSRF state token and a PKCE verifier, stashes both in a short-lived cookie, and redirects to Google's consent screen; `GET /auth/google/callback` verifies state, exchanges the code, and resolves the account (`internal/api/google_auth.go`). The exchanged ID token's claims are read without a signature check — safe specifically because the token arrives over the direct, TLS- and client-secret-authenticated channel to Google's token endpoint, which OpenID Connect Core 1.0 §3.1.3.7 permits — but `aud`, `iss`, and `exp` are still checked explicitly.
+- Identity resolution on callback: match by `users.google_sub` (every sign-in after the first); on miss, match by `email` (already `citext UNIQUE`) and link the sub — this is what lets an operator-created row (`opensight user create`) or a pre-Google row keep working; on miss, provision a new tenant + subscription + user in one transaction, exactly as self-serve signup did.
+- Sessions are unchanged: random opaque tokens, stored hashed, in a `sessions` table (Postgres), delivered as `HttpOnly, Secure, SameSite=Lax` cookies. Logout = delete row. No JWTs — nothing to revoke-by-expiry when sessions are just rows.
+- Rationale: Google has already verified the address, so there is nothing left for us to verify and no password to reset — the two gaps that used to be the trigger for revisiting a managed identity provider are gone by construction, not deferred.
+- A never-paid account still requires Stripe Checkout before any app surface opens (08); only the sign-in step changed.
+- Admin CLI account creation (`opensight user create --tenant …`) remains for operator-provisioned and comped tenants (08); it leaves `google_sub` unset until the user's first Google sign-in links it.
+- CSRF: every RPC handler requires the Connect protocol header (`connect.WithRequireConnectProtocolHeader()`, `internal/api/rpc.go`) — a header a cross-origin form or bare browser navigation cannot set — combined with SameSite=Lax cookies this is sufficient for an RPC-only API. This guarantee depends on no method ever being declared `idempotency_level = NO_SIDE_EFFECTS`: Connect treats such a method as safe to accept over a header-less GET with the request encoded in the query string, which would bypass the header check entirely. `TestNoRPCIsSideEffectFree` (`internal/api/rpc_test.go`) walks the compiled proto descriptors and fails if any method is ever annotated that way, so this can't regress silently as new RPCs are added. `/auth/google/*` needs no such guard: it carries no session to forge, and its own CSRF protection is the state+PKCE cookie pair.
 - API rate limiting: Caddy-level per-IP limit on `/rpc/`; nothing fancier until abuse exists.
 
 ## Secrets and config
@@ -64,7 +65,7 @@ Kept deliberately minimal for MVP:
 
 ## Data protection (light-touch, noted not lawyered)
 
-The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, password verifier and session records; business profile data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration. Payment is processed by Stripe: the product stores subscription state and Stripe identifiers, never card numbers or any payment credential.
+The authenticated Privacy page is PDPA-aware plain-language product copy, not a compliance certification or substitute for legal terms. It accurately enumerates what the product stores: account email, Google account identifier and session records — never a password, since Google handles sign-in entirely; business profile data; prompts and lineage; raw monitoring responses, citations and request metadata; derived analysis and metrics; and plan, schedule, run, usage and cost configuration. Payment is processed by Stripe: the product stores subscription state and Stripe identifiers, never card numbers or any payment credential.
 
 **Hard usage boundary: users must never enter patient-identifiable data.** Prompts are generic consumer queries rather than patient cases; generation rules and review copy reinforce this boundary. The product does not claim automatic detection or prevention of every prohibited entry.
 
@@ -74,4 +75,4 @@ The service is pre-production. Singapore hosting is planned before production, b
 
 ## Open items deliberately left post-MVP
 
-Admin account management (including password reset and changing comp status), email verification and password-reset email (08 — no transactional email provider yet), competitor merge (05), metrics/Prometheus, multi-VPS.
+Admin account management (including changing comp status), competitor merge (05), metrics/Prometheus, multi-VPS.

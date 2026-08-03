@@ -13,11 +13,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TestAuthStore exercises the AUTH-1 credential and session repository against a
-// real Postgres: credential lookup (incl. citext case-insensitivity and
-// ErrNotFound), session create/get with the user+tenant join, expiry handling,
-// login-time purge of expired rows, idempotent delete, and FK cascade on user
-// delete.
+// TestAuthStore exercises the AUTH-1 identity and session repository against
+// a real Postgres: identity lookup by google_sub and by email (incl. citext
+// case-insensitivity and ErrNotFound), session create/get with the
+// user+tenant join, expiry handling, login-time purge of expired rows,
+// idempotent delete, and FK cascade on user delete.
 func TestAuthStore(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
@@ -34,7 +34,7 @@ func TestAuthStore(t *testing.T) {
 	tenantID := mustNewID(t)
 	userID := mustNewID(t)
 	const email = "Owner@Example.com" // mixed case; citext lookup must match
-	const passwordHash = "$argon2id$v=19$m=19456,t=2,p=1$ClzmGysxMTp/RFyIazZhUQ$AG2OnfvJYMcvJEC7hyKJpMH8ZCwby9D+K/Mzqb5imbg"
+	const googleSub = "google-sub-owner"
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
@@ -44,28 +44,40 @@ func TestAuthStore(t *testing.T) {
 	})
 
 	insertTenant(t, db, ctx, tenantID, "Auth Tenant")
-	if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email, password_hash) VALUES ($1, $2, $3, $4)", userID, tenantID, email, passwordHash); err != nil {
+	if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email, google_sub) VALUES ($1, $2, $3, $4)", userID, tenantID, email, googleSub); err != nil {
 		t.Fatalf("insert user: %v", err)
 	}
 
 	auth := New(db)
 
-	// --- GetUserCredentials: citext case-insensitive + join to tenant. ---
-	creds, err := auth.GetUserCredentials(ctx, "owner@example.com")
+	// --- GetUserByGoogleSub: exact match on the OIDC subject claim. ---
+	bySub, err := auth.GetUserByGoogleSub(ctx, googleSub)
 	if err != nil {
-		t.Fatalf("GetUserCredentials (lowercased): %v", err)
+		t.Fatalf("GetUserByGoogleSub: %v", err)
 	}
-	if creds.UserID != userID || creds.TenantID != tenantID {
-		t.Fatalf("creds ids = %s/%s, want %s/%s", creds.UserID, creds.TenantID, userID, tenantID)
+	if bySub.UserID != userID || bySub.TenantID != tenantID {
+		t.Fatalf("user ids = %s/%s, want %s/%s", bySub.UserID, bySub.TenantID, userID, tenantID)
 	}
-	if creds.TenantName != "Auth Tenant" {
-		t.Fatalf("creds tenant name = %q, want Auth Tenant", creds.TenantName)
+	if bySub.TenantName != "Auth Tenant" {
+		t.Fatalf("tenant name = %q, want Auth Tenant", bySub.TenantName)
 	}
-	if creds.PasswordHash == nil || *creds.PasswordHash != passwordHash {
-		t.Fatalf("creds password hash = %v, want %q", creds.PasswordHash, passwordHash)
+	if _, err := auth.GetUserByGoogleSub(ctx, "unknown-sub"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetUserByGoogleSub(unknown) err = %v, want ErrNotFound", err)
 	}
-	if _, err := auth.GetUserCredentials(ctx, "nobody@example.com"); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetUserCredentials(unknown) err = %v, want ErrNotFound", err)
+
+	// --- GetUserByEmail: citext case-insensitive + join to tenant. ---
+	byEmail, err := auth.GetUserByEmail(ctx, "owner@example.com")
+	if err != nil {
+		t.Fatalf("GetUserByEmail (lowercased): %v", err)
+	}
+	if byEmail.UserID != userID || byEmail.TenantID != tenantID {
+		t.Fatalf("creds ids = %s/%s, want %s/%s", byEmail.UserID, byEmail.TenantID, userID, tenantID)
+	}
+	if byEmail.GoogleSub == nil || *byEmail.GoogleSub != googleSub {
+		t.Fatalf("google_sub = %v, want %q", byEmail.GoogleSub, googleSub)
+	}
+	if _, err := auth.GetUserByEmail(ctx, "nobody@example.com"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetUserByEmail(unknown) err = %v, want ErrNotFound", err)
 	}
 
 	// --- CreateSession + GetSession (join user+tenant). ---
@@ -174,7 +186,7 @@ func TestGetSessionBillingJoin(t *testing.T) {
 		// insertTenant's fixture (tenant_fixture_test.go) inserts a comped
 		// starter subscription — this must keep working unchanged.
 		insertTenant(t, db, ctx, tenantID, "Billing Join Tenant")
-		if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email, password_hash) VALUES ($1, $2, $3, $4)", userID, tenantID, email, ""); err != nil {
+		if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email) VALUES ($1, $2, $3)", userID, tenantID, email); err != nil {
 			t.Fatalf("insert user: %v", err)
 		}
 
@@ -237,7 +249,7 @@ func TestGetSessionBillingJoin(t *testing.T) {
 		if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", tenantID, "No Subscription Tenant"); err != nil {
 			t.Fatalf("insert tenant: %v", err)
 		}
-		if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email, password_hash) VALUES ($1, $2, $3, $4)", userID, tenantID, email, ""); err != nil {
+		if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email) VALUES ($1, $2, $3)", userID, tenantID, email); err != nil {
 			t.Fatalf("insert user: %v", err)
 		}
 
@@ -254,4 +266,71 @@ func TestGetSessionBillingJoin(t *testing.T) {
 			t.Fatalf("GetSession err = %v, want an explicit non-ErrNotFound error (not masquerading as an absent session)", err)
 		}
 	})
+}
+
+// TestAuthStoreLinksGoogleSubByEmail exercises the identity-resolution ladder
+// the Google callback relies on (google_auth.go resolveOrCreateGoogleUser):
+// an operator-created row (opensight user create) has no google_sub until its
+// first sign-in links it by email, after which it resolves by sub too.
+func TestAuthStoreLinksGoogleSubByEmail(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	tenantID := mustNewID(t)
+	userID := mustNewID(t)
+	const email = "linked@example.com"
+	const sub = "sub-linked"
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+	})
+	insertTenant(t, db, ctx, tenantID, "Link Tenant")
+
+	auth := New(db)
+	user, err := auth.CreateUser(ctx, CreateUserParams{ID: userID, TenantID: tenantID, Email: email})
+	if err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
+
+	// Before the first Google sign-in: found by email, no google_sub yet.
+	beforeLink, err := auth.GetUserByEmail(ctx, email)
+	if err != nil {
+		t.Fatalf("GetUserByEmail: %v", err)
+	}
+	if beforeLink.GoogleSub != nil {
+		t.Fatalf("google_sub = %v, want nil before the first sign-in", *beforeLink.GoogleSub)
+	}
+	if _, err := auth.GetUserByGoogleSub(ctx, sub); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetUserByGoogleSub before linking err = %v, want ErrNotFound", err)
+	}
+
+	if err := auth.SetUserGoogleSub(ctx, user.ID, sub); err != nil {
+		t.Fatalf("SetUserGoogleSub: %v", err)
+	}
+
+	// After linking: resolves by sub, and the email lookup now carries it.
+	bySub, err := auth.GetUserByGoogleSub(ctx, sub)
+	if err != nil {
+		t.Fatalf("GetUserByGoogleSub after linking: %v", err)
+	}
+	if bySub.UserID != user.ID {
+		t.Fatalf("GetUserByGoogleSub user id = %s, want %s", bySub.UserID, user.ID)
+	}
+	afterLink, err := auth.GetUserByEmail(ctx, email)
+	if err != nil {
+		t.Fatalf("GetUserByEmail after linking: %v", err)
+	}
+	if afterLink.GoogleSub == nil || *afterLink.GoogleSub != sub {
+		t.Fatalf("google_sub after linking = %v, want %q", afterLink.GoogleSub, sub)
+	}
 }

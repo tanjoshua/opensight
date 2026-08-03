@@ -25,7 +25,10 @@ import {
   type ProposedProfile,
   type ProposedPrompt,
 } from "@/gen/opensight/v1/business_pb"
-import { applyProposal } from "@/gen/opensight/v1/business-BusinessService_connectquery"
+import {
+  applyProposal,
+  generateQuestions,
+} from "@/gen/opensight/v1/business-BusinessService_connectquery"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,6 +43,16 @@ const EMPTY_PROFILE: ProposedProfile = create(ProposedProfileSchema, {
   services: [],
   location: EMPTY_LOCATION,
 })
+
+// questionsFingerprint identifies the inputs GenerateQuestions actually reads
+// (design 03): category, city, and the service list. It's compared against
+// the fingerprint the current draft.prompts were generated for so leaving
+// Services only re-generates when one of these actually changed — an
+// unrelated edit (business name, aliases) or a plain Back/Next round trip
+// reuses the existing questions.
+function questionsFingerprint(category: string, city: string, services: string[]): string {
+  return `${category}::${city}::${services.join(",")}`
+}
 
 export function ReviewScreen({
   businessId,
@@ -63,9 +76,19 @@ export function ReviewScreen({
   const [draft, setDraft] = useState<ProposalPayload>(payload)
   const [step, setStep] = useState(0)
   const [hasLocalEdits, setHasLocalEdits] = useState(false)
+  // hasQuestionEdits and questionsFor gate GenerateQuestions (design 03):
+  // questionsFor is the fingerprint draft.prompts were last generated for, so
+  // leaving Services only re-generates when category/city/services actually
+  // changed since — a plain Back/Next reuses them. hasQuestionEdits tracks
+  // manual edits to the question list specifically, narrower than
+  // hasLocalEdits, so a name/alias edit elsewhere doesn't trigger the
+  // "replace my edits" confirmation below.
+  const [hasQuestionEdits, setHasQuestionEdits] = useState(false)
+  const [questionsFor, setQuestionsFor] = useState<string>()
   const apply = useMutation(applyProposal, {
     onSuccess: onApplied,
   })
+  const gen = useMutation(generateQuestions)
 
   // profile is always populated in practice (EMPTY_PAYLOAD sets it, and a
   // ready/failed proposal payload always carries one); the empty fallback
@@ -98,10 +121,72 @@ export function ReviewScreen({
         }),
       }
     })
+  const updateQuestions = (
+    update: (current: ProposedPrompt[]) => ProposedPrompt[]
+  ) => {
+    setHasQuestionEdits(true)
+    updateDraft((d) => ({ ...d, prompts: update(d.prompts) }))
+  }
 
   const validationError = validateFinalPayload(draft, promptLimit)
   const canApply = validationError === undefined
   const stepError = validateStep(step, draft, promptLimit)
+  const genError = gen.isError
+    ? errorMessage(
+        gen.error,
+        "Could not generate questions. Try again, or add them yourself below."
+      )
+    : undefined
+
+  // advance leaves the current step. Leaving Services (step 1) is where
+  // customer questions are generated — on demand, grounded in the services
+  // the user has just confirmed, rather than upfront alongside profile
+  // research (design 03). A confirm() only fires if the user has actually
+  // edited the question list, mirroring the regenerate confirmation below.
+  const advance = () => {
+    if (step !== 1) {
+      setStep((current) => current + 1)
+      return
+    }
+    const fingerprint = questionsFingerprint(
+      profile.category,
+      location.city,
+      profile.services
+    )
+    if (fingerprint === questionsFor) {
+      setStep((current) => current + 1)
+      return
+    }
+    if (
+      hasQuestionEdits &&
+      !window.confirm(
+        "Generating new questions will replace the ones you added. Continue?"
+      )
+    ) {
+      return
+    }
+    gen.mutate(
+      { businessId, profile },
+      {
+        onSuccess: (data) => {
+          // System-generated, not a user edit: bypass updateDraft/updateQuestions
+          // so this doesn't trip hasLocalEdits or hasQuestionEdits.
+          setDraft((d) => ({ ...d, prompts: data.prompts }))
+          setQuestionsFor(fingerprint)
+          setStep((current) => current + 1)
+        },
+      }
+    )
+  }
+  // skipQuestionGeneration lets the user proceed to Customer questions and add
+  // them by hand when generation fails — manual entry must always stay
+  // available (design 03).
+  const skipQuestionGeneration = () => {
+    setQuestionsFor(
+      questionsFingerprint(profile.category, location.city, profile.services)
+    )
+    setStep((current) => current + 1)
+  }
 
   const applyError = apply.isError
     ? errorMessage(apply.error, "Could not apply. Try again.")
@@ -299,13 +384,10 @@ export function ReviewScreen({
               variant="outline"
               size="sm"
               onClick={() =>
-                updateDraft((d) => ({
-                  ...d,
-                  prompts: [
-                    ...d.prompts,
-                    create(ProposedPromptSchema, { text: "" }),
-                  ],
-                }))
+                updateQuestions((prompts) => [
+                  ...prompts,
+                  create(ProposedPromptSchema, { text: "" }),
+                ])
               }
             >
               <Plus data-icon="inline-start" />
@@ -325,16 +407,10 @@ export function ReviewScreen({
                   index={i}
                   value={p}
                   onChange={(next) =>
-                    updateDraft((d) => ({
-                      ...d,
-                      prompts: replaceAt(d.prompts, i, next),
-                    }))
+                    updateQuestions((prompts) => replaceAt(prompts, i, next))
                   }
                   onRemove={() =>
-                    updateDraft((d) => ({
-                      ...d,
-                      prompts: removeAt(d.prompts, i),
-                    }))
+                    updateQuestions((prompts) => removeAt(prompts, i))
                   }
                 />
               ))}
@@ -349,6 +425,19 @@ export function ReviewScreen({
             {applyError}
           </p>
         )}
+        {genError && (
+          <div className="flex flex-wrap items-center gap-3 text-sm text-destructive" role="alert">
+            <p>{genError}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={skipQuestionGeneration}
+            >
+              Skip — I'll add questions myself
+            </Button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-sm text-muted-foreground">
             {stepError ??
@@ -362,6 +451,7 @@ export function ReviewScreen({
                 type="button"
                 variant="outline"
                 onClick={() => setStep((current) => current - 1)}
+                disabled={gen.isPending}
               >
                 <ArrowLeft data-icon="inline-start" />
                 Back
@@ -370,10 +460,10 @@ export function ReviewScreen({
             {step < 2 ? (
               <Button
                 type="button"
-                disabled={stepError !== undefined}
-                onClick={() => setStep((current) => current + 1)}
+                disabled={stepError !== undefined || gen.isPending}
+                onClick={advance}
               >
-                Next
+                {gen.isPending ? "Generating questions" : "Next"}
                 <ArrowRight data-icon="inline-end" />
               </Button>
             ) : (

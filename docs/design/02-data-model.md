@@ -43,8 +43,8 @@ runtime SQL assembly is needed.
 
 ```sql
 tenants  ( id uuid PK, name text, created_at )
-users    ( id uuid PK, tenant_id uuid FK, email citext UNIQUE, created_at )
--- auth mechanics (password/sessions) owned by design 07
+users    ( id uuid PK, tenant_id uuid FK, email citext UNIQUE, google_sub text UNIQUE, created_at )
+-- auth mechanics (Google sign-in/sessions) owned by design 07
 
 subscriptions (
   tenant_id              uuid PK FK,   -- one permanent billing record per tenant

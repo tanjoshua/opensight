@@ -5,15 +5,22 @@ SELECT 1 FROM businesses WHERE id = $1 AND tenant_id = $2;
 INSERT INTO tenants (id, name) VALUES ($1, $2) RETURNING created_at;
 
 -- name: InsertUser :one
-INSERT INTO users (id, tenant_id, email, password_hash)
+INSERT INTO users (id, tenant_id, email, google_sub)
 VALUES ($1, $2, $3, $4) RETURNING created_at;
 
 -- name: InsertSubscription :exec
 INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, $2, $3);
 
--- name: GetUserCredentials :one
-SELECT u.id, u.tenant_id, u.email, t.name, u.password_hash
+-- name: GetUserByGoogleSub :one
+SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
+FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.google_sub = $1;
+
+-- name: GetUserByEmail :one
+SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
 FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.email = $1;
+
+-- name: SetUserGoogleSub :exec
+UPDATE users SET google_sub = $2 WHERE id = $1;
 
 -- name: InsertSession :exec
 INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3);

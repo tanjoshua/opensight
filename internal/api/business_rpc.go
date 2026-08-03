@@ -43,11 +43,6 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 	}
 	website := strings.TrimSpace(req.Msg.Website)
 
-	plan, err := billing.PlanFor(su.PlanCode)
-	if err != nil {
-		return nil, s.rpcInternal("create business: resolve plan", err)
-	}
-
 	params := store.CreateBusinessParams{
 		TenantID: su.TenantID,
 		Status:   store.BusinessStatusDraft,
@@ -61,7 +56,7 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, s.rpcInternal("create business: insert", err)
 	}
 
-	if err := s.startGeneration(ctx, su.TenantID, business.ID, name, website, plan.PromptLimit); err != nil {
+	if err := s.startGeneration(ctx, su.TenantID, business.ID, name, website); err != nil {
 		// The draft row survives (no compensation): it is recoverable via /me,
 		// and GetProposal reports "failed" since no workflow is running.
 		return nil, s.rpcInternal("create business: start generation", err)
@@ -263,12 +258,7 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, s.rpcInternal("regen proposal: discard pending", err)
 	}
 
-	plan, err := billing.PlanFor(su.PlanCode)
-	if err != nil {
-		return nil, s.rpcInternal("regen proposal: resolve plan", err)
-	}
-
-	if err := s.startGeneration(ctx, su.TenantID, businessID, business.Name, websiteOrEmpty(business.Website), plan.PromptLimit); err != nil {
+	if err := s.startGeneration(ctx, su.TenantID, businessID, business.Name, websiteOrEmpty(business.Website)); err != nil {
 		return nil, s.rpcError("regen proposal: start generation", err)
 	}
 	return connect.NewResponse(&opensightv1.RegenerateProposalResponse{State: &opensightv1.ProposalState{
@@ -302,8 +292,16 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 		return nil, s.rpcInternal("apply business: resolve plan", err)
 	}
 
-	if errs := llm.ValidateProposal(payload, llm.ProposeProfileInput{
+	// Defense in depth: the review screen already gates Approve on these same
+	// rules (validateFinalPayload), but the server never trusts the client's
+	// prompt count or name-leakage checks — apply is the only path that
+	// persists prompts, so it revalidates the submitted payload itself.
+	if errs := llm.ValidateProfile(payload.Profile); len(errs) > 0 {
+		return nil, rpcInvalidArgument(strings.Join(errs, "; "))
+	}
+	if errs := llm.ValidateQuestions(payload.Prompts, llm.QuestionsInput{
 		Name:        payload.Profile.Name,
+		Aliases:     payload.Profile.Aliases,
 		PromptLimit: plan.PromptLimit,
 	}); len(errs) > 0 {
 		return nil, rpcInvalidArgument(strings.Join(errs, "; "))
@@ -372,20 +370,76 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 	}}), nil
 }
 
+// GenerateQuestions generates customer questions on demand once the user has
+// confirmed the profile through the Services review step (design 03): unlike
+// ProposeProfile it does no research, drafting purely from the submitted
+// category/services/city on a cheap non-reasoning model. It persists nothing —
+// the generated prompts are returned for the client's in-memory draft, same as
+// every other value on the review screen.
+func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[opensightv1.GenerateQuestionsRequest]) (*connect.Response[opensightv1.GenerateQuestionsResponse], error) {
+	su, cerr := s.rpcSessionUser(ctx, "generate questions")
+	if cerr != nil {
+		return nil, cerr
+	}
+	businessID, cerr := rpcID("business_id", req.Msg.BusinessId)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	business, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
+	if err != nil {
+		return nil, s.rpcError("generate questions", err)
+	}
+	if business.Status != store.BusinessStatusDraft {
+		return nil, rpcFailedPrecondition("questions can only be generated while the business is in draft")
+	}
+
+	profile := proposedProfileFromProto(req.Msg.Profile)
+	if errs := llm.ValidateProfile(profile); len(errs) > 0 {
+		return nil, rpcInvalidArgument(strings.Join(errs, "; "))
+	}
+
+	plan, err := billing.PlanFor(su.PlanCode)
+	if err != nil {
+		return nil, s.rpcInternal("generate questions: resolve plan", err)
+	}
+
+	result, err := llm.GenerateQuestionsWithRetry(ctx, s.questions, llm.QuestionsInput{
+		Name:        profile.Name,
+		Aliases:     profile.Aliases,
+		Category:    profile.Category,
+		Services:    profile.Services,
+		City:        profile.Location.City,
+		PromptLimit: plan.PromptLimit,
+	})
+	if err != nil {
+		return nil, s.rpcInternal("generate questions: run", err)
+	}
+	if !result.Generated {
+		return nil, s.rpcInternal("generate questions: failed validation after retry",
+			errors.New(strings.Join(result.ValidationErrs, "; ")))
+	}
+
+	prompts := make([]*opensightv1.ProposedPrompt, len(result.Prompts))
+	for i, p := range result.Prompts {
+		prompts[i] = &opensightv1.ProposedPrompt{Text: p.Text}
+	}
+	return connect.NewResponse(&opensightv1.GenerateQuestionsResponse{Prompts: prompts}), nil
+}
+
 // startGeneration starts GenerateProfileWorkflow under the deterministic
 // per-business workflow id, so a regen while a prior run is still open surfaces
 // as WorkflowExecutionAlreadyStarted (CodeAlreadyExists) rather than a
 // duplicate run.
-func (s *Server) startGeneration(ctx context.Context, tenantID, businessID domain.ID, name, website string, promptLimit int) error {
+func (s *Server) startGeneration(ctx context.Context, tenantID, businessID domain.ID, name, website string) error {
 	_, err := s.temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 		ID:        workflows.GenerateProfileWorkflowID(businessID),
 		TaskQueue: s.temporalTaskQueue,
 	}, workflows.GenerateProfileWorkflow, workflows.GenerateProfileWorkflowInput{
-		TenantID:    tenantID,
-		BusinessID:  businessID,
-		Name:        name,
-		Website:     website,
-		PromptLimit: promptLimit,
+		TenantID:   tenantID,
+		BusinessID: businessID,
+		Name:       name,
+		Website:    website,
 	})
 	return err
 }

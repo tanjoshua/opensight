@@ -137,6 +137,21 @@ message ApplyProposalResponse {
   BusinessSummary business = 1;
 }
 
+// GenerateQuestionsRequest generates customer questions on demand once the
+// user has confirmed the profile through the Services review step (design
+// 03). profile is the user's in-memory draft, sent verbatim like
+// ApplyProposal's payload; this RPC persists nothing. There is no
+// client-supplied prompt count: the plan's prompt_limit is read and enforced
+// server-side, same posture as ApplyProposalRequest.
+message GenerateQuestionsRequest {
+  string business_id = 1;
+  ProposedProfile profile = 2;
+}
+
+message GenerateQuestionsResponse {
+  repeated ProposedPrompt prompts = 1;
+}
+
 service BusinessService {
   rpc CreateBusiness(CreateBusinessRequest) returns (CreateBusinessResponse);
   rpc GetBusiness(GetBusinessRequest) returns (GetBusinessResponse);
@@ -144,4 +159,5 @@ service BusinessService {
   rpc GetProposal(GetProposalRequest) returns (GetProposalResponse);
   rpc RegenerateProposal(RegenerateProposalRequest) returns (RegenerateProposalResponse);
   rpc ApplyProposal(ApplyProposalRequest) returns (ApplyProposalResponse);
+  rpc GenerateQuestions(GenerateQuestionsRequest) returns (GenerateQuestionsResponse);
 }

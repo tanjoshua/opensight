@@ -39,7 +39,7 @@ Any static host works. This site lives in the `marketing/` subdirectory of the [
 
 ## Things to update as the product evolves
 
-- **App URLs**: all CTAs point at `https://app.opensight.app/signup` and sign-in at `https://app.opensight.app` — adjust if the app lives elsewhere.
+- **App URLs**: all CTAs point at `https://dashboard.opensight.app/signup` and sign-in at `https://dashboard.opensight.app` — adjust if the app lives elsewhere.
 - **Contact email**: `hello@opensight.app` in the footer.
 - **Testimonial**: intentionally omitted for v1; add a section between "Every number has a receipt" and the final CTA once a real quote exists.
 - **Copy discipline**: the pages deliberately claim only what the shipped product does (ChatGPT only, 20 prompts, weekly runs, same-day first run). Update copy when capabilities change.

@@ -20,18 +20,16 @@ const maxRPCRequestBytes = 64 << 10
 // accessClass is a procedure's required billing access (design 08 "Access
 // gate"). Classes are named after what they require, not what the procedure
 // does — classSubscriber admits both reads and edits, because both are free
-// once a tenant has paid at least once; only classActive costs money. Order
-// is significant only in that classPublic must be the zero value's opposite
-// — see procedureAccess's total-map property below, not in any numeric
-// comparison between classes.
+// once a tenant has paid at least once; only classActive costs money. There
+// is no "public, no session" class: sign-in itself is a plain HTTP redirect
+// route (google_auth.go), not an RPC, so every procedure in the schema
+// requires a resolved session.
 type accessClass int
 
 const (
-	// classPublic needs no session at all (Login, Signup).
-	classPublic accessClass = iota
 	// classAccount is reachable at any access, including "never paid" — the
 	// billing/account-lifecycle surface itself.
-	classAccount
+	classAccount accessClass = iota
 	// classSubscriber needs at least AccessLapsed: has paid at some point.
 	// Every read plus every edit that costs nothing lives here — history
 	// stays readable and curatable after a subscription lapses.
@@ -67,10 +65,6 @@ func (c accessClass) satisfiedBy(a billing.Access) bool {
 // TestEveryProcedureIsClassified (rpc_test.go) and at runtime by
 // accessInterceptor's default-deny fallthrough below.
 var procedureAccess = map[string]accessClass{
-	// classPublic — no session.
-	opensightv1connect.AuthServiceLoginProcedure:  classPublic,
-	opensightv1connect.AuthServiceSignupProcedure: classPublic,
-
 	// classAccount — reachable at any access.
 	//
 	// GetMe is account, not subscriber: it's how a never-paid or lapsed SPA
@@ -115,10 +109,13 @@ var procedureAccess = map[string]accessClass{
 	// CreateBusiness/RegenerateProposal need full because they start
 	// GenerateProfileWorkflow (LLM spend), not merely because they mutate a
 	// row. ApplyProposal needs full: activates the business, inserts
-	// prompts, creates the Temporal Schedule.
+	// prompts, creates the Temporal Schedule. GenerateQuestions needs full for
+	// the same reason as CreateBusiness/RegenerateProposal: it is an LLM call
+	// (design 03), even though — unlike them — it does not touch a workflow.
 	opensightv1connect.BusinessServiceCreateBusinessProcedure:     classActive,
 	opensightv1connect.BusinessServiceRegenerateProposalProcedure: classActive,
 	opensightv1connect.BusinessServiceApplyProposalProcedure:      classActive,
+	opensightv1connect.BusinessServiceGenerateQuestionsProcedure:  classActive,
 }
 
 // accessInterceptor is the RPC access gate (design 08 "Enforcement gate 1"):
@@ -127,13 +124,13 @@ var procedureAccess = map[string]accessClass{
 //
 //  1. An unclassified procedure is denied — default-deny, so adding an RPC
 //     without classifying it fails closed rather than admitting it.
-//  2. classPublic passes through with no session at all.
-//  3. Every other class resolves the session first (401 and a cookie clear on
-//     failure).
-//  4. Access is derived fresh from the session's billing state and the
+//  2. Every procedure resolves the session first (401 and a cookie clear on
+//     failure) — there is no public/no-session class; sign-in itself is the
+//     HTTP redirect route in google_auth.go, not an RPC.
+//  3. Access is derived fresh from the session's billing state and the
 //     current time — never cached on the session — which is what makes the
 //     dunning bound take effect the moment it passes, with no scheduled job.
-//  5. A class the derived access doesn't satisfy is rejected with the access
+//  4. A class the derived access doesn't satisfy is rejected with the access
 //     the caller actually has, so the SPA can render the right billing state.
 func (s *Server) accessInterceptor() connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
@@ -141,9 +138,6 @@ func (s *Server) accessInterceptor() connect.UnaryInterceptorFunc {
 			class, ok := procedureAccess[req.Spec().Procedure]
 			if !ok {
 				return nil, s.rpcInternal("rpc: unclassified procedure", errors.New("no access class registered for "+req.Spec().Procedure))
-			}
-			if class == classPublic {
-				return next(ctx, req)
 			}
 
 			su, err := s.sessionFromHeader(ctx, req.Header())
@@ -214,9 +208,9 @@ func rpcPaging(limit, offset int32, defaultLimit, maxLimit int) (int, int) {
 }
 
 // rpcSessionUser pulls the session user the interceptor injected. A miss
-// means broken wiring (the procedure would have to be classPublic otherwise,
-// which never reaches a handler that calls this), not a normal auth failure
-// — so it's Internal.
+// means broken wiring — every procedure resolves a session, so a handler
+// that calls this is always reached with one set — not a normal auth
+// failure, so it's Internal.
 func (s *Server) rpcSessionUser(ctx context.Context, op string) (store.SessionUser, *connect.Error) {
 	su, ok := sessionUserFromContext(ctx)
 	if !ok {

@@ -301,28 +301,54 @@ func (q *Queries) GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUI
 	return i, err
 }
 
-const getUserCredentials = `-- name: GetUserCredentials :one
-SELECT u.id, u.tenant_id, u.email, t.name, u.password_hash
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
 FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.email = $1
 `
 
-type GetUserCredentialsRow struct {
-	ID           uuid.UUID
-	TenantID     uuid.UUID
-	Email        string
-	Name         string
-	PasswordHash *string
+type GetUserByEmailRow struct {
+	ID        uuid.UUID
+	TenantID  uuid.UUID
+	Email     string
+	Name      string
+	GoogleSub *string
 }
 
-func (q *Queries) GetUserCredentials(ctx context.Context, email string) (GetUserCredentialsRow, error) {
-	row := q.db.QueryRow(ctx, getUserCredentials, email)
-	var i GetUserCredentialsRow
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
 		&i.Email,
 		&i.Name,
-		&i.PasswordHash,
+		&i.GoogleSub,
+	)
+	return i, err
+}
+
+const getUserByGoogleSub = `-- name: GetUserByGoogleSub :one
+SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
+FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.google_sub = $1
+`
+
+type GetUserByGoogleSubRow struct {
+	ID        uuid.UUID
+	TenantID  uuid.UUID
+	Email     string
+	Name      string
+	GoogleSub *string
+}
+
+func (q *Queries) GetUserByGoogleSub(ctx context.Context, googleSub *string) (GetUserByGoogleSubRow, error) {
+	row := q.db.QueryRow(ctx, getUserByGoogleSub, googleSub)
+	var i GetUserByGoogleSubRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Email,
+		&i.Name,
+		&i.GoogleSub,
 	)
 	return i, err
 }
@@ -454,15 +480,15 @@ func (q *Queries) InsertTenant(ctx context.Context, arg InsertTenantParams) (tim
 }
 
 const insertUser = `-- name: InsertUser :one
-INSERT INTO users (id, tenant_id, email, password_hash)
+INSERT INTO users (id, tenant_id, email, google_sub)
 VALUES ($1, $2, $3, $4) RETURNING created_at
 `
 
 type InsertUserParams struct {
-	ID           uuid.UUID
-	TenantID     uuid.UUID
-	Email        string
-	PasswordHash *string
+	ID        uuid.UUID
+	TenantID  uuid.UUID
+	Email     string
+	GoogleSub *string
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (time.Time, error) {
@@ -470,7 +496,7 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (time.Ti
 		arg.ID,
 		arg.TenantID,
 		arg.Email,
-		arg.PasswordHash,
+		arg.GoogleSub,
 	)
 	var created_at time.Time
 	err := row.Scan(&created_at)
@@ -695,6 +721,20 @@ func (q *Queries) SetStripeCustomerID(ctx context.Context, arg SetStripeCustomer
 	var stripe_customer_id *string
 	err := row.Scan(&stripe_customer_id)
 	return stripe_customer_id, err
+}
+
+const setUserGoogleSub = `-- name: SetUserGoogleSub :exec
+UPDATE users SET google_sub = $2 WHERE id = $1
+`
+
+type SetUserGoogleSubParams struct {
+	ID        uuid.UUID
+	GoogleSub *string
+}
+
+func (q *Queries) SetUserGoogleSub(ctx context.Context, arg SetUserGoogleSubParams) error {
+	_, err := q.db.Exec(ctx, setUserGoogleSub, arg.ID, arg.GoogleSub)
+	return err
 }
 
 const updateActiveBusinessProfile = `-- name: UpdateActiveBusinessProfile :one

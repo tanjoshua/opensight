@@ -15,8 +15,9 @@ export function PrivacyPage() {
       <PrivacySection title="What we store">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            Account data, including user email addresses, password verifiers,
-            and active session records.
+            Account data, including user email addresses, your Google account
+            identifier, and active session records. We never see or store a
+            password — sign-in is handled entirely by Google.
           </li>
           <li>
             Business profiles, including names, websites, aliases, category,

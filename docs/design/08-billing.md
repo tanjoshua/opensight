@@ -8,7 +8,7 @@ Closes 07's deferred items for signup and billing. Replaces the invite-only acco
 
 ```mermaid
 flowchart LR
-    M[Marketing<br/>opensight.app] --> S[/signup<br/>email + password/]
+    M[Marketing<br/>opensight.app] --> S[/login<br/>Sign in with Google/]
     S --> C[Stripe Checkout<br/>S$50/month]
     C --> R[/checkout/return<br/>reconcile/]
     R --> O[Onboarding<br/>name + website → proposal]
@@ -17,7 +17,7 @@ flowchart LR
 
 **Payment is taken before the first LLM call.** Every downstream cost — profile generation, 20 prompt executions, analysis — sits behind a successful charge, so there is no free-spend surface to abuse and no in-app spend circuit breaker to build.
 
-This also removes email verification from MVP scope: a completed card charge is a stronger identity and intent signal than a verified mailbox, and verification exists mainly to stop exactly the free-resource abuse that card-first already prevents. The cost is conversion — the user pays before seeing their own data. The marketing site carries that weight (product, pricing, and FAQ pages explain the method and the evidence model before signup).
+Email verification was never MVP scope to begin with: Google's ID token already asserts a verified address (07 "Auth and accounts"), so there is nothing left to verify. What card-first still buys is the free-resource-abuse backstop a verified mailbox alone wouldn't: it costs conversion — the user pays before seeing their own data — and the marketing site carries that weight (product, pricing, and FAQ pages explain the method and the evidence model before signup).
 
 Consequence for onboarding (03): a signed-up, paid tenant with no business yet is a normal state. Onboarding is unchanged except that reaching it requires `access = full`.
 
@@ -196,7 +196,7 @@ service BillingService {
 
 All four exist today, in `proto/opensight/v1/billing.proto`.
 
-`AuthService.Signup` joins `Login` as `procedureAccess`'s only `public`-class entries; every other procedure is `account`/`subscriber`/`active` (BILL-6, reclassified by BILL-10). `GetMeResponse` drops the bare `prompt_limit` int in favour of an `access` enum plus a `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`, moved to `common.proto` since `BusinessProfile` no longer carries plan entitlements — a business's plan is the tenant's plan), so the SPA renders entitlements and billing state from one authoritative payload. No method is ever declared `idempotency_level = NO_SIDE_EFFECTS` (07's CSRF guarantee).
+There is no `public`-class procedure: sign-in itself is the `/auth/google/*` HTTP redirect flow, not an RPC (07 "Auth and accounts"), so every procedure in `procedureAccess` is `account`/`subscriber`/`active` (BILL-6, reclassified by BILL-10). `GetMeResponse` drops the bare `prompt_limit` int in favour of an `access` enum plus a `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`, moved to `common.proto` since `BusinessProfile` no longer carries plan entitlements — a business's plan is the tenant's plan), so the SPA renders entitlements and billing state from one authoritative payload. No method is ever declared `idempotency_level = NO_SIDE_EFFECTS` (07's CSRF guarantee).
 
 Access is resolved alongside the session rather than by a second lookup: `AuthStore.GetSession` LEFT JOINs `subscriptions` on the same query that resolves the session's user and tenant, so `store.SessionUser` carries `plan_code` and the raw billing `State` (not a derived `Access` — that's still computed per-request against the current time) with no extra round trip. The join is a LEFT JOIN deliberately: every tenant is supposed to have exactly one `subscriptions` row, so a miss is a bug surfaced as an explicit internal error, not silently treated as an absent session.
 
@@ -227,15 +227,13 @@ Reactivation touches nothing but billing: business, profile, prompts and every s
 
 ## Signup
 
-`AuthService.Signup(email, password)` creates, in one transaction: a tenant, a user with an argon2id hash, and a `subscriptions` row at `plan_code = 'starter'` with no Stripe objects. It then mints a session exactly as `Login` does, so the user arrives authenticated at `/billing` for checkout.
+There is no separate signup RPC. `GET /auth/google/callback` (07 "Auth and accounts") provisions, in one transaction, a tenant, a user linked to the signed-in Google account, and a `subscriptions` row at `plan_code = 'starter'` with no Stripe objects — the same transaction `AuthService.Signup` used to run. It then mints a session exactly as before, so the user arrives authenticated at `/billing` for checkout.
 
-- Only email and password are collected. The business name and website are onboarding's first screen, where they are actually used; asking twice costs conversion at the point it is most fragile.
+- No form is collected at all: email comes from Google's verified ID token. The business name and website are onboarding's first screen, where they are actually used; asking twice costs conversion at the point it is most fragile.
 - `tenants.name` defaults to the email local part and is replaced with the business name when onboarding creates the business.
-- Signup **is** an email-enumeration oracle ("that email is already registered") and cannot not be, without a verification email we deliberately do not send. Login's uniform-failure guarantee is unaffected and unchanged. Accepted, documented, revisited if signup abuse appears.
 - Rate limited per IP at Caddy (07), alongside `/rpc`.
-- Password minimum length only. No composition rules — they degrade real password strength.
 
-Password reset stays deferred while there is no transactional email provider. Account recovery and other sensitive account-management actions belong in a future admin portal rather than a growing collection of one-off CLI commands.
+Account recovery and other sensitive account-management actions belong in a future admin portal rather than a growing collection of one-off CLI commands — but password reset itself is no longer one of them: Google owns credential recovery.
 
 ## Operator-created tenants
 
@@ -277,4 +275,4 @@ Added to 07's `.env` inventory and to the restic backup set by virtue of that fi
 
 ## Deliberately deferred
 
-Admin account management (including password reset and changing comp status), email verification, and password-reset email (no email provider); annual pricing and any second tier (the catalog and one-Product-per-tier rule make both additive); proration and upgrade/downgrade flows; in-app invoice list (the portal has it); usage-based or per-prompt pricing; multi-user tenants and seat billing; Stripe Tax (until GST-registered); account self-deletion.
+Admin account management (including changing comp status); annual pricing and any second tier (the catalog and one-Product-per-tier rule make both additive); proration and upgrade/downgrade flows; in-app invoice list (the portal has it); usage-based or per-prompt pricing; multi-user tenants and seat billing; Stripe Tax (until GST-registered); account self-deletion.

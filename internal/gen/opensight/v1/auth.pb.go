@@ -125,218 +125,6 @@ func (x *Tenant) GetName() string {
 	return ""
 }
 
-// LoginRequest carries a credential (password) and must never be logged in
-// full — relevant to any future logging/observability interceptor.
-type LoginRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LoginRequest) Reset() {
-	*x = LoginRequest{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LoginRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LoginRequest) ProtoMessage() {}
-
-func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
-func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *LoginRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *LoginRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-type LoginResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	Tenant        *Tenant                `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LoginResponse) Reset() {
-	*x = LoginResponse{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LoginResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LoginResponse) ProtoMessage() {}
-
-func (x *LoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
-func (*LoginResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *LoginResponse) GetUser() *User {
-	if x != nil {
-		return x.User
-	}
-	return nil
-}
-
-func (x *LoginResponse) GetTenant() *Tenant {
-	if x != nil {
-		return x.Tenant
-	}
-	return nil
-}
-
-// SignupRequest carries a credential (password) and must never be logged in
-// full — relevant to any future logging/observability interceptor.
-type SignupRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SignupRequest) Reset() {
-	*x = SignupRequest{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SignupRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SignupRequest) ProtoMessage() {}
-
-func (x *SignupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SignupRequest.ProtoReflect.Descriptor instead.
-func (*SignupRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *SignupRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *SignupRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-type SignupResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	Tenant        *Tenant                `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SignupResponse) Reset() {
-	*x = SignupResponse{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SignupResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SignupResponse) ProtoMessage() {}
-
-func (x *SignupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SignupResponse.ProtoReflect.Descriptor instead.
-func (*SignupResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *SignupResponse) GetUser() *User {
-	if x != nil {
-		return x.User
-	}
-	return nil
-}
-
-func (x *SignupResponse) GetTenant() *Tenant {
-	if x != nil {
-		return x.Tenant
-	}
-	return nil
-}
-
 type LogoutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -345,7 +133,7 @@ type LogoutRequest struct {
 
 func (x *LogoutRequest) Reset() {
 	*x = LogoutRequest{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[6]
+	mi := &file_opensight_v1_auth_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -357,7 +145,7 @@ func (x *LogoutRequest) String() string {
 func (*LogoutRequest) ProtoMessage() {}
 
 func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[6]
+	mi := &file_opensight_v1_auth_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -370,7 +158,7 @@ func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
 func (*LogoutRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{6}
+	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{2}
 }
 
 type LogoutResponse struct {
@@ -381,7 +169,7 @@ type LogoutResponse struct {
 
 func (x *LogoutResponse) Reset() {
 	*x = LogoutResponse{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[7]
+	mi := &file_opensight_v1_auth_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -393,7 +181,7 @@ func (x *LogoutResponse) String() string {
 func (*LogoutResponse) ProtoMessage() {}
 
 func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[7]
+	mi := &file_opensight_v1_auth_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -406,7 +194,7 @@ func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
 func (*LogoutResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{7}
+	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{3}
 }
 
 type GetMeRequest struct {
@@ -417,7 +205,7 @@ type GetMeRequest struct {
 
 func (x *GetMeRequest) Reset() {
 	*x = GetMeRequest{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[8]
+	mi := &file_opensight_v1_auth_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -429,7 +217,7 @@ func (x *GetMeRequest) String() string {
 func (*GetMeRequest) ProtoMessage() {}
 
 func (x *GetMeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[8]
+	mi := &file_opensight_v1_auth_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -442,7 +230,7 @@ func (x *GetMeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMeRequest.ProtoReflect.Descriptor instead.
 func (*GetMeRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{8}
+	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{4}
 }
 
 type GetMeResponse struct {
@@ -458,7 +246,7 @@ type GetMeResponse struct {
 
 func (x *GetMeResponse) Reset() {
 	*x = GetMeResponse{}
-	mi := &file_opensight_v1_auth_proto_msgTypes[9]
+	mi := &file_opensight_v1_auth_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -470,7 +258,7 @@ func (x *GetMeResponse) String() string {
 func (*GetMeResponse) ProtoMessage() {}
 
 func (x *GetMeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_auth_proto_msgTypes[9]
+	mi := &file_opensight_v1_auth_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -483,7 +271,7 @@ func (x *GetMeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMeResponse.ProtoReflect.Descriptor instead.
 func (*GetMeResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{9}
+	return file_opensight_v1_auth_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetMeResponse) GetUser() *User {
@@ -531,19 +319,7 @@ const file_opensight_v1_auth_proto_rawDesc = "" +
 	"\x05email\x18\x02 \x01(\tR\x05email\",\n" +
 	"\x06Tenant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"@\n" +
-	"\fLoginRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"e\n" +
-	"\rLoginResponse\x12&\n" +
-	"\x04user\x18\x01 \x01(\v2\x12.opensight.v1.UserR\x04user\x12,\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x14.opensight.v1.TenantR\x06tenant\"A\n" +
-	"\rSignupRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"f\n" +
-	"\x0eSignupResponse\x12&\n" +
-	"\x04user\x18\x01 \x01(\v2\x12.opensight.v1.UserR\x04user\x12,\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x14.opensight.v1.TenantR\x06tenant\"\x0f\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"\x0f\n" +
 	"\rLogoutRequest\"\x10\n" +
 	"\x0eLogoutResponse\"\x0e\n" +
 	"\fGetMeRequest\"\x8e\x02\n" +
@@ -554,10 +330,8 @@ const file_opensight_v1_auth_proto_rawDesc = "" +
 	"businesses\x18\x03 \x03(\v2\x1d.opensight.v1.BusinessSummaryR\n" +
 	"businesses\x12,\n" +
 	"\x06access\x18\x05 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\x12&\n" +
-	"\x04plan\x18\x06 \x01(\v2\x12.opensight.v1.PlanR\x04planJ\x04\b\x04\x10\x05R\fprompt_limit2\x9b\x02\n" +
-	"\vAuthService\x12@\n" +
-	"\x05Login\x12\x1a.opensight.v1.LoginRequest\x1a\x1b.opensight.v1.LoginResponse\x12C\n" +
-	"\x06Signup\x12\x1b.opensight.v1.SignupRequest\x1a\x1c.opensight.v1.SignupResponse\x12C\n" +
+	"\x04plan\x18\x06 \x01(\v2\x12.opensight.v1.PlanR\x04planJ\x04\b\x04\x10\x05R\fprompt_limit2\x94\x01\n" +
+	"\vAuthService\x12C\n" +
 	"\x06Logout\x12\x1b.opensight.v1.LogoutRequest\x1a\x1c.opensight.v1.LogoutResponse\x12@\n" +
 	"\x05GetMe\x12\x1a.opensight.v1.GetMeRequest\x1a\x1b.opensight.v1.GetMeResponseB\x9f\x01\n" +
 	"\x10com.opensight.v1B\tAuthProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
@@ -574,45 +348,33 @@ func file_opensight_v1_auth_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_auth_proto_rawDescData
 }
 
-var file_opensight_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_opensight_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_opensight_v1_auth_proto_goTypes = []any{
 	(*User)(nil),            // 0: opensight.v1.User
 	(*Tenant)(nil),          // 1: opensight.v1.Tenant
-	(*LoginRequest)(nil),    // 2: opensight.v1.LoginRequest
-	(*LoginResponse)(nil),   // 3: opensight.v1.LoginResponse
-	(*SignupRequest)(nil),   // 4: opensight.v1.SignupRequest
-	(*SignupResponse)(nil),  // 5: opensight.v1.SignupResponse
-	(*LogoutRequest)(nil),   // 6: opensight.v1.LogoutRequest
-	(*LogoutResponse)(nil),  // 7: opensight.v1.LogoutResponse
-	(*GetMeRequest)(nil),    // 8: opensight.v1.GetMeRequest
-	(*GetMeResponse)(nil),   // 9: opensight.v1.GetMeResponse
-	(*BusinessSummary)(nil), // 10: opensight.v1.BusinessSummary
-	(Access)(0),             // 11: opensight.v1.Access
-	(*Plan)(nil),            // 12: opensight.v1.Plan
+	(*LogoutRequest)(nil),   // 2: opensight.v1.LogoutRequest
+	(*LogoutResponse)(nil),  // 3: opensight.v1.LogoutResponse
+	(*GetMeRequest)(nil),    // 4: opensight.v1.GetMeRequest
+	(*GetMeResponse)(nil),   // 5: opensight.v1.GetMeResponse
+	(*BusinessSummary)(nil), // 6: opensight.v1.BusinessSummary
+	(Access)(0),             // 7: opensight.v1.Access
+	(*Plan)(nil),            // 8: opensight.v1.Plan
 }
 var file_opensight_v1_auth_proto_depIdxs = []int32{
-	0,  // 0: opensight.v1.LoginResponse.user:type_name -> opensight.v1.User
-	1,  // 1: opensight.v1.LoginResponse.tenant:type_name -> opensight.v1.Tenant
-	0,  // 2: opensight.v1.SignupResponse.user:type_name -> opensight.v1.User
-	1,  // 3: opensight.v1.SignupResponse.tenant:type_name -> opensight.v1.Tenant
-	0,  // 4: opensight.v1.GetMeResponse.user:type_name -> opensight.v1.User
-	1,  // 5: opensight.v1.GetMeResponse.tenant:type_name -> opensight.v1.Tenant
-	10, // 6: opensight.v1.GetMeResponse.businesses:type_name -> opensight.v1.BusinessSummary
-	11, // 7: opensight.v1.GetMeResponse.access:type_name -> opensight.v1.Access
-	12, // 8: opensight.v1.GetMeResponse.plan:type_name -> opensight.v1.Plan
-	2,  // 9: opensight.v1.AuthService.Login:input_type -> opensight.v1.LoginRequest
-	4,  // 10: opensight.v1.AuthService.Signup:input_type -> opensight.v1.SignupRequest
-	6,  // 11: opensight.v1.AuthService.Logout:input_type -> opensight.v1.LogoutRequest
-	8,  // 12: opensight.v1.AuthService.GetMe:input_type -> opensight.v1.GetMeRequest
-	3,  // 13: opensight.v1.AuthService.Login:output_type -> opensight.v1.LoginResponse
-	5,  // 14: opensight.v1.AuthService.Signup:output_type -> opensight.v1.SignupResponse
-	7,  // 15: opensight.v1.AuthService.Logout:output_type -> opensight.v1.LogoutResponse
-	9,  // 16: opensight.v1.AuthService.GetMe:output_type -> opensight.v1.GetMeResponse
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	0, // 0: opensight.v1.GetMeResponse.user:type_name -> opensight.v1.User
+	1, // 1: opensight.v1.GetMeResponse.tenant:type_name -> opensight.v1.Tenant
+	6, // 2: opensight.v1.GetMeResponse.businesses:type_name -> opensight.v1.BusinessSummary
+	7, // 3: opensight.v1.GetMeResponse.access:type_name -> opensight.v1.Access
+	8, // 4: opensight.v1.GetMeResponse.plan:type_name -> opensight.v1.Plan
+	2, // 5: opensight.v1.AuthService.Logout:input_type -> opensight.v1.LogoutRequest
+	4, // 6: opensight.v1.AuthService.GetMe:input_type -> opensight.v1.GetMeRequest
+	3, // 7: opensight.v1.AuthService.Logout:output_type -> opensight.v1.LogoutResponse
+	5, // 8: opensight.v1.AuthService.GetMe:output_type -> opensight.v1.GetMeResponse
+	7, // [7:9] is the sub-list for method output_type
+	5, // [5:7] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_auth_proto_init() }
@@ -627,7 +389,7 @@ func file_opensight_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_auth_proto_rawDesc), len(file_opensight_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -13,12 +15,72 @@ import (
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/llm"
 	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// fakeGoogleAuth is the googleAuthenticator test double: it echoes state into
+// the (fake) consent URL so the test can recover it from the redirect, and
+// Exchange returns identity/err as configured, standing in for Google's token
+// endpoint without ever leaving the process.
+type fakeGoogleAuth struct {
+	identity googleIdentity
+	err      error
+}
+
+func (f *fakeGoogleAuth) AuthCodeURL(state, _ string) string {
+	return "https://accounts.google.com/o/oauth2/v2/auth?state=" + url.QueryEscape(state)
+}
+
+func (f *fakeGoogleAuth) Exchange(context.Context, string, string) (googleIdentity, error) {
+	return f.identity, f.err
+}
+
+var _ googleAuthenticator = (*fakeGoogleAuth)(nil)
+
+// errUnreachedExchange fails a test loudly if Exchange is ever called: it's
+// configured on fakeGoogleAuth for cases the callback must reject before
+// reaching the exchange (e.g. a state mismatch).
+var errUnreachedExchange = errors.New("google auth: Exchange should not have been called")
+
+// noRedirectClient returns each 3xx response directly instead of following
+// it, so a test can inspect Location and Set-Cookie — while still running
+// every response through jar, exactly like a browser would.
+func noRedirectClient(jar http.CookieJar) *http.Client {
+	return &http.Client{
+		Jar: jar,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
+// startGoogleSignIn drives GET /auth/google/start and returns the state
+// query param Google would echo back to the callback.
+func startGoogleSignIn(t *testing.T, client *http.Client, baseURL string) string {
+	t.Helper()
+	resp, err := client.Get(baseURL + "/auth/google/start")
+	if err != nil {
+		t.Fatalf("GET /auth/google/start: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("/auth/google/start status = %d, want %d", resp.StatusCode, http.StatusFound)
+	}
+	loc, err := resp.Location()
+	if err != nil {
+		t.Fatalf("/auth/google/start Location: %v", err)
+	}
+	state := loc.Query().Get("state")
+	if state == "" {
+		t.Fatal("/auth/google/start did not carry a state param through to the consent URL")
+	}
+	return state
+}
 
 func openAPITestDB(t *testing.T) (*pgxpool.Pool, context.Context) {
 	t.Helper()
@@ -35,10 +97,16 @@ func openAPITestDB(t *testing.T) (*pgxpool.Pool, context.Context) {
 	return db, ctx
 }
 
+// TestRPCSessionLifecycleAgainstPostgres drives the whole sign-in path
+// through real HTTP against Postgres: GET /auth/google/start (state + PKCE
+// cookie, redirect to the consent screen) → GET /auth/google/callback (account
+// provisioned, session cookie set) → GetMe → Logout → GetMe.
 func TestRPCSessionLifecycleAgainstPostgres(t *testing.T) {
 	db, ctx := openAPITestDB(t)
 	repository := store.New(db)
-	srv := New(Deps{Store: repository})
+	email := "api-" + mustDomainID(t).String() + "@example.com"
+	googleAuth := &fakeGoogleAuth{identity: googleIdentity{Sub: "sub-" + mustDomainID(t).String(), Email: email, EmailVerified: true}}
+	srv := New(Deps{Store: repository, AppBaseURL: "https://app.example.com", GoogleAuth: googleAuth})
 	ts := httptest.NewServer(srv.Routes())
 	t.Cleanup(ts.Close)
 
@@ -46,35 +114,80 @@ func TestRPCSessionLifecycleAgainstPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new cookie jar: %v", err)
 	}
-	client := opensightv1connect.NewAuthServiceClient(&http.Client{Jar: jar}, ts.URL+"/rpc")
-	email := "api-" + mustDomainID(t).String() + "@example.com"
+	browser := noRedirectClient(jar)
 
-	signup, err := client.Signup(ctx, connect.NewRequest(&opensightv1.SignupRequest{
-		Email: email, Password: "correct-horse-battery",
-	}))
+	state := startGoogleSignIn(t, browser, ts.URL)
+
+	callbackResp, err := browser.Get(ts.URL + "/auth/google/callback?code=fake-code&state=" + url.QueryEscape(state))
 	if err != nil {
-		t.Fatalf("Signup: %v", err)
+		t.Fatalf("GET /auth/google/callback: %v", err)
 	}
-	tenantID, err := uuid.Parse(signup.Msg.GetTenant().GetId())
+	_ = callbackResp.Body.Close()
+	if callbackResp.StatusCode != http.StatusFound {
+		t.Fatalf("/auth/google/callback status = %d, want %d", callbackResp.StatusCode, http.StatusFound)
+	}
+	if loc, err := callbackResp.Location(); err != nil || loc.Path != "/overview" {
+		t.Fatalf("/auth/google/callback redirected to %v (err=%v), want /overview", loc, err)
+	}
+
+	rpcClient := opensightv1connect.NewAuthServiceClient(browser, ts.URL+"/rpc")
+
+	me, err := rpcClient.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{}))
+	if err != nil {
+		t.Fatalf("GetMe after sign-in: %v", err)
+	}
+	tenantID, err := uuid.Parse(me.Msg.GetTenant().GetId())
 	if err != nil {
 		t.Fatalf("parse tenant id: %v", err)
 	}
 	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID) })
-
-	me, err := client.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{}))
-	if err != nil {
-		t.Fatalf("GetMe after signup: %v", err)
-	}
 	if me.Msg.GetUser().GetEmail() != email || me.Msg.GetPlan().GetCode() != billing.Starter.Code ||
 		me.Msg.GetAccess() != opensightv1.Access_ACCESS_NEVER {
 		t.Fatalf("GetMe = %+v, want signed-up unpaid starter account", me.Msg)
 	}
 
-	if _, err := client.Logout(ctx, connect.NewRequest(&opensightv1.LogoutRequest{})); err != nil {
+	if _, err := rpcClient.Logout(ctx, connect.NewRequest(&opensightv1.LogoutRequest{})); err != nil {
 		t.Fatalf("Logout: %v", err)
 	}
-	if _, err := client.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{})); connect.CodeOf(err) != connect.CodeUnauthenticated {
+	if _, err := rpcClient.GetMe(ctx, connect.NewRequest(&opensightv1.GetMeRequest{})); connect.CodeOf(err) != connect.CodeUnauthenticated {
 		t.Fatalf("GetMe after logout code = %v, want Unauthenticated", connect.CodeOf(err))
+	}
+}
+
+// TestGoogleCallbackStateMismatchRedirectsToLoginError covers the CSRF guard:
+// a callback whose state doesn't match the one minted by /auth/google/start
+// (or has no oauth cookie at all) must never proceed to Exchange — it
+// redirects straight to the login page's error state.
+func TestGoogleCallbackStateMismatchRedirectsToLoginError(t *testing.T) {
+	db, _ := openAPITestDB(t)
+	repository := store.New(db)
+	googleAuth := &fakeGoogleAuth{err: errUnreachedExchange}
+	srv := New(Deps{Store: repository, AppBaseURL: "https://app.example.com", GoogleAuth: googleAuth})
+	ts := httptest.NewServer(srv.Routes())
+	t.Cleanup(ts.Close)
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("new cookie jar: %v", err)
+	}
+	browser := noRedirectClient(jar)
+
+	startGoogleSignIn(t, browser, ts.URL) // sets the oauth cookie; state discarded
+
+	resp, err := browser.Get(ts.URL + "/auth/google/callback?code=fake-code&state=not-the-real-state")
+	if err != nil {
+		t.Fatalf("GET /auth/google/callback: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("callback status = %d, want %d", resp.StatusCode, http.StatusFound)
+	}
+	loc, err := resp.Location()
+	if err != nil {
+		t.Fatalf("callback Location: %v", err)
+	}
+	if loc.Path != "/login" || loc.Query().Get("error") != "google" {
+		t.Fatalf("callback redirected to %v, want /login?error=google", loc)
 	}
 }
 
@@ -123,5 +236,90 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 	_, err = srv.GetBusiness(otherSession, connect.NewRequest(&opensightv1.GetBusinessRequest{BusinessId: businessID.String()}))
 	if connect.CodeOf(err) != connect.CodeNotFound {
 		t.Fatalf("cross-tenant GetBusiness code = %v, want NotFound", connect.CodeOf(err))
+	}
+}
+
+// TestGenerateQuestionsAgainstPostgres covers GenerateQuestions' three guards
+// against a real business row (design 03): draft-only, server-side profile
+// validation, and the plan's prompt_limit — never a client-supplied count —
+// deciding how many questions come back.
+func TestGenerateQuestionsAgainstPostgres(t *testing.T) {
+	db, ctx := openAPITestDB(t)
+	tenantID := mustDomainID(t)
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+	})
+	if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", tenantID, "Questions Tenant"); err != nil {
+		t.Fatalf("insert tenant: %v", err)
+	}
+	if _, err := db.Exec(ctx, "INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, $2, true)", tenantID, billing.Starter.Code); err != nil {
+		t.Fatalf("insert subscription: %v", err)
+	}
+
+	questions, err := llm.NewStubQuestionsRunner()
+	if err != nil {
+		t.Fatalf("NewStubQuestionsRunner: %v", err)
+	}
+	repository := store.New(db)
+	srv := New(Deps{Store: repository, Temporal: &fakeTemporalClient{}, TemporalTaskQueue: "api-integration", Questions: questions})
+	session := withSessionUser(ctx, store.SessionUser{
+		UserID: mustDomainID(t), TenantID: tenantID, Email: "questions@example.com",
+		TenantName: "Questions Tenant", ExpiresAt: time.Now().Add(time.Hour),
+		PlanCode: billing.Starter.Code, Billing: billing.State{Comped: true},
+	})
+
+	created, err := srv.CreateBusiness(session, connect.NewRequest(&opensightv1.CreateBusinessRequest{Name: "Atlas Dental"}))
+	if err != nil {
+		t.Fatalf("CreateBusiness: %v", err)
+	}
+	businessID := created.Msg.GetBusiness().GetId()
+	businessUUID, err := uuid.Parse(businessID)
+	if err != nil {
+		t.Fatalf("parse business id: %v", err)
+	}
+
+	validProfile := &opensightv1.ProposedProfile{
+		Name:     "Atlas Dental",
+		Category: "dental clinic",
+		Services: []string{"root canal"},
+		Location: &opensightv1.Location{Country: "SG"},
+	}
+
+	// An invalid profile (missing category) never reaches the runner.
+	_, err = srv.GenerateQuestions(session, connect.NewRequest(&opensightv1.GenerateQuestionsRequest{
+		BusinessId: businessID,
+		Profile:    &opensightv1.ProposedProfile{Name: "Atlas Dental", Location: &opensightv1.Location{Country: "SG"}},
+	}))
+	if connect.CodeOf(err) != connect.CodeInvalidArgument {
+		t.Fatalf("invalid profile code = %v, want InvalidArgument", connect.CodeOf(err))
+	}
+
+	// The happy path returns exactly the plan's prompt_limit questions — a
+	// count the client never supplies.
+	resp, err := srv.GenerateQuestions(session, connect.NewRequest(&opensightv1.GenerateQuestionsRequest{
+		BusinessId: businessID,
+		Profile:    validProfile,
+	}))
+	if err != nil {
+		t.Fatalf("GenerateQuestions: %v", err)
+	}
+	if len(resp.Msg.GetPrompts()) != billing.Starter.PromptLimit {
+		t.Fatalf("prompts = %d, want %d (billing.Starter.PromptLimit)", len(resp.Msg.GetPrompts()), billing.Starter.PromptLimit)
+	}
+
+	// An activated business refuses GenerateQuestions: it is a draft-only RPC.
+	// Activation is forced directly rather than through ApplyProposal, whose
+	// Temporal schedule/run side effects are out of scope for this test.
+	if _, err := db.Exec(ctx,
+		"UPDATE businesses SET status = 'active', activated_at = now(), category = 'dental clinic', location = '{\"country\":\"SG\"}'::jsonb WHERE id = $1",
+		businessUUID); err != nil {
+		t.Fatalf("force-activate business: %v", err)
+	}
+	_, err = srv.GenerateQuestions(session, connect.NewRequest(&opensightv1.GenerateQuestionsRequest{
+		BusinessId: businessID,
+		Profile:    validProfile,
+	}))
+	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("post-activation GenerateQuestions code = %v, want FailedPrecondition", connect.CodeOf(err))
 	}
 }

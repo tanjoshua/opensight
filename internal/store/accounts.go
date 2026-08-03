@@ -38,12 +38,14 @@ type CreateTenantParams struct {
 	Name string
 }
 
-// CreateUserParams are the inputs for creating an invite-only user credential.
+// CreateUserParams are the inputs for creating an invite-only user. GoogleSub
+// is normally empty: an operator-created row is linked to a Google account on
+// its first sign-in (store.SetUserGoogleSub), not at creation time.
 type CreateUserParams struct {
-	ID           domain.ID
-	TenantID     domain.ID
-	Email        string
-	PasswordHash string
+	ID        domain.ID
+	TenantID  domain.ID
+	Email     string
+	GoogleSub string
 }
 
 // CreateTenant creates a tenant and its subscription row, in one transaction.
@@ -79,8 +81,7 @@ func (s *Store) CreateTenant(ctx context.Context, params CreateTenantParams) (Te
 	return tenant, nil
 }
 
-// CreateUser creates a user under an existing tenant with a pre-hashed password.
-// The raw password belongs to the CLI layer and is never accepted here.
+// CreateUser creates a user under an existing tenant.
 func (s *Store) CreateUser(ctx context.Context, params CreateUserParams) (User, error) {
 
 	params, err := normalizeCreateUserParams(params)
@@ -94,7 +95,7 @@ func (s *Store) CreateUser(ctx context.Context, params CreateUserParams) (User, 
 		Email:    params.Email,
 	}
 	user.CreatedAt, err = s.q(ctx).InsertUser(ctx, storesqlc.InsertUserParams{
-		ID: user.ID, TenantID: user.TenantID, Email: user.Email, PasswordHash: &params.PasswordHash,
+		ID: user.ID, TenantID: user.TenantID, Email: user.Email, GoogleSub: nilIfEmpty(params.GoogleSub),
 	})
 	if err != nil {
 		return User{}, fmt.Errorf("insert user: %w", err)
@@ -102,12 +103,13 @@ func (s *Store) CreateUser(ctx context.Context, params CreateUserParams) (User, 
 	return user, nil
 }
 
-// CreateAccountParams are the inputs for a self-serve signup.
+// CreateAccountParams are the inputs for provisioning a tenant on a user's
+// first Google sign-in.
 type CreateAccountParams struct {
-	TenantID     domain.ID
-	UserID       domain.ID
-	Email        string
-	PasswordHash string // pre-hashed; raw passwords never reach the store
+	TenantID  domain.ID
+	UserID    domain.ID
+	Email     string
+	GoogleSub string
 }
 
 // CreateAccount creates a tenant, its starter subscription, and its first
@@ -135,7 +137,7 @@ func (s *Store) CreateAccount(ctx context.Context, params CreateAccountParams) (
 			return err
 		}
 		user.CreatedAt, err = q.InsertUser(ctx, storesqlc.InsertUserParams{
-			ID: user.ID, TenantID: user.TenantID, Email: user.Email, PasswordHash: &params.PasswordHash,
+			ID: user.ID, TenantID: user.TenantID, Email: user.Email, GoogleSub: &params.GoogleSub,
 		})
 		if err != nil {
 			if isUniqueViolation(err) {
@@ -149,6 +151,15 @@ func (s *Store) CreateAccount(ctx context.Context, params CreateAccountParams) (
 		return Tenant{}, User{}, err
 	}
 	return tenant, user, nil
+}
+
+// nilIfEmpty returns nil for an empty string, otherwise a pointer to s — used
+// for InsertUser's optional google_sub column.
+func nilIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func normalizeCreateTenantParams(params CreateTenantParams) (CreateTenantParams, error) {
@@ -187,10 +198,7 @@ func normalizeCreateUserParams(params CreateUserParams) (CreateUserParams, error
 	if params.Email == "" {
 		return CreateUserParams{}, errors.New("user email is required")
 	}
-	params.PasswordHash = strings.TrimSpace(params.PasswordHash)
-	if params.PasswordHash == "" {
-		return CreateUserParams{}, errors.New("password hash is required")
-	}
+	params.GoogleSub = strings.TrimSpace(params.GoogleSub)
 	return params, nil
 }
 
@@ -225,9 +233,9 @@ func normalizeCreateAccountParams(params CreateAccountParams) (CreateAccountPara
 		return CreateAccountParams{}, "", errors.New("a valid email is required")
 	}
 
-	params.PasswordHash = strings.TrimSpace(params.PasswordHash)
-	if params.PasswordHash == "" {
-		return CreateAccountParams{}, "", errors.New("password hash is required")
+	params.GoogleSub = strings.TrimSpace(params.GoogleSub)
+	if params.GoogleSub == "" {
+		return CreateAccountParams{}, "", errors.New("google sub is required")
 	}
 	return params, local, nil
 }

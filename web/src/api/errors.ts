@@ -1,5 +1,5 @@
 // Connect RPC error helpers (RPC-7): ConnectError.message is code-prefixed
-// (e.g. "[unauthenticated] invalid email or password") and must never reach the
+// (e.g. "[unauthenticated] authentication required") and must never reach the
 // UI — rawMessage is the server's plain detail string.
 import { Code, ConnectError } from "@connectrpc/connect"
 

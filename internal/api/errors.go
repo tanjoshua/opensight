@@ -33,12 +33,6 @@ func (s *Server) rpcError(op string, err error) *connect.Error {
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("prompt is not active"))
 	case errors.Is(err, store.ErrPromptLimitExceeded):
 		return connect.NewError(connect.CodeResourceExhausted, errors.New("prompt count exceeds the plan limit"))
-	case errors.Is(err, store.ErrEmailTaken):
-		// Deliberately specific: signup is already an enumeration oracle (design
-		// 08), so a vague message here just costs the honest user a support
-		// ticket. Unlike Login's rpcLoginFailed, this is not a uniform-failure
-		// surface.
-		return connect.NewError(connect.CodeAlreadyExists, errors.New("that email is already registered"))
 	}
 
 	var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted

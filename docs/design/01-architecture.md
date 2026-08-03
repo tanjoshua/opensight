@@ -100,8 +100,7 @@ Migration path to Temporal Cloud later is configuration (endpoint + mTLS certs),
 opensight/
 ├── cmd/opensight/        # single binary: serve | work | migrate
 ├── internal/
-│   ├── api/              # HTTP handlers, middleware
-│   ├── auth/             # password hashing (shared by api + user-create CLI)
+│   ├── api/              # HTTP handlers, middleware, Google OAuth
 │   ├── domain/           # core types, business logic
 │   ├── store/            # Postgres repositories, sqlc queries, migrations
 │   ├── workflows/        # Temporal workflows + activities

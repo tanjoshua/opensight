@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const proposalResponseText = `{"low_confidence":false,"profile":{"name":"Clinic","aliases":[],"category":"clinic","services":[],"location":{"address":"","area":"","city":"","country":"SG"}},"prompts":[]}`
+const proposalResponseText = `{"low_confidence":false,"profile":{"name":"Clinic","aliases":[],"category":"clinic","services":[],"location":{"address":"","area":"","city":"","country":"SG"}}}`
 
 func proposalCompletedBody(t *testing.T) string {
 	t.Helper()
@@ -41,10 +41,9 @@ func TestOpenAIProposeProfileBuildsStructuredRequest(t *testing.T) {
 	}
 
 	res, err := runner.RunProposeProfile(context.Background(), ProposeProfileInput{
-		Name:        "Clinic",
-		SiteText:    "some site text",
-		Location:    Location{Country: "SG"},
-		PromptLimit: 12,
+		Name:     "Clinic",
+		SiteText: "some site text",
+		Location: Location{Country: "SG"},
 	})
 	if err != nil {
 		t.Fatalf("RunProposeProfile: %v", err)
@@ -82,7 +81,6 @@ func TestOpenAIProposeProfileBuildsStructuredRequest(t *testing.T) {
 		t.Errorf("format = %#v", format)
 	}
 
-	// The user turn carries the prompt count so the model never hardcodes one.
 	input := gotRequest["input"].([]any)
 	if len(input) != 2 {
 		t.Fatalf("input turns = %d, want 2 (developer, user)", len(input))
@@ -91,8 +89,8 @@ func TestOpenAIProposeProfileBuildsStructuredRequest(t *testing.T) {
 	if err := json.Unmarshal([]byte(input[1].(map[string]any)["content"].(string)), &userContent); err != nil {
 		t.Fatalf("decode user content: %v", err)
 	}
-	if userContent["prompt_count"] != float64(12) {
-		t.Errorf("prompt_count = %v, want 12", userContent["prompt_count"])
+	if userContent["site_text"] != "some site text" {
+		t.Errorf("site_text = %v, want %q", userContent["site_text"], "some site text")
 	}
 }
 
@@ -110,9 +108,8 @@ func TestOpenAIProposeProfileAppendsRetryTurns(t *testing.T) {
 	runner, _ := NewOpenAIProposeProfileRunner(OpenAIConfig{APIKey: "sk-test", Model: "gpt-mini", BaseURL: server.URL})
 	if _, err := runner.RunProposeProfile(context.Background(), ProposeProfileInput{
 		Name:                  "Clinic",
-		PromptLimit:           4,
-		PriorOutputJSON:       json.RawMessage(`{"prompts":[]}`),
-		RetryValidationErrors: []string{"prompts has 0 entries, want exactly 4"},
+		PriorOutputJSON:       json.RawMessage(`{"profile":{}}`),
+		RetryValidationErrors: []string{"profile.category is empty"},
 	}); err != nil {
 		t.Fatalf("RunProposeProfile: %v", err)
 	}
@@ -177,7 +174,7 @@ func TestOpenAIProposeProfileErrorMapping(t *testing.T) {
 			defer server.Close()
 
 			runner, _ := NewOpenAIProposeProfileRunner(OpenAIConfig{APIKey: "sk-test", Model: "gpt-mini", BaseURL: server.URL})
-			_, err := runner.RunProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic", PromptLimit: 4})
+			_, err := runner.RunProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic"})
 			if err == nil {
 				t.Fatal("want error")
 			}

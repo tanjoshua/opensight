@@ -14,7 +14,6 @@ import { PromptsPage } from "@/pages/prompts/prompts-page"
 import { RunDetailPage } from "@/pages/runs/run-detail-page"
 import { RunsPage } from "@/pages/runs/runs-page"
 import { SetupPage } from "@/pages/setup/setup-page"
-import { SignupPage } from "@/pages/signup/signup-page"
 
 // ResponsesRedirect keeps the old /responses(?run=X) deep links working after
 // the RUNS-6 rename: a bare wildcard route would drop ?run=, so this reads it
@@ -33,7 +32,9 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      {/* Google is the only sign-in method (design 07): signup is login. The
+          marketing site links here from four pages. */}
+      <Route path="/signup" element={<Navigate to="/login" replace />} />
       <Route path="/billing" element={<BillingPage />} />
       <Route path="/checkout/return" element={<CheckoutReturnPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />

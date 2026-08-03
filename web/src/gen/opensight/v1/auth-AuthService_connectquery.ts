@@ -5,16 +5,6 @@
 import { AuthService } from "./auth_pb";
 
 /**
- * @generated from rpc opensight.v1.AuthService.Login
- */
-export const login = AuthService.method.login;
-
-/**
- * @generated from rpc opensight.v1.AuthService.Signup
- */
-export const signup = AuthService.method.signup;
-
-/**
  * @generated from rpc opensight.v1.AuthService.Logout
  */
 export const logout = AuthService.method.logout;

@@ -21,8 +21,8 @@ require (
 	github.com/stripe/stripe-go/v86 v86.1.1
 	go.temporal.io/api v1.63.0
 	go.temporal.io/sdk v1.46.0
-	golang.org/x/crypto v0.54.0
 	golang.org/x/net v0.56.0
+	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.40.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
@@ -30,6 +30,7 @@ require (
 
 require (
 	cel.dev/expr v0.25.1 // indirect
+	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/air-verse/air v1.66.0 // indirect

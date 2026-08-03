@@ -14,11 +14,11 @@ import (
 
 const openAIProposeProfileSchemaName = "profile_proposal"
 
-// proposeProfileInstructions is the developer-role prompt encoding the design 03
-// combined research+draft rules and "Prompt generation rules". Prompt count is
-// never hardcoded — it is passed as prompt_count in the user content. This call
-// has the web_search tool attached (tool_choice: required), so the model gathers
-// its own evidence rather than being handed a separate research summary.
+// proposeProfileInstructions is the developer-role prompt encoding the design
+// 03 combined research+draft rules. Customer questions are a separate,
+// non-research call (see questionsInstructions in openai_questions.go) fired
+// on demand after the user reviews Services, so this prompt covers only the
+// business profile.
 const proposeProfileInstructions = `Research and draft a business profile proposal for a clinic/practice. The business owner will review it before anything is saved. Use web search and agentic browsing to gather evidence. Do not invent facts beyond what site_text and your web research support.
 
 RESEARCH (do this before drafting)
@@ -32,12 +32,6 @@ PROFILE
 - category: the specialist category a prospective patient would search for (examples across specialties: "endodontic clinic", "orthopaedic clinic", "aesthetic skin clinic"). It MUST be derived from evidence about THIS business — never copy an example and never default to a common category when evidence is thin. The business name itself is strong evidence when it contains a medical/dental specialty term: a name containing "Endodontics" means an endodontic (root canal) dental clinic, "Dermatology" a dermatology clinic, and so on.
 - location.country must be a two-letter ISO 3166-1 alpha-2 code. If evidence gives no explicit country, infer the best guess from address format, phone country code, domain TLD, currency, or language, and set low_confidence true.
 
-PROMPTS (this is the product's core measurement instrument)
-- Generate EXACTLY prompt_count prompts (given in the input; never hardcode a number).
-- A prompt's text must NEVER contain the business name or any alias, in any form. Prompts simulate a prospective patient who does not know this business exists yet.
-- Vary the set across broad category searches ("best <category> in <city>"), specific services/procedures, and symptom or problem descriptions. Ground prompts in the business's city only — never in a neighbourhood, district, street, or landmark within it.
-- Phrase every prompt the way a real person types a question or problem to a chatbot — natural questions or problem statements, never a bare keyword string.
-
 RETRY
 - If prior output and validation failures are provided, they list exactly what was wrong. Fix all of them and re-emit the FULL corrected object, not a diff.`
 
@@ -48,7 +42,7 @@ RETRY
 const proposeProfileJSONSchema = `{
   "type": "object",
   "additionalProperties": false,
-  "required": ["low_confidence", "profile", "prompts"],
+  "required": ["low_confidence", "profile"],
   "properties": {
     "low_confidence": {"type": "boolean"},
     "profile": {
@@ -70,17 +64,6 @@ const proposeProfileJSONSchema = `{
             "city": {"type": "string"},
             "country": {"type": "string"}
           }
-        }
-      }
-    },
-    "prompts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["text"],
-        "properties": {
-          "text": {"type": "string"}
         }
       }
     }
@@ -170,18 +153,15 @@ func (r *OpenAIProposeProfileRunner) requestParams(in ProposeProfileInput) (resp
 }
 
 // marshalProposeProfileUserContent serialises the evidence the model reads.
-// prompt_count is in.PromptLimit (billing.Plan.PromptLimit — never hardcoded).
 func marshalProposeProfileUserContent(in ProposeProfileInput) (string, error) {
 	payload := struct {
 		BusinessName string `json:"business_name"`
 		Website      string `json:"website"`
 		SiteText     string `json:"site_text"`
-		PromptCount  int    `json:"prompt_count"`
 	}{
 		BusinessName: in.Name,
 		Website:      in.Website,
 		SiteText:     in.SiteText,
-		PromptCount:  in.PromptLimit,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

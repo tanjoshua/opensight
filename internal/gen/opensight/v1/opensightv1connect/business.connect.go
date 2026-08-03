@@ -51,6 +51,9 @@ const (
 	// BusinessServiceApplyProposalProcedure is the fully-qualified name of the BusinessService's
 	// ApplyProposal RPC.
 	BusinessServiceApplyProposalProcedure = "/opensight.v1.BusinessService/ApplyProposal"
+	// BusinessServiceGenerateQuestionsProcedure is the fully-qualified name of the BusinessService's
+	// GenerateQuestions RPC.
+	BusinessServiceGenerateQuestionsProcedure = "/opensight.v1.BusinessService/GenerateQuestions"
 )
 
 // BusinessServiceClient is a client for the opensight.v1.BusinessService service.
@@ -61,6 +64,7 @@ type BusinessServiceClient interface {
 	GetProposal(context.Context, *connect.Request[v1.GetProposalRequest]) (*connect.Response[v1.GetProposalResponse], error)
 	RegenerateProposal(context.Context, *connect.Request[v1.RegenerateProposalRequest]) (*connect.Response[v1.RegenerateProposalResponse], error)
 	ApplyProposal(context.Context, *connect.Request[v1.ApplyProposalRequest]) (*connect.Response[v1.ApplyProposalResponse], error)
+	GenerateQuestions(context.Context, *connect.Request[v1.GenerateQuestionsRequest]) (*connect.Response[v1.GenerateQuestionsResponse], error)
 }
 
 // NewBusinessServiceClient constructs a client for the opensight.v1.BusinessService service. By
@@ -110,6 +114,12 @@ func NewBusinessServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(businessServiceMethods.ByName("ApplyProposal")),
 			connect.WithClientOptions(opts...),
 		),
+		generateQuestions: connect.NewClient[v1.GenerateQuestionsRequest, v1.GenerateQuestionsResponse](
+			httpClient,
+			baseURL+BusinessServiceGenerateQuestionsProcedure,
+			connect.WithSchema(businessServiceMethods.ByName("GenerateQuestions")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -121,6 +131,7 @@ type businessServiceClient struct {
 	getProposal        *connect.Client[v1.GetProposalRequest, v1.GetProposalResponse]
 	regenerateProposal *connect.Client[v1.RegenerateProposalRequest, v1.RegenerateProposalResponse]
 	applyProposal      *connect.Client[v1.ApplyProposalRequest, v1.ApplyProposalResponse]
+	generateQuestions  *connect.Client[v1.GenerateQuestionsRequest, v1.GenerateQuestionsResponse]
 }
 
 // CreateBusiness calls opensight.v1.BusinessService.CreateBusiness.
@@ -153,6 +164,11 @@ func (c *businessServiceClient) ApplyProposal(ctx context.Context, req *connect.
 	return c.applyProposal.CallUnary(ctx, req)
 }
 
+// GenerateQuestions calls opensight.v1.BusinessService.GenerateQuestions.
+func (c *businessServiceClient) GenerateQuestions(ctx context.Context, req *connect.Request[v1.GenerateQuestionsRequest]) (*connect.Response[v1.GenerateQuestionsResponse], error) {
+	return c.generateQuestions.CallUnary(ctx, req)
+}
+
 // BusinessServiceHandler is an implementation of the opensight.v1.BusinessService service.
 type BusinessServiceHandler interface {
 	CreateBusiness(context.Context, *connect.Request[v1.CreateBusinessRequest]) (*connect.Response[v1.CreateBusinessResponse], error)
@@ -161,6 +177,7 @@ type BusinessServiceHandler interface {
 	GetProposal(context.Context, *connect.Request[v1.GetProposalRequest]) (*connect.Response[v1.GetProposalResponse], error)
 	RegenerateProposal(context.Context, *connect.Request[v1.RegenerateProposalRequest]) (*connect.Response[v1.RegenerateProposalResponse], error)
 	ApplyProposal(context.Context, *connect.Request[v1.ApplyProposalRequest]) (*connect.Response[v1.ApplyProposalResponse], error)
+	GenerateQuestions(context.Context, *connect.Request[v1.GenerateQuestionsRequest]) (*connect.Response[v1.GenerateQuestionsResponse], error)
 }
 
 // NewBusinessServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -206,6 +223,12 @@ func NewBusinessServiceHandler(svc BusinessServiceHandler, opts ...connect.Handl
 		connect.WithSchema(businessServiceMethods.ByName("ApplyProposal")),
 		connect.WithHandlerOptions(opts...),
 	)
+	businessServiceGenerateQuestionsHandler := connect.NewUnaryHandler(
+		BusinessServiceGenerateQuestionsProcedure,
+		svc.GenerateQuestions,
+		connect.WithSchema(businessServiceMethods.ByName("GenerateQuestions")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/opensight.v1.BusinessService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BusinessServiceCreateBusinessProcedure:
@@ -220,6 +243,8 @@ func NewBusinessServiceHandler(svc BusinessServiceHandler, opts ...connect.Handl
 			businessServiceRegenerateProposalHandler.ServeHTTP(w, r)
 		case BusinessServiceApplyProposalProcedure:
 			businessServiceApplyProposalHandler.ServeHTTP(w, r)
+		case BusinessServiceGenerateQuestionsProcedure:
+			businessServiceGenerateQuestionsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -251,4 +276,8 @@ func (UnimplementedBusinessServiceHandler) RegenerateProposal(context.Context, *
 
 func (UnimplementedBusinessServiceHandler) ApplyProposal(context.Context, *connect.Request[v1.ApplyProposalRequest]) (*connect.Response[v1.ApplyProposalResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BusinessService.ApplyProposal is not implemented"))
+}
+
+func (UnimplementedBusinessServiceHandler) GenerateQuestions(context.Context, *connect.Request[v1.GenerateQuestionsRequest]) (*connect.Response[v1.GenerateQuestionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BusinessService.GenerateQuestions is not implemented"))
 }

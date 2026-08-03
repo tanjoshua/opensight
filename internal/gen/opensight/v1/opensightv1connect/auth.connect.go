@@ -33,10 +33,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthServiceLoginProcedure is the fully-qualified name of the AuthService's Login RPC.
-	AuthServiceLoginProcedure = "/opensight.v1.AuthService/Login"
-	// AuthServiceSignupProcedure is the fully-qualified name of the AuthService's Signup RPC.
-	AuthServiceSignupProcedure = "/opensight.v1.AuthService/Signup"
 	// AuthServiceLogoutProcedure is the fully-qualified name of the AuthService's Logout RPC.
 	AuthServiceLogoutProcedure = "/opensight.v1.AuthService/Logout"
 	// AuthServiceGetMeProcedure is the fully-qualified name of the AuthService's GetMe RPC.
@@ -45,8 +41,6 @@ const (
 
 // AuthServiceClient is a client for the opensight.v1.AuthService service.
 type AuthServiceClient interface {
-	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
-	Signup(context.Context, *connect.Request[v1.SignupRequest]) (*connect.Response[v1.SignupResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 }
@@ -62,18 +56,6 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_opensight_v1_auth_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
-		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
-			httpClient,
-			baseURL+AuthServiceLoginProcedure,
-			connect.WithSchema(authServiceMethods.ByName("Login")),
-			connect.WithClientOptions(opts...),
-		),
-		signup: connect.NewClient[v1.SignupRequest, v1.SignupResponse](
-			httpClient,
-			baseURL+AuthServiceSignupProcedure,
-			connect.WithSchema(authServiceMethods.ByName("Signup")),
-			connect.WithClientOptions(opts...),
-		),
 		logout: connect.NewClient[v1.LogoutRequest, v1.LogoutResponse](
 			httpClient,
 			baseURL+AuthServiceLogoutProcedure,
@@ -91,20 +73,8 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login  *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	signup *connect.Client[v1.SignupRequest, v1.SignupResponse]
 	logout *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
 	getMe  *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
-}
-
-// Login calls opensight.v1.AuthService.Login.
-func (c *authServiceClient) Login(ctx context.Context, req *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
-	return c.login.CallUnary(ctx, req)
-}
-
-// Signup calls opensight.v1.AuthService.Signup.
-func (c *authServiceClient) Signup(ctx context.Context, req *connect.Request[v1.SignupRequest]) (*connect.Response[v1.SignupResponse], error) {
-	return c.signup.CallUnary(ctx, req)
 }
 
 // Logout calls opensight.v1.AuthService.Logout.
@@ -119,8 +89,6 @@ func (c *authServiceClient) GetMe(ctx context.Context, req *connect.Request[v1.G
 
 // AuthServiceHandler is an implementation of the opensight.v1.AuthService service.
 type AuthServiceHandler interface {
-	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
-	Signup(context.Context, *connect.Request[v1.SignupRequest]) (*connect.Response[v1.SignupResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 }
@@ -132,18 +100,6 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_opensight_v1_auth_proto.Services().ByName("AuthService").Methods()
-	authServiceLoginHandler := connect.NewUnaryHandler(
-		AuthServiceLoginProcedure,
-		svc.Login,
-		connect.WithSchema(authServiceMethods.ByName("Login")),
-		connect.WithHandlerOptions(opts...),
-	)
-	authServiceSignupHandler := connect.NewUnaryHandler(
-		AuthServiceSignupProcedure,
-		svc.Signup,
-		connect.WithSchema(authServiceMethods.ByName("Signup")),
-		connect.WithHandlerOptions(opts...),
-	)
 	authServiceLogoutHandler := connect.NewUnaryHandler(
 		AuthServiceLogoutProcedure,
 		svc.Logout,
@@ -158,10 +114,6 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/opensight.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthServiceLoginProcedure:
-			authServiceLoginHandler.ServeHTTP(w, r)
-		case AuthServiceSignupProcedure:
-			authServiceSignupHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutProcedure:
 			authServiceLogoutHandler.ServeHTTP(w, r)
 		case AuthServiceGetMeProcedure:
@@ -174,14 +126,6 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
-
-func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.AuthService.Login is not implemented"))
-}
-
-func (UnimplementedAuthServiceHandler) Signup(context.Context, *connect.Request[v1.SignupRequest]) (*connect.Response[v1.SignupResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.AuthService.Signup is not implemented"))
-}
 
 func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.AuthService.Logout is not implemented"))

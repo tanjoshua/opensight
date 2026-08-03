@@ -16,8 +16,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -31,7 +29,6 @@ import (
 	"time"
 
 	"opensight/internal/api"
-	"opensight/internal/auth"
 	"opensight/internal/billing"
 	"opensight/internal/billing/reconcile"
 	"opensight/internal/billing/stripe"
@@ -50,9 +47,9 @@ import (
 const (
 	usage               = "usage: opensight <serve|work|migrate|tenant|user|business|seed|stripe>"
 	tenantCreateUsage   = "usage: opensight tenant create --name <tenant-name>"
-	userCreateUsage     = "usage: opensight user create --tenant <tenant-id> --email <email> [--password-stdin]"
+	userCreateUsage     = "usage: opensight user create --tenant <tenant-id> --email <email>"
 	businessCreateUsage = "usage: opensight business create --tenant <tenant-id> --file <spec.yaml>"
-	seedUsage           = "usage: opensight seed dev"
+	seedUsage           = seedDevArgsUsage
 )
 
 func main() {
@@ -78,10 +75,8 @@ type tenantCreateOptions struct {
 }
 
 type userCreateOptions struct {
-	TenantID          domain.ID
-	Email             string
-	Password          string
-	GeneratedPassword bool
+	TenantID domain.ID
+	Email    string
 }
 
 // run dispatches the chosen subcommand. It is separated from main so it can be
@@ -140,7 +135,7 @@ func runUserCommand(ctx context.Context, cfg config.Config, args []string) error
 	}
 	switch args[0] {
 	case "create":
-		opts, err := parseUserCreateArgs(args[1:], generatePassword, os.Stdin)
+		opts, err := parseUserCreateArgs(args[1:])
 		if err != nil {
 			return err
 		}
@@ -172,10 +167,11 @@ func runSeedCommand(ctx context.Context, cfg config.Config, args []string) error
 	}
 	switch args[0] {
 	case "dev":
-		if len(args) > 1 {
-			return fmt.Errorf("unexpected argument %q; %s", args[1], seedUsage)
+		email, err := parseSeedDevArgs(args[1:], os.Getenv)
+		if err != nil {
+			return err
 		}
-		return seedDevCLI(ctx, cfg, os.Stdout)
+		return seedDevCLI(ctx, cfg, email, os.Stdout)
 	default:
 		return fmt.Errorf("unknown seed subcommand %q; %s", args[0], seedUsage)
 	}
@@ -199,12 +195,11 @@ func parseTenantCreateArgs(args []string) (tenantCreateOptions, error) {
 	return opts, nil
 }
 
-func parseUserCreateArgs(args []string, generate func() (string, error), stdin io.Reader) (userCreateOptions, error) {
+func parseUserCreateArgs(args []string) (userCreateOptions, error) {
 	flags := flag.NewFlagSet("user create", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	tenantRaw := flags.String("tenant", "", "tenant id")
 	email := flags.String("email", "", "user email")
-	passwordStdin := flags.Bool("password-stdin", false, "read the initial password from stdin")
 	if err := flags.Parse(args); err != nil {
 		return userCreateOptions{}, fmt.Errorf("%s", userCreateUsage)
 	}
@@ -223,44 +218,7 @@ func parseUserCreateArgs(args []string, generate func() (string, error), stdin i
 		return userCreateOptions{}, fmt.Errorf("--tenant must be a UUID: %w", err)
 	}
 
-	opts := userCreateOptions{
-		TenantID: tenantID,
-		Email:    strings.TrimSpace(*email),
-	}
-	if *passwordStdin {
-		opts.Password, err = readPasswordFromStdin(stdin)
-		if err != nil {
-			return userCreateOptions{}, err
-		}
-	} else {
-		opts.GeneratedPassword = true
-		opts.Password, err = generate()
-		if err != nil {
-			return userCreateOptions{}, fmt.Errorf("generate password: %w", err)
-		}
-		if opts.Password == "" {
-			return userCreateOptions{}, errors.New("generate password: empty password")
-		}
-	}
-	return opts, nil
-}
-
-func readPasswordFromStdin(in io.Reader) (string, error) {
-	const maxStdinPasswordBytes = 2048
-
-	raw, err := io.ReadAll(io.LimitReader(in, maxStdinPasswordBytes+1))
-	if err != nil {
-		return "", fmt.Errorf("read password from stdin: %w", err)
-	}
-	if len(raw) > maxStdinPasswordBytes {
-		return "", errors.New("password from stdin is too long")
-	}
-
-	password := strings.TrimRight(string(raw), "\r\n")
-	if password == "" {
-		return "", errors.New("password from stdin is required")
-	}
-	return password, nil
+	return userCreateOptions{TenantID: tenantID, Email: strings.TrimSpace(*email)}, nil
 }
 
 func createTenantCLI(ctx context.Context, cfg config.Config, opts tenantCreateOptions, out io.Writer) error {
@@ -283,14 +241,11 @@ func createTenantCLI(ctx context.Context, cfg config.Config, opts tenantCreateOp
 	return err
 }
 
+// createUserCLI creates a user row with no Google identity yet — the first
+// sign-in with that email links it (design 07 "Auth and accounts").
 func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOptions, out io.Writer) error {
 	if ctx.Err() != nil {
 		return nil
-	}
-
-	passwordHash, err := auth.HashPassword(opts.Password)
-	if err != nil {
-		return err
 	}
 
 	account, closeStore, err := openAccountStore(cfg)
@@ -300,22 +255,15 @@ func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOption
 	defer closeStore()
 
 	user, err := account.CreateUser(ctx, store.CreateUserParams{
-		TenantID:     opts.TenantID,
-		Email:        opts.Email,
-		PasswordHash: passwordHash,
+		TenantID: opts.TenantID,
+		Email:    opts.Email,
 	})
 	if err != nil {
 		return err
 	}
 
-	if _, err := fmt.Fprintf(out, "user_id=%s\ntenant_id=%s\nemail=%s\n", user.ID, user.TenantID, user.Email); err != nil {
-		return err
-	}
-	if opts.GeneratedPassword {
-		_, err = fmt.Fprintf(out, "password=%s\n", opts.Password)
-		return err
-	}
-	return nil
+	_, err = fmt.Fprintf(out, "user_id=%s\ntenant_id=%s\nemail=%s\n", user.ID, user.TenantID, user.Email)
+	return err
 }
 
 func openAccountStore(cfg config.Config) (*store.Store, func(), error) {
@@ -326,22 +274,14 @@ func openAccountStore(cfg config.Config) (*store.Store, func(), error) {
 	return store.New(db), db.Close, nil
 }
 
-func generatePassword() (string, error) {
-	buf := make([]byte, 18)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(buf), nil
-}
-
 // serve runs the HTTP API server.
 func serve(ctx context.Context, cfg config.Config) error {
 	if ctx.Err() != nil {
 		return nil
 	}
-	// Validate before opening the database or dialing Temporal so a bad Stripe
+	// Validate before opening the database or dialing Temporal so a bad
 	// environment fails without touching any other service.
-	if err := validateStripeRuntimeConfig(cfg); err != nil {
+	if err := validateServeRuntimeConfig(cfg); err != nil {
 		return err
 	}
 
@@ -366,6 +306,17 @@ func serve(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
+	// GenerateQuestions is a synchronous RPC (design 03), not a Temporal
+	// activity, so its runner is built here rather than in work()'s
+	// workflows.Activities.
+	questions, err := llm.NewQuestionsRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIQuestionsModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build questions runner: %w", err)
+	}
+
 	// One store over one pool, shared by the API server, the monitoring gate,
 	// and the reconciler — no duplicate connection pooling.
 	dataStore := store.New(db)
@@ -374,6 +325,11 @@ func serve(ctx context.Context, cfg config.Config) error {
 
 	webhookVerifier := stripe.NewWebhookVerifier(cfg.StripeWebhookSecret)
 
+	// The redirect URI is derived from AppBaseURL, not a separate env var —
+	// it must exactly match an authorized redirect URI on the Google Cloud
+	// OAuth client (design 07 "Auth and accounts").
+	googleAuth := api.NewGoogleOAuth(cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.AppBaseURL+"/auth/google/callback")
+
 	// Secure cookies everywhere except plain-HTTP local dev. Prod runs behind
 	// Caddy TLS, where Secure must be set.
 	apiServer := api.New(api.Deps{
@@ -381,6 +337,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 		Metrics:                     metrics.New(db),
 		Temporal:                    temporalClient,
 		TemporalTaskQueue:           cfg.TemporalTaskQueue,
+		Questions:                   questions,
 		SecureCookies:               cfg.Env != "dev",
 		Billing:                     billingProvider,
 		Reconciler:                  reconciler,
@@ -388,6 +345,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 		AppBaseURL:                  cfg.AppBaseURL,
 		Webhooks:                    webhookVerifier,
 		StripePortalConfigurationID: cfg.StripePortalConfigurationID,
+		GoogleAuth:                  googleAuth,
 	})
 
 	server := &http.Server{
@@ -534,11 +492,11 @@ func work(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-// validateStripeRuntimeConfig is serve-specific: migrations, workers and
+// validateServeRuntimeConfig is serve-specific: migrations, workers and
 // operator commands should not require credentials for services they do not
-// use. The portal configuration command validates its own smaller set,
-// including the same pre-provisioned configuration id serve requires.
-func validateStripeRuntimeConfig(cfg config.Config) error {
+// use. The portal configuration command validates its own smaller Stripe
+// subset, including the same pre-provisioned configuration id serve requires.
+func validateServeRuntimeConfig(cfg config.Config) error {
 	if cfg.StripeSecretKey == "" {
 		return errors.New("STRIPE_SECRET_KEY is required to serve")
 	}
@@ -555,6 +513,12 @@ func validateStripeRuntimeConfig(cfg config.Config) error {
 		if cfg.StripePriceIDs[plan.Code] == "" {
 			return fmt.Errorf("%s is required to serve", plan.PriceEnvKey)
 		}
+	}
+	if cfg.GoogleClientID == "" {
+		return errors.New("GOOGLE_CLIENT_ID is required to serve")
+	}
+	if cfg.GoogleClientSecret == "" {
+		return errors.New("GOOGLE_CLIENT_SECRET is required to serve")
 	}
 	return nil
 }

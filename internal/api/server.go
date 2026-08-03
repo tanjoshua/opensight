@@ -12,6 +12,7 @@ import (
 
 	"opensight/internal/billing"
 	"opensight/internal/billing/reconcile"
+	"opensight/internal/llm"
 	"opensight/internal/metrics"
 	"opensight/internal/store"
 
@@ -64,6 +65,10 @@ type Server struct {
 	// and start GenerateProfileWorkflow, poll its status, and regenerate.
 	temporal          temporalClient
 	temporalTaskQueue string
+	// questions runs GenerateQuestions' on-demand customer-question call
+	// (design 03): a synchronous RPC, not a Temporal activity, so the runner
+	// lives on the API server rather than workflows.Activities.
+	questions llm.QuestionsRunner
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (local dev is plain HTTP); prod runs behind Caddy TLS.
 	secureCookies bool
@@ -82,6 +87,9 @@ type Server struct {
 	stripePortalConfigurationID string
 	// webhooks verifies /webhooks/stripe deliveries.
 	webhooks billing.WebhookVerifier
+	// googleAuth drives /auth/google/start and /auth/google/callback (design
+	// 07 "Auth and accounts") — the sole sign-in path.
+	googleAuth googleAuthenticator
 	// priceCache holds GetBilling's fetched Stripe Prices, keyed by
 	// price id. Safe to keep for the process lifetime: Stripe Prices are
 	// immutable, so a cache entry can never go stale.
@@ -99,7 +107,9 @@ type Deps struct {
 	Metrics           *metrics.Metrics
 	Temporal          client.Client
 	TemporalTaskQueue string
-	SecureCookies     bool
+	// Questions backs GenerateQuestions. See Server.questions.
+	Questions     llm.QuestionsRunner
+	SecureCookies bool
 
 	// Billing.
 	Billing        billingProvider
@@ -111,6 +121,9 @@ type Deps struct {
 
 	// Webhook.
 	Webhooks billing.WebhookVerifier
+
+	// GoogleAuth backs /auth/google/*. See Server.googleAuth.
+	GoogleAuth googleAuthenticator
 }
 
 // New builds a Server from d. SecureCookies should be true everywhere except
@@ -121,6 +134,7 @@ func New(d Deps) *Server {
 		metrics:                     d.Metrics,
 		temporal:                    d.Temporal,
 		temporalTaskQueue:           d.TemporalTaskQueue,
+		questions:                   d.Questions,
 		secureCookies:               d.SecureCookies,
 		sessionTTL:                  defaultSessionTTL,
 		billing:                     d.Billing,
@@ -129,6 +143,7 @@ func New(d Deps) *Server {
 		appBaseURL:                  d.AppBaseURL,
 		webhooks:                    d.Webhooks,
 		stripePortalConfigurationID: d.StripePortalConfigurationID,
+		googleAuth:                  d.GoogleAuth,
 	}
 	s.priceCache.prices = make(map[string]billing.Price)
 	return s
@@ -150,6 +165,11 @@ func (s *Server) Routes() http.Handler {
 	// delivery, and that signature is the route's only authentication
 	// (design 08 "Webhook").
 	r.Post("/webhooks/stripe", s.handleStripeWebhook)
+
+	// Google sign-in is plain HTTP browser navigation, not a Connect RPC
+	// (google_auth.go) — outside /rpc for the same reason as the webhook.
+	r.Get("/auth/google/start", s.handleGoogleStart)
+	r.Get("/auth/google/callback", s.handleGoogleCallback)
 
 	r.Mount("/rpc", s.rpcHandler())
 

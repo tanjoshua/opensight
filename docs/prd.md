@@ -19,7 +19,7 @@ If a subscription ends, monitoring stops but everything already collected stays 
 
 ## 3. Onboarding
 
-The user signs up with an email and password and pays before the first monitoring run. Payment,
+The user signs up with Google and pays before the first monitoring run. Payment,
 cancellation, card changes and invoices are self-serve.
 
 The user then enters:

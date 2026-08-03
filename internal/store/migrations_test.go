@@ -27,6 +27,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00010_create_subscriptions_stripe_events.sql",
 		"migrations/00011_drop_stripe_events.sql",
 		"migrations/00012_create_analyzed_results_view.sql",
+		"migrations/00013_google_identity.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -155,6 +156,9 @@ func TestMentionVerbatimNameMigration(t *testing.T) {
 	}
 }
 
+// TestPasswordAuthSessionsMigration is a historical-content check: 00005 is
+// what first created sessions (still current) and password_hash (later
+// dropped by 00013 — see TestGoogleIdentityMigration below).
 func TestPasswordAuthSessionsMigration(t *testing.T) {
 	content, err := embeddedMigrations.ReadFile("migrations/00005_add_password_auth_sessions.sql")
 	if err != nil {
@@ -173,6 +177,25 @@ func TestPasswordAuthSessionsMigration(t *testing.T) {
 	} {
 		if !strings.Contains(sql, marker) {
 			t.Errorf("auth migration missing %q", marker)
+		}
+	}
+}
+
+// TestGoogleIdentityMigration covers 00013, which supersedes 00005's
+// password_hash column with google_sub (design 07 "Auth and accounts").
+func TestGoogleIdentityMigration(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00013_google_identity.sql")
+	if err != nil {
+		t.Fatalf("read google identity migration: %v", err)
+	}
+
+	sql := string(content)
+	for _, marker := range []string{
+		"ALTER TABLE users DROP COLUMN password_hash",
+		"ALTER TABLE users ADD COLUMN google_sub text UNIQUE",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("google identity migration missing %q", marker)
 		}
 	}
 }

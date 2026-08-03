@@ -16,15 +16,24 @@ command also starts the Vite dev server on `http://127.0.0.1:5173` and prints
 its link if `web/package.json` exists. Press `Ctrl+C` to stop the native dev
 processes; Docker infrastructure stays up.
 
-Seed the local login account after the database is running and migrated:
+Seed the local login account after the database is running and migrated —
+sign-in is Google-only (design 07 "Auth and accounts"), so this needs a real
+Google account address:
 
 ```sh
-make seed-dev
+EMAIL=you@gmail.com make seed-dev
+# or: export OPENSIGHT_DEV_EMAIL=you@gmail.com once, then just `make seed-dev`
 ```
 
-Log in with `dev@opensight.local` and password `opensight-dev`, then complete
-the normal onboarding flow. The command is idempotent and does not create a
-business, prompts, or monitoring results.
+Then sign in with that Google account at `http://localhost:5173/login` and
+complete the normal onboarding flow. The command is idempotent and does not
+create a business, prompts, or monitoring results.
+
+Signing in locally needs a real Google OAuth client: create one in Google
+Cloud Console (Web application), add
+`http://localhost:5173/auth/google/callback` as an authorized redirect URI,
+and put `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `.env` (see
+`.env.example`).
 
 Start Postgres, Temporal, and Temporal UI:
 
@@ -86,7 +95,8 @@ go run ./cmd/opensight tenant create --name "Acme Clinic"
 go run ./cmd/opensight user create --tenant <tenant_id> --email owner@example.com
 ```
 
-Pipe a password with `--password-stdin` to set the initial password yourself; otherwise `user create` generates one and prints it once.
+`user create` creates the row with no Google identity; the owner's first sign-in
+with that email at `/login` links it.
 
 ## Tests
 
@@ -142,6 +152,8 @@ Runtime config is env-driven with development-safe defaults:
 - `PROMPT_RUNNER_MODE` defaults to `stub`; valid values are `stub`, `replay`, `openai`
 - `OPENAI_RESPONSES_MODEL` defaults to `chat-latest`
 - `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
+- `OPENAI_ONBOARDING_MODEL` defaults to `gpt-5.6-terra` (quality-sensitive business-profile research, design 03)
+- `OPENAI_QUESTIONS_MODEL` defaults to `gpt-5-mini` — a cheap non-reasoning model, since on-demand customer-question generation (design 03) does no research
 - `PROMPT_CONCURRENCY` defaults to `2`
 - `APP_BASE_URL` has no default and must be an absolute `http`/`https` URL; local `.env` should set `http://localhost:5173`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PORTAL_CONFIGURATION_ID` have no default and are required by `opensight serve`; other commands validate only the settings they use
