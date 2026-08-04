@@ -404,3 +404,82 @@ func TestApplyPortalConfigurationUnknownID(t *testing.T) {
 		t.Fatalf("request = %s %s, want exact missing-id update", captured.method, captured.path)
 	}
 }
+
+func TestApplyWebhookEndpointCreatesWhenMissing(t *testing.T) {
+	var listReqs, createReqs int
+	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/webhook_endpoints":
+			listReqs++
+			jsonResponse(t, w, `{"object":"list","data":[],"has_more":false}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/webhook_endpoints":
+			createReqs++
+			jsonResponse(t, w, `{"id":"we_new","url":"https://app.example.com/webhooks/stripe","secret":"whsec_abc"}`)
+		default:
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	})
+
+	result, err := p.ApplyWebhookEndpoint(context.Background(), "https://app.example.com/webhooks/stripe", billing.DesiredWebhookEvents)
+	if err != nil {
+		t.Fatalf("ApplyWebhookEndpoint: %v", err)
+	}
+	if listReqs != 1 || createReqs != 1 {
+		t.Fatalf("listReqs=%d createReqs=%d, want 1 and 1", listReqs, createReqs)
+	}
+	if !result.Created || result.ID != "we_new" || result.Secret != "whsec_abc" {
+		t.Fatalf("result = %+v, want created we_new with secret whsec_abc", result)
+	}
+	if got := captured.values.Get("url"); got != "https://app.example.com/webhooks/stripe" {
+		t.Fatalf("url = %q, want match", got)
+	}
+	if got := captured.values.Get("enabled_events[0]"); got != "checkout.session.completed" {
+		t.Fatalf("enabled_events[0] = %q, want checkout.session.completed", got)
+	}
+	if got := captured.values.Get("enabled_events[3]"); got != "customer.subscription.deleted" {
+		t.Fatalf("enabled_events[3] = %q, want customer.subscription.deleted", got)
+	}
+}
+
+func TestApplyWebhookEndpointUpdatesExisting(t *testing.T) {
+	var listReqs, updateReqs int
+	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/webhook_endpoints":
+			listReqs++
+			jsonResponse(t, w, `{"object":"list","data":[{"id":"we_existing","url":"https://app.example.com/webhooks/stripe"}],"has_more":false}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/webhook_endpoints/we_existing":
+			updateReqs++
+			jsonResponse(t, w, `{"id":"we_existing","url":"https://app.example.com/webhooks/stripe"}`)
+		default:
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	})
+
+	result, err := p.ApplyWebhookEndpoint(context.Background(), "https://app.example.com/webhooks/stripe", billing.DesiredWebhookEvents)
+	if err != nil {
+		t.Fatalf("ApplyWebhookEndpoint: %v", err)
+	}
+	if listReqs != 1 || updateReqs != 1 {
+		t.Fatalf("listReqs=%d updateReqs=%d, want 1 and 1", listReqs, updateReqs)
+	}
+	// The signing secret is only ever returned at creation — an update must
+	// not fabricate one, or an operator could overwrite a correct value with
+	// an empty string.
+	if result.Created || result.ID != "we_existing" || result.Secret != "" {
+		t.Fatalf("result = %+v, want updated we_existing with no secret", result)
+	}
+	if got := captured.values.Get("enabled_events[0]"); got != "checkout.session.completed" {
+		t.Fatalf("enabled_events[0] = %q, want checkout.session.completed", got)
+	}
+}
+
+func TestApplyWebhookEndpointRequiresURL(t *testing.T) {
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+	})
+
+	if _, err := p.ApplyWebhookEndpoint(context.Background(), "", billing.DesiredWebhookEvents); err == nil {
+		t.Fatal("ApplyWebhookEndpoint with empty url: want error, got nil")
+	}
+}

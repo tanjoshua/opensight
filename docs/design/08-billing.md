@@ -250,7 +250,7 @@ The existing `opensight tenant create` path creates comped tenants. Design partn
 | Env var | Purpose |
 |---|---|
 | `STRIPE_SECRET_KEY` | Restricted key (`rk_`) in production, scoped as above; a sandbox key (`sk_test_`) locally. The `rk_` prefix is a go-live checklist item (12), not a code check — sandbox keys don't have it |
-| `STRIPE_WEBHOOK_SECRET` | Endpoint signing secret |
+| `STRIPE_WEBHOOK_SECRET` | Endpoint signing secret, captured from `opensight stripe webhook-config`'s create output (go-live checklist item 6) |
 | `STRIPE_PRICE_STARTER_MONTHLY` | Price id for the Starter monthly Price |
 | `APP_BASE_URL` | Required absolute base for checkout/portal return URLs; `http://localhost:5173` is set explicitly in local `.env` |
 | `STRIPE_PORTAL_CONFIGURATION_ID` | Pre-provisioned Billing Portal Configuration id for this Stripe environment. Required by both the configuration job and `opensight serve`; runtime never falls back to the account default |
@@ -268,7 +268,7 @@ Added to 07's `.env` inventory and to the restic backup set by virtue of that fi
 
    Both are the reason `past_due_since` exists: a setting that cannot be version-controlled or tested is a setting that will eventually be wrong.
 5. Customer Portal: provision one live configuration, store its id as protected `STRIPE_PORTAL_CONFIGURATION_ID`, and have the pre-deploy job update that exact id with its command-only administration key. Payment method + invoice history + cancellation on, plan switching off, and `return_url` to `/billing` are asserted by the command rather than configured by hand. The server receives the same id and pins every session to it.
-6. Webhook endpoint registered at `https://<app>/webhooks/stripe` for the four subscription events; signing secret in `.env`.
+6. Webhook endpoint: `opensight stripe webhook-config` idempotently creates or updates the endpoint at `https://dashboard.opensight.app/webhooks/stripe` with the four subscription events, mirroring the portal-config command above. Stripe returns the signing secret only once, in the create response — capture it into `STRIPE_WEBHOOK_SECRET` there; a later run against the same URL updates the event list without touching the secret.
 7. Restricted API key minted with the minimum scopes; secret key never deployed.
 8. End-to-end rehearsal in the sandbox: signup → checkout → onboarding → first run → portal cancel → verify schedule paused and history readable → reactivate → verify schedule resumed.
 9. Sweep Stripe for Customers with no subscription older than a day — the accepted crash-window orphans (see "Customer") — and delete them. An eyeball check, not automated: they cost nothing and never bill, but a growing pile is a signal something upstream is failing repeatedly rather than the rare crash this accepts.

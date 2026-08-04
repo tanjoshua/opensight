@@ -8,7 +8,8 @@
 //	opensight user create     # create an invite-only user
 //	opensight business create # seed an active business from a spec file
 //	opensight seed dev        # seed a dev tenant and login account
-//	opensight stripe portal-config # apply the Billing Portal configuration
+//	opensight stripe portal-config  # apply the Billing Portal configuration
+//	opensight stripe webhook-config # create/update the production webhook endpoint
 //
 // The same image runs serve and work via a command override in deployment
 // (design 07 "Deployment").

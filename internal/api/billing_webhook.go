@@ -19,6 +19,10 @@ const maxStripeWebhookBodyBytes = 1 << 20 // 1 MiB
 // 08 subscribes to. Invoice events are deliberately not handled — Stripe's
 // own emails cover receipts and dunning notices, and every state that
 // matters is reachable from the subscription itself.
+//
+// Must match billing.DesiredWebhookEvents exactly — that's what `opensight
+// stripe webhook-config` provisions Stripe to send.
+// TestHandledEventsMatchDesiredWebhookEvents enforces it.
 var handledStripeEventTypes = map[string]bool{
 	"checkout.session.completed":    true,
 	"customer.subscription.created": true,

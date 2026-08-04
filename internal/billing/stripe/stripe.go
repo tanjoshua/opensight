@@ -202,6 +202,64 @@ func (p *Provider) ApplyPortalConfiguration(ctx context.Context, configurationID
 	return nil
 }
 
+// WebhookEndpointResult is the outcome of ApplyWebhookEndpoint. Secret is
+// only populated when Created is true: Stripe returns a webhook endpoint's
+// signing secret exclusively in the response to its creation, never again —
+// an existing endpoint's secret is unchanged and stays whatever the operator
+// already has on file.
+type WebhookEndpointResult struct {
+	ID      string
+	Secret  string
+	Created bool
+}
+
+// ApplyWebhookEndpoint idempotently ensures a webhook endpoint exists for
+// url with exactly events enabled (design 08 "Webhook"): it updates an
+// existing endpoint matching url in place, or creates one. Like
+// ApplyPortalConfiguration, this is an admin-only operation the serving path
+// never calls.
+func (p *Provider) ApplyWebhookEndpoint(ctx context.Context, url string, events []string) (WebhookEndpointResult, error) {
+	if url == "" {
+		return WebhookEndpointResult{}, errors.New("stripe: webhook endpoint url is required")
+	}
+
+	eventPtrs := make([]*string, len(events))
+	for i, e := range events {
+		eventPtrs[i] = stripesdk.String(e)
+	}
+
+	// A small startup's Stripe account has, at most, a handful of webhook
+	// endpoints — one page comfortably covers it without pagination.
+	list := p.client.V1WebhookEndpoints.List(ctx, &stripesdk.WebhookEndpointListParams{
+		ListParams: stripesdk.ListParams{Limit: stripesdk.Int64(100)},
+	})
+	existing := list.Data()
+	if err := list.Err(); err != nil {
+		return WebhookEndpointResult{}, fmt.Errorf("stripe: list webhook endpoints: %w", err)
+	}
+
+	for _, ep := range existing {
+		if ep.URL != url {
+			continue
+		}
+		if _, err := p.client.V1WebhookEndpoints.Update(ctx, ep.ID, &stripesdk.WebhookEndpointUpdateParams{
+			EnabledEvents: eventPtrs,
+		}); err != nil {
+			return WebhookEndpointResult{}, fmt.Errorf("stripe: update webhook endpoint %q: %w", ep.ID, err)
+		}
+		return WebhookEndpointResult{ID: ep.ID}, nil
+	}
+
+	created, err := p.client.V1WebhookEndpoints.Create(ctx, &stripesdk.WebhookEndpointCreateParams{
+		URL:           stripesdk.String(url),
+		EnabledEvents: eventPtrs,
+	})
+	if err != nil {
+		return WebhookEndpointResult{}, fmt.Errorf("stripe: create webhook endpoint: %w", err)
+	}
+	return WebhookEndpointResult{ID: created.ID, Secret: created.Secret, Created: true}, nil
+}
+
 // portalConfigurationUpdateFeatures builds the update-params Features from
 // cfg — a distinct SDK type from the create-params one, same field shape.
 func portalConfigurationUpdateFeatures(cfg billing.PortalConfig) *stripesdk.BillingPortalConfigurationUpdateFeaturesParams {
