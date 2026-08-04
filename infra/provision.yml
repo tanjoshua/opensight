@@ -1,0 +1,14 @@
+---
+# Run once per new VPS (and safe to re-run any time): takes a bare Ubuntu box
+# to a hardened Docker host. See infra/README.md "First deploy".
+#
+# First run, before the `deploy` user exists, connect as whatever OVH
+# provisioned the box with:
+#   make infra-provision ANSIBLE_USER=ubuntu
+# Every run after that uses the default `deploy` user (infra/ansible.cfg).
+- name: Provision OpenSight host
+  hosts: opensight
+  become: true
+  roles:
+    - base
+    - docker

@@ -1,0 +1,11 @@
+# SOPS encryption rules. Only files matching secrets.sops.yml under the
+# Ansible inventory are ever encrypted — vars.yml and everything else in
+# infra/ stays plaintext in git.
+#
+# Public half of the key at ~/.config/sops/age/keys.txt. That private key is
+# the single point of failure for decrypting production secrets — back it up
+# in a password manager. Losing it with no other copy means every secret
+# below must be rotated.
+creation_rules:
+  - path_regex: infra/inventory/group_vars/.*secrets\.sops\.ya?ml$
+    age: age19rwgv4glgr4pkgv62rm66g8c6fk8e4g26fkfjegx6xtk9tkfc5uqyx2jk2

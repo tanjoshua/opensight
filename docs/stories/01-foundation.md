@@ -49,14 +49,19 @@ Deps: FND-1 · Phase 1 · Ref: design 07 (Deployment)
 
 ## FND-5 — Production VPS and deploy script
 
-As the operator, I want the full stack running on a single Hetzner VPS behind Caddy with a one-command deploy, so that production exists.
+As the operator, I want the full stack running on a single OVHcloud VPS behind Caddy with a one-command deploy, so that production exists.
 
-- [ ] Hetzner VPS (Singapore region) provisioned; Docker + Compose installed; SSH hardened (key-only).
-- [ ] Prod `compose.yml`: `app` (serve), `worker` (work), `postgres`, `temporal`, `temporal-ui` (bound to localhost, reached via SSH tunnel), `caddy` with auto-HTTPS on the product domain.
-- [ ] Secrets in `.env` on the VPS, mode 600, outside the repo; inventory documented (Postgres passwords, session signing key, OpenAI key).
-- [ ] Caddy per-IP rate limit on `/api/`.
-- [ ] Deploy script: SSH → `docker compose pull && docker compose up -d` → `opensight migrate`; brief downtime accepted.
-- [ ] Total footprint fits ~4GB RAM; verified after stack is up.
+IaC is config-only (`infra/`, Ansible + SOPS/age): the VPS is created by hand
+in the OVH panel; the playbooks take it from bare Ubuntu to running. See
+`infra/README.md` for the full runbook.
+
+- [ ] OVHcloud VPS (Singapore region, min 4GB RAM) provisioned; DNS (`dashboard.opensight.app`, proxied through Cloudflare) points at it. *(requires a live VPS + Cloudflare account — not verifiable in this session)*
+- [x] `infra/provision.yml` (`make infra-provision`): installs Docker + Compose, creates a `deploy` user with key-only SSH, disables SSH password/root login, UFW default-deny with 22/80/443 open (80/443 restricted to Cloudflare's IP ranges), unattended-upgrades, a swapfile.
+- [x] `infra/deploy.yml` (`make infra-deploy`) renders prod `compose.yml`: `app` (serve), `worker` (work), `postgres`, `temporal`, `temporal-schema`/`temporal-namespace` bootstrap, `temporal-ui` (bound to `127.0.0.1:8233`, reached via `make infra-tunnel`), `caddy` with auto-HTTPS on `dashboard.opensight.app`.
+- [x] Secrets rendered to `.env` on the VPS (mode 600, outside the repo) by Ansible from `infra/inventory/group_vars/opensight/secrets.sops.yml` (SOPS + age, encrypted in the repo); full inventory in `infra/README.md`. *(checked in as an unencrypted placeholder — no real age key exists yet; see `infra/README.md` "Secrets" for the exact commands to generate one)*
+- [ ] `/rpc/` and `/webhooks/stripe` rate limits configured in Cloudflare (dashboard proxied, SSL/TLS mode Full (Strict)). *(requires a live Cloudflare account — not verifiable in this session)*
+- [x] `make infra-deploy`: `docker login ghcr.io` → `docker compose pull` → bring up `postgres`/`temporal` and wait for the namespace bootstrap → `docker compose run --rm app migrate` (explicit and separate from `serve`/`work` startup) → `docker compose up -d` → verify `https://dashboard.opensight.app/healthz`; brief downtime accepted. Rollback: `make infra-deploy TAG=sha-<short>`, no rebuild.
+- [ ] Total footprint fits ~4GB RAM; verified after stack is up. *(requires a live VPS — not verifiable in this session)*
 
 Deps: FND-3, FND-4 · Phase 1 · Ref: design 01 (D8), 07 (Secrets, Deployment, Auth — rate limiting)
 

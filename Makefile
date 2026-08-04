@@ -7,7 +7,7 @@ GOLANGCI ?= $(shell command -v golangci-lint 2>/dev/null || echo ./bin/golangci-
 # from the dev database so a test run can't disturb local data.
 TEST_DATABASE_URL ?= postgres://opensight:opensight@localhost:5432/opensight_test?sslmode=disable
 
-.PHONY: build test test-integration lint proto sqlc check-sql up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db test-db
+.PHONY: build test test-integration lint proto sqlc check-sql up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db test-db infra-provision infra-deploy infra-secrets infra-tunnel
 
 build:
 	go build -o $(BIN) ./cmd/opensight
@@ -86,3 +86,22 @@ clear-db:
 		-c "DROP DATABASE IF EXISTS opensight WITH (FORCE);" \
 		-c "CREATE DATABASE opensight OWNER opensight;"
 	go run ./cmd/opensight migrate
+
+# See infra/README.md. Bare Ubuntu -> hardened Docker host; re-runnable.
+# First run against a fresh VPS: ANSIBLE_USER=ubuntu make infra-provision
+infra-provision:
+	cd infra && ansible-playbook provision.yml $(if $(ANSIBLE_USER),-e ansible_user=$(ANSIBLE_USER),)
+
+# Render config -> pull -> migrate -> up -> verify. TAG pins/rolls back to a
+# specific CI-built image, e.g. make infra-deploy TAG=sha-abc1234
+infra-deploy:
+	cd infra && ansible-playbook deploy.yml $(if $(TAG),-e app_image_tag=$(TAG),)
+
+# Edit the encrypted production secrets file in $EDITOR.
+infra-secrets:
+	sops infra/inventory/group_vars/opensight/secrets.sops.yml
+
+# Temporal UI is bound to 127.0.0.1:8233 on the VPS (not public); tunnel to it.
+infra-tunnel:
+	ssh -N -L 8233:127.0.0.1:8233 $$(cd infra && ansible-inventory --host vps | \
+		python3 -c "import json,sys; d=json.load(sys.stdin); print(f'{d.get(\"ansible_user\",\"deploy\")}@{d[\"ansible_host\"]}')")

@@ -1,0 +1,23 @@
+{# Rendered to {{ opensight_dir }}/Caddyfile. dashboard.opensight.app is
+   proxied through Cloudflare (orange-cloud, SSL/TLS mode Full (Strict)), so
+   Caddy still terminates a real Let's Encrypt cert via the HTTP-01 challenge
+   (which still reaches the origin through the proxy) and must trust
+   Cloudflare's ranges as the source of X-Forwarded-For, or every request
+   would appear to come from Cloudflare's edge. The `/rpc/` and
+   `/webhooks/stripe` rate limits called for in design 07 are enforced at
+   Cloudflare, not here — see infra/README.md. #}
+# Managed by Ansible (infra/roles/app/templates/Caddyfile.j2). Do not edit by
+# hand — changes are overwritten on the next `make infra-deploy`.
+{
+	servers {
+		trusted_proxies static {{ (cloudflare_ipv4_ranges + cloudflare_ipv6_ranges) | join(" ") }}
+	}
+}
+
+{{ domain }} {
+	encode zstd gzip
+
+	# The SPA is embedded in the app binary (web/assets.go -> internal/api/static.go),
+	# so there is exactly one upstream and no static file handling here.
+	reverse_proxy app:8080
+}

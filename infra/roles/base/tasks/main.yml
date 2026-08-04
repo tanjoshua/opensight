@@ -1,0 +1,136 @@
+---
+# Bare Ubuntu -> hardened host: patched, UTC, a non-root `deploy` user with
+# key-only SSH, UFW default-deny with only 22/80/443 open (80/443 further
+# restricted to Cloudflare, since dashboard.opensight.app is proxied through
+# it), and a swapfile — cheap insurance for Temporal on a 4GB box.
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: safe
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - ufw
+      - fail2ban
+      - curl
+      - ca-certificates
+      - gnupg
+    state: present
+
+- name: Enable unattended-upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    mode: "0644"
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+- name: Create deploy user
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: sudo
+    shell: /bin/bash
+    append: true
+    create_home: true
+
+- name: Allow deploy user passwordless sudo
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/90-{{ deploy_user }}"
+    content: "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Install deploy user's SSH public key
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ deploy_ssh_public_key }}"
+    state: present
+
+- name: Disable SSH password authentication and root login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    validate: "sshd -t -f %s"
+  loop:
+    - { regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication no" }
+    - { regexp: "^#?PermitRootLogin", line: "PermitRootLogin no" }
+    - { regexp: "^#?KbdInteractiveAuthentication", line: "KbdInteractiveAuthentication no" }
+  notify: Restart sshd
+
+- name: UFW default deny incoming, allow outgoing
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: UFW allow SSH
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: UFW allow HTTP/HTTPS from Cloudflare IPv4 ranges only
+  community.general.ufw:
+    rule: allow
+    port: "{{ item[1] }}"
+    proto: tcp
+    src: "{{ item[0] }}"
+  loop: "{{ cloudflare_ipv4_ranges | product(['80', '443']) | list }}"
+
+- name: UFW allow HTTP/HTTPS from Cloudflare IPv6 ranges only
+  community.general.ufw:
+    rule: allow
+    port: "{{ item[1] }}"
+    proto: tcp
+    src: "{{ item[0] }}"
+  loop: "{{ cloudflare_ipv6_ranges | product(['80', '443']) | list }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+
+- name: Check for existing swapfile
+  ansible.builtin.stat:
+    path: /swapfile
+  register: swapfile_stat
+
+- name: Create swapfile
+  when: not swapfile_stat.stat.exists
+  block:
+    - name: Allocate swapfile
+      ansible.builtin.command: fallocate -l {{ swap_size_mb }}M /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Restrict swapfile permissions
+      ansible.builtin.file:
+        path: /swapfile
+        mode: "0600"
+
+    - name: Format swapfile
+      ansible.builtin.command: mkswap /swapfile
+      changed_when: true
+
+    - name: Enable swapfile
+      ansible.builtin.command: swapon /swapfile
+      changed_when: true
+
+- name: Persist swapfile in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "/swapfile none swap sw 0 0"
+    state: present

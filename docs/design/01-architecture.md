@@ -111,7 +111,7 @@ opensight/
 
 ## D8 — Deployment
 
-A single **Hetzner VPS** running Docker Compose: `app` (serve), `worker` (work), `postgres`, `temporal`, `temporal-ui`, and Caddy (or similar) for TLS. Total footprint fits ~4GB. Hetzner's Singapore location is a nice-to-have for the target market. The Compose setup is provider-agnostic, so this is reversible. Nightly `pg_dump` of both databases shipped off-box. Remaining details (backup destination, secrets) land in the cross-cutting doc.
+A single **OVHcloud VPS** (Singapore region — matches the SGD/Singapore business context, design 08), minimum **4GB RAM**, running Docker Compose: `app` (serve), `worker` (work), `postgres`, `temporal`, `temporal-ui`, and Caddy for TLS. Total footprint fits ~4GB. The Compose setup is provider-agnostic, so this is reversible — moving providers or rebuilding the box is a re-run of the Ansible playbooks in `infra/` (FND-5), not a rewrite. Nightly `pg_dump` of both databases shipped off-box. Remaining details (backup destination, secrets) land in the cross-cutting doc.
 
 ## D9 — Billing
 

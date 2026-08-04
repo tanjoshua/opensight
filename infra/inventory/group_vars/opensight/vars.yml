@@ -1,0 +1,67 @@
+---
+# Plaintext config — no secrets here (those live in secrets.sops.yml).
+
+# --- App identifiers (not secrets — resource ids, useless without a
+# credential; google_client_id is public by design, visible in the OAuth
+# redirect URL) ---
+stripe_price_starter_monthly: price_1U0kEq84Png9RZ0M5lk6AE0c
+stripe_portal_configuration_id: bpc_1U0jJA84Png9RZ0M2W7oWLMx
+google_client_id: 465280069438-sath9371ll8nms0brnfj2b706pcqvr2f.apps.googleusercontent.com
+
+
+# --- Domain / image ---
+domain: dashboard.opensight.app
+app_image_repo: ghcr.io/tanjoshua/opensight
+# Rollback: `make infra-deploy TAG=sha-abc1234` overrides this with
+# -e app_image_tag=... (CI tags every main-branch image sha-<short> via
+# docker/metadata-action, no rebuild required).
+app_image_tag: main
+ghcr_username: tanjoshua
+
+# --- Versions (kept in lockstep with compose.dev.yml) ---
+temporal_version: "1.31"
+temporal_admintools_version: "1.31"
+temporal_ui_version: "2.52.1"
+
+# --- Host ---
+deploy_user: deploy
+# Public key half only — paste the contents of e.g. ~/.ssh/id_ed25519.pub.
+# The matching private key never enters the repo.
+deploy_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHf/6B8VoKjnKBbuS42UoJQc8xlsDdZ2txNBasYBY4uh opensight-vps1"
+timezone: UTC
+swap_size_mb: 2048
+
+# --- Paths ---
+opensight_dir: /opt/opensight
+
+# --- Cloudflare ---
+# dashboard.opensight.app is proxied (orange-cloud) through Cloudflare, which
+# terminates the rate limits/WAF called for in design 07. UFW is restricted to
+# these ranges on 80/443 so the origin can't be reached directly, bypassing
+# them. Source: https://www.cloudflare.com/ips/ — re-check occasionally,
+# Cloudflare adds ranges rarely but does add them.
+cloudflare_ipv4_ranges:
+  - 173.245.48.0/20
+  - 103.21.244.0/22
+  - 103.22.200.0/22
+  - 103.31.4.0/22
+  - 141.101.64.0/18
+  - 108.162.192.0/18
+  - 190.93.240.0/20
+  - 188.114.96.0/20
+  - 197.234.240.0/22
+  - 198.41.128.0/17
+  - 162.158.0.0/15
+  - 104.16.0.0/13
+  - 104.24.0.0/14
+  - 172.64.0.0/13
+  - 131.0.72.0/22
+
+cloudflare_ipv6_ranges:
+  - 2400:cb00::/32
+  - 2606:4700::/32
+  - 2803:f800::/32
+  - 2405:b500::/32
+  - 2405:8100::/32
+  - 2a06:98c0::/29
+  - 2c0f:f248::/32

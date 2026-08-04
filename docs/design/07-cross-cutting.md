@@ -13,12 +13,12 @@ Depends on: all previous designs; closes their open questions.
 - A never-paid account still requires Stripe Checkout before any app surface opens (08); only the sign-in step changed.
 - Admin CLI account creation (`opensight user create --tenant …`) remains for operator-provisioned and comped tenants (08); it leaves `google_sub` unset until the user's first Google sign-in links it.
 - CSRF: every RPC handler requires the Connect protocol header (`connect.WithRequireConnectProtocolHeader()`, `internal/api/rpc.go`) — a header a cross-origin form or bare browser navigation cannot set — combined with SameSite=Lax cookies this is sufficient for an RPC-only API. This guarantee depends on no method ever being declared `idempotency_level = NO_SIDE_EFFECTS`: Connect treats such a method as safe to accept over a header-less GET with the request encoded in the query string, which would bypass the header check entirely. `TestNoRPCIsSideEffectFree` (`internal/api/rpc_test.go`) walks the compiled proto descriptors and fails if any method is ever annotated that way, so this can't regress silently as new RPCs are added. `/auth/google/*` needs no such guard: it carries no session to forge, and its own CSRF protection is the state+PKCE cookie pair.
-- API rate limiting: Caddy-level per-IP limit on `/rpc/`; nothing fancier until abuse exists.
+- API rate limiting: Cloudflare-level per-IP limit on `/rpc/` and `/webhooks/stripe` (dashboard.opensight.app is proxied through Cloudflare — see FND-5/`infra/README.md`); nothing fancier until abuse exists.
 
 ## Secrets and config
 
-- Twelve-factor env vars, loaded from an `.env` file on the VPS (mode 600, outside the repo) referenced by docker-compose. No secret manager at this scale.
-- Inventory: Postgres passwords, OpenAI API key, Stripe restricted API key and webhook signing secret (08), healthcheck ping URLs. The OpenAI key is a **project-scoped key** with a monthly budget cap set in the OpenAI dashboard — the hard backstop (see spend guardrails).
+- Twelve-factor env vars. The `.env` file on the VPS (mode 600, outside the repo) is **rendered by Ansible from SOPS-encrypted values checked into the repo** (`infra/inventory/group_vars/opensight/secrets.sops.yml`, age-encrypted), not hand-placed — see `infra/README.md`. No secret manager at this scale.
+- Inventory: Postgres passwords, OpenAI API key, Stripe restricted API key and webhook signing secret (08), Google OAuth client secret, a GHCR pull token. The OpenAI key is a **project-scoped key** with a monthly budget cap set in the OpenAI dashboard — the hard backstop (see spend guardrails).
 - App config (model ids, extraction version, concurrency caps) also env-driven, with defaults in code; no config service.
 
 ## Database migrations
@@ -46,11 +46,11 @@ the call site so a test reads top to bottom without a catalog lookup.
 
 - Git repo (private, GitHub).
 - CI (GitHub Actions): test + lint + build a single multi-stage Docker image (Go binary with embedded SPA) pushed to GHCR. CI re-runs `make proto` and `make sqlc`, runs the SQL-boundary check, and fails on any diff, so committed protobuf, Connect, and query code cannot drift from their schemas and catalogs.
-- Deploy = SSH script: `docker compose pull && docker compose up -d` on the VPS, then `opensight migrate`. No orchestrator, no blue/green; seconds of downtime at deploy is acceptable for this product. Compose stack per 01-D8: `app`, `worker`, `postgres`, `temporal`, `temporal-ui` (bound to localhost only, reached via SSH tunnel), `caddy` (auto-HTTPS).
+- Deploy = Ansible (`infra/deploy.yml`, `make infra-deploy`, FND-5): render `.env`/`compose.yml`/`Caddyfile` from SOPS-encrypted config → `docker login ghcr.io` → `docker compose pull` → bring up `postgres`/`temporal` and wait for the Temporal namespace bootstrap → **`docker compose run --rm app migrate`**, explicit and separate from `serve`/`work` startup → `docker compose up -d` for the rest → verify `/healthz`. No orchestrator, no blue/green; seconds of downtime at deploy is acceptable for this product. Compose stack per 01-D8: `app`, `worker`, `postgres`, `temporal`, `temporal-ui` (bound to localhost only, reached via SSH tunnel), `caddy` (auto-HTTPS). Rollback is redeploying a pinned CI-built image tag, no rebuild (`make infra-deploy TAG=sha-<short>`). Provisioning a fresh VPS (`infra/provision.yml`, `make infra-provision`) is a separate, idempotent, re-runnable playbook — full runbook in `infra/README.md`.
 
 ## Backups and recovery
 
-- Nightly `pg_dump` of `opensight` + `temporal` databases → **restic** encrypted repository → offsite (Hetzner Storage Box or Backblaze B2; both are ~single-digit €/month at this volume — within budget).
+- Nightly `pg_dump` of `opensight` + `temporal` databases → **restic** encrypted repository → offsite (OVH Object Storage or Backblaze B2; both are ~single-digit €/month at this volume — within budget).
 - The `.env` file is included in the restic set (it's the only non-reproducible thing outside Postgres).
 - **Restore drill is part of MVP acceptance**: on a scratch VPS, restore last night's dump, `docker compose up`, confirm the app serves and schedules resume. An untested backup is a hope, not a backup. Recovery point of ≤24h is fine — worst case a week's run re-executes (idempotency keys make that safe, 04).
 

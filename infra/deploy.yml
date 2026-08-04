@@ -1,0 +1,12 @@
+---
+# Run on every release. Renders config, pulls the image CI already built and
+# pushed to GHCR, migrates, and brings the stack up. See infra/README.md
+# "Redeploy" and "Rollback".
+#
+#   make infra-deploy                    # deploy app_image_tag from vars.yml (default: main)
+#   make infra-deploy TAG=sha-abc1234     # pin/rollback to a specific CI-built image
+- name: Deploy OpenSight
+  hosts: opensight
+  become: true
+  roles:
+    - app
