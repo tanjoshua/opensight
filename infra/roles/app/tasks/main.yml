@@ -82,11 +82,21 @@
   changed_when: true
 
 # --wait (Compose v2.20+, installed via Docker's own apt repo in the docker
-# role) blocks until postgres is healthy and until temporal-schema has run
-# (an implicit dependency of temporal, which temporal-namespace depends on).
-- name: Bring up Postgres and Temporal, and run the namespace bootstrap
+# role) blocks until postgres is healthy and temporal is running (which
+# itself waits on temporal-schema completing, via depends_on). It must NOT
+# include temporal-namespace: --wait treats a one-shot container exiting —
+# even successfully — as a failure, since it's no longer "running".
+- name: Bring up Postgres and Temporal
   ansible.builtin.command:
-    cmd: docker compose up -d --wait postgres temporal temporal-namespace
+    cmd: docker compose up -d --wait postgres temporal
+    chdir: "{{ opensight_dir }}"
+  changed_when: true
+
+# Not --wait, for the reason above; the retrying check below confirms
+# completion instead of racing or failing on a clean exit.
+- name: Run the Temporal namespace bootstrap
+  ansible.builtin.command:
+    cmd: docker compose up -d temporal-namespace
     chdir: "{{ opensight_dir }}"
   changed_when: true
 
@@ -96,6 +106,10 @@
     chdir: "{{ opensight_dir }}"
     executable: /bin/bash
   changed_when: false
+  register: namespace_bootstrap
+  until: namespace_bootstrap.rc == 0
+  retries: 10
+  delay: 2
 
 # Explicit and separate: cmd/opensight/main.go deliberately never migrates on
 # serve/work startup, so a bad migration can't crash-loop the API.
