@@ -81,13 +81,20 @@ runs from your laptop over SSH.
 
 ## Redeploy (every release)
 
+CI deploys automatically: every push to `main` that passes tests builds the
+image, pushes it to GHCR, then runs `deploy.yml` pinned to that commit's
+`sha-<short>` tag (`.github/workflows/ci.yml`, `deploy` job). Expect a few
+seconds of downtime while containers restart (design 07 accepts this — no
+blue/green).
+
+For a manual or emergency redeploy, run the same playbook from your laptop:
+
 ```
 make infra-deploy
 ```
 
 Safe to re-run — rendering, pulling, and `docker compose up -d` are all
-idempotent. Expect a few seconds of downtime while containers restart (design
-07 accepts this — no blue/green).
+idempotent.
 
 ## Rollback
 
@@ -117,28 +124,25 @@ Secrets live encrypted in the repo
 every playbook run (`infra/ansible.cfg` enables it) — there is no separate
 decrypt step.
 
-**As checked in, this file is an unencrypted placeholder template** — no real
-age key exists yet. Before it can hold anything real:
+The file is already encrypted against a real age key (`.sops.yaml` holds the
+public half). Edit it only via `make infra-secrets` (opens it decrypted in
+`$EDITOR`, re-encrypts on save) — never hand-edit the encrypted file, and
+never commit a decrypted copy. The **private** key
+(`~/.config/sops/age/keys.txt`) never enters the repo — it is the single
+point of failure for both "rebuild on a new VPS" and CI's ability to deploy,
+and belongs in a password manager, not just on one laptop.
 
-1. Generate an age key pair:
-   ```
-   age-keygen -o ~/.config/sops/age/keys.txt
-   ```
-   This prints the public key (`age1...`). The **private** key file
-   (`~/.config/sops/age/keys.txt`) never enters the repo — it is the single
-   point of failure for "rebuild on a new VPS" and belongs in a password
-   manager (e.g. as a secure note), not just on one laptop.
-2. Put the public key in `.sops.yaml` at the repo root, replacing
-   `age1REPLACE_WITH_YOUR_AGE_PUBLIC_KEY`.
-3. Fill in real values in
-   `infra/inventory/group_vars/opensight/secrets.sops.yml` (replacing every
-   `REPLACE_ME`), then encrypt it in place:
-   ```
-   sops -e -i infra/inventory/group_vars/opensight/secrets.sops.yml
-   ```
-   From this point on, edit it only via `make infra-secrets` (opens it
-   decrypted in `$EDITOR`, re-encrypts on save) — never hand-edit the
-   encrypted file, and never commit a decrypted copy.
+CI needs its own copies of two secrets to run `deploy.yml` on every push to
+`main` (repo → Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `SSH_PRIVATE_KEY` | Contents of the private half of `deploy_ssh_public_key` (e.g. `~/.ssh/opensight_vps1`) |
+| `SOPS_AGE_KEY` | Contents of `~/.config/sops/age/keys.txt` (the `AGE-SECRET-KEY-...` line) |
+
+Both are copies of credentials that already exist above — rotating either one
+(a new VPS SSH key, or a new age key pair) means updating the matching GitHub
+secret too.
 
 Only genuine credentials live here — values that let someone act as you if
 leaked. Resource identifiers that are inert without a credential (a Stripe
