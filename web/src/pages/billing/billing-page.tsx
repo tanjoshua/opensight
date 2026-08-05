@@ -1,18 +1,12 @@
-// /billing renders standalone (outside AppLayout), alongside /login and
-// /onboarding: a never-paid account is denied every classSubscriber/classActive RPC,
-// so the product shell has nothing to show it (design 08 "The funnel", BILL-9
-// AC "an account that has never paid cannot wander into the app").
 import { timestampDate } from "@bufbuild/protobuf/wkt"
 import { skipToken, useMutation, useQuery } from "@connectrpc/connect-query"
-import { useQueryClient } from "@tanstack/react-query"
-import { CreditCard, LogOut, RefreshCw } from "lucide-react"
-import { type ReactNode } from "react"
-import { Link, Navigate, useNavigate } from "react-router"
+import { CreditCard, RefreshCw } from "lucide-react"
+import { Navigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
-import { useAccountContext, useMe } from "@/api/hooks"
+import { useAccountContext } from "@/api/hooks"
 import { stripeStatusLabel } from "@/api/labels"
-import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
+import { Access } from "@/gen/opensight/v1/common_pb"
 import { AccountRole } from "@/gen/opensight/v1/account_pb"
 import { accountPath } from "@/lib/account-path"
 import {
@@ -24,7 +18,7 @@ import {
   getBilling,
   startCheckout,
 } from "@/gen/opensight/v1/billing-BillingService_connectquery"
-import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
+import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -34,98 +28,51 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Logo } from "@/components/logo"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function BillingPage() {
-  const me = useMe()
   const account = useAccountContext()
   const billing = useQuery(
     getBilling,
     account.data?.role === AccountRole.OWNER ? {} : skipToken
   )
 
-  if (me.isLoading || account.isLoading) {
-    return (
-      <BillingShell>
-        <Skeleton className="h-72 w-full" />
-      </BillingShell>
-    )
-  }
-  if (isUnauthenticated(me.error) || isUnauthenticated(account.error) || isUnauthenticated(billing.error)) {
-    return <Navigate to="/login" replace />
-  }
-  if (me.isError || !me.data || account.isError || !account.data?.account) {
-    return (
-      <BillingShell>
-        <Card>
-          <CardHeader>
-            <CardTitle>Couldn't load billing</CardTitle>
-            <CardDescription>
-              Something went wrong fetching your account.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button
-              type="button"
-              onClick={() => {
-                void me.refetch()
-                void billing.refetch()
-              }}
-            >
-              Try again
-            </Button>
-          </CardFooter>
-        </Card>
-      </BillingShell>
-    )
-  }
+  if (!account.data?.account) return null
   if (account.data.role !== AccountRole.OWNER) {
     return <Navigate to={accountPath(account.data.account.slug)} replace />
   }
-  if (billing.isLoading) {
-    return (
-      <BillingShell>
-        <Skeleton className="h-72 w-full" />
-      </BillingShell>
-    )
+  if (isUnauthenticated(billing.error)) {
+    return <Navigate to="/login" replace />
   }
-  if (billing.isError || !billing.data) {
-    return (
-      <BillingShell>
-        <Card>
-          <CardHeader>
-            <CardTitle>Couldn't load billing</CardTitle>
-            <CardDescription>
-              Something went wrong fetching your account.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button type="button" onClick={() => void billing.refetch()}>
-              Try again
-            </Button>
-          </CardFooter>
-        </Card>
-      </BillingShell>
-    )
-  }
-
-  const hasActiveBusiness = account.data.businesses.some(
-    (b) => b.status !== BusinessStatus.DRAFT
-  )
 
   return (
-    <BillingShell>
-      <BillingCard data={billing.data} />
-      {hasActiveBusiness && (
-        <Link
-          className="mt-4 self-center text-sm text-muted-foreground hover:text-foreground hover:underline"
-          to={accountPath(account.data.account.slug)}
-        >
-          Back to the app
-        </Link>
-      )}
-    </BillingShell>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Billing"
+        description="Manage this workspace's plan and subscription."
+      />
+      <div className="w-full max-w-xl">
+        {billing.isLoading ? (
+          <Skeleton className="h-72 w-full" />
+        ) : billing.isError || !billing.data ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Couldn't load billing</CardTitle>
+              <CardDescription>
+                Something went wrong fetching your workspace's billing.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button type="button" onClick={() => void billing.refetch()}>
+                Try again
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <BillingCard data={billing.data} />
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -277,35 +224,4 @@ function formatPrice(unitAmount: bigint, currency: string): string {
   } catch {
     return `${amount.toFixed(2)} ${currency.toUpperCase()}`
   }
-}
-
-function BillingShell({ children }: { children: ReactNode }) {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const logoutMutation = useMutation(logout, {
-    onSettled: () => {
-      queryClient.clear()
-      navigate("/login", { replace: true })
-    },
-  })
-
-  return (
-    <main className="flex min-h-svh flex-col items-center bg-background p-6">
-      <div className="flex w-full max-w-md items-center gap-2 py-2">
-        <Logo className="size-5" />
-        <span className="font-heading text-sm font-medium">OpenSight</span>
-        <Button
-          className="ms-auto"
-          variant="ghost"
-          size="sm"
-          disabled={logoutMutation.isPending}
-          onClick={() => logoutMutation.mutate({})}
-        >
-          <LogOut data-icon="inline-start" />
-          Log out
-        </Button>
-      </div>
-      <div className="mt-6 flex w-full max-w-md flex-col">{children}</div>
-    </main>
-  )
 }

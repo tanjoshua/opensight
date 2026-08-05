@@ -30,7 +30,12 @@ function ResponsesRedirect() {
   const params = new URLSearchParams(searchParams)
   params.delete("run")
   const query = params.toString()
-  return <Navigate to={`${accountPath(accountSlug, `/runs/${run}`)}${query ? `?${query}` : ""}`} replace />
+  return (
+    <Navigate
+      to={`${accountPath(accountSlug, `/runs/${run}`)}${query ? `?${query}` : ""}`}
+      replace
+    />
+  )
 }
 
 export function App() {
@@ -43,7 +48,6 @@ export function App() {
       <Route path="/accounts" element={<AccountsPage />} />
       <Route path="/accounts/new" element={<NewAccountPage />} />
       <Route path="/checkout/return" element={<CheckoutReturnPage />} />
-      <Route path="/a/:accountSlug/billing" element={<BillingPage />} />
       <Route path="/a/:accountSlug/onboarding" element={<OnboardingPage />} />
       <Route path="/a/:accountSlug" element={<AppLayout />}>
         <Route index element={<Navigate to="overview" replace />} />
@@ -56,6 +60,7 @@ export function App() {
         <Route path="responses" element={<ResponsesRedirect />} />
         <Route path="setup" element={<SetupPage />} />
         <Route path="team" element={<TeamPage />} />
+        <Route path="billing" element={<BillingPage />} />
         <Route path="methodology" element={<MethodologyPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="*" element={<Navigate to="overview" replace />} />

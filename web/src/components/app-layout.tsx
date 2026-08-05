@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// Shell for the five product sections. /login and /onboarding render outside
-// of it.
+// Shared shell for account-scoped product and workspace pages. /login and
+// /onboarding render outside it.
 export function AppLayout() {
   const location = useLocation()
   const me = useMe()
@@ -44,17 +44,25 @@ export function AppLayout() {
       </div>
     )
   }
-  // An account that has never paid is denied every classSubscriber/classActive
-  // RPC (BILL-6), so the product shell has nothing to show it — send it to
-  // billing before the business check even runs (BILL-9).
   const slug = account.data.account?.slug
   if (!slug) return <Navigate to="/accounts" replace />
   const accountName = account.data.account?.name ?? "OpenSight"
-  if (account.data.access === Access.NEVER) {
-    return account.data.role === AccountRole.OWNER ? (
-      <Navigate to={accountPath(slug, "/billing")} replace />
-    ) : (
-      <WorkspaceUnavailable />
+  const workspaceRoutes = ["/billing", "/team", "/methodology", "/privacy"]
+  const isWorkspaceRoute = workspaceRoutes.some(
+    (path) => location.pathname === accountPath(slug, path)
+  )
+
+  // Workspace pages remain useful before subscription and onboarding. Only
+  // business-product routes are gated, so Billing never loses the app shell.
+  if (account.data.access === Access.NEVER && !isWorkspaceRoute) {
+    return (
+      <Navigate
+        to={accountPath(
+          slug,
+          account.data.role === AccountRole.OWNER ? "/billing" : "/team"
+        )}
+        replace
+      />
     )
   }
   // Onboarding is account-scoped (a teammate joining an already-onboarded org
@@ -63,12 +71,12 @@ export function AppLayout() {
   const hasActiveBusiness = account.data.businesses.some(
     (b) => b.status !== BusinessStatus.DRAFT
   )
-  if (!hasActiveBusiness) {
+  if (!hasActiveBusiness && !isWorkspaceRoute) {
     return account.data.role === AccountRole.OWNER ||
       account.data.role === AccountRole.ADMIN ? (
       <Navigate to={accountPath(slug, "/onboarding")} replace />
     ) : (
-      <WorkspaceUnavailable awaitingSetup />
+      <Navigate to={accountPath(slug, "/team")} replace />
     )
   }
 
@@ -107,33 +115,6 @@ export function AppLayout() {
         </footer>
       </SidebarInset>
     </SidebarProvider>
-  )
-}
-
-function WorkspaceUnavailable({
-  awaitingSetup = false,
-}: {
-  awaitingSetup?: boolean
-}) {
-  return (
-    <main className="flex min-h-svh items-center justify-center p-6">
-      <div className="max-w-md text-center">
-        <h1 className="font-heading text-xl font-semibold">
-          This workspace isn't ready yet
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {awaitingSetup
-            ? "A workspace owner or admin needs to finish setup."
-            : "A workspace owner needs to activate billing."}
-        </p>
-        <Link
-          className="mt-4 inline-block text-sm underline underline-offset-4"
-          to="/accounts"
-        >
-          Choose another workspace
-        </Link>
-      </div>
-    </main>
   )
 }
 

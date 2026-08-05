@@ -14,6 +14,7 @@ import { NavLink, useLocation, useNavigate } from "react-router"
 
 import { useAccountContext, useMe } from "@/api/hooks"
 import { AccountRole } from "@/gen/opensight/v1/account_pb"
+import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import { accountPath } from "@/lib/account-path"
 import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
@@ -64,7 +65,14 @@ export function AppSidebar() {
     },
   })
   const slug = account?.account?.slug ?? ""
-  const businessName = account?.businesses[0]?.name ?? "Your business"
+  const business = account?.businesses.find(
+    (candidate) => candidate.status !== BusinessStatus.DRAFT
+  )
+  const contextName =
+    business?.name ?? account?.account?.name ?? "Your workspace"
+  const contextLabel = business ? "Business" : "Workspace"
+  const hasBusinessNavigation =
+    business !== undefined && account?.access !== Access.NEVER
   const hasMultipleWorkspaces = (me?.memberships.length ?? 0) > 1
   const visibleWorkspaceSections =
     account?.role === AccountRole.OWNER
@@ -94,8 +102,8 @@ export function AppSidebar() {
             <Building2 className="size-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Business</div>
-            <div className="truncate text-sm font-medium">{businessName}</div>
+            <div className="text-xs text-muted-foreground">{contextLabel}</div>
+            <div className="truncate text-sm font-medium">{contextName}</div>
           </div>
         </div>
         {me && account?.account && hasMultipleWorkspaces && (
@@ -125,48 +133,52 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Monitor</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {businessSections.map((section) => (
-                <SidebarMenuItem key={section.to}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(
-                      accountPath(slug, section.to)
-                    )}
-                    tooltip={section.title}
-                    render={<NavLink to={accountPath(slug, section.to)} />}
-                  >
-                    <section.icon />
-                    <span>{section.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Business</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {businessSettings.map((section) => (
-                <SidebarMenuItem key={section.to}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(
-                      accountPath(slug, section.to)
-                    )}
-                    tooltip={section.title}
-                    render={<NavLink to={accountPath(slug, section.to)} />}
-                  >
-                    <section.icon />
-                    <span>{section.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {hasBusinessNavigation && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>Monitor</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {businessSections.map((section) => (
+                    <SidebarMenuItem key={section.to}>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith(
+                          accountPath(slug, section.to)
+                        )}
+                        tooltip={section.title}
+                        render={<NavLink to={accountPath(slug, section.to)} />}
+                      >
+                        <section.icon />
+                        <span>{section.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Business</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {businessSettings.map((section) => (
+                    <SidebarMenuItem key={section.to}>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith(
+                          accountPath(slug, section.to)
+                        )}
+                        tooltip={section.title}
+                        render={<NavLink to={accountPath(slug, section.to)} />}
+                      >
+                        <section.icon />
+                        <span>{section.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
         <SidebarGroup>
           <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
