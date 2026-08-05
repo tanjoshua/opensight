@@ -5,14 +5,6 @@
 - The docs are guides, not gospel: if implementation reveals a more optimal solution, adapt — and update the affected doc so it stays the finalized plan.
 - Repo layout: the Go app (`cmd/`, `internal/`) with its embedded UI in `web/` (Vite/TS); the public marketing site in `marketing/` (static HTML + Tailwind v4, deployed separately to opensight.app — see `marketing/README.md`); production deploy IaC in `infra/` (Ansible + SOPS, targets an OVHcloud VPS — see `infra/README.md`).
 
-## Agent development process
-
-- This agent development process only applies for development of well-scoped features that require careful thought. Do not use this if it is not suitable, and skip any agent if they are not necessary. For instance, this will not apply to UI improvements and refactoring tasks that already have a clear purpose. The tech lead agent does not apply if there already is a plan.
-- A tech lead agent using a strong reasoning model should plan the technical implementation.
-- The plan can be handed off to an engineer agent for implementation.
-- After the engineer agent is done, the engineering manager agent should review the implementation. The engineering manager agent should not make any changes themselves. The engineering manager review is optional and should only be triggered if asked for and deemed necessary.
-- The engineer agent should take into consideration the points raised in the review. Engineer agents are allowed to push back and not make changes if they do not agree with it.
-
 ### Code guidelines
 
 - At an appropriate checkpoint, the changes should be committed and pushed (merged if development was done in a separate branch).
