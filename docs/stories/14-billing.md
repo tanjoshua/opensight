@@ -11,9 +11,9 @@ Acceptance criteria state what must be true when the story is done. The mechanis
 As the developer, I want entitlements in a versioned code catalog and Stripe state in one table, so that a plan's limits and the price it is sold against can never drift apart.
 
 - [x] `internal/billing` catalog: `Starter` plan (`code`, `prompt_limit` 20, `run_interval` weekly, `platforms` chatgpt, price env key). Unknown `plan_code` is an error, never a default.
-- [x] Migrations create `subscriptions` (tenant_id PK, plan_code, stripe_customer_id, stripe_subscription_id, stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end); webhook deliveries are not retained locally.
-- [x] Same migration backfills one `subscriptions` row per existing tenant with `comped = true`, then **drops `tenants.plan_id` and the `plans` table**.
-- [x] tenant-keyed subscription read/upsert on `store.Store`; `GetTenantPlan` and every `plans` reference removed app-wide (prompt limit, profile generation, schedule interval all read the catalog).
+- [x] Migrations create `subscriptions` (`account_id` PK, plan code and Stripe state); webhook deliveries are not retained locally.
+- [x] The billing migration backfills one subscription per existing account with `comped = true`, then drops the legacy plan foreign key and `plans` table.
+- [x] Account-keyed subscription access reads prompt limit, profile generation, and schedule interval from the code catalog.
 
 Deps: — · Phase 4 · Ref: design 08 (Entitlements move from a table to code; Schema), 02 (Plans and tenancy)
 
@@ -32,8 +32,8 @@ Deps: BILL-1 · Phase 4 · Ref: design 08 (Stripe integration — Client; Local 
 
 As a prospective customer, I want to create an account from the marketing site, so that I can start without talking to anyone.
 
-- [x] Signing in with Google is the whole form: a first-time sign-in provisions a tenant, lands authenticated, on the Starter plan, with no payment taken yet and no Stripe objects created.
-- [x] A half-created account is impossible: either the whole tenant exists or none of it does.
+- [x] Signing in with Google resolves a global user; a user with no memberships receives an account, Starter subscription, and owner membership transactionally, with no payment or Stripe objects yet.
+- [x] A half-created account is impossible: account, subscription, and owner membership all exist or none does.
 - [x] The account survives with no business — onboarding names it later.
 
 Deps: BILL-1 · Phase 4 · Ref: design 08 (Signup), 07 (Auth and accounts)
@@ -43,10 +43,10 @@ Deps: BILL-1 · Phase 4 · Ref: design 08 (Signup), 07 (Auth and accounts)
 As a new customer, I want to pay for the Starter plan immediately after signing up, so that I can get to my first results the same day.
 
 - [x] From the app, a customer can reach Stripe Checkout for Starter and pay; eligible payment methods are whatever the Stripe dashboard offers that customer, never a hardcoded list (asserted by `TestProviderCreateCheckoutSession`, `internal/billing/stripe/stripe_test.go` — unchanged by this story).
-- [x] The tenant's Stripe Customer exists before the customer is sent to Stripe, is tagged with the tenant, and is permanent — every later checkout, invoice and portal session reuses it.
+- [x] The account's Stripe Customer exists before the owner is sent to Stripe, is tagged with the account, and is permanent — every later checkout, invoice and portal session reuses it.
 - [x] Returning from a successful checkout, the customer sees a paid account without waiting on webhook delivery.
 - [x] A customer already paying cannot start a second checkout.
-- [x] A checkout session belonging to another tenant can never be confirmed.
+- [x] A checkout session belonging to an account the current user does not own can never be confirmed.
 
 Deps: BILL-2, BILL-3 · Phase 4 · Ref: design 08 (Stripe integration — Checkout Session, Checkout return)
 
@@ -58,7 +58,7 @@ As the operator, I want subscription state to converge on Stripe's truth regardl
 - [x] Redelivery only repeats desired-state reconciliation; it cannot apply an additive effect.
 - [x] Out-of-order delivery cannot resurrect a dead subscription — proven by an integration test that delivers `updated` after `deleted`.
 - [x] The delivered payload's own state is never written; only Stripe's current state is (design 08 — the payload carries identity, not truth).
-- [x] Every reconcile asserts whether monitoring must be running or paused, idempotently, tolerating a tenant with no business or no schedule yet.
+- [x] Every reconcile asserts whether monitoring must be running or paused, idempotently, tolerating an account with no business or no schedule yet.
 - [x] Billing state changes through exactly one path, shared with the checkout return (BILL-4) — the two entry points cannot diverge.
 - [x] Dunning is anchored once when it begins and cleared when it ends; repeated updates during the same dunning cycle must not push the anchor forward, or BILL-6's bound never expires (test).
 - [x] Stripe retries only when reconcile genuinely failed; anything unrecognised is accepted and ignored.
@@ -70,7 +70,7 @@ Deps: BILL-4 · Phase 4 · Ref: design 08 (Stripe integration — Webhook, Recon
 As a customer whose subscription lapsed, I want my history to stay readable while spend is blocked, so that I keep the evidence I paid for.
 
 - [x] One derivation answers `never | full | lapsed` for any billing row at any moment, exactly per design 08's table, and is tested over every Stripe status and both sides of the dunning bound without needing Stripe or a database. Landed in BILL-4 (`internal/billing/access.go`, `internal/billing/access_test.go`) — pulled forward because the second-checkout guard is itself an access question.
-- [x] The dunning bound takes effect the moment it passes, with no scheduled job: a `past_due` tenant beyond the bound is denied spend-triggering RPCs and runs even though its schedule is still running.
+- [x] The dunning bound takes effect the moment it passes, with no scheduled job: a `past_due` account beyond the bound is denied spend-triggering RPCs and runs even though its schedule is still running.
 - [x] Access is available wherever a session is, without an extra round trip per request.
 - [x] Every RPC is classified as account / subscriber / active and rejected below the access it requires; the rejection tells the SPA which billing state caused it.
 - [x] Classification is default-deny and cannot rot: adding an RPC without classifying it fails the build or the test suite.
@@ -82,7 +82,7 @@ Deps: BILL-1, BILL-3 · Phase 4 · Ref: design 08 (Access; Enforcement gate 1)
 
 As the operator, I want an unentitled run to cost nothing even if every other gate failed, so that a missed webhook can never spend money.
 
-- [x] A run that starts for a tenant without full access stops before spending anything: no run row, no prompt executed, no analysis. Integration test proves zero rows written and zero LLM calls.
+- [x] A run that starts for an account without full access stops before spending anything: no run row, no prompt executed, no analysis. Integration test proves zero rows written and zero LLM calls.
 - [x] The skip is legible as a skip, not as a failure, wherever runs are observed.
 - [x] A run already in flight when access drops is allowed to finish — the period was paid for, and a killed run leaves a partial history.
 

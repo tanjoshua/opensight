@@ -229,28 +229,29 @@ func (s *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, s.sessionCookie(raw))
-	http.Redirect(w, r, s.appBaseURL+"/overview", http.StatusFound)
+	http.Redirect(w, r, s.appBaseURL+"/accounts", http.StatusFound)
 }
 
 // resolveOrCreateGoogleUser implements the identity ladder from design 07:
 // match by google_sub (every sign-in after the first), fall back to matching
 // by email and linking the sub (an operator-created row, or a row from
 // before this account ever signed in with Google), and otherwise provision a
-// brand-new tenant + user (self-serve signup) exactly as Signup used to.
+// brand-new account + user (self-serve signup) exactly as Signup used to.
 func (s *Server) resolveOrCreateGoogleUser(ctx context.Context, identity googleIdentity) (domain.ID, error) {
 	if u, err := s.store.GetUserByGoogleSub(ctx, identity.Sub); err == nil {
-		return u.UserID, nil
+		return u.UserID, s.ensureGoogleUserHasAccount(ctx, u.UserID, identity.Email)
 	} else if !errors.Is(err, store.ErrNotFound) {
 		return domain.ID{}, err
 	}
 
 	if u, err := s.store.GetUserByEmail(ctx, identity.Email); err == nil {
-		return u.UserID, s.linkGoogleSubIfUnset(ctx, u, identity.Sub)
+		if err := s.linkGoogleSubIfUnset(ctx, u, identity.Sub); err != nil { return domain.ID{}, err }
+		return u.UserID, s.ensureGoogleUserHasAccount(ctx, u.UserID, identity.Email)
 	} else if !errors.Is(err, store.ErrNotFound) {
 		return domain.ID{}, err
 	}
 
-	tenantID, err := domain.NewID()
+	accountID, err := domain.NewID()
 	if err != nil {
 		return domain.ID{}, err
 	}
@@ -259,7 +260,7 @@ func (s *Server) resolveOrCreateGoogleUser(ctx context.Context, identity googleI
 		return domain.ID{}, err
 	}
 	_, user, err := s.store.CreateAccount(ctx, store.CreateAccountParams{
-		TenantID:  tenantID,
+		AccountID:  accountID,
 		UserID:    userID,
 		Email:     identity.Email,
 		GoogleSub: identity.Sub,
@@ -282,9 +283,19 @@ func (s *Server) resolveOrCreateGoogleUser(ctx context.Context, identity googleI
 
 func (s *Server) linkGoogleSubIfUnset(ctx context.Context, u store.UserIdentity, sub string) error {
 	if u.GoogleSub != nil {
+		if *u.GoogleSub != sub { return errors.New("email is already linked to a different Google identity") }
 		return nil
 	}
 	return s.store.SetUserGoogleSub(ctx, u.UserID, sub)
+}
+
+func (s *Server) ensureGoogleUserHasAccount(ctx context.Context, userID domain.ID, email string) error {
+	memberships, err := s.store.ListAccountMemberships(ctx, userID)
+	if err != nil { return err }
+	if len(memberships) > 0 { return nil }
+	local, _, _ := strings.Cut(email, "@")
+	_, err = s.store.CreateNamedAccount(ctx, userID, local)
+	return err
 }
 
 // googleAuthFailed logs the underlying cause and redirects the browser to the

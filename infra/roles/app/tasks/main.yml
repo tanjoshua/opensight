@@ -113,6 +113,12 @@
 
 # Explicit and separate: cmd/opensight/main.go deliberately never migrates on
 # serve/work startup, so a bad migration can't crash-loop the API.
+- name: Stop the API and worker before database migrations
+  ansible.builtin.command:
+    cmd: docker compose stop app worker
+    chdir: "{{ opensight_dir }}"
+  changed_when: true
+
 - name: Run database migrations
   ansible.builtin.command:
     cmd: docker compose run --rm app migrate

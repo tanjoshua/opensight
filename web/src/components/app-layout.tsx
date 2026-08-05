@@ -1,12 +1,18 @@
 import { Link, Navigate, Outlet, useLocation } from "react-router"
 
-import { isUnauthenticated } from "@/api/errors"
-import { useCurrentBusiness, useMe, useRuns } from "@/api/hooks"
+import { isMissingAccountAccess, isUnauthenticated } from "@/api/errors"
+import {
+  useAccountContext,
+  useCurrentBusiness,
+  useMe,
+  useRuns,
+} from "@/api/hooks"
 import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
+import { AccountRole } from "@/gen/opensight/v1/account_pb"
+import { accountPath } from "@/lib/account-path"
 import { AppSidebar } from "@/components/app-sidebar"
 import { BillingBanner } from "@/components/billing-banner"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
   SidebarProvider,
@@ -19,15 +25,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function AppLayout() {
   const location = useLocation()
   const me = useMe()
+  const account = useAccountContext()
   const { business } = useCurrentBusiness()
 
-  if (me.isLoading) {
+  if (me.isLoading || account.isLoading) {
     return <AppSkeleton />
   }
   if (isUnauthenticated(me.error)) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
-  if (me.isError || !me.data) {
+  if (isMissingAccountAccess(account.error)) {
+    return <Navigate to="/accounts" replace />
+  }
+  if (me.isError || !me.data || account.isError || !account.data) {
     return (
       <div className="flex min-h-svh items-center justify-center p-6 text-sm text-muted-foreground">
         The app could not be loaded. Try reloading the page.
@@ -37,17 +47,29 @@ export function AppLayout() {
   // An account that has never paid is denied every classSubscriber/classActive
   // RPC (BILL-6), so the product shell has nothing to show it — send it to
   // billing before the business check even runs (BILL-9).
-  if (me.data.access === Access.NEVER) {
-    return <Navigate to="/billing" replace />
+  const slug = account.data.account?.slug
+  if (!slug) return <Navigate to="/accounts" replace />
+  const accountName = account.data.account?.name ?? "OpenSight"
+  if (account.data.access === Access.NEVER) {
+    return account.data.role === AccountRole.OWNER ? (
+      <Navigate to={accountPath(slug, "/billing")} replace />
+    ) : (
+      <WorkspaceUnavailable />
+    )
   }
-  // Onboarding is tenant-scoped (a teammate joining an already-onboarded org
+  // Onboarding is account-scoped (a teammate joining an already-onboarded org
   // has an active business the moment they log in), so this checks every
-  // business on the tenant, not just useCurrentBusiness's first entry.
-  const hasActiveBusiness = me.data.businesses.some(
+  // business on the account, not just useCurrentBusiness's first entry.
+  const hasActiveBusiness = account.data.businesses.some(
     (b) => b.status !== BusinessStatus.DRAFT
   )
   if (!hasActiveBusiness) {
-    return <Navigate to="/onboarding" replace />
+    return account.data.role === AccountRole.OWNER ||
+      account.data.role === AccountRole.ADMIN ? (
+      <Navigate to={accountPath(slug, "/onboarding")} replace />
+    ) : (
+      <WorkspaceUnavailable awaitingSetup />
+    )
   }
 
   return (
@@ -56,9 +78,8 @@ export function AppLayout() {
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
-          <Separator orientation="vertical" className="h-4" />
-          <span className="min-w-0 truncate text-sm font-medium">
-            {business?.name ?? me.data.tenant?.name ?? "OpenSight"}
+          <span className="min-w-0 truncate text-sm font-medium md:hidden">
+            {business?.name ?? accountName}
           </span>
           {business && <RunProgressBadge businessId={business.id} />}
         </header>
@@ -72,13 +93,13 @@ export function AppLayout() {
           <div className="mx-auto flex w-full max-w-[1180px] flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <Link
               className="hover:text-foreground hover:underline"
-              to="/methodology"
+              to={accountPath(slug, "/methodology")}
             >
               How we measure
             </Link>
             <Link
               className="hover:text-foreground hover:underline"
-              to="/privacy"
+              to={accountPath(slug, "/privacy")}
             >
               Privacy
             </Link>
@@ -86,6 +107,33 @@ export function AppLayout() {
         </footer>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+function WorkspaceUnavailable({
+  awaitingSetup = false,
+}: {
+  awaitingSetup?: boolean
+}) {
+  return (
+    <main className="flex min-h-svh items-center justify-center p-6">
+      <div className="max-w-md text-center">
+        <h1 className="font-heading text-xl font-semibold">
+          This workspace isn't ready yet
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {awaitingSetup
+            ? "A workspace owner or admin needs to finish setup."
+            : "A workspace owner needs to activate billing."}
+        </p>
+        <Link
+          className="mt-4 inline-block text-sm underline underline-offset-4"
+          to="/accounts"
+        >
+          Choose another workspace
+        </Link>
+      </div>
+    </main>
   )
 }
 

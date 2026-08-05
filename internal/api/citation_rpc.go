@@ -33,11 +33,11 @@ func (s *Server) ListCitationSources(ctx context.Context, req *connect.Request[o
 	domainFilter := req.Msg.Domain
 	limit, offset := rpcPaging(req.Msg.Limit, req.Msg.Offset, defaultCitationLimit, maxCitationLimit)
 
-	if _, err := s.store.GetBusiness(ctx, su.TenantID, businessID); err != nil {
+	if _, err := s.store.GetBusiness(ctx, su.AccountID, businessID); err != nil {
 		return nil, s.rpcError("list citations", err)
 	}
 
-	sources, err := s.metrics.CitationSources(ctx, su.TenantID, businessID)
+	sources, err := s.metrics.CitationSources(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list citations: citation sources", err)
 	}

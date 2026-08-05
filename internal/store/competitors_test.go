@@ -9,7 +9,7 @@ import (
 func TestNormalizeCreateManualCompetitorParams(t *testing.T) {
 	website := "  https://example.com  "
 	params, err := normalizeCreateManualCompetitorParams(CreateManualCompetitorParams{
-		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000002001"),
+		AccountID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000002001"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000002002"),
 		Name:       "  Example Clinic  ",
 		Aliases:    []string{" Example ", "", "example", "Example Health "},
@@ -34,7 +34,7 @@ func TestNormalizeCreateManualCompetitorParams(t *testing.T) {
 
 func TestNormalizeCreateManualCompetitorParamsRejectsBlankName(t *testing.T) {
 	_, err := normalizeCreateManualCompetitorParams(CreateManualCompetitorParams{
-		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000002101"),
+		AccountID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000002101"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000002102"),
 		Name:       " ",
 	})
@@ -45,7 +45,7 @@ func TestNormalizeCreateManualCompetitorParamsRejectsBlankName(t *testing.T) {
 
 func TestNormalizeSuggestedAliasParams(t *testing.T) {
 	params, err := normalizeSuggestedAliasParams(SuggestedAliasParams{
-		TenantID:     mustUUIDV7(t, "01950000-0000-7000-8000-000000002201"),
+		AccountID:     mustUUIDV7(t, "01950000-0000-7000-8000-000000002201"),
 		CompetitorID: mustUUIDV7(t, "01950000-0000-7000-8000-000000002202"),
 		Alias:        "  Rival Medical  ",
 	})

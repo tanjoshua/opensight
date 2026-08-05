@@ -6,8 +6,8 @@ Depends on: [PRD](../prd.md)
 
 - Solo builder/operator: minimize moving parts and ops burden. Prefer boring, managed, one-binary-where-possible.
 - **Low running cost**: target a single modest VPS for the whole stack until revenue justifies more.
-- Multi-tenant SaaS from day one.
-- MVP scale envelope: Starter plan = 20 prompts × 1 run/week per tenant. Even at 500 tenants that is ~10k LLM calls/week — load is trivial; the design optimizes for **correctness, auditability, and iteration speed**, not throughput.
+- Multi-account SaaS from day one: a global user identity may hold a different role in each account.
+- MVP scale envelope: Starter plan = 20 prompts × 1 run/week per account. Even at 500 accounts that is ~10k LLM calls/week — load is trivial; the design optimizes for **correctness, auditability, and iteration speed**, not throughput.
 - Every user-facing metric must link back to a stored raw response (PRD §6), so raw data retention is a first-class concern.
 
 ## Decision summary
@@ -17,7 +17,7 @@ Depends on: [PRD](../prd.md)
 | D1 | ChatGPT data source | OpenAI Responses API + `web_search` tool |
 | D2 | Backend | Go monolith (API server + Temporal worker) |
 | D3 | Frontend | React SPA (Vite), talks to Go API |
-| D4 | Database | PostgreSQL — single instance, `tenant_id` scoping |
+| D4 | Database | PostgreSQL — single instance, `account_id` scoping |
 | D5 | Orchestration | Temporal, **self-hosted single node** on the VPS |
 | D6 | Analysis LLM | OpenAI (structured outputs) for MVP — one vendor, one key; keep behind an interface |
 | D7 | Repo layout | Monorepo |
@@ -47,7 +47,7 @@ flowchart LR
 
 One Go module, two run modes (`serve` and `work`) from the same binary — deployable as one process in dev, two containers in prod. Shared domain and persistence packages; no internal RPC between API and worker — they share the database and communicate through Temporal.
 
-- **API server**: Protobuf schema + Connect RPC over HTTP/1.1 (chi router mounts the generated handlers at `/rpc`), auth middleware, tenant scoping. Connect serves its own JSON/binary protocol directly — no separate gRPC proxy or Envoy sidecar — so this keeps the same single-binary, same-origin deployment shape as a hand-rolled REST API would have.
+- **API server**: Protobuf schema + Connect RPC over HTTP/1.1 (chi router mounts the generated handlers at `/rpc`), auth middleware, account membership and role enforcement. Connect serves its own JSON/binary protocol directly — no separate gRPC proxy or Envoy sidecar — so this keeps the same single-binary, same-origin deployment shape as a hand-rolled REST API would have.
 - **Worker**: hosts all Temporal workflows/activities: onboarding profile generation, weekly monitoring runs, analysis.
 - **Frontend**: Vite + React + TypeScript SPA. Five sections per PRD §7. Served as static files from the Go binary (no separate web server to run).
 
@@ -55,15 +55,15 @@ One Go module, two run modes (`serve` and `work`) from the same binary — deplo
 
 A single Postgres instance holds everything, as three databases:
 
-- `opensight` — application data: tenants, business profiles, prompts (with replacement lineage), runs, raw responses, mentions, citations, competitors.
+- `opensight` — application data: accounts, global users and memberships, business profiles, prompts (with replacement lineage), runs, raw responses, mentions, citations, competitors.
 - `temporal` — Temporal's core persistence store (see D5).
 - `temporal_visibility` — Temporal's visibility persistence store.
 
 Sharing one instance is a deliberate cost call: Temporal's "dedicated persistence" guidance targets high-throughput clusters, not thousands of activities/week. Guardrails: cap Temporal's connection pool (~20) and size `max_connections` for both consumers; check Temporal's Postgres compatibility before major PG upgrades. If it ever hurts, migration is dump/restore of the `temporal` database to a new instance — no code changes.
 
-Raw LLM responses are stored as `jsonb`/text in Postgres rather than object storage — at ~20 responses/tenant/week the volume is small, and keeping raw + derived data in one place makes "every metric links to the response" trivial (joins, not cross-store lookups).
+Raw LLM responses are stored as `jsonb`/text in Postgres rather than object storage — at ~20 responses/account/week the volume is small, and keeping raw + derived data in one place makes "every metric links to the response" trivial (joins, not cross-store lookups).
 
-Multi-tenancy: shared schema, `tenant_id` column on every tenant-owned table, enforced in a repository layer (not RLS, for MVP simplicity).
+Account isolation uses a shared schema and `account_id` ownership, enforced in the repository layer (not RLS, for MVP simplicity). Users are global identities; `account_memberships` assigns `owner`, `admin`, `member`, or `viewer` independently in each account. Membership grants access to every business in an account until business-specific access is needed.
 
 The application opens one `pgxpool.Pool` per process and shares it across every
 repository and metrics reader. SQL lives in `internal/store/queries/` and is
@@ -115,14 +115,14 @@ A single **OVHcloud VPS** (Singapore region — matches the SGD/Singapore busine
 
 ## D9 — Billing
 
-Self-serve signup takes payment before the first LLM call: Stripe Checkout for subscription creation, Customer Portal for cancellation, card updates and invoices, webhooks for state. No payment UI, stored card data or PCI surface is ours. Entitlements (prompt limit, run interval, platforms) live in a **code catalog**, not a database table — the limit and the Stripe Price it is sold against must be deployed as one unit. The database holds only Stripe state, one row per tenant. Full design in [08 Billing](08-billing.md).
+Self-serve signup takes payment before the first LLM call: Stripe Checkout for subscription creation, Customer Portal for cancellation, card updates and invoices, webhooks for state. No payment UI, stored card data or PCI surface is ours. Entitlements (prompt limit, run interval, platforms) live in a **code catalog**, not a database table — the limit and the Stripe Price it is sold against must be deployed as one unit. The database holds only Stripe state, one row per account. Full design in [08 Billing](08-billing.md).
 
 Because payment precedes every prompt execution, profile generation and analysis call, there is no free-spend surface and no in-app spend circuit breaker to build (07's OpenAI budget cap remains the backstop against our own bugs).
 
 ## Out of scope for MVP (explicit)
 
 - Platforms beyond ChatGPT; daily monitoring; alerts (PRD §9).
-- RLS / per-tenant databases; horizontal scaling concerns.
+- RLS / per-account databases; business-specific ACLs; horizontal scaling concerns.
 
 ## Open questions (owned by later increments)
 

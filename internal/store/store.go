@@ -97,10 +97,10 @@ func (s *Store) WithLock(ctx context.Context, key string, fn func(context.Contex
 	return fn(context.WithValue(ctx, connectionContextKey{}, conn))
 }
 
-// businessOwned is the tenant-ownership gate every business-scoped write and
+// businessOwned is the account-ownership gate every business-scoped write and
 // list runs first, in the same transaction.
-func businessOwned(ctx context.Context, q *storesqlc.Queries, tenantID, businessID uuid.UUID) error {
-	_, err := q.BusinessOwned(ctx, storesqlc.BusinessOwnedParams{ID: businessID, TenantID: tenantID})
+func businessOwned(ctx context.Context, q *storesqlc.Queries, accountID, businessID uuid.UUID) error {
+	_, err := q.BusinessOwned(ctx, storesqlc.BusinessOwnedParams{ID: businessID, AccountID: accountID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	}

@@ -15,7 +15,7 @@ import (
 
 // fakeSubs is a recording fake over subscriptionStore, good enough for apply
 // to run against with no database: Upsert overwrites the held row in full,
-// same as the real store, so GetByTenant/GetByCustomer on the same fake see
+// same as the real store, so GetByAccount/GetByCustomer on the same fake see
 // what a prior Upsert wrote.
 type fakeSubs struct {
 	sub          store.Subscription
@@ -25,7 +25,7 @@ type fakeSubs struct {
 	upserts      []store.UpsertSubscriptionParams
 }
 
-func (f *fakeSubs) GetByTenant(context.Context, domain.ID) (store.Subscription, error) {
+func (f *fakeSubs) GetByAccount(context.Context, domain.ID) (store.Subscription, error) {
 	return f.sub, f.getErr
 }
 
@@ -39,7 +39,7 @@ func (f *fakeSubs) Upsert(_ context.Context, params store.UpsertSubscriptionPara
 		return f.upsertErr
 	}
 	f.sub = store.Subscription{
-		TenantID:             params.TenantID,
+		AccountID:             params.AccountID,
 		PlanCode:             params.PlanCode,
 		Comped:               params.Comped,
 		StripeCustomerID:     params.StripeCustomerID,
@@ -66,7 +66,7 @@ func (f *fakeProvider) GetSubscriptionForCustomer(context.Context, string) (bill
 
 // monitoringCall records one Reconciler -> monitoringGate.Set invocation.
 type monitoringCall struct {
-	tenantID  domain.ID
+	accountID  domain.ID
 	platforms []string
 	enabled   bool
 }
@@ -76,12 +76,12 @@ type fakeMonitoringGate struct {
 	err   error
 }
 
-func (f *fakeMonitoringGate) Set(_ context.Context, tenantID domain.ID, platforms []string, enabled bool) error {
-	f.calls = append(f.calls, monitoringCall{tenantID, platforms, enabled})
+func (f *fakeMonitoringGate) Set(_ context.Context, accountID domain.ID, platforms []string, enabled bool) error {
+	f.calls = append(f.calls, monitoringCall{accountID, platforms, enabled})
 	return f.err
 }
 
-func testTenantID(t *testing.T) domain.ID {
+func testAccountID(t *testing.T) domain.ID {
 	t.Helper()
 	return uuid.New()
 }
@@ -91,18 +91,18 @@ func testTenantID(t *testing.T) domain.ID {
 // updates during the same dunning cycle do not push the anchor forward (or
 // BILL-6's 21-day bound would never expire).
 func TestDunningAnchorSetOnceAndClearsOnRecovery(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
-	subs := &fakeSubs{sub: store.Subscription{TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID}}
+	subs := &fakeSubs{sub: store.Subscription{AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID}}
 	provider := &fakeProvider{sub: billing.Subscription{ID: "sub_1", Status: "past_due"}}
 
 	clock := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	r := New(subs, provider, nil, nil, func() time.Time { return clock })
 
 	// First reconcile while past_due: anchor set to "now".
-	sub, err := r.Tenant(context.Background(), tenantID)
+	sub, err := r.Account(context.Background(), accountID)
 	if err != nil {
-		t.Fatalf("Tenant (first past_due): %v", err)
+		t.Fatalf("Account (first past_due): %v", err)
 	}
 	if sub.PastDueSince == nil || !sub.PastDueSince.Equal(clock) {
 		t.Fatalf("PastDueSince = %v, want %v", sub.PastDueSince, clock)
@@ -111,9 +111,9 @@ func TestDunningAnchorSetOnceAndClearsOnRecovery(t *testing.T) {
 
 	// Clock advances, still past_due: anchor must not move.
 	clock = clock.Add(5 * 24 * time.Hour)
-	sub, err = r.Tenant(context.Background(), tenantID)
+	sub, err = r.Account(context.Background(), accountID)
 	if err != nil {
-		t.Fatalf("Tenant (second past_due): %v", err)
+		t.Fatalf("Account (second past_due): %v", err)
 	}
 	if sub.PastDueSince == nil || !sub.PastDueSince.Equal(firstAnchor) {
 		t.Fatalf("PastDueSince after repeated past_due = %v, want unchanged %v", sub.PastDueSince, firstAnchor)
@@ -121,9 +121,9 @@ func TestDunningAnchorSetOnceAndClearsOnRecovery(t *testing.T) {
 
 	// Recovery: status leaves past_due, anchor clears.
 	provider.sub = billing.Subscription{ID: "sub_1", Status: "active"}
-	sub, err = r.Tenant(context.Background(), tenantID)
+	sub, err = r.Account(context.Background(), accountID)
 	if err != nil {
-		t.Fatalf("Tenant (recovery): %v", err)
+		t.Fatalf("Account (recovery): %v", err)
 	}
 	if sub.PastDueSince != nil {
 		t.Fatalf("PastDueSince after recovery = %v, want nil", sub.PastDueSince)
@@ -131,21 +131,21 @@ func TestDunningAnchorSetOnceAndClearsOnRecovery(t *testing.T) {
 }
 
 // TestMonitoringPausesOnFullToLapsed covers the AC that a state change also
-// stops monitoring: active -> canceled pauses, using the tenant's plan
+// stops monitoring: active -> canceled pauses, using the account's plan
 // platforms, never a literal.
 func TestMonitoringPausesOnFullToLapsed(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
 	subs := &fakeSubs{sub: store.Subscription{
-		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+		AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
 		StripeSubscriptionID: strPtr("sub_1"), StripeStatus: strPtr("active"),
 	}}
 	provider := &fakeProvider{sub: billing.Subscription{ID: "sub_1", Status: "canceled"}}
 	monitoring := &fakeMonitoringGate{}
 	r := New(subs, provider, monitoring, nil, func() time.Time { return time.Now() })
 
-	if _, err := r.Tenant(context.Background(), tenantID); err != nil {
-		t.Fatalf("Tenant: %v", err)
+	if _, err := r.Account(context.Background(), accountID); err != nil {
+		t.Fatalf("Account: %v", err)
 	}
 
 	if len(monitoring.calls) != 1 {
@@ -155,8 +155,8 @@ func TestMonitoringPausesOnFullToLapsed(t *testing.T) {
 	if call.enabled {
 		t.Fatal("enabled = true, want false (pausing)")
 	}
-	if call.tenantID != tenantID {
-		t.Fatalf("tenantID = %v, want %v", call.tenantID, tenantID)
+	if call.accountID != accountID {
+		t.Fatalf("accountID = %v, want %v", call.accountID, accountID)
 	}
 	if len(call.platforms) != len(billing.Starter.Platforms) || call.platforms[0] != billing.Starter.Platforms[0] {
 		t.Fatalf("platforms = %v, want %v (from the plan catalog)", call.platforms, billing.Starter.Platforms)
@@ -166,18 +166,18 @@ func TestMonitoringPausesOnFullToLapsed(t *testing.T) {
 // TestMonitoringResumesOnLapsedToFull covers the mirror AC: canceled ->
 // active resumes.
 func TestMonitoringResumesOnLapsedToFull(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
 	subs := &fakeSubs{sub: store.Subscription{
-		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+		AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
 		StripeSubscriptionID: strPtr("sub_1"), StripeStatus: strPtr("canceled"),
 	}}
 	provider := &fakeProvider{sub: billing.Subscription{ID: "sub_1", Status: "active"}}
 	monitoring := &fakeMonitoringGate{}
 	r := New(subs, provider, monitoring, nil, func() time.Time { return time.Now() })
 
-	if _, err := r.Tenant(context.Background(), tenantID); err != nil {
-		t.Fatalf("Tenant: %v", err)
+	if _, err := r.Account(context.Background(), accountID); err != nil {
+		t.Fatalf("Account: %v", err)
 	}
 
 	if len(monitoring.calls) != 1 {
@@ -191,18 +191,18 @@ func TestMonitoringResumesOnLapsedToFull(t *testing.T) {
 // TestMonitoringDesiredStateReasserted covers retry repair: active -> active
 // still asserts that monitoring is enabled.
 func TestMonitoringDesiredStateReasserted(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
 	subs := &fakeSubs{sub: store.Subscription{
-		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+		AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
 		StripeSubscriptionID: strPtr("sub_1"), StripeStatus: strPtr("active"),
 	}}
 	provider := &fakeProvider{sub: billing.Subscription{ID: "sub_1", Status: "active"}}
 	monitoring := &fakeMonitoringGate{}
 	r := New(subs, provider, monitoring, nil, func() time.Time { return time.Now() })
 
-	if _, err := r.Tenant(context.Background(), tenantID); err != nil {
-		t.Fatalf("Tenant: %v", err)
+	if _, err := r.Account(context.Background(), accountID); err != nil {
+		t.Fatalf("Account: %v", err)
 	}
 
 	if len(monitoring.calls) != 1 {
@@ -214,18 +214,18 @@ func TestMonitoringDesiredStateReasserted(t *testing.T) {
 }
 
 func TestMonitoringFailureIsRetryable(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
 	subs := &fakeSubs{sub: store.Subscription{
-		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+		AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
 		StripeSubscriptionID: strPtr("sub_1"), StripeStatus: strPtr("active"),
 	}}
 	provider := &fakeProvider{sub: billing.Subscription{ID: "sub_1", Status: "active"}}
 	monitoring := &fakeMonitoringGate{err: errBoom}
 	r := New(subs, provider, monitoring, nil, nil)
 
-	if _, err := r.Tenant(context.Background(), tenantID); !errors.Is(err, errBoom) {
-		t.Fatalf("Tenant monitoring failure = %v, want wrapped errBoom", err)
+	if _, err := r.Account(context.Background(), accountID); !errors.Is(err, errBoom) {
+		t.Fatalf("Account monitoring failure = %v, want wrapped errBoom", err)
 	}
 }
 
@@ -234,18 +234,18 @@ func TestMonitoringFailureIsRetryable(t *testing.T) {
 // returns no error with monitoring nil (BILL-4's checkout-funnel tests build
 // Reconcilers with no Temporal client in scope).
 func TestNilMonitoringIsNoOp(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
 	subs := &fakeSubs{sub: store.Subscription{
-		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+		AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
 		StripeSubscriptionID: strPtr("sub_1"), StripeStatus: strPtr("active"),
 	}}
 	provider := &fakeProvider{sub: billing.Subscription{ID: "sub_1", Status: "canceled"}}
 	r := New(subs, provider, nil, nil, func() time.Time { return time.Now() })
 
-	sub, err := r.Tenant(context.Background(), tenantID)
+	sub, err := r.Account(context.Background(), accountID)
 	if err != nil {
-		t.Fatalf("Tenant with nil monitoring: %v", err)
+		t.Fatalf("Account with nil monitoring: %v", err)
 	}
 	if sub.StripeStatus == nil || *sub.StripeStatus != "canceled" {
 		t.Fatalf("stripe_status = %v, want canceled (the row write must not depend on monitoring)", sub.StripeStatus)
@@ -277,10 +277,10 @@ func (f *fakeCustomerLocker) WithLock(ctx context.Context, key string, fn func(c
 }
 
 func TestByCustomerUsesCustomerScopedLock(t *testing.T) {
-	tenantID := testTenantID(t)
+	accountID := testAccountID(t)
 	customerID := "cus_1"
 	subs := &fakeSubs{sub: store.Subscription{
-		TenantID: tenantID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
+		AccountID: accountID, PlanCode: billing.Starter.Code, StripeCustomerID: &customerID,
 	}}
 	locks := &fakeCustomerLocker{}
 	r := New(subs, &fakeProvider{err: billing.ErrNoSubscription}, nil, locks, nil)

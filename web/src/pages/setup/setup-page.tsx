@@ -45,9 +45,11 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAccountPath } from "@/lib/account-path"
 
 export function SetupPage() {
   const current = useCurrentBusiness()
+  const path = useAccountPath()
   const summary = current.business
   const business = useQuery(
     getBusiness,
@@ -69,13 +71,13 @@ export function SetupPage() {
     )
   }
   if (!summary) {
-    return <Navigate to="/onboarding" replace />
+    return <Navigate to={path("/onboarding")} replace />
   }
   if (
     summary.status === BusinessStatus.DRAFT ||
     business.data?.business?.status === BusinessStatus.DRAFT
   ) {
-    return <Navigate to="/onboarding" replace />
+    return <Navigate to={path("/onboarding")} replace />
   }
   if (!business.data?.business || !competitors.data) return <SetupSkeleton />
 
@@ -96,7 +98,7 @@ export function SetupPage() {
             Add or replace the questions measured in future runs.
           </CardDescription>
           <CardAction>
-            <Button render={<Link to="/prompts" />}>Manage prompts</Button>
+            <Button render={<Link to={path("/prompts")} />}>Manage prompts</Button>
           </CardAction>
         </CardHeader>
       </Card>
@@ -466,7 +468,7 @@ function CompetitorAliases({ competitor }: { competitor: Competitor }) {
 }
 
 // PlanCard reads from useMe() (via usePlan(), BILL-6), not the business:
-// plan entitlements are a tenant fact, not a per-business one.
+// plan entitlements are an account fact, not a per-business one.
 function PlanCard() {
   const { plan } = usePlan()
   if (!plan) return null

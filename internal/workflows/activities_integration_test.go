@@ -51,7 +51,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustID(t)
+	accountID := mustID(t)
 	businessID := mustID(t)
 	promptID := mustID(t)
 
@@ -60,14 +60,14 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Activities Tenant")
+	insertAccount(t, db, ctx, accountID, "Activities Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 
 	repository := store.New(db)
@@ -131,7 +131,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			t.Fatalf("LoadRunSpec: %v", err)
 		}
 		in := ExecutePromptInput{
-			TenantID: spec.TenantID,
+			AccountID: spec.AccountID,
 			RunID:    spec.RunID,
 			Prompt:   spec.Prompts[0],
 			Location: spec.Location,
@@ -165,7 +165,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			t.Fatalf("LoadRunSpec: %v", err)
 		}
 		in := ExecutePromptInput{
-			TenantID: spec.TenantID,
+			AccountID: spec.AccountID,
 			RunID:    spec.RunID,
 			Prompt:   spec.Prompts[0],
 			Location: spec.Location,
@@ -189,7 +189,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			t.Fatalf("status = %q, want failed", out.Status)
 		}
 
-		result, err := repository.GetResultByRunAndPrompt(ctx, spec.TenantID, spec.RunID, spec.Prompts[0].ID)
+		result, err := repository.GetResultByRunAndPrompt(ctx, spec.AccountID, spec.RunID, spec.Prompts[0].ID)
 		if err != nil {
 			t.Fatalf("get recorded result: %v", err)
 		}
@@ -215,7 +215,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		// prompt snapshot): a zero-prompt run must classify as failed (RUN-3
 		// "none -> failed"), not completed.
 		run, err := acts.FinalizeRun(ctx, FinalizeRunInput{
-			TenantID: spec.TenantID,
+			AccountID: spec.AccountID,
 			RunID:    spec.RunID,
 		})
 		if err != nil {

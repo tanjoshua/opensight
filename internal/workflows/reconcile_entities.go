@@ -21,7 +21,7 @@ type ResultEntities struct {
 // results are included (design 05, "Commit"), so unanalyzed results are absent
 // from both matching and the mention rewrite.
 type ReconcileEntitiesInput struct {
-	TenantID   domain.ID
+	AccountID  domain.ID `json:"TenantID"`
 	BusinessID domain.ID
 	RunID      domain.ID
 	Results    []ResultEntities
@@ -47,7 +47,7 @@ type ReconcileEntitiesOutput struct {
 // attempt already minted, so the delete-and-rewrite converges instead of
 // re-creating them (CommitReconcile is itself one transaction).
 func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntitiesInput) (ReconcileEntitiesOutput, error) {
-	business, err := a.Store.GetBusiness(ctx, in.TenantID, in.BusinessID)
+	business, err := a.Store.GetBusiness(ctx, in.AccountID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return ReconcileEntitiesOutput{}, temporal.NewNonRetryableApplicationError(
@@ -57,7 +57,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 	}
 	target := llm.ReconcileTarget{Name: business.Name, Aliases: business.Aliases}
 
-	competitors, err := a.Store.ListCompetitors(ctx, in.TenantID, in.BusinessID)
+	competitors, err := a.Store.ListCompetitors(ctx, in.AccountID, in.BusinessID)
 	if err != nil {
 		return ReconcileEntitiesOutput{}, err
 	}
@@ -188,7 +188,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 		}
 	}
 
-	if err := a.Store.CommitReconcile(ctx, in.TenantID, in.BusinessID, store.ReconcileCommitParams{
+	if err := a.Store.CommitReconcile(ctx, in.AccountID, in.BusinessID, store.ReconcileCommitParams{
 		RunID:            in.RunID,
 		Discovered:       discovered,
 		SuggestedAliases: suggested,

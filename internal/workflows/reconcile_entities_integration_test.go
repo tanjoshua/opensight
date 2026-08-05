@@ -64,7 +64,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustID(t)
+	accountID := mustID(t)
 	businessID := mustID(t)
 	promptID := mustID(t)
 	runID := mustID(t)
@@ -78,14 +78,14 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Reconcile Tenant")
+	insertAccount(t, db, ctx, accountID, "Reconcile Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic', 'active')", promptID, businessID)
 	// completed_at must be set: the analysis_completed_at CHECK forbids stamping
 	// analysis before the run is marked complete (FinalizeRun sets it in prod).
@@ -105,7 +105,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	acts := &Activities{Store: store, Matcher: matcher}
 
 	in := ReconcileEntitiesInput{
-		TenantID:   tenantID,
+		AccountID:   accountID,
 		BusinessID: businessID,
 		RunID:      runID,
 		Results: []ResultEntities{{

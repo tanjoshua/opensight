@@ -135,18 +135,18 @@ type ResultAnalysis struct {
 	Citations []ResultCitation
 }
 
-// CreateResult appends a prompt result, scoped by a tenant-predicated lookup of
-// the run's business inside one transaction. A missing or cross-tenant run
+// CreateResult appends a prompt result, scoped by a account-predicated lookup of
+// the run's business inside one transaction. A missing or cross-account run
 // returns ErrNotFound; a UNIQUE (run_id, prompt_id) violation returns
 // ErrDuplicateResult. ExecutePrompt's retry re-gets the existing row on the
 // latter (get -> miss -> create -> on ErrDuplicateResult re-get).
-func (s *Store) CreateResult(ctx context.Context, tenantID domain.ID, params CreateResultParams) (PromptResult, error) {
+func (s *Store) CreateResult(ctx context.Context, accountID domain.ID, params CreateResultParams) (PromptResult, error) {
 
 	params, err := normalizeCreateResultParams(params)
 	if err != nil {
 		return PromptResult{}, err
 	}
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return PromptResult{}, err
 	}
 
@@ -163,7 +163,7 @@ func (s *Store) CreateResult(ctx context.Context, tenantID domain.ID, params Cre
 	}
 	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if _, err := q.RunPromptOwned(ctx, storesqlc.RunPromptOwnedParams{
-			ID: params.RunID, ID_2: params.PromptID, TenantID: tenantID,
+			ID: params.RunID, PromptID: params.PromptID, AccountID: accountID,
 		}); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
@@ -195,14 +195,14 @@ func (s *Store) CreateResult(ctx context.Context, tenantID domain.ID, params Cre
 	return result, nil
 }
 
-// GetResultByRunAndPrompt loads the result for a (run, prompt) pair, tenant
+// GetResultByRunAndPrompt loads the result for a (run, prompt) pair, account
 // scoped via the business join (deep-by-id). No row returns ErrNotFound.
 // ExecutePrompt calls this first for its idempotency check and after an
 // ErrDuplicateResult race.
-func (s *Store) GetResultByRunAndPrompt(ctx context.Context, tenantID, runID, promptID domain.ID) (PromptResult, error) {
+func (s *Store) GetResultByRunAndPrompt(ctx context.Context, accountID, runID, promptID domain.ID) (PromptResult, error) {
 
 	row, err := s.q(ctx).GetResultByRunAndPrompt(ctx, storesqlc.GetResultByRunAndPromptParams{
-		RunID: runID, PromptID: promptID, TenantID: tenantID,
+		RunID: runID, PromptID: promptID, AccountID: accountID,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -213,12 +213,12 @@ func (s *Store) GetResultByRunAndPrompt(ctx context.Context, tenantID, runID, pr
 	return resultFromSQLC(row), nil
 }
 
-// GetResult loads a single result by id, tenant scoped via
-// prompt_results -> monitoring_runs -> businesses. A missing or cross-tenant
+// GetResult loads a single result by id, account scoped via
+// prompt_results -> monitoring_runs -> businesses. A missing or cross-account
 // result returns ErrNotFound.
-func (s *Store) GetResult(ctx context.Context, tenantID, resultID domain.ID) (PromptResult, error) {
+func (s *Store) GetResult(ctx context.Context, accountID, resultID domain.ID) (PromptResult, error) {
 
-	row, err := s.q(ctx).GetResult(ctx, storesqlc.GetResultParams{ID: resultID, TenantID: tenantID})
+	row, err := s.q(ctx).GetResult(ctx, storesqlc.GetResultParams{ID: resultID, AccountID: accountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return PromptResult{}, ErrNotFound
@@ -229,10 +229,10 @@ func (s *Store) GetResult(ctx context.Context, tenantID, resultID domain.ID) (Pr
 }
 
 // GetResultDetail loads one result with its prompt text and run metadata,
-// tenant scoped through prompt_results -> monitoring_runs -> businesses.
-func (s *Store) GetResultDetail(ctx context.Context, tenantID, resultID domain.ID) (ResultDetail, error) {
+// account scoped through prompt_results -> monitoring_runs -> businesses.
+func (s *Store) GetResultDetail(ctx context.Context, accountID, resultID domain.ID) (ResultDetail, error) {
 
-	row, err := s.q(ctx).GetResultDetail(ctx, storesqlc.GetResultDetailParams{ID: resultID, TenantID: tenantID})
+	row, err := s.q(ctx).GetResultDetail(ctx, storesqlc.GetResultDetailParams{ID: resultID, AccountID: accountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ResultDetail{}, ErrNotFound
@@ -253,15 +253,15 @@ func (s *Store) GetResultDetail(ctx context.Context, tenantID, resultID domain.I
 
 // GetResultAnalysis loads the derived-analysis enrichment for one result — its
 // result_analyses row (if any), mentions, and citations — for the Response
-// drawer (design 06). All reads are tenant-scoped, so a missing or
-// cross-tenant result returns an empty, unanalyzed ResultAnalysis rather than
+// drawer (design 06). All reads are account-scoped, so a missing or
+// cross-account result returns an empty, unanalyzed ResultAnalysis rather than
 // leaking. Ownership and existence of the result itself are proven by the
 // caller's GetResultDetail; this method only fetches the child rows.
-func (s *Store) GetResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) (ResultAnalysis, error) {
+func (s *Store) GetResultAnalysis(ctx context.Context, accountID, resultID domain.ID) (ResultAnalysis, error) {
 
 	var out ResultAnalysis
 	row, err := s.q(ctx).GetResultAnalysisRow(ctx, storesqlc.GetResultAnalysisRowParams{
-		PromptResultID: resultID, TenantID: tenantID,
+		PromptResultID: resultID, AccountID: accountID,
 	})
 	switch {
 	case err == nil:
@@ -277,13 +277,13 @@ func (s *Store) GetResultAnalysis(ctx context.Context, tenantID, resultID domain
 		return ResultAnalysis{}, fmt.Errorf("get result analysis: %w", err)
 	}
 
-	mentions, err := s.listResultMentions(ctx, tenantID, resultID)
+	mentions, err := s.listResultMentions(ctx, accountID, resultID)
 	if err != nil {
 		return ResultAnalysis{}, err
 	}
 	out.Mentions = mentions
 
-	citations, err := s.listResultCitations(ctx, tenantID, resultID)
+	citations, err := s.listResultCitations(ctx, accountID, resultID)
 	if err != nil {
 		return ResultAnalysis{}, err
 	}
@@ -291,9 +291,9 @@ func (s *Store) GetResultAnalysis(ctx context.Context, tenantID, resultID domain
 	return out, nil
 }
 
-func (s *Store) listResultMentions(ctx context.Context, tenantID, resultID domain.ID) ([]ResultMention, error) {
+func (s *Store) listResultMentions(ctx context.Context, accountID, resultID domain.ID) ([]ResultMention, error) {
 	rows, err := s.q(ctx).ListResultMentions(ctx, storesqlc.ListResultMentionsParams{
-		PromptResultID: resultID, TenantID: tenantID,
+		PromptResultID: resultID, AccountID: accountID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list result mentions: %w", err)
@@ -308,9 +308,9 @@ func (s *Store) listResultMentions(ctx context.Context, tenantID, resultID domai
 	return mentions, nil
 }
 
-func (s *Store) listResultCitations(ctx context.Context, tenantID, resultID domain.ID) ([]ResultCitation, error) {
+func (s *Store) listResultCitations(ctx context.Context, accountID, resultID domain.ID) ([]ResultCitation, error) {
 	rows, err := s.q(ctx).ListResultCitations(ctx, storesqlc.ListResultCitationsParams{
-		PromptResultID: resultID, TenantID: tenantID,
+		PromptResultID: resultID, AccountID: accountID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list result citations: %w", err)
@@ -325,13 +325,13 @@ func (s *Store) listResultCitations(ctx context.Context, tenantID, resultID doma
 }
 
 // ListResults returns a business's results with optional hard-coded
-// predicates. It enters through the tenant-checked business lookup, then joins
+// predicates. It enters through the account-checked business lookup, then joins
 // results up to the business so foreign run/prompt filters yield nothing rather
-// than leaking across tenants.
-func (s *Store) ListResults(ctx context.Context, tenantID, businessID domain.ID, filter ResultFilter) ([]ResultListItem, error) {
+// than leaking across accounts.
+func (s *Store) ListResults(ctx context.Context, accountID, businessID domain.ID, filter ResultFilter) ([]ResultListItem, error) {
 
 	q := s.q(ctx)
-	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+	if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 		return nil, err
 	}
 

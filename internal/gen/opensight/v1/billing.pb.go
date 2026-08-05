@@ -114,7 +114,7 @@ type GetBillingResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Access Access                 `protobuf:"varint,1,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
 	Plan   *Plan                  `protobuf:"bytes,2,opt,name=plan,proto3" json:"plan,omitempty"`
-	// stripe_status is VERBATIM Stripe status, empty when the tenant has no
+	// stripe_status is VERBATIM Stripe status, empty when the account has no
 	// subscription. The SPA maps it to copy; it is never invented locally
 	// (design 08 — subscriptions.stripe_status).
 	StripeStatus string `protobuf:"bytes,3,opt,name=stripe_status,json=stripeStatus,proto3" json:"stripe_status,omitempty"`
@@ -129,11 +129,11 @@ type GetBillingResponse struct {
 	// cancel_at_period_end is false, and the end date when it is true.
 	CurrentPeriodEnd  *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=current_period_end,json=currentPeriodEnd,proto3" json:"current_period_end,omitempty"`
 	CancelAtPeriodEnd bool                   `protobuf:"varint,8,opt,name=cancel_at_period_end,json=cancelAtPeriodEnd,proto3" json:"cancel_at_period_end,omitempty"`
-	// comped tenants have no Stripe objects at all (design 08 "comped is a
+	// comped accounts have no Stripe objects at all (design 08 "comped is a
 	// separate boolean, not a status value") — stripe_status is empty and
 	// there is no portal to offer.
 	Comped bool `protobuf:"varint,9,opt,name=comped,proto3" json:"comped,omitempty"`
-	// action is derived server-side from the tenant's subscription. The SPA
+	// action is derived server-side from the account's subscription. The SPA
 	// does not interpret Stripe statuses to decide whether to create a new
 	// subscription or manage the existing one.
 	Action        BillingAction `protobuf:"varint,10,opt,name=action,proto3,enum=opensight.v1.BillingAction" json:"action,omitempty"`
@@ -242,7 +242,7 @@ func (x *GetBillingResponse) GetAction() BillingAction {
 }
 
 // StartCheckoutRequest is deliberately empty. The plan being paid for is the
-// one already on the tenant's subscriptions row, and its Price id is resolved
+// one already on the account's subscriptions row, and its Price id is resolved
 // from the code catalog plus config — a client-supplied plan or price would be
 // a way to buy something we never offered.
 type StartCheckoutRequest struct {
@@ -331,7 +331,7 @@ type ConfirmCheckoutRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// session_id is the value Stripe substituted for {CHECKOUT_SESSION_ID} in
 	// success_url. It is proof of nothing on its own: the server retrieves the
-	// session and confirms it belongs to the calling tenant.
+	// session and confirms its account belongs to the caller.
 	SessionId     string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -379,7 +379,11 @@ type ConfirmCheckoutResponse struct {
 	// access after the same reconcile the webhook runs (design 08 "Checkout
 	// return") — so a customer who just paid is never told they haven't while a
 	// webhook is in flight.
-	Access        Access `protobuf:"varint,1,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
+	Access Access `protobuf:"varint,1,opt,name=access,proto3,enum=opensight.v1.Access" json:"access,omitempty"`
+	// account_slug is the account Stripe identified via client_reference_id.
+	// Checkout confirmation is identity-scoped so outstanding pre-account-path
+	// success URLs can route into the correct account after reconciliation.
+	AccountSlug   string `protobuf:"bytes,2,opt,name=account_slug,json=accountSlug,proto3" json:"account_slug,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -421,8 +425,15 @@ func (x *ConfirmCheckoutResponse) GetAccess() Access {
 	return Access_ACCESS_UNSPECIFIED
 }
 
+func (x *ConfirmCheckoutResponse) GetAccountSlug() string {
+	if x != nil {
+		return x.AccountSlug
+	}
+	return ""
+}
+
 // CreatePortalSessionRequest is deliberately empty, the same shape as
-// StartCheckoutRequest: the Customer to send is the calling tenant's own, not
+// StartCheckoutRequest: the Customer to send is the calling account's own, not
 // a client-supplied id.
 type CreatePortalSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -529,9 +540,10 @@ const file_opensight_v1_billing_proto_rawDesc = "" +
 	"\fcheckout_url\x18\x01 \x01(\tR\vcheckoutUrl\"7\n" +
 	"\x16ConfirmCheckoutRequest\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"G\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"j\n" +
 	"\x17ConfirmCheckoutResponse\x12,\n" +
-	"\x06access\x18\x01 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\"\x1c\n" +
+	"\x06access\x18\x01 \x01(\x0e2\x14.opensight.v1.AccessR\x06access\x12!\n" +
+	"\faccount_slug\x18\x02 \x01(\tR\vaccountSlug\"\x1c\n" +
 	"\x1aCreatePortalSessionRequest\"<\n" +
 	"\x1bCreatePortalSessionResponse\x12\x1d\n" +
 	"\n" +

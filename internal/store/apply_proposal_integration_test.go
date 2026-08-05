@@ -27,7 +27,7 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	manualBusinessID := mustNewID(t)
 	proposalID := mustNewID(t)
@@ -36,14 +36,14 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id IN ($1, $2)", businessID, manualBusinessID)
 		_, _ = db.Exec(ctx, "DELETE FROM profile_proposals WHERE business_id IN ($1, $2)", businessID, manualBusinessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id IN ($1, $2)", businessID, manualBusinessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Apply Tenant")
+	insertAccount(t, db, ctx, accountID, "Apply Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, website)
-		VALUES ($1, $2, 'draft', 'Draft Clinic', 'https://draft.example')`, businessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name, website)
+		VALUES ($1, $2, 'draft', 'Draft Clinic', 'https://draft.example')`, businessID, accountID)
 	mustExec(t, db, ctx, `
 		INSERT INTO profile_proposals (id, business_id, payload, status)
 		VALUES ($1, $2, '{"low_confidence":false}'::jsonb, 'pending')`, proposalID, businessID)
@@ -51,7 +51,7 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 	applyStore := New(db)
 
 	result, err := applyStore.Apply(ctx, ApplyProposalParams{
-		TenantID:    tenantID,
+		AccountID:    accountID,
 		BusinessID:  businessID,
 		Name:        "Draft Clinic",
 		Aliases:     []string{"DC Ortho"},
@@ -96,7 +96,7 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 
 	// A second apply on the now-active business is rejected.
 	_, err = applyStore.Apply(ctx, ApplyProposalParams{
-		TenantID:    tenantID,
+		AccountID:    accountID,
 		BusinessID:  businessID,
 		Name:        "Draft Clinic",
 		Category:    "orthopaedic clinic",
@@ -110,10 +110,10 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 
 	// Manual-setup path: a draft business with no pending proposal still applies.
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name)
-		VALUES ($1, $2, 'draft', 'Manual Clinic')`, manualBusinessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name)
+		VALUES ($1, $2, 'draft', 'Manual Clinic')`, manualBusinessID, accountID)
 	manual, err := applyStore.Apply(ctx, ApplyProposalParams{
-		TenantID:    tenantID,
+		AccountID:    accountID,
 		BusinessID:  manualBusinessID,
 		Name:        "Manual Clinic",
 		Category:    "physiotherapy",

@@ -132,7 +132,7 @@ message ListResultsRequest {
   int32 limit = 6;
   int32 offset = 7;
   // When set, returns only these results in the caller-provided order. IDs
-  // outside business_id (including another tenant's results) are omitted.
+  // outside business_id (including another account's results) are omitted.
   repeated string result_ids = 8;
 }
 

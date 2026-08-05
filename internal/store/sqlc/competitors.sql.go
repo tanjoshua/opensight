@@ -13,21 +13,21 @@ import (
 
 const approveSuggestedAlias = `-- name: ApproveSuggestedAlias :one
 UPDATE competitors co
-SET suggested_aliases=array_remove(co.suggested_aliases,$3),
-    aliases=CASE WHEN $3=ANY(co.aliases) THEN co.aliases ELSE array_append(co.aliases,$3) END
+SET suggested_aliases=array_remove(co.suggested_aliases,$1),
+    aliases=CASE WHEN $1=ANY(co.aliases) THEN co.aliases ELSE array_append(co.aliases,$1) END
 FROM businesses b
-WHERE co.id=$1 AND co.business_id=b.id AND b.tenant_id=$2 AND $3=ANY(co.suggested_aliases)
+WHERE co.id = $2 AND co.business_id=b.id AND b.account_id = $3 AND $1=ANY(co.suggested_aliases)
 RETURNING co.id,co.business_id,co.name,co.website,co.aliases,co.suggested_aliases,co.source,co.status,co.created_at
 `
 
 type ApproveSuggestedAliasParams struct {
-	ID          uuid.UUID
-	TenantID    uuid.UUID
 	ArrayRemove interface{}
+	ID          uuid.UUID
+	AccountID   uuid.UUID
 }
 
 func (q *Queries) ApproveSuggestedAlias(ctx context.Context, arg ApproveSuggestedAliasParams) (Competitor, error) {
-	row := q.db.QueryRow(ctx, approveSuggestedAlias, arg.ID, arg.TenantID, arg.ArrayRemove)
+	row := q.db.QueryRow(ctx, approveSuggestedAlias, arg.ArrayRemove, arg.ID, arg.AccountID)
 	var i Competitor
 	err := row.Scan(
 		&i.ID,
@@ -45,28 +45,28 @@ func (q *Queries) ApproveSuggestedAlias(ctx context.Context, arg ApproveSuggeste
 
 const createManualCompetitor = `-- name: CreateManualCompetitor :one
 INSERT INTO competitors (id,business_id,name,website,aliases,source,status)
-SELECT $1,b.id,$4,$5,$6,'manual','tracked' FROM businesses b
-WHERE b.id=$2 AND b.tenant_id=$3
+SELECT $1,b.id,$2,$3,$4,'manual','tracked' FROM businesses b
+WHERE b.id = $5 AND b.account_id = $6
 RETURNING id,business_id,name,website,aliases,suggested_aliases,source,status,created_at
 `
 
 type CreateManualCompetitorParams struct {
-	ID       uuid.UUID
-	ID_2     uuid.UUID
-	TenantID uuid.UUID
-	Name     string
-	Website  *string
-	Aliases  []string
+	ID         uuid.UUID
+	Name       string
+	Website    *string
+	Aliases    []string
+	BusinessID uuid.UUID
+	AccountID  uuid.UUID
 }
 
 func (q *Queries) CreateManualCompetitor(ctx context.Context, arg CreateManualCompetitorParams) (Competitor, error) {
 	row := q.db.QueryRow(ctx, createManualCompetitor,
 		arg.ID,
-		arg.ID_2,
-		arg.TenantID,
 		arg.Name,
 		arg.Website,
 		arg.Aliases,
+		arg.BusinessID,
+		arg.AccountID,
 	)
 	var i Competitor
 	err := row.Scan(
@@ -84,20 +84,20 @@ func (q *Queries) CreateManualCompetitor(ctx context.Context, arg CreateManualCo
 }
 
 const rejectSuggestedAlias = `-- name: RejectSuggestedAlias :one
-UPDATE competitors co SET suggested_aliases=array_remove(co.suggested_aliases,$3)
+UPDATE competitors co SET suggested_aliases=array_remove(co.suggested_aliases,$1)
 FROM businesses b
-WHERE co.id=$1 AND co.business_id=b.id AND b.tenant_id=$2 AND $3=ANY(co.suggested_aliases)
+WHERE co.id = $2 AND co.business_id=b.id AND b.account_id = $3 AND $1=ANY(co.suggested_aliases)
 RETURNING co.id,co.business_id,co.name,co.website,co.aliases,co.suggested_aliases,co.source,co.status,co.created_at
 `
 
 type RejectSuggestedAliasParams struct {
-	ID          uuid.UUID
-	TenantID    uuid.UUID
 	ArrayRemove interface{}
+	ID          uuid.UUID
+	AccountID   uuid.UUID
 }
 
 func (q *Queries) RejectSuggestedAlias(ctx context.Context, arg RejectSuggestedAliasParams) (Competitor, error) {
-	row := q.db.QueryRow(ctx, rejectSuggestedAlias, arg.ID, arg.TenantID, arg.ArrayRemove)
+	row := q.db.QueryRow(ctx, rejectSuggestedAlias, arg.ArrayRemove, arg.ID, arg.AccountID)
 	var i Competitor
 	err := row.Scan(
 		&i.ID,
@@ -114,19 +114,19 @@ func (q *Queries) RejectSuggestedAlias(ctx context.Context, arg RejectSuggestedA
 }
 
 const setCompetitorStatus = `-- name: SetCompetitorStatus :one
-UPDATE competitors co SET status=$3 FROM businesses b
-WHERE co.id=$1 AND co.business_id=b.id AND b.tenant_id=$2
+UPDATE competitors co SET status = $1 FROM businesses b
+WHERE co.id = $2 AND co.business_id=b.id AND b.account_id = $3
 RETURNING co.id,co.business_id,co.name,co.website,co.aliases,co.suggested_aliases,co.source,co.status,co.created_at
 `
 
 type SetCompetitorStatusParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
-	Status   string
+	Status    string
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) SetCompetitorStatus(ctx context.Context, arg SetCompetitorStatusParams) (Competitor, error) {
-	row := q.db.QueryRow(ctx, setCompetitorStatus, arg.ID, arg.TenantID, arg.Status)
+	row := q.db.QueryRow(ctx, setCompetitorStatus, arg.Status, arg.ID, arg.AccountID)
 	var i Competitor
 	err := row.Scan(
 		&i.ID,
@@ -143,19 +143,19 @@ func (q *Queries) SetCompetitorStatus(ctx context.Context, arg SetCompetitorStat
 }
 
 const updateCompetitorAliases = `-- name: UpdateCompetitorAliases :one
-UPDATE competitors co SET aliases=$3 FROM businesses b
-WHERE co.id=$1 AND co.business_id=b.id AND b.tenant_id=$2
+UPDATE competitors co SET aliases = $1 FROM businesses b
+WHERE co.id = $2 AND co.business_id=b.id AND b.account_id = $3
 RETURNING co.id,co.business_id,co.name,co.website,co.aliases,co.suggested_aliases,co.source,co.status,co.created_at
 `
 
 type UpdateCompetitorAliasesParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
-	Aliases  []string
+	Aliases   []string
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) UpdateCompetitorAliases(ctx context.Context, arg UpdateCompetitorAliasesParams) (Competitor, error) {
-	row := q.db.QueryRow(ctx, updateCompetitorAliases, arg.ID, arg.TenantID, arg.Aliases)
+	row := q.db.QueryRow(ctx, updateCompetitorAliases, arg.Aliases, arg.ID, arg.AccountID)
 	var i Competitor
 	err := row.Scan(
 		&i.ID,

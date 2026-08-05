@@ -25,12 +25,12 @@ type PromptLatest struct {
 // result, that prompt's latest analyzed result and whether the business was
 // mentioned in it. Prompts whose latest results are all unanalyzed do not appear
 // — presence is gated on the analyzed base like every other metric.
-func (m *Metrics) PromptLatestStats(ctx context.Context, tenantID, businessID domain.ID) ([]PromptLatest, error) {
+func (m *Metrics) PromptLatestStats(ctx context.Context, accountID, businessID domain.ID) ([]PromptLatest, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
 
-	rows, err := m.q.PromptLatestStats(ctx, db.PromptLatestStatsParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.PromptLatestStats(ctx, db.PromptLatestStatsParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("prompt latest stats: %w", err)
 	}
@@ -69,12 +69,12 @@ type PromptTrendPoint struct {
 // gated base as every other metric, so a prompt's trend can never disagree with
 // its latest-result summary. Covers active and retired prompts alike; the caller
 // selects which prompts it needs.
-func (m *Metrics) PromptTrends(ctx context.Context, tenantID, businessID domain.ID) (map[domain.ID][]PromptTrendPoint, error) {
+func (m *Metrics) PromptTrends(ctx context.Context, accountID, businessID domain.ID) (map[domain.ID][]PromptTrendPoint, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
 
-	rows, err := m.q.PromptTrends(ctx, db.PromptTrendsParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.PromptTrends(ctx, db.PromptTrendsParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("prompt trends: %w", err)
 	}
@@ -110,12 +110,12 @@ type PromptChange struct {
 // never reads as a visibility change, and the counts let the marker name what
 // happened. They are prompt-lifecycle events, not an aggregate over results, so
 // they carry no result_ids.
-func (m *Metrics) PromptChanges(ctx context.Context, tenantID, businessID domain.ID) ([]PromptChange, error) {
+func (m *Metrics) PromptChanges(ctx context.Context, accountID, businessID domain.ID) ([]PromptChange, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
 
-	rows, err := m.q.PromptChanges(ctx, db.PromptChangesParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.PromptChanges(ctx, db.PromptChangesParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("prompt changes: %w", err)
 	}

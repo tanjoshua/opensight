@@ -47,14 +47,14 @@ type SaveResultAnalysisParams struct {
 
 // SaveResultAnalysis is AnalyzeResult's write path (design 05: "AnalyzeResult
 // upserts by prompt_result_id"). In one transaction it verifies the result
-// belongs to tenantID, then unconditionally overwrites: ON CONFLICT DO UPDATE
+// belongs to accountID, then unconditionally overwrites: ON CONFLICT DO UPDATE
 // for the single result_analyses row, delete-then-reinsert for citations (which
 // have no natural per-row conflict key). Unlike ExecutePrompt's idempotency it
 // never skips — it always overwrites, so a re-analysis pass can re-extract onto
 // a bumped extraction_version even when a row already exists. A missing or
-// cross-tenant result returns ErrNotFound.
-func (s *Store) SaveResultAnalysis(ctx context.Context, tenantID domain.ID, params SaveResultAnalysisParams) error {
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+// cross-account result returns ErrNotFound.
+func (s *Store) SaveResultAnalysis(ctx context.Context, accountID domain.ID, params SaveResultAnalysisParams) error {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return err
 	}
 	if err := validateUUIDv7("result id", params.PromptResultID); err != nil {
@@ -79,7 +79,7 @@ func (s *Store) SaveResultAnalysis(ctx context.Context, tenantID domain.ID, para
 
 	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if _, err := q.ResultOwned(ctx, storesqlc.ResultOwnedParams{
-			ID: params.PromptResultID, TenantID: tenantID,
+			ID: params.PromptResultID, AccountID: accountID,
 		}); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
@@ -118,9 +118,9 @@ func (s *Store) SaveResultAnalysis(ctx context.Context, tenantID domain.ID, para
 // result's result_analyses row and its citations — inside one transaction, so a
 // re-run rewrites onto a clean slate (design 05, "AnalyzeResult upserts by
 // prompt_result_id"). It is idempotent: a result with no analysis yet deletes
-// nothing and returns nil. Cross-tenant results are invisible to the delete.
-func (s *Store) DeleteResultAnalysis(ctx context.Context, tenantID, resultID domain.ID) error {
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+// nothing and returns nil. Cross-account results are invisible to the delete.
+func (s *Store) DeleteResultAnalysis(ctx context.Context, accountID, resultID domain.ID) error {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return err
 	}
 	if err := validateUUIDv7("result id", resultID); err != nil {
@@ -129,12 +129,12 @@ func (s *Store) DeleteResultAnalysis(ctx context.Context, tenantID, resultID dom
 
 	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if err := q.DeleteResultAnalysis(ctx, storesqlc.DeleteResultAnalysisParams{
-			PromptResultID: resultID, TenantID: tenantID,
+			PromptResultID: resultID, AccountID: accountID,
 		}); err != nil {
 			return fmt.Errorf("delete result analysis: %w", err)
 		}
 		if err := q.DeleteResultCitations(ctx, storesqlc.DeleteResultCitationsParams{
-			PromptResultID: resultID, TenantID: tenantID,
+			PromptResultID: resultID, AccountID: accountID,
 		}); err != nil {
 			return fmt.Errorf("delete result citations: %w", err)
 		}
@@ -156,9 +156,9 @@ type Competitor struct {
 
 // ListCompetitors returns every competitor of businessID regardless of status,
 // oldest first, for reconcile's exact pass (design 05 Phase 2). Scoped to
-// tenantID; a missing or cross-tenant business returns an empty slice.
-func (s *Store) ListCompetitors(ctx context.Context, tenantID, businessID domain.ID) ([]Competitor, error) {
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+// accountID; a missing or cross-account business returns an empty slice.
+func (s *Store) ListCompetitors(ctx context.Context, accountID, businessID domain.ID) ([]Competitor, error) {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return nil, err
 	}
 	if err := validateUUIDv7("business id", businessID); err != nil {
@@ -166,7 +166,7 @@ func (s *Store) ListCompetitors(ctx context.Context, tenantID, businessID domain
 	}
 
 	rows, err := s.q(ctx).ListAnalysisCompetitors(ctx, storesqlc.ListAnalysisCompetitorsParams{
-		BusinessID: businessID, TenantID: tenantID,
+		BusinessID: businessID, AccountID: accountID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list competitors: %w", err)
@@ -183,10 +183,10 @@ func (s *Store) ListCompetitors(ctx context.Context, tenantID, businessID domain
 // DeleteRunMentions clears every mention for a run, the wipe half of
 // ReconcileEntities' delete-and-rewrite of the run's mention rows (design 05,
 // step 5). Mentions reach run_id through their prompt_results join. It is
-// idempotent and tenant-scoped: an unanalyzed or cross-tenant run deletes
+// idempotent and account-scoped: an unanalyzed or cross-account run deletes
 // nothing and returns nil.
-func (s *Store) DeleteRunMentions(ctx context.Context, tenantID, runID domain.ID) error {
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+func (s *Store) DeleteRunMentions(ctx context.Context, accountID, runID domain.ID) error {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return err
 	}
 	if err := validateUUIDv7("run id", runID); err != nil {
@@ -194,7 +194,7 @@ func (s *Store) DeleteRunMentions(ctx context.Context, tenantID, runID domain.ID
 	}
 
 	if err := s.q(ctx).DeleteRunMentions(ctx, storesqlc.DeleteRunMentionsParams{
-		ID: runID, TenantID: tenantID,
+		ID: runID, AccountID: accountID,
 	}); err != nil {
 		return fmt.Errorf("delete run mentions: %w", err)
 	}
@@ -211,11 +211,11 @@ type AnalyzeRunSpec struct {
 }
 
 // LoadAnalyzeRunSpec resolves a run's business and its succeeded result ids for
-// the AnalyzeRun workflow. It is tenant-scoped: a missing or
-// cross-tenant run returns ErrNotFound before any result rows are read, so a
-// bad run id never leaks another tenant's results.
-func (s *Store) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID domain.ID) (AnalyzeRunSpec, error) {
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+// the AnalyzeRun workflow. It is account-scoped: a missing or
+// cross-account run returns ErrNotFound before any result rows are read, so a
+// bad run id never leaks another account's results.
+func (s *Store) LoadAnalyzeRunSpec(ctx context.Context, accountID, runID domain.ID) (AnalyzeRunSpec, error) {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return AnalyzeRunSpec{}, err
 	}
 	if err := validateUUIDv7("run id", runID); err != nil {
@@ -223,7 +223,7 @@ func (s *Store) LoadAnalyzeRunSpec(ctx context.Context, tenantID, runID domain.I
 	}
 
 	businessID, err := s.q(ctx).RunBusinessOwned(ctx, storesqlc.RunBusinessOwnedParams{
-		ID: runID, TenantID: tenantID,
+		ID: runID, AccountID: accountID,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -289,10 +289,10 @@ type ReconcileCommitParams struct {
 // it in one transaction is the idempotency guarantee — a re-run's exact pass
 // re-resolves against the competitors the previous attempt minted (reconcile
 // reloads them fresh), so the delete-and-rewrite converges rather than
-// duplicating. The business and run are re-verified against tenantID inside the
-// transaction; a missing or cross-tenant business or run returns ErrNotFound.
-func (s *Store) CommitReconcile(ctx context.Context, tenantID, businessID domain.ID, params ReconcileCommitParams) error {
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+// duplicating. The business and run are re-verified against accountID inside the
+// transaction; a missing or cross-account business or run returns ErrNotFound.
+func (s *Store) CommitReconcile(ctx context.Context, accountID, businessID domain.ID, params ReconcileCommitParams) error {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return err
 	}
 	if err := validateUUIDv7("business id", businessID); err != nil {
@@ -303,7 +303,7 @@ func (s *Store) CommitReconcile(ctx context.Context, tenantID, businessID domain
 	}
 
 	return s.withTx(ctx, func(q *storesqlc.Queries) error {
-		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+		if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 			return err
 		}
 
@@ -345,7 +345,7 @@ func (s *Store) CommitReconcile(ctx context.Context, tenantID, businessID domain
 		}
 
 		if err := q.DeleteRunMentions(ctx, storesqlc.DeleteRunMentionsParams{
-			ID: params.RunID, TenantID: tenantID,
+			ID: params.RunID, AccountID: accountID,
 		}); err != nil {
 			return fmt.Errorf("delete run mentions: %w", err)
 		}

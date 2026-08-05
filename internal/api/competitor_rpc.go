@@ -43,11 +43,11 @@ func (s *Server) ListCompetitors(ctx context.Context, req *connect.Request[opens
 	}
 	limit, offset := rpcPaging(req.Msg.Limit, req.Msg.Offset, defaultCompetitorLimit, maxCompetitorLimit)
 
-	if _, err := s.store.GetBusiness(ctx, su.TenantID, businessID); err != nil {
+	if _, err := s.store.GetBusiness(ctx, su.AccountID, businessID); err != nil {
 		return nil, s.rpcError("list competitors", err)
 	}
 
-	stats, err := s.metrics.CompetitorStats(ctx, su.TenantID, businessID)
+	stats, err := s.metrics.CompetitorStats(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list competitors: competitor stats", err)
 	}
@@ -101,7 +101,7 @@ func (s *Server) AddCompetitor(ctx context.Context, req *connect.Request[opensig
 	}
 
 	record, err := s.store.CreateManual(ctx, store.CreateManualCompetitorParams{
-		TenantID:   su.TenantID,
+		AccountID:   su.AccountID,
 		BusinessID: businessID,
 		Name:       req.Msg.Name,
 		Aliases:    req.Msg.Aliases,
@@ -142,7 +142,7 @@ func (s *Server) SetCompetitorStatus(ctx context.Context, req *connect.Request[o
 	}
 
 	record, err := s.store.SetStatus(ctx, store.SetCompetitorStatusParams{
-		TenantID:     su.TenantID,
+		AccountID:     su.AccountID,
 		CompetitorID: competitorID,
 		Status:       status,
 	})
@@ -184,7 +184,7 @@ func (s *Server) ReviewSuggestedAlias(ctx context.Context, req *connect.Request[
 		return nil, rpcInvalidArgument("alias is required")
 	}
 
-	params := store.SuggestedAliasParams{TenantID: su.TenantID, CompetitorID: competitorID, Alias: alias}
+	params := store.SuggestedAliasParams{AccountID: su.AccountID, CompetitorID: competitorID, Alias: alias}
 	var record store.CompetitorRecord
 	var err error
 	if approve {
@@ -228,7 +228,7 @@ func (s *Server) UpdateCompetitorAliases(ctx context.Context, req *connect.Reque
 	}
 
 	record, err := s.store.UpdateAliases(ctx, store.UpdateCompetitorAliasesParams{
-		TenantID:     su.TenantID,
+		AccountID:     su.AccountID,
 		CompetitorID: competitorID,
 		Aliases:      aliases,
 	})

@@ -8,6 +8,7 @@ import type {
 } from "@/gen/opensight/v1/overview_pb"
 import type { PromptSummary } from "@/gen/opensight/v1/prompt_pb"
 import { formatPercent, pluralize } from "@/lib/format"
+import { useAccountPath } from "@/lib/account-path"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Panel, PanelEmpty, QuestionRow, StatRow } from "./panels"
@@ -26,6 +27,7 @@ export function EvidenceOverview({
   onOpenResult: (ids: string[], context?: string) => void
   onOpenDomain: (domain: DomainStat) => void
 }) {
+  const path = useAccountPath()
   const absent = prompts.filter(
     (prompt) => prompt.latestResultId !== undefined && !prompt.mentioned
   )
@@ -48,7 +50,7 @@ export function EvidenceOverview({
           description={`${absent.length} latest ${pluralize(absent.length, "response")} ${absent.length === 1 ? "does" : "do"} not mention you`}
           footer={
             <Link
-              to="/prompts"
+              to={path("/prompts")}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
               View all questions

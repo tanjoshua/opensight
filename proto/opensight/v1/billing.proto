@@ -17,7 +17,7 @@ enum BillingAction {
 message GetBillingResponse {
   Access access = 1;
   Plan plan = 2;
-  // stripe_status is VERBATIM Stripe status, empty when the tenant has no
+  // stripe_status is VERBATIM Stripe status, empty when the account has no
   // subscription. The SPA maps it to copy; it is never invented locally
   // (design 08 — subscriptions.stripe_status).
   string stripe_status = 3;
@@ -32,18 +32,18 @@ message GetBillingResponse {
   // cancel_at_period_end is false, and the end date when it is true.
   google.protobuf.Timestamp current_period_end = 7;
   bool cancel_at_period_end = 8;
-  // comped tenants have no Stripe objects at all (design 08 "comped is a
+  // comped accounts have no Stripe objects at all (design 08 "comped is a
   // separate boolean, not a status value") — stripe_status is empty and
   // there is no portal to offer.
   bool comped = 9;
-  // action is derived server-side from the tenant's subscription. The SPA
+  // action is derived server-side from the account's subscription. The SPA
   // does not interpret Stripe statuses to decide whether to create a new
   // subscription or manage the existing one.
   BillingAction action = 10;
 }
 
 // StartCheckoutRequest is deliberately empty. The plan being paid for is the
-// one already on the tenant's subscriptions row, and its Price id is resolved
+// one already on the account's subscriptions row, and its Price id is resolved
 // from the code catalog plus config — a client-supplied plan or price would be
 // a way to buy something we never offered.
 message StartCheckoutRequest {}
@@ -57,7 +57,7 @@ message StartCheckoutResponse {
 message ConfirmCheckoutRequest {
   // session_id is the value Stripe substituted for {CHECKOUT_SESSION_ID} in
   // success_url. It is proof of nothing on its own: the server retrieves the
-  // session and confirms it belongs to the calling tenant.
+  // session and confirms its account belongs to the caller.
   string session_id = 1;
 }
 
@@ -66,10 +66,14 @@ message ConfirmCheckoutResponse {
   // return") — so a customer who just paid is never told they haven't while a
   // webhook is in flight.
   Access access = 1;
+  // account_slug is the account Stripe identified via client_reference_id.
+  // Checkout confirmation is identity-scoped so outstanding pre-account-path
+  // success URLs can route into the correct account after reconciliation.
+  string account_slug = 2;
 }
 
 // CreatePortalSessionRequest is deliberately empty, the same shape as
-// StartCheckoutRequest: the Customer to send is the calling tenant's own, not
+// StartCheckoutRequest: the Customer to send is the calling account's own, not
 // a client-supplied id.
 message CreatePortalSessionRequest {}
 

@@ -28,7 +28,7 @@ func specWithPrompts(t *testing.T, n int) RunSpec {
 	for i := 0; i < n; i++ {
 		prompts = append(prompts, PromptSnapshot{ID: mustID(t), Text: "prompt"})
 	}
-	return RunSpec{TenantID: mustID(t), RunID: mustID(t), Prompts: prompts}
+	return RunSpec{AccountID: mustID(t), RunID: mustID(t), Prompts: prompts}
 }
 
 func runInput(t *testing.T) RunWorkflowInput {
@@ -51,7 +51,7 @@ func TestRunWorkflowFansOutAndFinalizes(t *testing.T) {
 	spec := specWithPrompts(t, n)
 
 	env.OnActivity(a.CheckRunAccess, mock.Anything, mock.Anything).
-		Return(CheckRunAccessOutput{TenantID: spec.TenantID, Access: billing.AccessFull.String()}, nil).Once()
+		Return(CheckRunAccessOutput{AccountID: spec.AccountID, Access: billing.AccessFull.String()}, nil).Once()
 	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.Anything).Return(spec, nil).Once()
 	env.OnActivity(a.ExecutePrompt, mock.Anything, mock.Anything).
 		Return(ExecutePromptOutput{Status: store.ResultStatusSucceeded}, nil).Times(n)
@@ -81,7 +81,7 @@ func TestRunWorkflowContinuesPastPromptError(t *testing.T) {
 	spec := specWithPrompts(t, n)
 
 	env.OnActivity(a.CheckRunAccess, mock.Anything, mock.Anything).
-		Return(CheckRunAccessOutput{TenantID: spec.TenantID, Access: billing.AccessFull.String()}, nil).Once()
+		Return(CheckRunAccessOutput{AccountID: spec.AccountID, Access: billing.AccessFull.String()}, nil).Once()
 	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.Anything).Return(spec, nil).Once()
 	// One prompt errors, the other succeeds; ordering across the fan-out is not
 	// guaranteed, so allow either outcome for each call.
@@ -117,7 +117,7 @@ func TestRunWorkflowZeroPrompts(t *testing.T) {
 	spec := specWithPrompts(t, 0)
 
 	env.OnActivity(a.CheckRunAccess, mock.Anything, mock.Anything).
-		Return(CheckRunAccessOutput{TenantID: spec.TenantID, Access: billing.AccessFull.String()}, nil).Once()
+		Return(CheckRunAccessOutput{AccountID: spec.AccountID, Access: billing.AccessFull.String()}, nil).Once()
 	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.Anything).Return(spec, nil).Once()
 	env.OnActivity(a.FinalizeRun, mock.Anything, mock.MatchedBy(func(in FinalizeRunInput) bool {
 		return in.RunID == spec.RunID
@@ -148,7 +148,7 @@ func TestRunWorkflowSurvivesAnalyzeRunFailure(t *testing.T) {
 
 	finalizeRan := false
 	env.OnActivity(a.CheckRunAccess, mock.Anything, mock.Anything).
-		Return(CheckRunAccessOutput{TenantID: spec.TenantID, Access: billing.AccessFull.String()}, nil).Once()
+		Return(CheckRunAccessOutput{AccountID: spec.AccountID, Access: billing.AccessFull.String()}, nil).Once()
 	env.OnActivity(a.LoadRunSpec, mock.Anything, mock.Anything).Return(spec, nil).Once()
 	env.OnActivity(a.ExecutePrompt, mock.Anything, mock.Anything).
 		Return(ExecutePromptOutput{Status: store.ResultStatusSucceeded}, nil).Times(n)
@@ -173,7 +173,7 @@ func TestRunWorkflowSurvivesAnalyzeRunFailure(t *testing.T) {
 }
 
 // TestRunWorkflowSkipsWithoutFullAccess is BILL-7's core regression for gate 3
-// (design 08): a tenant without full access must cost nothing. No expectation
+// (design 08): a account without full access must cost nothing. No expectation
 // is registered for LoadRunSpec, ExecutePrompt, FinalizeRun or the AnalyzeRun
 // child workflow, so env.AssertExpectations would fail the test if any of
 // them ran; the workflow must still complete without error, reporting the

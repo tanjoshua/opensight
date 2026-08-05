@@ -60,12 +60,12 @@ func New(cfg Config) (*Provider, error) {
 	return &Provider{client: stripesdk.NewClient(cfg.APIKey, stripesdk.WithBackends(backends))}, nil
 }
 
-// CreateCustomer creates a Stripe Customer with metadata.tenant_id set
+// CreateCustomer creates a Stripe Customer with metadata.account_id set
 // (design 08 "Customer").
 func (p *Provider) CreateCustomer(ctx context.Context, params billing.CreateCustomerParams) (billing.Customer, error) {
 	cus, err := p.client.V1Customers.Create(ctx, &stripesdk.CustomerCreateParams{
 		Email:    stripesdk.String(params.Email),
-		Metadata: map[string]string{"tenant_id": params.TenantID},
+		Metadata: map[string]string{"account_id": params.AccountID},
 	})
 	if err != nil {
 		return billing.Customer{}, fmt.Errorf("stripe: create customer: %w", err)
@@ -80,7 +80,7 @@ func (p *Provider) CreateCheckoutSession(ctx context.Context, params billing.Cre
 	session, err := p.client.V1CheckoutSessions.Create(ctx, &stripesdk.CheckoutSessionCreateParams{
 		Mode:                  stripesdk.String(string(stripesdk.CheckoutSessionModeSubscription)),
 		Customer:              stripesdk.String(params.CustomerID),
-		ClientReferenceID:     stripesdk.String(params.TenantID),
+		ClientReferenceID:     stripesdk.String(params.AccountID),
 		IntegrationIdentifier: stripesdk.String(params.IntegrationIdentifier),
 		SuccessURL:            stripesdk.String(params.SuccessURL),
 		CancelURL:             stripesdk.String(params.CancelURL),
@@ -91,7 +91,7 @@ func (p *Provider) CreateCheckoutSession(ctx context.Context, params billing.Cre
 			},
 		},
 		SubscriptionData: &stripesdk.CheckoutSessionCreateSubscriptionDataParams{
-			Metadata: map[string]string{"tenant_id": params.TenantID},
+			Metadata: map[string]string{"account_id": params.AccountID},
 		},
 	})
 	if err != nil {

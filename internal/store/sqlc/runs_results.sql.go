@@ -19,19 +19,19 @@ SET status=CASE WHEN sub.succeeded=0 THEN 'failed'
   WHEN sub.succeeded=COALESCE(r.expected_results,sub.total) THEN 'completed' ELSE 'partial' END,
   completed_at=now()
 FROM businesses b,(SELECT count(*) FILTER (WHERE status='succeeded') AS succeeded,count(*) AS total
-  FROM prompt_results WHERE run_id=$1) sub
-WHERE r.id=$1 AND r.business_id=b.id AND b.tenant_id=$2
+  FROM prompt_results WHERE run_id = $1) sub
+WHERE r.id = $1 AND r.business_id=b.id AND b.account_id = $2
 RETURNING r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.workflow_id,
  r.started_at,r.completed_at,r.analysis_completed_at,r.expected_results
 `
 
 type FinalizeRunParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) FinalizeRun(ctx context.Context, arg FinalizeRunParams) (MonitoringRun, error) {
-	row := q.db.QueryRow(ctx, finalizeRun, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, finalizeRun, arg.ID, arg.AccountID)
 	var i MonitoringRun
 	err := row.Scan(
 		&i.ID,
@@ -53,16 +53,16 @@ const getResult = `-- name: GetResult :one
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE pr.id=$1 AND b.tenant_id=$2
+WHERE pr.id = $1 AND b.account_id = $2
 `
 
 type GetResultParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) GetResult(ctx context.Context, arg GetResultParams) (PromptResult, error) {
-	row := q.db.QueryRow(ctx, getResult, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, getResult, arg.ID, arg.AccountID)
 	var i PromptResult
 	err := row.Scan(
 		&i.ID,
@@ -83,12 +83,12 @@ func (q *Queries) GetResult(ctx context.Context, arg GetResultParams) (PromptRes
 const getResultAnalysisRow = `-- name: GetResultAnalysisRow :one
 SELECT ra.sentiment,ra.keywords,ra.excerpts FROM result_analyses ra
 JOIN prompt_results pr ON pr.id=ra.prompt_result_id JOIN monitoring_runs r ON r.id=pr.run_id
-JOIN businesses b ON b.id=r.business_id WHERE ra.prompt_result_id=$1 AND b.tenant_id=$2
+JOIN businesses b ON b.id=r.business_id WHERE ra.prompt_result_id = $1 AND b.account_id = $2
 `
 
 type GetResultAnalysisRowParams struct {
 	PromptResultID uuid.UUID
-	TenantID       uuid.UUID
+	AccountID      uuid.UUID
 }
 
 type GetResultAnalysisRowRow struct {
@@ -98,7 +98,7 @@ type GetResultAnalysisRowRow struct {
 }
 
 func (q *Queries) GetResultAnalysisRow(ctx context.Context, arg GetResultAnalysisRowParams) (GetResultAnalysisRowRow, error) {
-	row := q.db.QueryRow(ctx, getResultAnalysisRow, arg.PromptResultID, arg.TenantID)
+	row := q.db.QueryRow(ctx, getResultAnalysisRow, arg.PromptResultID, arg.AccountID)
 	var i GetResultAnalysisRowRow
 	err := row.Scan(&i.Sentiment, &i.Keywords, &i.Excerpts)
 	return i, err
@@ -108,17 +108,17 @@ const getResultByRunAndPrompt = `-- name: GetResultByRunAndPrompt :one
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE pr.run_id=$1 AND pr.prompt_id=$2 AND b.tenant_id=$3
+WHERE pr.run_id = $1 AND pr.prompt_id = $2 AND b.account_id = $3
 `
 
 type GetResultByRunAndPromptParams struct {
-	RunID    uuid.UUID
-	PromptID uuid.UUID
-	TenantID uuid.UUID
+	RunID     uuid.UUID
+	PromptID  uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) GetResultByRunAndPrompt(ctx context.Context, arg GetResultByRunAndPromptParams) (PromptResult, error) {
-	row := q.db.QueryRow(ctx, getResultByRunAndPrompt, arg.RunID, arg.PromptID, arg.TenantID)
+	row := q.db.QueryRow(ctx, getResultByRunAndPrompt, arg.RunID, arg.PromptID, arg.AccountID)
 	var i PromptResult
 	err := row.Scan(
 		&i.ID,
@@ -142,12 +142,12 @@ SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_respons
  r.status AS run_status,r.workflow_id,r.started_at,r.completed_at AS run_completed_at,r.analysis_completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
 JOIN prompts p ON p.id=pr.prompt_id AND p.business_id=r.business_id
-WHERE pr.id=$1 AND b.tenant_id=$2
+WHERE pr.id = $1 AND b.account_id = $2
 `
 
 type GetResultDetailParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 type GetResultDetailRow struct {
@@ -175,7 +175,7 @@ type GetResultDetailRow struct {
 }
 
 func (q *Queries) GetResultDetail(ctx context.Context, arg GetResultDetailParams) (GetResultDetailRow, error) {
-	row := q.db.QueryRow(ctx, getResultDetail, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, getResultDetail, arg.ID, arg.AccountID)
 	var i GetResultDetailRow
 	err := row.Scan(
 		&i.ID,
@@ -283,13 +283,13 @@ func (q *Queries) InsertRunOnConflictNothing(ctx context.Context, arg InsertRunO
 const listResultCitations = `-- name: ListResultCitations :many
 SELECT c.url,c.domain,c.title,c.cite_order,c.subject FROM citations c
 JOIN prompt_results pr ON pr.id=c.prompt_result_id JOIN monitoring_runs r ON r.id=pr.run_id
-JOIN businesses b ON b.id=r.business_id WHERE c.prompt_result_id=$1 AND b.tenant_id=$2
+JOIN businesses b ON b.id=r.business_id WHERE c.prompt_result_id = $1 AND b.account_id = $2
 ORDER BY c.cite_order,c.id
 `
 
 type ListResultCitationsParams struct {
 	PromptResultID uuid.UUID
-	TenantID       uuid.UUID
+	AccountID      uuid.UUID
 }
 
 type ListResultCitationsRow struct {
@@ -301,7 +301,7 @@ type ListResultCitationsRow struct {
 }
 
 func (q *Queries) ListResultCitations(ctx context.Context, arg ListResultCitationsParams) ([]ListResultCitationsRow, error) {
-	rows, err := q.db.Query(ctx, listResultCitations, arg.PromptResultID, arg.TenantID)
+	rows, err := q.db.Query(ctx, listResultCitations, arg.PromptResultID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -330,12 +330,12 @@ const listResultMentions = `-- name: ListResultMentions :many
 SELECT m.subject,COALESCE(m.verbatim_name,m.excerpt)::text AS verbatim_name,m.matched_by,m.mention_order,m.excerpt
 FROM mentions m JOIN prompt_results pr ON pr.id=m.prompt_result_id
 JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE m.prompt_result_id=$1 AND b.tenant_id=$2 ORDER BY m.mention_order,m.id
+WHERE m.prompt_result_id = $1 AND b.account_id = $2 ORDER BY m.mention_order,m.id
 `
 
 type ListResultMentionsParams struct {
 	PromptResultID uuid.UUID
-	TenantID       uuid.UUID
+	AccountID      uuid.UUID
 }
 
 type ListResultMentionsRow struct {
@@ -347,7 +347,7 @@ type ListResultMentionsRow struct {
 }
 
 func (q *Queries) ListResultMentions(ctx context.Context, arg ListResultMentionsParams) ([]ListResultMentionsRow, error) {
-	rows, err := q.db.Query(ctx, listResultMentions, arg.PromptResultID, arg.TenantID)
+	rows, err := q.db.Query(ctx, listResultMentions, arg.PromptResultID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -528,18 +528,18 @@ func (q *Queries) ListRuns(ctx context.Context, businessID uuid.UUID) ([]ListRun
 const runPromptOwned = `-- name: RunPromptOwned :one
 SELECT 1 FROM monitoring_runs r
 JOIN businesses b ON b.id=r.business_id
-JOIN prompts p ON p.id=$2 AND p.business_id=r.business_id
-WHERE r.id=$1 AND b.tenant_id=$3
+JOIN prompts p ON p.id = $1 AND p.business_id=r.business_id
+WHERE r.id = $2 AND b.account_id = $3
 `
 
 type RunPromptOwnedParams struct {
-	ID       uuid.UUID
-	ID_2     uuid.UUID
-	TenantID uuid.UUID
+	PromptID  uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) RunPromptOwned(ctx context.Context, arg RunPromptOwnedParams) (int32, error) {
-	row := q.db.QueryRow(ctx, runPromptOwned, arg.ID, arg.ID_2, arg.TenantID)
+	row := q.db.QueryRow(ctx, runPromptOwned, arg.PromptID, arg.ID, arg.AccountID)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err

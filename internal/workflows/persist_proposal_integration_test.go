@@ -29,21 +29,21 @@ func TestPersistProposalIdempotent(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustID(t)
+	accountID := mustID(t)
 	businessID := mustID(t)
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Persist Tenant")
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Persist Clinic')", businessID, tenantID)
+	insertAccount(t, db, ctx, accountID, "Persist Account")
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Persist Clinic')", businessID, accountID)
 
 	acts := &Activities{Store: store.New(db)}
 	in := PersistProposalInput{
-		TenantID:   tenantID,
+		AccountID:   accountID,
 		BusinessID: businessID,
 		Payload:    llm.ProposalPayload{LowConfidence: true},
 	}

@@ -25,7 +25,7 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptID := mustNewID(t)
 	runID := mustNewID(t)
@@ -46,14 +46,14 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Analysis Tenant")
+	insertAccount(t, db, ctx, accountID, "Analysis Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
@@ -96,7 +96,7 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	analysisStore := New(db)
 
 	// Wipe per-result outputs; mentions belong to the run wipe and must survive.
-	if err := analysisStore.DeleteResultAnalysis(ctx, tenantID, resultID); err != nil {
+	if err := analysisStore.DeleteResultAnalysis(ctx, accountID, resultID); err != nil {
 		t.Fatalf("DeleteResultAnalysis: %v", err)
 	}
 	if got := count(t, db, ctx, "SELECT count(*) FROM result_analyses WHERE prompt_result_id = $1", resultID); got != 0 {
@@ -110,7 +110,7 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	}
 
 	// Wipe the run's mentions.
-	if err := analysisStore.DeleteRunMentions(ctx, tenantID, runID); err != nil {
+	if err := analysisStore.DeleteRunMentions(ctx, accountID, runID); err != nil {
 		t.Fatalf("DeleteRunMentions: %v", err)
 	}
 	if got := count(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 0 {
@@ -128,7 +128,7 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 
 // TestListCompetitorsAllStatuses pins the one behavior the query prose can't:
 // ListCompetitors returns competitors of every status (a dismissed competitor
-// still accrues mentions, design 05/02) and never leaks another tenant's rows.
+// still accrues mentions, design 05/02) and never leaks another account's rows.
 func TestListCompetitorsAllStatuses(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
@@ -142,7 +142,7 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	otherBusinessID := mustNewID(t)
 	discoveredID := mustNewID(t)
@@ -153,13 +153,13 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM competitors WHERE business_id IN ($1, $2)", businessID, otherBusinessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id IN ($1, $2)", businessID, otherBusinessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Competitors Tenant")
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')", otherBusinessID, tenantID)
+	insertAccount(t, db, ctx, accountID, "Competitors Account")
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, accountID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')", otherBusinessID, accountID)
 
 	mustExec(t, db, ctx, `
 		INSERT INTO competitors (id, business_id, name, aliases, source, status)
@@ -175,7 +175,7 @@ func TestListCompetitorsAllStatuses(t *testing.T) {
 		INSERT INTO competitors (id, business_id, name, source, status)
 		VALUES ($1, $2, 'Other Co', 'discovered', 'discovered')`, otherID, otherBusinessID)
 
-	got, err := New(db).ListCompetitors(ctx, tenantID, businessID)
+	got, err := New(db).ListCompetitors(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("ListCompetitors: %v", err)
 	}

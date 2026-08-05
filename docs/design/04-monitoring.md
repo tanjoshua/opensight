@@ -4,7 +4,7 @@ Depends on: [01 Architecture](01-architecture.md), [02 Data Model](02-data-model
 
 ## Scheduling
 
-One Temporal Schedule per active business: id `monitor-{business_id}-chatgpt`, spec derived from `plan.run_interval` (weekly for Starter). Per-business jitter (hash of business id → day-of-week offset within the week) spreads load and avoids every tenant's data updating in the same hour — irrelevant for capacity at MVP scale, but it makes API rate-limit spikes and cost spikes smoother from day one.
+One Temporal Schedule per active business: id `monitor-{business_id}-chatgpt`, spec derived from `plan.run_interval` (weekly for Starter). Per-business jitter (hash of business id → day-of-week offset within the week) spreads load and avoids every account's data updating in the same hour — irrelevant for capacity at MVP scale, but it makes API rate-limit spikes and cost spikes smoother from day one.
 
 - Overlap policy: **Skip** — if a run is somehow still in flight when the next fires, skip rather than stack.
 - Business deactivation (churn, future) = pause/delete the schedule; data stays.
@@ -16,7 +16,7 @@ Workflow id: `run-{business_id}-chatgpt-{scheduled_for}` — deterministic, so s
 
 ```
 RunWorkflow(businessID, platform, scheduledFor)
- ├─ CheckRunAccess     activity: resolve tenant, derive billing.Access (08) fresh
+ ├─ CheckRunAccess     activity: resolve account, derive billing.Access (08) fresh
  │                     against now; anything but full returns the workflow
  │                     immediately as a skip — no run row, no prompt, no
  │                     analysis. This is design 08's authoritative spend
@@ -26,7 +26,7 @@ RunWorkflow(businessID, platform, scheduledFor)
  │                     pause (08 gate 2), which both depend on one arriving.
  │                     Access is read once, here — a run already in flight
  │                     when access drops is allowed to finish.
- ├─ LoadRunSpec        activity: resolve tenant via store.ResolveTenantID,
+ ├─ LoadRunSpec        activity: resolve account via store.ResolveAccountID,
  │                     then upsert monitoring_runs(status=running,
  │                     expected_results=len(prompts)); snapshot active prompts
  │                     (already entitlement-bounded: prompt_limit is enforced
@@ -64,10 +64,10 @@ Retry policy: 4 Temporal activity attempts, exponential backoff starting 10s. SD
 
 ## Cost model
 
-Per prompt: one Responses call with web search — tokens plus per-search-call fees; ballpark **single-digit cents per prompt, so roughly $0.50–2 per tenant per week**. Two requirements fall out:
+Per prompt: one Responses call with web search — tokens plus per-search-call fees; ballpark **single-digit cents per prompt, so roughly $0.50–2 per account per week**. Two requirements fall out:
 
-1. **Measure, don't assume**: the Responses payload includes token usage; it lives inside `raw_response`, so per-tenant cost reporting is a query, no schema change. Build that query early and check the ballpark against reality in week one.
-2. Cost scales linearly with tenants and with `prompt_limit` — pricing of future tiers (PRD §9) must account for it, which is another reason limits live in the `internal/billing` catalog (08), not a literal.
+1. **Measure, don't assume**: the Responses payload includes token usage; it lives inside `raw_response`, so per-account cost reporting is a query, no schema change. Build that query early and check the ballpark against reality in week one.
+2. Cost scales linearly with accounts and with `prompt_limit` — pricing of future tiers (PRD §9) must account for it, which is another reason limits live in the `internal/billing` catalog (08), not a literal.
 
 ## Operations
 

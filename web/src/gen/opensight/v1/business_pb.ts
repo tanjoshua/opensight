@@ -52,7 +52,8 @@ export const LocationSchema: GenMessage<Location> = /*@__PURE__*/
 
 /**
  * BusinessProfile is the full business detail. Plan entitlements live on
- * AuthService.GetMe because they are tenant facts, not per-business facts.
+ * AccountService.GetAccountContext because they are account facts, not
+ * per-business facts.
  * Field 9 is reserved rather than reused to preserve wire compatibility.
  *
  * @generated from message opensight.v1.BusinessProfile

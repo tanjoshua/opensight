@@ -23,7 +23,7 @@ As the developer, I want the read API for runs and results, so that the Response
 - [x] `ResultService.ListRuns` — scheduled_for, status per run (visibility % joins in Phase 2).
 - [x] `ResultService.ListResults` — filters: run, prompt, status; `limit`/`offset` pagination. (`mentioned` filter arrives Phase 2.)
 - [x] `ResultService.GetResult` — response text, run/model metadata, request params, error, raw JSON on demand.
-- [x] All tenant-scoped through SCH-4; `connect.Error` codes.
+- [x] All account-scoped through SCH-4; `connect.Error` codes.
 
 Deps: SCH-4, AUTH-3 · Phase 1 · Ref: design 06 (Endpoints — Responses, Runs)
 

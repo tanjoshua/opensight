@@ -19,7 +19,7 @@ func TestAnalyzeRunFansOutAndReconciles(t *testing.T) {
 	env := ts.NewTestWorkflowEnvironment()
 	var a *Activities
 
-	tenantID := mustID(t)
+	accountID := mustID(t)
 	runID := mustID(t)
 	businessID := mustID(t)
 	r1, r2, r3 := mustID(t), mustID(t), mustID(t)
@@ -45,7 +45,7 @@ func TestAnalyzeRunFansOutAndReconciles(t *testing.T) {
 		return in.RunID == runID && in.BusinessID == businessID
 	})).Return(ReconcileEntitiesOutput{}, nil).Once()
 
-	env.ExecuteWorkflow(AnalyzeRun, AnalyzeRunInput{TenantID: tenantID, RunID: runID})
+	env.ExecuteWorkflow(AnalyzeRun, AnalyzeRunInput{AccountID: accountID, RunID: runID})
 
 	if !env.IsWorkflowCompleted() {
 		t.Fatal("workflow did not complete")
@@ -86,7 +86,7 @@ func TestAnalyzeRunSurvivesResultFailure(t *testing.T) {
 		return len(in.Results) == 1 // only r2 survived
 	})).Return(ReconcileEntitiesOutput{}, nil).Once()
 
-	env.ExecuteWorkflow(AnalyzeRun, AnalyzeRunInput{TenantID: mustID(t), RunID: runID})
+	env.ExecuteWorkflow(AnalyzeRun, AnalyzeRunInput{AccountID: mustID(t), RunID: runID})
 
 	if !env.IsWorkflowCompleted() {
 		t.Fatal("workflow did not complete")

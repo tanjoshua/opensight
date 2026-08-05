@@ -22,7 +22,7 @@ func (f *fakeBusinessLister) ListBusinesses(context.Context, domain.ID) ([]store
 }
 
 // TestMonitoringSetNoBusinessIsNoOp covers the AC that the schedule gate
-// tolerates a tenant with no business yet: Set returns no error, and — since
+// tolerates a account with no business yet: Set returns no error, and — since
 // the loop over businesses never runs — the schedules seam is never touched,
 // so nil is a valid value for it here.
 func TestMonitoringSetNoBusinessIsNoOp(t *testing.T) {

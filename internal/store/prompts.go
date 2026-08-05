@@ -16,7 +16,7 @@ import (
 )
 
 // ErrPromptLimitExceeded is returned when adding an active prompt would exceed
-// the tenant's plan limit.
+// the account's plan limit.
 var ErrPromptLimitExceeded = errors.New("active prompt limit exceeded")
 
 // ErrPromptNotActive is returned when a replace targets a prompt that is not
@@ -44,11 +44,11 @@ type Prompt struct {
 }
 
 // CreateActivePromptParams are the inputs for adding an active prompt. If ID is
-// uuid.Nil, CreateActivePrompt generates a UUIDv7. TenantID is required and
+// uuid.Nil, CreateActivePrompt generates a UUIDv7. AccountID is required and
 // validated against the business's owner.
 type CreateActivePromptParams struct {
 	ID               domain.ID
-	TenantID         domain.ID
+	AccountID         domain.ID
 	BusinessID       domain.ID
 	Text             string
 	ReplacesPromptID *domain.ID
@@ -58,16 +58,16 @@ type CreateActivePromptParams struct {
 // old prompt and insert a new active one that records replaces_prompt_id. Text
 // is immutable, so an edit is expressed as a replace with the new text.
 type ReplacePromptParams struct {
-	TenantID    domain.ID
+	AccountID    domain.ID
 	OldPromptID domain.ID
 	Text        string
 }
 
 // CreateActivePrompt inserts an active prompt only if the business belongs to
-// params.TenantID and doing so keeps count(active prompts) <= billing.Plan.PromptLimit
-// for the business. It locks the business row (scoped by tenant) before counting
+// params.AccountID and doing so keeps count(active prompts) <= billing.Plan.PromptLimit
+// for the business. It locks the business row (scoped by account) before counting
 // so concurrent prompt inserts for the same business serialize through this code
-// path. A missing or cross-tenant business returns ErrNotFound.
+// path. A missing or cross-account business returns ErrNotFound.
 func (s *Store) CreateActivePrompt(ctx context.Context, params CreateActivePromptParams) (Prompt, error) {
 
 	var prompt Prompt
@@ -87,7 +87,7 @@ func (s *Store) CreateActivePrompt(ctx context.Context, params CreateActivePromp
 
 // ReplacePrompt retires an active prompt and inserts a new active prompt that
 // records it as its predecessor, atomically. It row-locks the old prompt first
-// (tenant-scoped): a missing or cross-tenant prompt is ErrNotFound, a non-active
+// (account-scoped): a missing or cross-account prompt is ErrNotFound, a non-active
 // prompt is ErrPromptNotActive. The insert reuses createActivePromptInTx, so the
 // plan prompt limit is enforced against the post-retire count in the same
 // transaction (the retired old prompt no longer counts). Lock order is
@@ -111,7 +111,7 @@ func (s *Store) ReplacePrompt(ctx context.Context, params ReplacePromptParams) (
 }
 
 func replacePromptInTx(ctx context.Context, q *storesqlc.Queries, params ReplacePromptParams) (Prompt, error) {
-	row, err := q.LockPromptForReplace(ctx, storesqlc.LockPromptForReplaceParams{ID: params.OldPromptID, TenantID: params.TenantID})
+	row, err := q.LockPromptForReplace(ctx, storesqlc.LockPromptForReplaceParams{ID: params.OldPromptID, AccountID: params.AccountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound
@@ -128,7 +128,7 @@ func replacePromptInTx(ctx context.Context, q *storesqlc.Queries, params Replace
 	}
 
 	return createActivePromptInTx(ctx, q, CreateActivePromptParams{
-		TenantID:         params.TenantID,
+		AccountID:         params.AccountID,
 		BusinessID:       old.BusinessID,
 		Text:             params.Text,
 		ReplacesPromptID: &old.ID,
@@ -136,13 +136,13 @@ func replacePromptInTx(ctx context.Context, q *storesqlc.Queries, params Replace
 }
 
 // ListActivePrompts returns the business's active prompts, oldest first. It
-// enters through the tenant-checked business lookup so an empty result for a
-// business the tenant does not own is reported as ErrNotFound rather than an
+// enters through the account-checked business lookup so an empty result for a
+// business the account does not own is reported as ErrNotFound rather than an
 // empty slice.
-func (s *Store) ListActivePrompts(ctx context.Context, tenantID, businessID domain.ID) ([]Prompt, error) {
+func (s *Store) ListActivePrompts(ctx context.Context, accountID, businessID domain.ID) ([]Prompt, error) {
 
 	q := s.q(ctx)
-	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+	if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 		return nil, err
 	}
 
@@ -157,12 +157,12 @@ func (s *Store) ListActivePrompts(ctx context.Context, tenantID, businessID doma
 	return prompts, nil
 }
 
-// GetPrompt loads a single prompt by id, scoped to the tenant via the business
-// join in one statement (deep-by-id). A missing or cross-tenant prompt returns
+// GetPrompt loads a single prompt by id, scoped to the account via the business
+// join in one statement (deep-by-id). A missing or cross-account prompt returns
 // ErrNotFound.
-func (s *Store) GetPrompt(ctx context.Context, tenantID, promptID domain.ID) (Prompt, error) {
+func (s *Store) GetPrompt(ctx context.Context, accountID, promptID domain.ID) (Prompt, error) {
 
-	row, err := s.q(ctx).GetPrompt(ctx, storesqlc.GetPromptParams{ID: promptID, TenantID: tenantID})
+	row, err := s.q(ctx).GetPrompt(ctx, storesqlc.GetPromptParams{ID: promptID, AccountID: accountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound
@@ -182,7 +182,7 @@ func createActivePromptInTx(ctx context.Context, q *storesqlc.Queries, params Cr
 		return Prompt{}, err
 	}
 
-	planCode, err := q.LockBusinessPlanCode(ctx, storesqlc.LockBusinessPlanCodeParams{ID: params.BusinessID, TenantID: params.TenantID})
+	planCode, err := q.LockBusinessPlanCode(ctx, storesqlc.LockBusinessPlanCodeParams{ID: params.BusinessID, AccountID: params.AccountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Prompt{}, ErrNotFound
@@ -236,7 +236,7 @@ func normalizeCreateActivePromptParams(params CreateActivePromptParams) (CreateA
 	if err := validateUUIDv7("prompt id", params.ID); err != nil {
 		return CreateActivePromptParams{}, err
 	}
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return CreateActivePromptParams{}, err
 	}
 	if err := validateUUIDv7("business id", params.BusinessID); err != nil {

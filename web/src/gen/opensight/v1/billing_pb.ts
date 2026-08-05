@@ -14,7 +14,7 @@ import type { Message, UnknownEnum } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/billing.proto.
  */
 export const file_opensight_v1_billing: GenFile = /*@__PURE__*/
-  fileDesc("ChpvcGVuc2lnaHQvdjEvYmlsbGluZy5wcm90bxIMb3BlbnNpZ2h0LnYxIhMKEUdldEJpbGxpbmdSZXF1ZXN0ItECChJHZXRCaWxsaW5nUmVzcG9uc2USJAoGYWNjZXNzGAEgASgOMhQub3BlbnNpZ2h0LnYxLkFjY2VzcxIgCgRwbGFuGAIgASgLMhIub3BlbnNpZ2h0LnYxLlBsYW4SFQoNc3RyaXBlX3N0YXR1cxgDIAEoCRIZChFwcmljZV91bml0X2Ftb3VudBgEIAEoAxIWCg5wcmljZV9jdXJyZW5jeRgFIAEoCRIWCg5wcmljZV9pbnRlcnZhbBgGIAEoCRI2ChJjdXJyZW50X3BlcmlvZF9lbmQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhwKFGNhbmNlbF9hdF9wZXJpb2RfZW5kGAggASgIEg4KBmNvbXBlZBgJIAEoCBIrCgZhY3Rpb24YCiABKA4yGy5vcGVuc2lnaHQudjEuQmlsbGluZ0FjdGlvbiIWChRTdGFydENoZWNrb3V0UmVxdWVzdCItChVTdGFydENoZWNrb3V0UmVzcG9uc2USFAoMY2hlY2tvdXRfdXJsGAEgASgJIiwKFkNvbmZpcm1DaGVja291dFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSI/ChdDb25maXJtQ2hlY2tvdXRSZXNwb25zZRIkCgZhY2Nlc3MYASABKA4yFC5vcGVuc2lnaHQudjEuQWNjZXNzIhwKGkNyZWF0ZVBvcnRhbFNlc3Npb25SZXF1ZXN0IjEKG0NyZWF0ZVBvcnRhbFNlc3Npb25SZXNwb25zZRISCgpwb3J0YWxfdXJsGAEgASgJKoABCg1CaWxsaW5nQWN0aW9uEh4KGkJJTExJTkdfQUNUSU9OX1VOU1BFQ0lGSUVEEAASFwoTQklMTElOR19BQ1RJT05fTk9ORRABEhsKF0JJTExJTkdfQUNUSU9OX0NIRUNLT1VUEAISGQoVQklMTElOR19BQ1RJT05fUE9SVEFMEAMyhwMKDkJpbGxpbmdTZXJ2aWNlEk8KCkdldEJpbGxpbmcSHy5vcGVuc2lnaHQudjEuR2V0QmlsbGluZ1JlcXVlc3QaIC5vcGVuc2lnaHQudjEuR2V0QmlsbGluZ1Jlc3BvbnNlElgKDVN0YXJ0Q2hlY2tvdXQSIi5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuU3RhcnRDaGVja291dFJlc3BvbnNlEl4KD0NvbmZpcm1DaGVja291dBIkLm9wZW5zaWdodC52MS5Db25maXJtQ2hlY2tvdXRSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLkNvbmZpcm1DaGVja291dFJlc3BvbnNlEmoKE0NyZWF0ZVBvcnRhbFNlc3Npb24SKC5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlcXVlc3QaKS5vcGVuc2lnaHQudjEuQ3JlYXRlUG9ydGFsU2Vzc2lvblJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxCaWxsaW5nUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_opensight_v1_common]);
+  fileDesc("ChpvcGVuc2lnaHQvdjEvYmlsbGluZy5wcm90bxIMb3BlbnNpZ2h0LnYxIhMKEUdldEJpbGxpbmdSZXF1ZXN0ItECChJHZXRCaWxsaW5nUmVzcG9uc2USJAoGYWNjZXNzGAEgASgOMhQub3BlbnNpZ2h0LnYxLkFjY2VzcxIgCgRwbGFuGAIgASgLMhIub3BlbnNpZ2h0LnYxLlBsYW4SFQoNc3RyaXBlX3N0YXR1cxgDIAEoCRIZChFwcmljZV91bml0X2Ftb3VudBgEIAEoAxIWCg5wcmljZV9jdXJyZW5jeRgFIAEoCRIWCg5wcmljZV9pbnRlcnZhbBgGIAEoCRI2ChJjdXJyZW50X3BlcmlvZF9lbmQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhwKFGNhbmNlbF9hdF9wZXJpb2RfZW5kGAggASgIEg4KBmNvbXBlZBgJIAEoCBIrCgZhY3Rpb24YCiABKA4yGy5vcGVuc2lnaHQudjEuQmlsbGluZ0FjdGlvbiIWChRTdGFydENoZWNrb3V0UmVxdWVzdCItChVTdGFydENoZWNrb3V0UmVzcG9uc2USFAoMY2hlY2tvdXRfdXJsGAEgASgJIiwKFkNvbmZpcm1DaGVja291dFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSJVChdDb25maXJtQ2hlY2tvdXRSZXNwb25zZRIkCgZhY2Nlc3MYASABKA4yFC5vcGVuc2lnaHQudjEuQWNjZXNzEhQKDGFjY291bnRfc2x1ZxgCIAEoCSIcChpDcmVhdGVQb3J0YWxTZXNzaW9uUmVxdWVzdCIxChtDcmVhdGVQb3J0YWxTZXNzaW9uUmVzcG9uc2USEgoKcG9ydGFsX3VybBgBIAEoCSqAAQoNQmlsbGluZ0FjdGlvbhIeChpCSUxMSU5HX0FDVElPTl9VTlNQRUNJRklFRBAAEhcKE0JJTExJTkdfQUNUSU9OX05PTkUQARIbChdCSUxMSU5HX0FDVElPTl9DSEVDS09VVBACEhkKFUJJTExJTkdfQUNUSU9OX1BPUlRBTBADMocDCg5CaWxsaW5nU2VydmljZRJPCgpHZXRCaWxsaW5nEh8ub3BlbnNpZ2h0LnYxLkdldEJpbGxpbmdSZXF1ZXN0GiAub3BlbnNpZ2h0LnYxLkdldEJpbGxpbmdSZXNwb25zZRJYCg1TdGFydENoZWNrb3V0EiIub3BlbnNpZ2h0LnYxLlN0YXJ0Q2hlY2tvdXRSZXF1ZXN0GiMub3BlbnNpZ2h0LnYxLlN0YXJ0Q2hlY2tvdXRSZXNwb25zZRJeCg9Db25maXJtQ2hlY2tvdXQSJC5vcGVuc2lnaHQudjEuQ29uZmlybUNoZWNrb3V0UmVxdWVzdBolLm9wZW5zaWdodC52MS5Db25maXJtQ2hlY2tvdXRSZXNwb25zZRJqChNDcmVhdGVQb3J0YWxTZXNzaW9uEigub3BlbnNpZ2h0LnYxLkNyZWF0ZVBvcnRhbFNlc3Npb25SZXF1ZXN0Gikub3BlbnNpZ2h0LnYxLkNyZWF0ZVBvcnRhbFNlc3Npb25SZXNwb25zZUKiAQoQY29tLm9wZW5zaWdodC52MUIMQmlsbGluZ1Byb3RvUAFaL29wZW5zaWdodC9pbnRlcm5hbC9nZW4vb3BlbnNpZ2h0L3YxO29wZW5zaWdodHYxogIDT1hYqgIMT3BlbnNpZ2h0LlYxygIMT3BlbnNpZ2h0XFYx4gIYT3BlbnNpZ2h0XFYxXEdQQk1ldGFkYXRh6gINT3BlbnNpZ2h0OjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_opensight_v1_common]);
 
 /**
  * @generated from message opensight.v1.GetBillingRequest
@@ -44,7 +44,7 @@ export type GetBillingResponse = Message<"opensight.v1.GetBillingResponse"> & {
   plan?: Plan | undefined;
 
   /**
-   * stripe_status is VERBATIM Stripe status, empty when the tenant has no
+   * stripe_status is VERBATIM Stripe status, empty when the account has no
    * subscription. The SPA maps it to copy; it is never invented locally
    * (design 08 — subscriptions.stripe_status).
    *
@@ -86,7 +86,7 @@ export type GetBillingResponse = Message<"opensight.v1.GetBillingResponse"> & {
   cancelAtPeriodEnd: boolean;
 
   /**
-   * comped tenants have no Stripe objects at all (design 08 "comped is a
+   * comped accounts have no Stripe objects at all (design 08 "comped is a
    * separate boolean, not a status value") — stripe_status is empty and
    * there is no portal to offer.
    *
@@ -95,7 +95,7 @@ export type GetBillingResponse = Message<"opensight.v1.GetBillingResponse"> & {
   comped: boolean;
 
   /**
-   * action is derived server-side from the tenant's subscription. The SPA
+   * action is derived server-side from the account's subscription. The SPA
    * does not interpret Stripe statuses to decide whether to create a new
    * subscription or manage the existing one.
    *
@@ -113,7 +113,7 @@ export const GetBillingResponseSchema: GenMessage<GetBillingResponse> = /*@__PUR
 
 /**
  * StartCheckoutRequest is deliberately empty. The plan being paid for is the
- * one already on the tenant's subscriptions row, and its Price id is resolved
+ * one already on the account's subscriptions row, and its Price id is resolved
  * from the code catalog plus config — a client-supplied plan or price would be
  * a way to buy something we never offered.
  *
@@ -156,7 +156,7 @@ export type ConfirmCheckoutRequest = Message<"opensight.v1.ConfirmCheckoutReques
   /**
    * session_id is the value Stripe substituted for {CHECKOUT_SESSION_ID} in
    * success_url. It is proof of nothing on its own: the server retrieves the
-   * session and confirms it belongs to the calling tenant.
+   * session and confirms its account belongs to the caller.
    *
    * @generated from field: string session_id = 1;
    */
@@ -182,6 +182,15 @@ export type ConfirmCheckoutResponse = Message<"opensight.v1.ConfirmCheckoutRespo
    * @generated from field: opensight.v1.Access access = 1;
    */
   access: Access;
+
+  /**
+   * account_slug is the account Stripe identified via client_reference_id.
+   * Checkout confirmation is identity-scoped so outstanding pre-account-path
+   * success URLs can route into the correct account after reconciliation.
+   *
+   * @generated from field: string account_slug = 2;
+   */
+  accountSlug: string;
 };
 
 /**
@@ -193,7 +202,7 @@ export const ConfirmCheckoutResponseSchema: GenMessage<ConfirmCheckoutResponse> 
 
 /**
  * CreatePortalSessionRequest is deliberately empty, the same shape as
- * StartCheckoutRequest: the Customer to send is the calling tenant's own, not
+ * StartCheckoutRequest: the Customer to send is the calling account's own, not
  * a client-supplied id.
  *
  * @generated from message opensight.v1.CreatePortalSessionRequest

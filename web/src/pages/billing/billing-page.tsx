@@ -1,18 +1,20 @@
 // /billing renders standalone (outside AppLayout), alongside /login and
-// /onboarding: a never-paid tenant is denied every classSubscriber/classActive RPC,
+// /onboarding: a never-paid account is denied every classSubscriber/classActive RPC,
 // so the product shell has nothing to show it (design 08 "The funnel", BILL-9
 // AC "an account that has never paid cannot wander into the app").
 import { timestampDate } from "@bufbuild/protobuf/wkt"
-import { useMutation, useQuery } from "@connectrpc/connect-query"
+import { skipToken, useMutation, useQuery } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import { CreditCard, LogOut, RefreshCw } from "lucide-react"
 import { type ReactNode } from "react"
 import { Link, Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
-import { useMe } from "@/api/hooks"
+import { useAccountContext, useMe } from "@/api/hooks"
 import { stripeStatusLabel } from "@/api/labels"
 import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
+import { AccountRole } from "@/gen/opensight/v1/account_pb"
+import { accountPath } from "@/lib/account-path"
 import {
   BillingAction,
   type GetBillingResponse,
@@ -37,19 +39,23 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function BillingPage() {
   const me = useMe()
-  const billing = useQuery(getBilling, {})
+  const account = useAccountContext()
+  const billing = useQuery(
+    getBilling,
+    account.data?.role === AccountRole.OWNER ? {} : skipToken
+  )
 
-  if (me.isLoading || billing.isLoading) {
+  if (me.isLoading || account.isLoading) {
     return (
       <BillingShell>
         <Skeleton className="h-72 w-full" />
       </BillingShell>
     )
   }
-  if (isUnauthenticated(me.error) || isUnauthenticated(billing.error)) {
+  if (isUnauthenticated(me.error) || isUnauthenticated(account.error) || isUnauthenticated(billing.error)) {
     return <Navigate to="/login" replace />
   }
-  if (me.isError || !me.data || billing.isError || !billing.data) {
+  if (me.isError || !me.data || account.isError || !account.data?.account) {
     return (
       <BillingShell>
         <Card>
@@ -74,8 +80,37 @@ export function BillingPage() {
       </BillingShell>
     )
   }
+  if (account.data.role !== AccountRole.OWNER) {
+    return <Navigate to={accountPath(account.data.account.slug)} replace />
+  }
+  if (billing.isLoading) {
+    return (
+      <BillingShell>
+        <Skeleton className="h-72 w-full" />
+      </BillingShell>
+    )
+  }
+  if (billing.isError || !billing.data) {
+    return (
+      <BillingShell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Couldn't load billing</CardTitle>
+            <CardDescription>
+              Something went wrong fetching your account.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button type="button" onClick={() => void billing.refetch()}>
+              Try again
+            </Button>
+          </CardFooter>
+        </Card>
+      </BillingShell>
+    )
+  }
 
-  const hasActiveBusiness = me.data.businesses.some(
+  const hasActiveBusiness = account.data.businesses.some(
     (b) => b.status !== BusinessStatus.DRAFT
   )
 
@@ -85,7 +120,7 @@ export function BillingPage() {
       {hasActiveBusiness && (
         <Link
           className="mt-4 self-center text-sm text-muted-foreground hover:text-foreground hover:underline"
-          to="/overview"
+          to={accountPath(account.data.account.slug)}
         >
           Back to the app
         </Link>

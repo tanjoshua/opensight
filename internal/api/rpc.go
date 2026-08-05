@@ -20,7 +20,7 @@ const maxRPCRequestBytes = 64 << 10
 // accessClass is a procedure's required billing access (design 08 "Access
 // gate"). Classes are named after what they require, not what the procedure
 // does — classSubscriber admits both reads and edits, because both are free
-// once a tenant has paid at least once; only classActive costs money. There
+// once a account has paid at least once; only classActive costs money. There
 // is no "public, no session" class: sign-in itself is a plain HTTP redirect
 // route (google_auth.go), not an RPC, so every procedure in the schema
 // requires a resolved session.
@@ -57,6 +57,28 @@ func (c accessClass) satisfiedBy(a billing.Access) bool {
 	}
 }
 
+type procedureScope int
+
+const (
+	scopeIdentity procedureScope = iota
+	scopeAccount
+)
+
+type procedurePolicy struct {
+	scope  procedureScope
+	role   store.AccountRole
+	access accessClass
+}
+
+func policy(scope procedureScope, role store.AccountRole, access accessClass) procedurePolicy {
+	return procedurePolicy{scope: scope, role: role, access: access}
+}
+
+func roleAtLeast(have, need store.AccountRole) bool {
+	rank := map[store.AccountRole]int{store.AccountRoleViewer: 1, store.AccountRoleMember: 2, store.AccountRoleAdmin: 3, store.AccountRoleOwner: 4}
+	return rank[have] >= rank[need]
+}
+
 // procedureAccess is the default-deny classification registry: every
 // procedure in the schema must be a key here, keyed by generated procedure
 // constants so a renamed/removed RPC breaks the build instead of silently
@@ -64,44 +86,50 @@ func (c accessClass) satisfiedBy(a billing.Access) bool {
 // classified procedure valid) is enforced at test time by
 // TestEveryProcedureIsClassified (rpc_test.go) and at runtime by
 // accessInterceptor's default-deny fallthrough below.
-var procedureAccess = map[string]accessClass{
+var procedureAccess = map[string]procedurePolicy{
 	// classAccount — reachable at any access.
 	//
 	// GetMe is account, not subscriber: it's how a never-paid or lapsed SPA
 	// learns its own state. Gating it on subscriber access would make the
 	// billing page unrenderable for exactly the users who need it.
-	opensightv1connect.AuthServiceGetMeProcedure: classAccount,
+	opensightv1connect.AuthServiceGetMeProcedure: policy(scopeIdentity, "", classAccount),
 	// Logout is account: a lapsed customer must always be able to log out.
-	opensightv1connect.AuthServiceLogoutProcedure:             classAccount,
-	opensightv1connect.BillingServiceGetBillingProcedure:      classAccount,
-	opensightv1connect.BillingServiceStartCheckoutProcedure:   classAccount,
-	opensightv1connect.BillingServiceConfirmCheckoutProcedure: classAccount,
+	opensightv1connect.AuthServiceLogoutProcedure:               policy(scopeIdentity, "", classAccount),
+	opensightv1connect.AccountServiceCreateAccountProcedure:     policy(scopeIdentity, "", classAccount),
+	opensightv1connect.BillingServiceConfirmCheckoutProcedure:   policy(scopeIdentity, "", classAccount),
+	opensightv1connect.AccountServiceGetAccountContextProcedure: policy(scopeAccount, store.AccountRoleViewer, classAccount),
+	opensightv1connect.AccountServiceListMembersProcedure:       policy(scopeAccount, store.AccountRoleViewer, classAccount),
+	opensightv1connect.AccountServiceAddMemberProcedure:         policy(scopeAccount, store.AccountRoleAdmin, classAccount),
+	opensightv1connect.AccountServiceUpdateMemberRoleProcedure:  policy(scopeAccount, store.AccountRoleAdmin, classAccount),
+	opensightv1connect.AccountServiceRemoveMemberProcedure:      policy(scopeAccount, store.AccountRoleAdmin, classAccount),
+	opensightv1connect.BillingServiceGetBillingProcedure:        policy(scopeAccount, store.AccountRoleOwner, classAccount),
+	opensightv1connect.BillingServiceStartCheckoutProcedure:     policy(scopeAccount, store.AccountRoleOwner, classAccount),
 	// CreatePortalSession is account, not subscriber/active: a lapsed
 	// customer must still reach invoices and reactivate, and a never-paid
-	// tenant is refused by the handler's no-Customer check rather than by
+	// account is refused by the handler's no-Customer check rather than by
 	// the access gate (design 08 "Customer Portal").
-	opensightv1connect.BillingServiceCreatePortalSessionProcedure: classAccount,
+	opensightv1connect.BillingServiceCreatePortalSessionProcedure: policy(scopeAccount, store.AccountRoleOwner, classAccount),
 
 	// classSubscriber — needs full or lapsed. Reads, plus every edit that
 	// costs nothing: no run fires while lapsed, so these are row changes
 	// with no downstream spend.
-	opensightv1connect.BusinessServiceGetBusinessProcedure:               classSubscriber,
-	opensightv1connect.BusinessServiceGetProposalProcedure:               classSubscriber,
-	opensightv1connect.BusinessServiceUpdateBusinessProcedure:            classSubscriber,
-	opensightv1connect.PromptServiceListPromptsProcedure:                 classSubscriber,
-	opensightv1connect.PromptServiceGetPromptProcedure:                   classSubscriber,
-	opensightv1connect.PromptServiceAddPromptProcedure:                   classSubscriber,
-	opensightv1connect.PromptServiceReplacePromptProcedure:               classSubscriber,
-	opensightv1connect.CompetitorServiceListCompetitorsProcedure:         classSubscriber,
-	opensightv1connect.CompetitorServiceAddCompetitorProcedure:           classSubscriber,
-	opensightv1connect.CompetitorServiceSetCompetitorStatusProcedure:     classSubscriber,
-	opensightv1connect.CompetitorServiceReviewSuggestedAliasProcedure:    classSubscriber,
-	opensightv1connect.CompetitorServiceUpdateCompetitorAliasesProcedure: classSubscriber,
-	opensightv1connect.OverviewServiceGetOverviewProcedure:               classSubscriber,
-	opensightv1connect.CitationServiceListCitationSourcesProcedure:       classSubscriber,
-	opensightv1connect.ResultServiceListRunsProcedure:                    classSubscriber,
-	opensightv1connect.ResultServiceListResultsProcedure:                 classSubscriber,
-	opensightv1connect.ResultServiceGetResultProcedure:                   classSubscriber,
+	opensightv1connect.BusinessServiceGetBusinessProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.BusinessServiceGetProposalProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.BusinessServiceUpdateBusinessProcedure:            policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.PromptServiceListPromptsProcedure:                 policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.PromptServiceGetPromptProcedure:                   policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.PromptServiceAddPromptProcedure:                   policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.PromptServiceReplacePromptProcedure:               policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.CompetitorServiceListCompetitorsProcedure:         policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.CompetitorServiceAddCompetitorProcedure:           policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.CompetitorServiceSetCompetitorStatusProcedure:     policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.CompetitorServiceReviewSuggestedAliasProcedure:    policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.CompetitorServiceUpdateCompetitorAliasesProcedure: policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.OverviewServiceGetOverviewProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.CitationServiceListCitationSourcesProcedure:       policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.ResultServiceListRunsProcedure:                    policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.ResultServiceListResultsProcedure:                 policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.ResultServiceGetResultProcedure:                   policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 
 	// classActive — needs full. Exactly the procedures that reach an LLM or
 	// start a Temporal Schedule.
@@ -112,10 +140,10 @@ var procedureAccess = map[string]accessClass{
 	// prompts, creates the Temporal Schedule. GenerateQuestions needs full for
 	// the same reason as CreateBusiness/RegenerateProposal: it is an LLM call
 	// (design 03), even though — unlike them — it does not touch a workflow.
-	opensightv1connect.BusinessServiceCreateBusinessProcedure:     classActive,
-	opensightv1connect.BusinessServiceRegenerateProposalProcedure: classActive,
-	opensightv1connect.BusinessServiceApplyProposalProcedure:      classActive,
-	opensightv1connect.BusinessServiceGenerateQuestionsProcedure:  classActive,
+	opensightv1connect.BusinessServiceCreateBusinessProcedure:     policy(scopeAccount, store.AccountRoleAdmin, classActive),
+	opensightv1connect.BusinessServiceRegenerateProposalProcedure: policy(scopeAccount, store.AccountRoleAdmin, classActive),
+	opensightv1connect.BusinessServiceApplyProposalProcedure:      policy(scopeAccount, store.AccountRoleAdmin, classActive),
+	opensightv1connect.BusinessServiceGenerateQuestionsProcedure:  policy(scopeAccount, store.AccountRoleAdmin, classActive),
 }
 
 // accessInterceptor is the RPC access gate (design 08 "Enforcement gate 1"):
@@ -135,7 +163,7 @@ var procedureAccess = map[string]accessClass{
 func (s *Server) accessInterceptor() connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			class, ok := procedureAccess[req.Spec().Procedure]
+			p, ok := procedureAccess[req.Spec().Procedure]
 			if !ok {
 				return nil, s.rpcInternal("rpc: unclassified procedure", errors.New("no access class registered for "+req.Spec().Procedure))
 			}
@@ -145,8 +173,22 @@ func (s *Server) accessInterceptor() connect.UnaryInterceptorFunc {
 				return nil, s.rpcError("rpc: resolve session", err)
 			}
 
+			if p.scope == scopeIdentity {
+				return next(withAccess(withSessionUser(ctx, su), billing.AccessNever), req)
+			}
+			slug := req.Header().Get("X-OpenSight-Account-Slug")
+			if slug == "" {
+				return nil, connect.NewError(connect.CodeNotFound, errors.New("account not found"))
+			}
+			su, err = s.store.ResolveAccountSession(ctx, su, slug)
+			if err != nil {
+				return nil, s.rpcError("rpc: resolve account", err)
+			}
+			if !roleAtLeast(su.Role, p.role) {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.New("account role does not permit this action"))
+			}
 			access := billing.DeriveAccess(su.Billing, nowUTC())
-			if !class.satisfiedBy(access) {
+			if !p.access.satisfiedBy(access) {
 				return nil, rpcAccessDenied(access)
 			}
 
@@ -166,6 +208,7 @@ func (s *Server) rpcHandler() http.Handler {
 	}
 	mux := http.NewServeMux()
 	mux.Handle(opensightv1connect.NewAuthServiceHandler(s, opts...))
+	mux.Handle(opensightv1connect.NewAccountServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewBillingServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewBusinessServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewOverviewServiceHandler(s, opts...))

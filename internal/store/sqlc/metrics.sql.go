@@ -15,13 +15,13 @@ import (
 const citationDomainStats = `-- name: CitationDomainStats :many
 SELECT c.domain,coalesce(array_agg(DISTINCT ar.id),'{}')::uuid[] AS result_ids
 FROM analyzed_results ar JOIN citations c ON c.prompt_result_id=ar.id
-WHERE ar.business_id = $1 AND ar.tenant_id = $2
+WHERE ar.business_id = $1 AND ar.account_id = $2
 GROUP BY c.domain ORDER BY count(DISTINCT ar.id) DESC,c.domain
 `
 
 type CitationDomainStatsParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type CitationDomainStatsRow struct {
@@ -30,7 +30,7 @@ type CitationDomainStatsRow struct {
 }
 
 func (q *Queries) CitationDomainStats(ctx context.Context, arg CitationDomainStatsParams) ([]CitationDomainStatsRow, error) {
-	rows, err := q.db.Query(ctx, citationDomainStats, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, citationDomainStats, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,13 +53,13 @@ const citationSources = `-- name: CitationSources :many
 SELECT c.domain,c.url,c.title,c.subject,ar.prompt_id,p.text AS prompt_text,ar.id AS result_id
 FROM analyzed_results ar JOIN citations c ON c.prompt_result_id=ar.id
 JOIN prompts p ON p.id=ar.prompt_id AND p.business_id=ar.business_id
-WHERE ar.business_id = $1 AND ar.tenant_id = $2
+WHERE ar.business_id = $1 AND ar.account_id = $2
 ORDER BY c.domain,c.url,c.cite_order,p.text
 `
 
 type CitationSourcesParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type CitationSourcesRow struct {
@@ -73,7 +73,7 @@ type CitationSourcesRow struct {
 }
 
 func (q *Queries) CitationSources(ctx context.Context, arg CitationSourcesParams) ([]CitationSourcesRow, error) {
-	rows, err := q.db.Query(ctx, citationSources, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, citationSources, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,16 +109,16 @@ FROM competitors co JOIN businesses owner ON owner.id=co.business_id
 LEFT JOIN (
  SELECT m.competitor_id,m.id AS mention_id,m.mention_order,ar.id AS result_id
  FROM analyzed_results ar JOIN mentions m ON m.prompt_result_id=ar.id AND m.subject='competitor'
- WHERE ar.business_id = $1 AND ar.tenant_id = $2
+ WHERE ar.business_id = $1 AND ar.account_id = $2
 ) am ON am.competitor_id=co.id
-WHERE co.business_id = $1 AND owner.tenant_id = $2
+WHERE co.business_id = $1 AND owner.account_id = $2
 GROUP BY co.id,co.name,co.status,co.aliases,co.suggested_aliases
 ORDER BY count(DISTINCT am.result_id) DESC,co.name
 `
 
 type CompetitorOverallParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type CompetitorOverallRow struct {
@@ -134,7 +134,7 @@ type CompetitorOverallRow struct {
 }
 
 func (q *Queries) CompetitorOverall(ctx context.Context, arg CompetitorOverallParams) ([]CompetitorOverallRow, error) {
-	rows, err := q.db.Query(ctx, competitorOverall, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, competitorOverall, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,13 +168,13 @@ SELECT m.competitor_id,ar.prompt_id,p.text AS prompt_text,
  coalesce(array_agg(DISTINCT ar.id),'{}')::uuid[] AS result_ids
 FROM analyzed_results ar JOIN mentions m ON m.prompt_result_id=ar.id AND m.subject='competitor'
 JOIN prompts p ON p.id=ar.prompt_id
-WHERE ar.business_id = $1 AND ar.tenant_id = $2
+WHERE ar.business_id = $1 AND ar.account_id = $2
 GROUP BY m.competitor_id,ar.prompt_id,p.text ORDER BY count(DISTINCT ar.id) DESC,p.text
 `
 
 type CompetitorPerPromptParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type CompetitorPerPromptRow struct {
@@ -185,7 +185,7 @@ type CompetitorPerPromptRow struct {
 }
 
 func (q *Queries) CompetitorPerPrompt(ctx context.Context, arg CompetitorPerPromptParams) ([]CompetitorPerPromptRow, error) {
-	rows, err := q.db.Query(ctx, competitorPerPrompt, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, competitorPerPrompt, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -213,13 +213,13 @@ const competitorTrend = `-- name: CompetitorTrend :many
 SELECT m.competitor_id,ar.run_id,ar.scheduled_for,count(DISTINCT ar.id)::int AS mentioned,
  coalesce(array_agg(DISTINCT ar.id),'{}')::uuid[] AS result_ids
 FROM analyzed_results ar JOIN mentions m ON m.prompt_result_id=ar.id AND m.subject='competitor'
-WHERE ar.business_id = $1 AND ar.tenant_id = $2
+WHERE ar.business_id = $1 AND ar.account_id = $2
 GROUP BY m.competitor_id,ar.run_id,ar.scheduled_for ORDER BY ar.scheduled_for
 `
 
 type CompetitorTrendParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type CompetitorTrendRow struct {
@@ -231,7 +231,7 @@ type CompetitorTrendRow struct {
 }
 
 func (q *Queries) CompetitorTrend(ctx context.Context, arg CompetitorTrendParams) ([]CompetitorTrendRow, error) {
-	rows, err := q.db.Query(ctx, competitorTrend, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, competitorTrend, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -259,13 +259,13 @@ func (q *Queries) CompetitorTrend(ctx context.Context, arg CompetitorTrendParams
 const keywordStats = `-- name: KeywordStats :many
 SELECT kw::text AS keyword,coalesce(array_agg(DISTINCT id),'{}')::uuid[] AS result_ids
 FROM analyzed_results CROSS JOIN LATERAL unnest(keywords) AS kw
-WHERE business_id = $1 AND tenant_id = $2
+WHERE business_id = $1 AND account_id = $2
 GROUP BY kw ORDER BY count(DISTINCT id) DESC,kw
 `
 
 type KeywordStatsParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type KeywordStatsRow struct {
@@ -274,7 +274,7 @@ type KeywordStatsRow struct {
 }
 
 func (q *Queries) KeywordStats(ctx context.Context, arg KeywordStatsParams) ([]KeywordStatsRow, error) {
-	rows, err := q.db.Query(ctx, keywordStats, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, keywordStats, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -300,11 +300,11 @@ FROM (
  CASE WHEN p.replaces_prompt_id IS NULL THEN 1 ELSE 0 END AS added,0 AS retired,
  CASE WHEN p.replaces_prompt_id IS NOT NULL THEN 1 ELSE 0 END AS replaced
  FROM prompts p JOIN businesses b ON b.id=p.business_id
- WHERE b.id = $1 AND b.tenant_id = $2
+ WHERE b.id = $1 AND b.account_id = $2
  UNION ALL
  SELECT date_trunc('day',p.retired_at)::timestamptz AS d,0,1,0
  FROM prompts p JOIN businesses b ON b.id=p.business_id
- WHERE b.id = $1 AND b.tenant_id = $2 AND p.retired_at IS NOT NULL
+ WHERE b.id = $1 AND b.account_id = $2 AND p.retired_at IS NOT NULL
  AND NOT EXISTS (SELECT 1 FROM prompts r WHERE r.replaces_prompt_id=p.id
   AND date_trunc('day',r.created_at)=date_trunc('day',p.retired_at))
 ) e GROUP BY d ORDER BY d
@@ -312,7 +312,7 @@ FROM (
 
 type PromptChangesParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type PromptChangesRow struct {
@@ -323,7 +323,7 @@ type PromptChangesRow struct {
 }
 
 func (q *Queries) PromptChanges(ctx context.Context, arg PromptChangesParams) ([]PromptChangesRow, error) {
-	rows, err := q.db.Query(ctx, promptChanges, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, promptChanges, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -355,13 +355,13 @@ LEFT JOIN (
  SELECT DISTINCT ON (prompt_result_id) prompt_result_id,mention_order FROM mentions
  WHERE subject='self' ORDER BY prompt_result_id,mention_order
 ) sm ON sm.prompt_result_id=ar.id
-WHERE ar.business_id = $1 AND ar.tenant_id = $2 AND p.status='active'
+WHERE ar.business_id = $1 AND ar.account_id = $2 AND p.status='active'
 ORDER BY ar.prompt_id,ar.requested_at DESC,ar.id DESC
 `
 
 type PromptLatestStatsParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type PromptLatestStatsRow struct {
@@ -373,7 +373,7 @@ type PromptLatestStatsRow struct {
 }
 
 func (q *Queries) PromptLatestStats(ctx context.Context, arg PromptLatestStatsParams) ([]PromptLatestStatsRow, error) {
-	rows, err := q.db.Query(ctx, promptLatestStats, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, promptLatestStats, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -400,13 +400,13 @@ func (q *Queries) PromptLatestStats(ctx context.Context, arg PromptLatestStatsPa
 
 const promptTrends = `-- name: PromptTrends :many
 SELECT ar.prompt_id,ar.run_id,ar.scheduled_for,ar.id AS result_id,ar.has_self_mention AS mentioned
-FROM analyzed_results ar WHERE ar.business_id = $1 AND ar.tenant_id = $2
+FROM analyzed_results ar WHERE ar.business_id = $1 AND ar.account_id = $2
 ORDER BY ar.prompt_id,ar.scheduled_for,ar.id
 `
 
 type PromptTrendsParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type PromptTrendsRow struct {
@@ -418,7 +418,7 @@ type PromptTrendsRow struct {
 }
 
 func (q *Queries) PromptTrends(ctx context.Context, arg PromptTrendsParams) ([]PromptTrendsRow, error) {
-	rows, err := q.db.Query(ctx, promptTrends, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, promptTrends, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -445,13 +445,13 @@ func (q *Queries) PromptTrends(ctx context.Context, arg PromptTrendsParams) ([]P
 
 const sentimentStats = `-- name: SentimentStats :many
 SELECT sentiment,coalesce(array_agg(id ORDER BY id),'{}')::uuid[] AS result_ids
-FROM analyzed_results WHERE business_id = $1 AND tenant_id = $2 AND sentiment IS NOT NULL
+FROM analyzed_results WHERE business_id = $1 AND account_id = $2 AND sentiment IS NOT NULL
 GROUP BY sentiment ORDER BY count(*) DESC,sentiment
 `
 
 type SentimentStatsParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type SentimentStatsRow struct {
@@ -460,7 +460,7 @@ type SentimentStatsRow struct {
 }
 
 func (q *Queries) SentimentStats(ctx context.Context, arg SentimentStatsParams) ([]SentimentStatsRow, error) {
-	rows, err := q.db.Query(ctx, sentimentStats, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, sentimentStats, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -483,13 +483,13 @@ const visibilityTrend = `-- name: VisibilityTrend :many
 SELECT run_id,scheduled_for,count(*)::int AS analyzed,
  count(*) FILTER (WHERE has_self_mention)::int AS mentioned,
  coalesce(array_agg(id ORDER BY id),'{}')::uuid[] AS result_ids
-FROM analyzed_results WHERE business_id = $1 AND tenant_id = $2
+FROM analyzed_results WHERE business_id = $1 AND account_id = $2
 GROUP BY run_id,scheduled_for ORDER BY scheduled_for
 `
 
 type VisibilityTrendParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type VisibilityTrendRow struct {
@@ -501,7 +501,7 @@ type VisibilityTrendRow struct {
 }
 
 func (q *Queries) VisibilityTrend(ctx context.Context, arg VisibilityTrendParams) ([]VisibilityTrendRow, error) {
-	rows, err := q.db.Query(ctx, visibilityTrend, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, visibilityTrend, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}

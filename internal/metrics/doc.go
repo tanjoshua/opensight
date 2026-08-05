@@ -17,9 +17,9 @@
 // door" contract (design 06): each figure the API returns links back to the
 // exact responses it was computed from.
 //
-// Queries are read-only and defensively tenant-scoped through the businesses
-// join (b.id = $1 AND b.tenant_id = $2); a business the tenant does not own
-// yields empty results rather than leaking another tenant's rows. Ownership
+// Queries are read-only and defensively account-scoped through the businesses
+// join (b.id = $1 AND b.account_id = $2); a business the account does not own
+// yields empty results rather than leaking another account's rows. Ownership
 // itself is validated by the HTTP layer before these methods are called
 // (design 06).
 package metrics

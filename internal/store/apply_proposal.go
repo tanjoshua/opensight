@@ -22,7 +22,7 @@ var ErrBusinessNotDraft = errors.New("business is not in draft status")
 // business is activated (design 03, "Review and apply"). Nil Services default to
 // an empty JSON array, mirroring CreateBusinessParams.
 type ApplyProposalParams struct {
-	TenantID    domain.ID
+	AccountID    domain.ID
 	BusinessID  domain.ID
 	Name        string
 	Aliases     []string
@@ -43,7 +43,7 @@ type ApplyProposalResult struct {
 // one transaction. Prompt insertion delegates to createActivePromptInTx so the
 // plan prompt-limit invariant is enforced identically. It is
 // the only path that writes profile values to businesses (the 02 invariant). A
-// missing or cross-tenant business returns ErrNotFound; a non-draft business
+// missing or cross-account business returns ErrNotFound; a non-draft business
 // returns ErrBusinessNotDraft; exceeding the plan prompt limit returns
 // ErrPromptLimitExceeded. All-or-nothing: any failure rolls the whole tx back.
 func (s *Store) Apply(ctx context.Context, params ApplyProposalParams) (ApplyProposalResult, error) {
@@ -69,7 +69,7 @@ func applyProposalInTx(ctx context.Context, q *storesqlc.Queries, params ApplyPr
 		return ApplyProposalResult{}, err
 	}
 
-	status, err := q.LockDraftBusiness(ctx, storesqlc.LockDraftBusinessParams{ID: params.BusinessID, TenantID: params.TenantID})
+	status, err := q.LockDraftBusiness(ctx, storesqlc.LockDraftBusinessParams{ID: params.BusinessID, AccountID: params.AccountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ApplyProposalResult{}, ErrNotFound
@@ -95,7 +95,7 @@ func applyProposalInTx(ctx context.Context, q *storesqlc.Queries, params ApplyPr
 	prompts := make([]Prompt, 0, len(params.PromptTexts))
 	for _, text := range params.PromptTexts {
 		prompt, err := createActivePromptInTx(ctx, q, CreateActivePromptParams{
-			TenantID:   params.TenantID,
+			AccountID:   params.AccountID,
 			BusinessID: params.BusinessID,
 			Text:       text,
 		})
@@ -113,7 +113,7 @@ func applyProposalInTx(ctx context.Context, q *storesqlc.Queries, params ApplyPr
 }
 
 func normalizeApplyProposalParams(params ApplyProposalParams) (ApplyProposalParams, error) {
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return ApplyProposalParams{}, err
 	}
 	if err := validateUUIDv7("business id", params.BusinessID); err != nil {

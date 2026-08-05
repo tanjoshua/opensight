@@ -25,11 +25,11 @@ const (
 	BusinessStatusActive BusinessStatus = "active"
 )
 
-// Business is a persisted business row (migration 00003). tenant_id is the
+// Business is a persisted business row (migration 00003). account_id is the
 // tenancy anchor every deeper table scopes through.
 type Business struct {
 	ID          domain.ID
-	TenantID    domain.ID
+	AccountID    domain.ID
 	Status      BusinessStatus
 	Name        string
 	Website     *string
@@ -41,13 +41,13 @@ type Business struct {
 	ActivatedAt *time.Time
 }
 
-// CreateBusinessParams are the inputs for creating a business. TenantID is
-// required (tenant existence is enforced by the FK). If ID is uuid.Nil a UUIDv7
+// CreateBusinessParams are the inputs for creating a business. AccountID is
+// required (account existence is enforced by the FK). If ID is uuid.Nil a UUIDv7
 // is generated. Nil Services default to an empty JSON array; nil Aliases default
 // to an empty array; Location stays NULL when nil.
 type CreateBusinessParams struct {
 	ID          domain.ID
-	TenantID    domain.ID
+	AccountID    domain.ID
 	Status      BusinessStatus
 	Name        string
 	Website     *string
@@ -59,7 +59,7 @@ type CreateBusinessParams struct {
 }
 
 type UpdateBusinessProfileParams struct {
-	TenantID   domain.ID
+	AccountID   domain.ID
 	BusinessID domain.ID
 	Name       *string
 	WebsiteSet bool
@@ -70,9 +70,9 @@ type UpdateBusinessProfileParams struct {
 	Location   *json.RawMessage
 }
 
-// CreateBusiness inserts a business owned by params.TenantID. Tenant existence is enforced by the FK. In
-// the same transaction it renames the tenant to the business name: signup
-// seeds tenants.name from the email local part (CreateAccount),
+// CreateBusiness inserts a business owned by params.AccountID. Account existence is enforced by the FK. In
+// the same transaction it renames the account to the business name: signup
+// seeds accounts.name from the email local part (CreateAccount),
 // and onboarding's first business is what replaces that placeholder with the
 // real name (design 08 "Signup").
 func (s *Store) CreateBusiness(ctx context.Context, params CreateBusinessParams) (Business, error) {
@@ -84,7 +84,7 @@ func (s *Store) CreateBusiness(ctx context.Context, params CreateBusinessParams)
 
 	business := Business{
 		ID:          params.ID,
-		TenantID:    params.TenantID,
+		AccountID:    params.AccountID,
 		Status:      params.Status,
 		Name:        params.Name,
 		Website:     params.Website,
@@ -100,15 +100,15 @@ func (s *Store) CreateBusiness(ctx context.Context, params CreateBusinessParams)
 			location = &params.Location
 		}
 		business.CreatedAt, err = q.InsertBusiness(ctx, storesqlc.InsertBusinessParams{
-			ID: params.ID, TenantID: params.TenantID, Status: string(params.Status), Name: params.Name,
+			ID: params.ID, AccountID: params.AccountID, Status: string(params.Status), Name: params.Name,
 			Website: params.Website, Aliases: params.Aliases, Category: params.Category,
 			Services: params.Services, Location: location, ActivatedAt: params.ActivatedAt,
 		})
 		if err != nil {
 			return fmt.Errorf("insert business: %w", err)
 		}
-		if err := q.RenameTenant(ctx, storesqlc.RenameTenantParams{ID: params.TenantID, Name: params.Name}); err != nil {
-			return fmt.Errorf("rename tenant: %w", err)
+		if err := q.RenameAccount(ctx, storesqlc.RenameAccountParams{ID: params.AccountID, Name: params.Name}); err != nil {
+			return fmt.Errorf("rename account: %w", err)
 		}
 		return nil
 	})
@@ -118,11 +118,11 @@ func (s *Store) CreateBusiness(ctx context.Context, params CreateBusinessParams)
 	return business, nil
 }
 
-// GetBusiness loads a business scoped to tenantID — the ownership gate for
-// business-scoped reads. A missing or cross-tenant business returns ErrNotFound.
-func (s *Store) GetBusiness(ctx context.Context, tenantID, businessID domain.ID) (Business, error) {
+// GetBusiness loads a business scoped to accountID — the ownership gate for
+// business-scoped reads. A missing or cross-account business returns ErrNotFound.
+func (s *Store) GetBusiness(ctx context.Context, accountID, businessID domain.ID) (Business, error) {
 
-	row, err := s.q(ctx).GetBusiness(ctx, storesqlc.GetBusinessParams{ID: businessID, TenantID: tenantID})
+	row, err := s.q(ctx).GetBusiness(ctx, storesqlc.GetBusinessParams{ID: businessID, AccountID: accountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Business{}, ErrNotFound
@@ -133,7 +133,7 @@ func (s *Store) GetBusiness(ctx context.Context, tenantID, businessID domain.ID)
 }
 
 func (s *Store) UpdateActiveProfile(ctx context.Context, params UpdateBusinessProfileParams) (Business, error) {
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return Business{}, err
 	}
 	if err := validateUUIDv7("business id", params.BusinessID); err != nil {
@@ -163,7 +163,7 @@ func (s *Store) UpdateActiveProfile(ctx context.Context, params UpdateBusinessPr
 		location = *params.Location
 	}
 	row, err := s.q(ctx).UpdateActiveBusinessProfile(ctx, storesqlc.UpdateActiveBusinessProfileParams{
-		BusinessID: params.BusinessID, TenantID: params.TenantID,
+		BusinessID: params.BusinessID, AccountID: params.AccountID,
 		NameSet: params.Name != nil, Name: name, WebsiteSet: params.WebsiteSet, Website: params.Website,
 		AliasesSet: params.Aliases != nil, Aliases: aliases, CategorySet: params.Category != nil,
 		Category: params.Category, ServicesSet: params.Services != nil, Services: services,
@@ -178,11 +178,11 @@ func (s *Store) UpdateActiveProfile(ctx context.Context, params UpdateBusinessPr
 	return businessFromSQLC(row), nil
 }
 
-// ListBusinesses returns the tenant's businesses, oldest first (GET /me / SPA
-// bootstrap). Scoped by the tenant_id column.
-func (s *Store) ListBusinesses(ctx context.Context, tenantID domain.ID) ([]Business, error) {
+// ListBusinesses returns the account's businesses, oldest first (GET /me / SPA
+// bootstrap). Scoped by the account_id column.
+func (s *Store) ListBusinesses(ctx context.Context, accountID domain.ID) ([]Business, error) {
 
-	rows, err := s.q(ctx).ListBusinesses(ctx, tenantID)
+	rows, err := s.q(ctx).ListBusinesses(ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("list businesses: %w", err)
 	}
@@ -193,22 +193,22 @@ func (s *Store) ListBusinesses(ctx context.Context, tenantID domain.ID) ([]Busin
 	return businesses, nil
 }
 
-// ResolveTenantID returns only the business's tenant id. It is the sole
-// tenant-unscoped business lookup in the package: the store-layer analogue of
-// session->tenant resolution, used once by callers without ambient tenant
-// context (Temporal activities via LoadRunSpec, CLI) to bootstrap the tenant
-// before every subsequent call uses the normal tenant-checked methods
+// ResolveAccountID returns only the business's account id. It is the sole
+// account-unscoped business lookup in the package: the store-layer analogue of
+// session->account resolution, used once by callers without ambient account
+// context (Temporal activities via LoadRunSpec, CLI) to bootstrap the account
+// before every subsequent call uses the normal account-checked methods
 // (design 02). A missing business returns ErrNotFound.
-func (s *Store) ResolveTenantID(ctx context.Context, businessID domain.ID) (domain.ID, error) {
+func (s *Store) ResolveAccountID(ctx context.Context, businessID domain.ID) (domain.ID, error) {
 
-	tenantID, err := s.q(ctx).ResolveTenantID(ctx, businessID)
+	accountID, err := s.q(ctx).ResolveAccountID(ctx, businessID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return uuid.Nil, ErrNotFound
 		}
-		return uuid.Nil, fmt.Errorf("resolve tenant id: %w", err)
+		return uuid.Nil, fmt.Errorf("resolve account id: %w", err)
 	}
-	return tenantID, nil
+	return accountID, nil
 }
 
 func businessFromSQLC(row storesqlc.Business) Business {
@@ -217,7 +217,7 @@ func businessFromSQLC(row storesqlc.Business) Business {
 		location = *row.Location
 	}
 	return Business{
-		ID: row.ID, TenantID: row.TenantID, Status: BusinessStatus(row.Status), Name: row.Name,
+		ID: row.ID, AccountID: row.AccountID, Status: BusinessStatus(row.Status), Name: row.Name,
 		Website: row.Website, Aliases: row.Aliases, Category: row.Category, Services: row.Services,
 		Location: location, CreatedAt: row.CreatedAt, ActivatedAt: row.ActivatedAt,
 	}
@@ -234,7 +234,7 @@ func normalizeCreateBusinessParams(params CreateBusinessParams) (CreateBusinessP
 	if err := validateUUIDv7("business id", params.ID); err != nil {
 		return CreateBusinessParams{}, err
 	}
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return CreateBusinessParams{}, err
 	}
 	if strings.TrimSpace(params.Name) == "" {

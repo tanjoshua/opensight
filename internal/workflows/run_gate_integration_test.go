@@ -15,7 +15,7 @@ import (
 )
 
 // TestRunWorkflowGateAgainstPostgres is BILL-7's proof (design 08 gate 3):
-// a tenant without full access must produce zero monitoring_runs rows and
+// a account without full access must produce zero monitoring_runs rows and
 // zero LLM calls. It runs RunWorkflow against real activities (not mocked
 // ones) so that a regression in the gate itself — CheckRunAccess silently
 // passing, or a stage running before it — would be caught here, unlike the
@@ -34,29 +34,29 @@ func TestRunWorkflowGateAgainstPostgres(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustID(t)
+	accountID := mustID(t)
 	businessID := mustID(t)
 	promptID := mustID(t)
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Gate Tenant")
+	insertAccount(t, db, ctx, accountID, "Gate Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 
-	// insertTenant leaves the subscription comped (AccessFull). Flip it to a
+	// insertAccount leaves the subscription comped (AccessFull). Flip it to a
 	// never-paid state: comped=false and no Stripe subscription id at all,
 	// which billing.DeriveAccess maps to AccessNever.
 	subs := store.New(db)
 	if err := subs.Upsert(ctx, store.UpsertSubscriptionParams{
-		TenantID: tenantID,
+		AccountID: accountID,
 		PlanCode: "starter",
 		Comped:   false,
 	}); err != nil {

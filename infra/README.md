@@ -76,7 +76,7 @@ runs from your laptop over SSH.
    make infra-deploy
    ```
    This renders `.env`/`compose.yml`/`Caddyfile`, pulls the `main`-tagged
-   image, runs migrations, brings the stack up, and fails if
+   image, stops the API and worker, runs migrations, brings the stack up, and fails if
    `https://dashboard.opensight.app/healthz` doesn't return `ok`.
 
 ## Redeploy (every release)
@@ -84,8 +84,10 @@ runs from your laptop over SSH.
 CI deploys automatically: every push to `main` that passes tests builds the
 image, pushes it to GHCR, then runs `deploy.yml` pinned to that commit's
 `sha-<short>` tag (`.github/workflows/ci.yml`, `deploy` job). Expect a few
-seconds of downtime while containers restart (design 07 accepts this — no
-blue/green).
+seconds of downtime while the API and worker stop for migrations and restart
+(design 07 accepts this — no blue/green). Stopping both application processes
+before migration is required for incompatible schema changes; Postgres and
+Temporal remain available throughout.
 
 For a manual or emergency redeploy, run the same playbook from your laptop:
 

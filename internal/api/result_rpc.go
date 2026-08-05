@@ -37,12 +37,12 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 		return nil, cerr
 	}
 
-	runs, err := s.store.ListRuns(ctx, su.TenantID, businessID)
+	runs, err := s.store.ListRuns(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list runs", err)
 	}
 
-	points, err := s.metrics.VisibilityTrend(ctx, su.TenantID, businessID)
+	points, err := s.metrics.VisibilityTrend(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list runs: visibility trend", err)
 	}
@@ -157,7 +157,7 @@ func (s *Server) ListResults(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	results, err := s.store.ListResults(ctx, su.TenantID, businessID, filter)
+	results, err := s.store.ListResults(ctx, su.AccountID, businessID, filter)
 	if err != nil {
 		return nil, s.rpcError("list results", err)
 	}
@@ -177,7 +177,7 @@ func (s *Server) ListResults(ctx context.Context, req *connect.Request[opensight
 
 // GetResult serves the Response drawer's full detail — the result, its
 // prompt/run context, and (when analyzed) its evidence. GetResultDetail is
-// the tenant gate.
+// the account gate.
 func (s *Server) GetResult(ctx context.Context, req *connect.Request[opensightv1.GetResultRequest]) (*connect.Response[opensightv1.GetResultResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "get result")
 	if cerr != nil {
@@ -188,11 +188,11 @@ func (s *Server) GetResult(ctx context.Context, req *connect.Request[opensightv1
 		return nil, cerr
 	}
 
-	detail, err := s.store.GetResultDetail(ctx, su.TenantID, resultID)
+	detail, err := s.store.GetResultDetail(ctx, su.AccountID, resultID)
 	if err != nil {
 		return nil, s.rpcError("get result", err)
 	}
-	analysis, err := s.store.GetResultAnalysis(ctx, su.TenantID, resultID)
+	analysis, err := s.store.GetResultAnalysis(ctx, su.AccountID, resultID)
 	if err != nil {
 		return nil, s.rpcError("get result: analysis", err)
 	}

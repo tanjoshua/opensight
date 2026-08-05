@@ -27,7 +27,7 @@ make up
 
 This starts Postgres, Temporal, the API, worker, app UI, and marketing site, and applies database migrations. The command prints local URLs when everything is ready. Press `Ctrl+C` to stop native processes; run `make down` to stop Docker services.
 
-For a ready-to-use local account, seed a comped tenant for your own Google account:
+For a ready-to-use local account, seed a comped account for your own Google identity:
 
 ```sh
 EMAIL=you@gmail.com make seed-dev
@@ -43,25 +43,26 @@ Run commands from source as shown below. Against a built or production deploymen
 # Apply pending database migrations. Serve and work do not migrate automatically.
 go run ./cmd/opensight migrate
 
-# Create an operator-provisioned tenant.
-go run ./cmd/opensight tenant create --name "Acme Clinic"
+# Create an operator-provisioned account.
+go run ./cmd/opensight account create --name "Acme Clinic"
 
-# Add a login to that tenant. No password to set — the owner's first Google
-# sign-in with this email links the account.
-go run ./cmd/opensight user create \
-  --tenant <tenant_id> \
-  --email owner@example.com
+# Grant a person access. No password or invitation email is sent; the person's
+# first Google sign-in links the global identity by email.
+go run ./cmd/opensight account member add \
+  --account <account_id> \
+  --email owner@example.com \
+  --role owner
 
 # Create an active business from YAML/JSON, schedule monitoring, and trigger its first run.
 go run ./cmd/opensight business create \
-  --tenant <tenant_id> \
+  --account <account_id> \
   --file path/to/business.yaml
 
 # Apply the repository-owned settings to STRIPE_PORTAL_CONFIGURATION_ID.
 go run ./cmd/opensight stripe portal-config
 ```
 
-`tenant create` creates a **comped** Starter tenant with full access and no Stripe objects. It is intended for internal or operator-provisioned accounts, not normal paying customers. `business create` immediately starts monitoring and may incur OpenAI cost when `PROMPT_RUNNER_MODE=openai`.
+`account create` creates a **comped** Starter account with full access and no Stripe objects. It is intended for internal or operator-provisioned accounts, not normal paying customers. `business create` immediately starts monitoring and may incur OpenAI cost when `PROMPT_RUNNER_MODE=openai`.
 
 ## Development commands
 

@@ -4,7 +4,7 @@
 
 A platform that shows local businesses how they appear in ChatGPT recommendations.
 
-Initial market: specialist clinics in Singapore. First design-partner customer and reference tenant: Roots! Advanced Endodontics (root-canal specialty clinic, Singapore) — an instance of the market, not a redefinition of it; the product stays vertical-agnostic across specialist clinics.
+Initial market: specialist clinics in Singapore. First design-partner customer and reference account: Roots! Advanced Endodontics (root-canal specialty clinic, Singapore) — an instance of the market, not a redefinition of it; the product stays vertical-agnostic across specialist clinics.
 
 ## 2. Starter Plan
 

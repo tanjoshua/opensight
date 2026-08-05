@@ -124,7 +124,7 @@ func sessionTokenFromHeader(h http.Header) string {
 	return cookie.Value
 }
 
-// sessionFromHeader resolves a request's session cookie to its user/tenant.
+// sessionFromHeader resolves a request's session cookie to its user/account.
 // Missing cookie or absent/expired session both return errNoSession. This is
 // the RPC session interceptor's resolution path (rpc.go).
 func (s *Server) sessionFromHeader(ctx context.Context, h http.Header) (store.SessionUser, error) {

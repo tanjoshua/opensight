@@ -55,7 +55,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustID(t)
+	accountID := mustID(t)
 	businessID := mustID(t)
 	promptID := mustID(t)
 	runID := mustID(t)
@@ -68,14 +68,14 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Analyze Tenant")
+	insertAccount(t, db, ctx, accountID, "Analyze Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, tenantID)
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic for braces', 'active')", promptID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
@@ -90,7 +90,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
 		acts := &Activities{Store: store, Extractor: extractor}
 
-		out, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID})
+		out, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
 		if err != nil {
 			t.Fatalf("AnalyzeResult: %v", err)
 		}
@@ -130,7 +130,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 
 		// A second call must re-invoke the extractor (no short-circuit) and
 		// overwrite rather than duplicate.
-		if _, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID}); err != nil {
+		if _, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID}); err != nil {
 			t.Fatalf("second AnalyzeResult: %v", err)
 		}
 		if extractor.calls != 2 {
@@ -141,16 +141,16 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		}
 	})
 
-	t.Run("cross-tenant result is ErrNotFound", func(t *testing.T) {
+	t.Run("cross-account result is ErrNotFound", func(t *testing.T) {
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
 		acts := &Activities{Store: store, Extractor: extractor}
 
-		_, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: mustID(t), ResultID: resultID})
+		_, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: mustID(t), ResultID: resultID})
 		if err == nil {
-			t.Fatal("expected error for cross-tenant result")
+			t.Fatal("expected error for cross-account result")
 		}
 		if extractor.calls != 0 {
-			t.Fatalf("extractor called %d times for a cross-tenant result, want 0", extractor.calls)
+			t.Fatalf("extractor called %d times for a cross-account result, want 0", extractor.calls)
 		}
 	})
 
@@ -168,7 +168,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		env := ts.NewTestActivityEnvironment()
 		env.RegisterActivity(acts.AnalyzeResult)
 
-		val, err := env.ExecuteActivity(acts.AnalyzeResult, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID})
+		val, err := env.ExecuteActivity(acts.AnalyzeResult, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
 		if err != nil {
 			t.Fatalf("AnalyzeResult returned error, want nil for a flagged result: %v", err)
 		}
@@ -195,7 +195,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		// Seed a successful analysis first, as if from an earlier extraction_version.
 		validExtractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
 		acts := &Activities{Store: store, Extractor: validExtractor}
-		if _, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID}); err != nil {
+		if _, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID}); err != nil {
 			t.Fatalf("seed AnalyzeResult: %v", err)
 		}
 		if got := citationCount(t, db, ctx, resultID); got != 1 {
@@ -210,7 +210,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		env := ts.NewTestActivityEnvironment()
 		env.RegisterActivity(acts.AnalyzeResult)
 
-		val, err := env.ExecuteActivity(acts.AnalyzeResult, AnalyzeResultInput{TenantID: tenantID, ResultID: resultID})
+		val, err := env.ExecuteActivity(acts.AnalyzeResult, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
 		if err != nil {
 			t.Fatalf("AnalyzeResult returned error, want nil for a flagged reanalysis: %v", err)
 		}

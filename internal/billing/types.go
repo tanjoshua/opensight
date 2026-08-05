@@ -19,11 +19,10 @@ var ErrNoSubscription = errors.New("no subscription for customer")
 // id that does not exist — the checkout-session equivalent of ErrNoSubscription.
 var ErrCheckoutSessionNotFound = errors.New("checkout session not found")
 
-// CreateCustomerParams creates a Stripe Customer for a tenant (design 08
-// "Customer" — one Customer per tenant, created lazily and never recreated).
+// CreateCustomerParams creates a Stripe Customer for an account.
 type CreateCustomerParams struct {
-	TenantID string
-	Email    string
+	AccountID string
+	Email     string
 }
 
 // Customer is the subset of a Stripe Customer callers need.
@@ -37,7 +36,7 @@ type Customer struct {
 type CreateCheckoutSessionParams struct {
 	CustomerID string
 	PriceID    string
-	TenantID   string
+	AccountID  string
 	// IntegrationIdentifier is a stable label with a random suffix (e.g.
 	// opensight-signup-vqmzhrtk) so checkout performance is comparable in
 	// the dashboard.

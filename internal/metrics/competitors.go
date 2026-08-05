@@ -66,14 +66,14 @@ type CompetitorTrendPoint struct {
 // competitor's mention % and the business's own visibility % are always measured
 // against the identical result set. Dismissed competitors are included (design 02:
 // dismissal is a display filter); the caller filters by status.
-func (m *Metrics) CompetitorStats(ctx context.Context, tenantID, businessID domain.ID) (CompetitorStats, error) {
+func (m *Metrics) CompetitorStats(ctx context.Context, accountID, businessID domain.ID) (CompetitorStats, error) {
 	if err := m.ready(); err != nil {
 		return CompetitorStats{}, err
 	}
 
 	// The denominators come from the same visibility computation the Overview
 	// uses, so competitor % and self % can never diverge on their base.
-	trend, err := m.VisibilityTrend(ctx, tenantID, businessID)
+	trend, err := m.VisibilityTrend(ctx, accountID, businessID)
 	if err != nil {
 		return CompetitorStats{}, err
 	}
@@ -85,14 +85,14 @@ func (m *Metrics) CompetitorStats(ctx context.Context, tenantID, businessID doma
 	}
 	result.SelfPercent = percent(result.SelfMentioned, result.TotalAnalyzed)
 
-	stats, order, err := m.competitorOverall(ctx, tenantID, businessID, result.TotalAnalyzed, result.SelfPercent)
+	stats, order, err := m.competitorOverall(ctx, accountID, businessID, result.TotalAnalyzed, result.SelfPercent)
 	if err != nil {
 		return CompetitorStats{}, err
 	}
-	if err := m.competitorTrends(ctx, tenantID, businessID, stats, trend); err != nil {
+	if err := m.competitorTrends(ctx, accountID, businessID, stats, trend); err != nil {
 		return CompetitorStats{}, err
 	}
-	if err := m.competitorPerPrompt(ctx, tenantID, businessID, stats); err != nil {
+	if err := m.competitorPerPrompt(ctx, accountID, businessID, stats); err != nil {
 		return CompetitorStats{}, err
 	}
 
@@ -104,8 +104,8 @@ func (m *Metrics) CompetitorStats(ctx context.Context, tenantID, businessID doma
 
 // competitorOverall loads each competitor's totals and returns them keyed by id
 // plus the descending-coverage order the SQL produced.
-func (m *Metrics) competitorOverall(ctx context.Context, tenantID, businessID domain.ID, totalAnalyzed int, selfPercent float64) (map[domain.ID]*CompetitorStat, []domain.ID, error) {
-	rows, err := m.q.CompetitorOverall(ctx, db.CompetitorOverallParams{BusinessID: businessID, TenantID: tenantID})
+func (m *Metrics) competitorOverall(ctx context.Context, accountID, businessID domain.ID, totalAnalyzed int, selfPercent float64) (map[domain.ID]*CompetitorStat, []domain.ID, error) {
+	rows, err := m.q.CompetitorOverall(ctx, db.CompetitorOverallParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, nil, fmt.Errorf("competitor overall stats: %w", err)
 	}
@@ -136,8 +136,8 @@ func (m *Metrics) competitorOverall(ctx context.Context, tenantID, businessID do
 
 // competitorTrends attaches each competitor's weekly mention %, including
 // analyzed runs where that competitor was absent.
-func (m *Metrics) competitorTrends(ctx context.Context, tenantID, businessID domain.ID, stats map[domain.ID]*CompetitorStat, visibility []VisibilityPoint) error {
-	rows, err := m.q.CompetitorTrend(ctx, db.CompetitorTrendParams{BusinessID: businessID, TenantID: tenantID})
+func (m *Metrics) competitorTrends(ctx context.Context, accountID, businessID domain.ID, stats map[domain.ID]*CompetitorStat, visibility []VisibilityPoint) error {
+	rows, err := m.q.CompetitorTrend(ctx, db.CompetitorTrendParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return fmt.Errorf("competitor trend: %w", err)
 	}
@@ -183,8 +183,8 @@ func (m *Metrics) competitorTrends(ctx context.Context, tenantID, businessID dom
 }
 
 // competitorPerPrompt attaches each competitor's per-prompt appearances.
-func (m *Metrics) competitorPerPrompt(ctx context.Context, tenantID, businessID domain.ID, stats map[domain.ID]*CompetitorStat) error {
-	rows, err := m.q.CompetitorPerPrompt(ctx, db.CompetitorPerPromptParams{BusinessID: businessID, TenantID: tenantID})
+func (m *Metrics) competitorPerPrompt(ctx context.Context, accountID, businessID domain.ID, stats map[domain.ID]*CompetitorStat) error {
+	rows, err := m.q.CompetitorPerPrompt(ctx, db.CompetitorPerPromptParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return fmt.Errorf("competitor per-prompt: %w", err)
 	}

@@ -7,7 +7,7 @@
 // speak store.Subscription, and internal/store already imports internal/billing
 // (the plan catalog) — a direct cycle. Hanging it off api.Server would
 // compile, but reconcile would then need a many-field Server to test, and a
-// future `opensight tenant comp` CLI command would have to reach into
+// future `opensight account comp` CLI command would have to reach into
 // internal/api just to change billing state. A subpackage created
 // specifically to keep a dependency out of internal/billing is exactly what
 // internal/billing/stripe already is.
@@ -24,22 +24,22 @@ import (
 	"opensight/internal/store"
 )
 
-// subscriptionStore is the seam reconcile needs: load a tenant's row (by
-// tenant id or by Stripe Customer id — the webhook only ever carries the
+// subscriptionStore is the seam reconcile needs: load a account's row (by
+// account id or by Stripe Customer id — the webhook only ever carries the
 // latter) and write it back in full. Narrower than *store.Store
 // so a test can fake it with no database.
 type subscriptionStore interface {
-	GetByTenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error)
+	GetByAccount(ctx context.Context, accountID domain.ID) (store.Subscription, error)
 	GetByCustomer(ctx context.Context, customerID string) (store.Subscription, error)
 	Upsert(ctx context.Context, params store.UpsertSubscriptionParams) error
 }
 
 // monitoringGate is the nil-tolerant seam over *Monitoring: assert whether a
-// tenant's monitoring Schedules should run (design 08 "Schedule gate"). A nil
+// account's monitoring Schedules should run (design 08 "Schedule gate"). A nil
 // Reconciler.monitoring (e.g. a test that only cares about the row write)
 // makes apply skip this step entirely.
 type monitoringGate interface {
-	Set(ctx context.Context, tenantID domain.ID, platforms []string, enabled bool) error
+	Set(ctx context.Context, accountID domain.ID, platforms []string, enabled bool) error
 }
 
 // customerLocker serializes reconciliation for one Stripe Customer across
@@ -55,10 +55,10 @@ type subscriptionProvider interface {
 	GetSubscriptionForCustomer(ctx context.Context, customerID string) (billing.Subscription, error)
 }
 
-// ErrNoCustomer means the tenant never started a checkout — a real state,
+// ErrNoCustomer means the account never started a checkout — a real state,
 // distinguishable from a failure. apply returns it instead of writing
 // anything, since there is nothing for the caller to look up yet.
-var ErrNoCustomer = errors.New("tenant has no stripe customer")
+var ErrNoCustomer = errors.New("account has no stripe customer")
 
 // Reconciler holds reconcile's dependencies.
 type Reconciler struct {
@@ -84,11 +84,11 @@ func New(subscriptions subscriptionStore, provider subscriptionProvider, monitor
 	return &Reconciler{subscriptions: subscriptions, provider: provider, monitoring: monitoring, locks: locks, now: now}
 }
 
-// Tenant loads tenantID's subscription row and reconciles it against Stripe.
-// This is ConfirmCheckout's entry point: it reconciles by tenant, since the
-// session carries the tenant id.
-func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subscription, error) {
-	sub, err := r.subscriptions.GetByTenant(ctx, tenantID)
+// Account loads accountID's subscription row and reconciles it against Stripe.
+// This is ConfirmCheckout's entry point: it reconciles by account, since the
+// session carries the account id.
+func (r *Reconciler) Account(ctx context.Context, accountID domain.ID) (store.Subscription, error) {
+	sub, err := r.subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
 		return store.Subscription{}, fmt.Errorf("reconcile: load subscription: %w", err)
 	}
@@ -100,7 +100,7 @@ func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subs
 	err = r.withCustomerLock(ctx, *sub.StripeCustomerID, func(ctx context.Context) error {
 		// The first read only discovers the permanent Customer id. Reload
 		// after acquiring the lock so apply never uses stale local state.
-		locked, err := r.subscriptions.GetByTenant(ctx, tenantID)
+		locked, err := r.subscriptions.GetByAccount(ctx, accountID)
 		if err != nil {
 			return fmt.Errorf("reconcile: reload subscription: %w", err)
 		}
@@ -112,7 +112,7 @@ func (r *Reconciler) Tenant(ctx context.Context, tenantID domain.ID) (store.Subs
 
 // ByCustomer loads the subscription row for a Stripe Customer id and
 // reconciles it against Stripe. This is the webhook's entry point:
-// a delivery only ever carries a Customer id, never a tenant id. A customer
+// a delivery only ever carries a Customer id, never a account id. A customer
 // id with no matching row returns store.ErrNotFound wrapped, so the handler
 // can tell an orphan Customer (accepted crash window, design 08) from a real
 // failure.
@@ -141,7 +141,7 @@ func (r *Reconciler) withCustomerLock(ctx context.Context, customerID string, fn
 //  2. Customer exists but has never completed a checkout (ErrNoSubscription)
 //     → write nothing, return sub unchanged. Any other provider error
 //     propagates wrapped, so a Stripe retry means something.
-//  3. Otherwise upsert the full row: identity fields (TenantID, PlanCode,
+//  3. Otherwise upsert the full row: identity fields (AccountID, PlanCode,
 //     Comped, StripeCustomerID) carried verbatim from the loaded row, never
 //     invented here — that is what makes the full-row overwrite safe. Stripe
 //     fields (StripeSubscriptionID, StripeStatus, CancelAtPeriodEnd,
@@ -176,7 +176,7 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 	}
 
 	params := store.UpsertSubscriptionParams{
-		TenantID:             sub.TenantID,
+		AccountID:            sub.AccountID,
 		PlanCode:             sub.PlanCode,
 		Comped:               sub.Comped,
 		StripeCustomerID:     sub.StripeCustomerID,
@@ -193,7 +193,7 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 	// Constructed locally rather than re-read: one query, and the caller
 	// needs exactly what was just written.
 	written := store.Subscription{
-		TenantID:             params.TenantID,
+		AccountID:            params.AccountID,
 		PlanCode:             params.PlanCode,
 		Comped:               params.Comped,
 		StripeCustomerID:     params.StripeCustomerID,
@@ -209,7 +209,7 @@ func (r *Reconciler) apply(ctx context.Context, sub store.Subscription) (store.S
 		plan, err := billing.PlanFor(written.PlanCode)
 		if err != nil {
 			return written, fmt.Errorf("reconcile: resolve plan for monitoring gate: %w", err)
-		} else if err := r.monitoring.Set(ctx, written.TenantID, plan.Platforms, after.Active()); err != nil {
+		} else if err := r.monitoring.Set(ctx, written.AccountID, plan.Platforms, after.Active()); err != nil {
 			return written, fmt.Errorf("reconcile: set monitoring enabled=%t: %w", after.Active(), err)
 		}
 	}

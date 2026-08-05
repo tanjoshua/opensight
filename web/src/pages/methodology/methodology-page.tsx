@@ -2,9 +2,11 @@ import { ArrowLeft } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 
 import { Button } from "@/components/ui/button"
+import { useAccountPath } from "@/lib/account-path"
 
 export function MethodologyPage() {
   const navigate = useNavigate()
+  const path = useAccountPath()
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -74,7 +76,7 @@ export function MethodologyPage() {
           For how account and monitoring data is handled, read our{" "}
           <Link
             className="font-medium text-foreground underline underline-offset-4"
-            to="/privacy"
+            to={path("/privacy")}
           >
             privacy overview
           </Link>

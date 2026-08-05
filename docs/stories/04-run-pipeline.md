@@ -22,7 +22,7 @@ As the developer, I want env-selected `stub` and `replay` PromptRunner modes plu
 
 - [x] `stub`: canned deterministic fixture (fake clinic-recommendation response with citation annotations).
 - [x] `replay`: recorded real `raw_response` payloads from `testdata/`.
-- [x] `opensight seed dev`: tenant and login account only, leaving business creation and prompt generation to the normal onboarding flow.
+- [x] `opensight seed dev`: account, global user, and owner membership only, leaving business creation and prompt generation to the normal onboarding flow.
 - [x] Replay fixtures start from the SPK-1 spike captures.
 - [ ] Refreshed with at least one response recorded through RUN-1 once it works (blocked on RUN-1's project-scoped key/budget cap — no live call has been made yet).
 
@@ -63,9 +63,9 @@ Deps: RUN-3, AUTH-2 · Phase 1 · Ref: design 04 (Scheduling), design README (Ph
 
 ## RUN-6 — Cost query
 
-As the operator, I want a per-tenant cost query over stored token usage, so that week-one reality checks the cost ballpark ($0.50–2/tenant/week).
+As the operator, I want a per-account cost query over stored token usage, so that week-one reality checks the cost ballpark ($0.50–2/account/week).
 
-- [x] Ad-hoc SQL (checked into `docs/` or a CLI subcommand) summing token usage from `raw_response` per tenant per week.
+- [x] Ad-hoc SQL in `docs/` sums token usage from `raw_response` per account per week.
 - [ ] Run against the first real production run; result recorded against the ballpark.
 
 Deps: RUN-4 · Phase 1 · Ref: design 04 (Cost model), 07 (Observability)

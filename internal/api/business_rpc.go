@@ -44,7 +44,7 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 	website := strings.TrimSpace(req.Msg.Website)
 
 	params := store.CreateBusinessParams{
-		TenantID: su.TenantID,
+		AccountID: su.AccountID,
 		Status:   store.BusinessStatusDraft,
 		Name:     name,
 	}
@@ -56,7 +56,7 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, s.rpcInternal("create business: insert", err)
 	}
 
-	if err := s.startGeneration(ctx, su.TenantID, business.ID, name, website); err != nil {
+	if err := s.startGeneration(ctx, su.AccountID, business.ID, name, website); err != nil {
 		// The draft row survives (no compensation): it is recoverable via /me,
 		// and GetProposal reports "failed" since no workflow is running.
 		return nil, s.rpcInternal("create business: start generation", err)
@@ -82,7 +82,7 @@ func (s *Server) GetBusiness(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	business, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
+	business, err := s.store.GetBusiness(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get business", err)
 	}
@@ -105,7 +105,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, cerr
 	}
 
-	current, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
+	current, err := s.store.GetBusiness(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("update business", err)
 	}
@@ -175,7 +175,7 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 	}
 
 	updated, err := s.store.UpdateActiveProfile(ctx, store.UpdateBusinessProfileParams{
-		TenantID: su.TenantID, BusinessID: businessID, Name: req.Msg.Name,
+		AccountID: su.AccountID, BusinessID: businessID, Name: req.Msg.Name,
 		WebsiteSet: req.Msg.Website != nil, Website: website, Aliases: aliasesParam, Category: req.Msg.Category,
 		Services: services, Location: location,
 	})
@@ -202,7 +202,7 @@ func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	proposal, err := s.store.GetPending(ctx, su.TenantID, businessID)
+	proposal, err := s.store.GetPending(ctx, su.AccountID, businessID)
 	if err == nil {
 		payload, derr := llm.DecodeProposalPayload(proposal.Payload)
 		if derr != nil {
@@ -220,7 +220,7 @@ func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensight
 	// GetPending's ErrNotFound is ambiguous (missing/foreign business OR no
 	// pending row). Confirm ownership so a bad id 404s instead of masquerading
 	// as generating.
-	if _, err := s.store.GetBusiness(ctx, su.TenantID, businessID); err != nil {
+	if _, err := s.store.GetBusiness(ctx, su.AccountID, businessID); err != nil {
 		return nil, s.rpcError("get proposal", err)
 	}
 
@@ -246,7 +246,7 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, cerr
 	}
 
-	business, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
+	business, err := s.store.GetBusiness(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("regen proposal", err)
 	}
@@ -254,11 +254,11 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		return nil, rpcFailedPrecondition("proposal can only be regenerated while the business is in draft")
 	}
 
-	if err := s.store.DiscardPending(ctx, su.TenantID, businessID); err != nil {
+	if err := s.store.DiscardPending(ctx, su.AccountID, businessID); err != nil {
 		return nil, s.rpcInternal("regen proposal: discard pending", err)
 	}
 
-	if err := s.startGeneration(ctx, su.TenantID, businessID, business.Name, websiteOrEmpty(business.Website)); err != nil {
+	if err := s.startGeneration(ctx, su.AccountID, businessID, business.Name, websiteOrEmpty(business.Website)); err != nil {
 		return nil, s.rpcError("regen proposal: start generation", err)
 	}
 	return connect.NewResponse(&opensightv1.RegenerateProposalResponse{State: &opensightv1.ProposalState{
@@ -323,7 +323,7 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 
 	now := nowUTC()
 	result, err := s.store.Apply(ctx, store.ApplyProposalParams{
-		TenantID:    su.TenantID,
+		AccountID:    su.AccountID,
 		BusinessID:  businessID,
 		Name:        payload.Profile.Name,
 		Aliases:     payload.Profile.Aliases,
@@ -386,7 +386,7 @@ func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[ope
 		return nil, cerr
 	}
 
-	business, err := s.store.GetBusiness(ctx, su.TenantID, businessID)
+	business, err := s.store.GetBusiness(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("generate questions", err)
 	}
@@ -431,12 +431,12 @@ func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[ope
 // per-business workflow id, so a regen while a prior run is still open surfaces
 // as WorkflowExecutionAlreadyStarted (CodeAlreadyExists) rather than a
 // duplicate run.
-func (s *Server) startGeneration(ctx context.Context, tenantID, businessID domain.ID, name, website string) error {
+func (s *Server) startGeneration(ctx context.Context, accountID, businessID domain.ID, name, website string) error {
 	_, err := s.temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 		ID:        workflows.GenerateProfileWorkflowID(businessID),
 		TaskQueue: s.temporalTaskQueue,
 	}, workflows.GenerateProfileWorkflow, workflows.GenerateProfileWorkflowInput{
-		TenantID:   tenantID,
+		AccountID:   accountID,
 		BusinessID: businessID,
 		Name:       name,
 		Website:    website,

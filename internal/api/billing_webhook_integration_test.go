@@ -113,7 +113,7 @@ func (f *fakeScheduleHandle) Unpause(context.Context, client.ScheduleUnpauseOpti
 	return nil
 }
 
-// mustDomainID generates a fresh UUIDv7, the shape tenants.id/businesses.id
+// mustDomainID generates a fresh UUIDv7, the shape accounts.id/businesses.id
 // require (a check constraint, not merely a UNIQUE column).
 func mustDomainID(t *testing.T) domain.ID {
 	t.Helper()
@@ -165,16 +165,16 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustDomainID(t)
+	accountID := mustDomainID(t)
 	businessID := mustDomainID(t)
-	customerID := "cus_" + tenantID.String()
+	customerID := "cus_" + accountID.String()
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
-	if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Out Of Order Tenant')", tenantID); err != nil {
-		t.Fatalf("insert tenant: %v", err)
+	if _, err := db.Exec(ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, 'Out Of Order Account', $2)", accountID, "test-"+accountID.String()); err != nil {
+		t.Fatalf("insert account: %v", err)
 	}
 
 	pool := db
@@ -182,7 +182,7 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	category := "clinic"
 	activatedAt := nowUTC()
 	if _, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
-		ID: businessID, TenantID: tenantID, Status: store.BusinessStatusActive, Name: "Acme Clinic",
+		ID: businessID, AccountID: accountID, Status: store.BusinessStatusActive, Name: "Acme Clinic",
 		Category:    &category,
 		Services:    json.RawMessage(`["checkups"]`),
 		Location:    json.RawMessage(`{"address":"1 Road","area":"Central","city":"Singapore","country":"SG"}`),
@@ -192,10 +192,10 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	}
 
 	subscriptions := store.New(pool)
-	subscriptionID := "sub_" + tenantID.String()
+	subscriptionID := "sub_" + accountID.String()
 	activeStatus := "active"
 	if err := subscriptions.Upsert(ctx, store.UpsertSubscriptionParams{
-		TenantID: tenantID, PlanCode: billing.Starter.Code,
+		AccountID: accountID, PlanCode: billing.Starter.Code,
 		StripeCustomerID: &customerID, StripeSubscriptionID: &subscriptionID, StripeStatus: &activeStatus,
 	}); err != nil {
 		t.Fatalf("seed subscription: %v", err)
@@ -225,9 +225,9 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 		t.Fatalf("deleted delivery status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
 
-	sub, err := subscriptions.GetByTenant(ctx, tenantID)
+	sub, err := subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after deleted delivery: %v", err)
+		t.Fatalf("GetByAccount after deleted delivery: %v", err)
 	}
 	if sub.StripeStatus == nil || *sub.StripeStatus != "canceled" {
 		t.Fatalf("stripe_status after deleted delivery = %v, want canceled", sub.StripeStatus)
@@ -249,9 +249,9 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 		t.Fatalf("stale updated delivery status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
 
-	sub, err = subscriptions.GetByTenant(ctx, tenantID)
+	sub, err = subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after stale updated delivery: %v", err)
+		t.Fatalf("GetByAccount after stale updated delivery: %v", err)
 	}
 	if sub.StripeStatus == nil || *sub.StripeStatus != "canceled" {
 		t.Fatalf("stripe_status after stale updated delivery = %v, want still canceled (not resurrected)", sub.StripeStatus)
@@ -286,16 +286,16 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustDomainID(t)
+	accountID := mustDomainID(t)
 	businessID := mustDomainID(t)
-	customerID := "cus_" + tenantID.String()
+	customerID := "cus_" + accountID.String()
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
-	if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Out Of Order Tenant')", tenantID); err != nil {
-		t.Fatalf("insert tenant: %v", err)
+	if _, err := db.Exec(ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, 'Out Of Order Account', $2)", accountID, "test-"+accountID.String()); err != nil {
+		t.Fatalf("insert account: %v", err)
 	}
 
 	pool := db
@@ -303,7 +303,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	category := "clinic"
 	activatedAt := nowUTC()
 	if _, err := businesses.CreateBusiness(ctx, store.CreateBusinessParams{
-		ID: businessID, TenantID: tenantID, Status: store.BusinessStatusActive, Name: "Acme Clinic",
+		ID: businessID, AccountID: accountID, Status: store.BusinessStatusActive, Name: "Acme Clinic",
 		Category:    &category,
 		Services:    json.RawMessage(`["checkups"]`),
 		Location:    json.RawMessage(`{"address":"1 Road","area":"Central","city":"Singapore","country":"SG"}`),
@@ -313,10 +313,10 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	}
 
 	subscriptions := store.New(pool)
-	subscriptionID := "sub_" + tenantID.String()
+	subscriptionID := "sub_" + accountID.String()
 	activeStatus := "active"
 	if err := subscriptions.Upsert(ctx, store.UpsertSubscriptionParams{
-		TenantID: tenantID, PlanCode: billing.Starter.Code,
+		AccountID: accountID, PlanCode: billing.Starter.Code,
 		StripeCustomerID: &customerID, StripeSubscriptionID: &subscriptionID, StripeStatus: &activeStatus,
 	}); err != nil {
 		t.Fatalf("seed subscription: %v", err)
@@ -326,14 +326,14 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	// to leave untouched.
 	prompts := store.New(pool)
 	prompt, err := prompts.CreateActivePrompt(ctx, store.CreateActivePromptParams{
-		TenantID: tenantID, BusinessID: businessID, Text: "Who are the best clinics?",
+		AccountID: accountID, BusinessID: businessID, Text: "Who are the best clinics?",
 	})
 	if err != nil {
 		t.Fatalf("seed prompt: %v", err)
 	}
 
 	runs := store.New(pool)
-	run, err := runs.UpsertRun(ctx, tenantID, store.UpsertRunParams{
+	run, err := runs.UpsertRun(ctx, accountID, store.UpsertRunParams{
 		BusinessID: businessID, Platform: store.PlatformChatGPT, Trigger: store.RunTriggerInitial,
 		ScheduledFor: activatedAt, WorkflowID: "wf_" + businessID.String(), ExpectedResults: 1,
 	})
@@ -357,7 +357,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	// just a status change.
 	businessRow := func(t *testing.T) store.Business {
 		t.Helper()
-		b, err := businesses.GetBusiness(ctx, tenantID, businessID)
+		b, err := businesses.GetBusiness(ctx, accountID, businessID)
 		if err != nil {
 			t.Fatalf("GetBusiness: %v", err)
 		}
@@ -365,7 +365,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	}
 	promptRow := func(t *testing.T) store.Prompt {
 		t.Helper()
-		p, err := prompts.GetPrompt(ctx, tenantID, prompt.ID)
+		p, err := prompts.GetPrompt(ctx, accountID, prompt.ID)
 		if err != nil {
 			t.Fatalf("GetPrompt: %v", err)
 		}
@@ -373,7 +373,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	}
 	runRow := func(t *testing.T) store.RunListItem {
 		t.Helper()
-		list, err := runs.ListRuns(ctx, tenantID, businessID)
+		list, err := runs.ListRuns(ctx, accountID, businessID)
 		if err != nil {
 			t.Fatalf("ListRuns: %v", err)
 		}
@@ -403,9 +403,9 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	if len(temporal.schedule.pauses) != 1 {
 		t.Fatalf("pauses after deleted delivery = %v, want exactly 1", temporal.schedule.pauses)
 	}
-	sub, err := subscriptions.GetByTenant(ctx, tenantID)
+	sub, err := subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after deleted delivery: %v", err)
+		t.Fatalf("GetByAccount after deleted delivery: %v", err)
 	}
 	if access := billing.DeriveAccess(sub.AccessState(), nowUTC()); access != billing.AccessLapsed {
 		t.Fatalf("access after deleted delivery = %v, want lapsed", access)
@@ -435,9 +435,9 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	if len(temporal.schedule.unpauses) != 1 {
 		t.Fatalf("unpauses after updated delivery = %v, want exactly 1", temporal.schedule.unpauses)
 	}
-	sub, err = subscriptions.GetByTenant(ctx, tenantID)
+	sub, err = subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after updated delivery: %v", err)
+		t.Fatalf("GetByAccount after updated delivery: %v", err)
 	}
 	if access := billing.DeriveAccess(sub.AccessState(), nowUTC()); access != billing.AccessFull {
 		t.Fatalf("access after updated delivery = %v, want full", access)

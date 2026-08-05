@@ -4,15 +4,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Access, BusinessSummary, Plan } from "./common_pb";
-import { file_opensight_v1_common } from "./common_pb";
+import type { AccountMembershipSummary } from "./account_pb";
+import { file_opensight_v1_account } from "./account_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file opensight/v1/auth.proto.
  */
 export const file_opensight_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChdvcGVuc2lnaHQvdjEvYXV0aC5wcm90bxIMb3BlbnNpZ2h0LnYxIiEKBFVzZXISCgoCaWQYASABKAkSDQoFZW1haWwYAiABKAkiIgoGVGVuYW50EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkiDwoNTG9nb3V0UmVxdWVzdCIQCg5Mb2dvdXRSZXNwb25zZSIOCgxHZXRNZVJlcXVlc3Qi5gEKDUdldE1lUmVzcG9uc2USIAoEdXNlchgBIAEoCzISLm9wZW5zaWdodC52MS5Vc2VyEiQKBnRlbmFudBgCIAEoCzIULm9wZW5zaWdodC52MS5UZW5hbnQSMQoKYnVzaW5lc3NlcxgDIAMoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1N1bW1hcnkSJAoGYWNjZXNzGAUgASgOMhQub3BlbnNpZ2h0LnYxLkFjY2VzcxIgCgRwbGFuGAYgASgLMhIub3BlbnNpZ2h0LnYxLlBsYW5KBAgEEAVSDHByb21wdF9saW1pdDKUAQoLQXV0aFNlcnZpY2USQwoGTG9nb3V0Ehsub3BlbnNpZ2h0LnYxLkxvZ291dFJlcXVlc3QaHC5vcGVuc2lnaHQudjEuTG9nb3V0UmVzcG9uc2USQAoFR2V0TWUSGi5vcGVuc2lnaHQudjEuR2V0TWVSZXF1ZXN0Ghsub3BlbnNpZ2h0LnYxLkdldE1lUmVzcG9uc2VCnwEKEGNvbS5vcGVuc2lnaHQudjFCCUF1dGhQcm90b1ABWi9vcGVuc2lnaHQvaW50ZXJuYWwvZ2VuL29wZW5zaWdodC92MTtvcGVuc2lnaHR2MaICA09YWKoCDE9wZW5zaWdodC5WMcoCDE9wZW5zaWdodFxWMeICGE9wZW5zaWdodFxWMVxHUEJNZXRhZGF0YeoCDU9wZW5zaWdodDo6VjFiBnByb3RvMw", [file_opensight_v1_common]);
+  fileDesc("ChdvcGVuc2lnaHQvdjEvYXV0aC5wcm90bxIMb3BlbnNpZ2h0LnYxIiEKBFVzZXISCgoCaWQYASABKAkSDQoFZW1haWwYAiABKAkiDwoNTG9nb3V0UmVxdWVzdCIQCg5Mb2dvdXRSZXNwb25zZSIOCgxHZXRNZVJlcXVlc3QivAEKDUdldE1lUmVzcG9uc2USIAoEdXNlchgBIAEoCzISLm9wZW5zaWdodC52MS5Vc2VyEjsKC21lbWJlcnNoaXBzGAcgAygLMiYub3BlbnNpZ2h0LnYxLkFjY291bnRNZW1iZXJzaGlwU3VtbWFyeUoECAIQA0oECAMQBEoECAQQBUoECAUQBkoECAYQB1IGdGVuYW50UgpidXNpbmVzc2VzUgxwcm9tcHRfbGltaXRSBmFjY2Vzc1IEcGxhbjKUAQoLQXV0aFNlcnZpY2USQwoGTG9nb3V0Ehsub3BlbnNpZ2h0LnYxLkxvZ291dFJlcXVlc3QaHC5vcGVuc2lnaHQudjEuTG9nb3V0UmVzcG9uc2USQAoFR2V0TWUSGi5vcGVuc2lnaHQudjEuR2V0TWVSZXF1ZXN0Ghsub3BlbnNpZ2h0LnYxLkdldE1lUmVzcG9uc2VCnwEKEGNvbS5vcGVuc2lnaHQudjFCCUF1dGhQcm90b1ABWi9vcGVuc2lnaHQvaW50ZXJuYWwvZ2VuL29wZW5zaWdodC92MTtvcGVuc2lnaHR2MaICA09YWKoCDE9wZW5zaWdodC5WMcoCDE9wZW5zaWdodFxWMeICGE9wZW5zaWdodFxWMVxHUEJNZXRhZGF0YeoCDU9wZW5zaWdodDo6VjFiBnByb3RvMw", [file_opensight_v1_account]);
 
 /**
  * @generated from message opensight.v1.User
@@ -37,28 +37,6 @@ export const UserSchema: GenMessage<User> = /*@__PURE__*/
   messageDesc(file_opensight_v1_auth, 0);
 
 /**
- * @generated from message opensight.v1.Tenant
- */
-export type Tenant = Message<"opensight.v1.Tenant"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
-};
-
-/**
- * Describes the message opensight.v1.Tenant.
- * Use `create(TenantSchema)` to create a new message.
- */
-export const TenantSchema: GenMessage<Tenant> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 1);
-
-/**
  * @generated from message opensight.v1.LogoutRequest
  */
 export type LogoutRequest = Message<"opensight.v1.LogoutRequest"> & {
@@ -69,7 +47,7 @@ export type LogoutRequest = Message<"opensight.v1.LogoutRequest"> & {
  * Use `create(LogoutRequestSchema)` to create a new message.
  */
 export const LogoutRequestSchema: GenMessage<LogoutRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 2);
+  messageDesc(file_opensight_v1_auth, 1);
 
 /**
  * @generated from message opensight.v1.LogoutResponse
@@ -82,7 +60,7 @@ export type LogoutResponse = Message<"opensight.v1.LogoutResponse"> & {
  * Use `create(LogoutResponseSchema)` to create a new message.
  */
 export const LogoutResponseSchema: GenMessage<LogoutResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 3);
+  messageDesc(file_opensight_v1_auth, 2);
 
 /**
  * @generated from message opensight.v1.GetMeRequest
@@ -95,7 +73,7 @@ export type GetMeRequest = Message<"opensight.v1.GetMeRequest"> & {
  * Use `create(GetMeRequestSchema)` to create a new message.
  */
 export const GetMeRequestSchema: GenMessage<GetMeRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 4);
+  messageDesc(file_opensight_v1_auth, 3);
 
 /**
  * @generated from message opensight.v1.GetMeResponse
@@ -107,24 +85,9 @@ export type GetMeResponse = Message<"opensight.v1.GetMeResponse"> & {
   user?: User | undefined;
 
   /**
-   * @generated from field: opensight.v1.Tenant tenant = 2;
+   * @generated from field: repeated opensight.v1.AccountMembershipSummary memberships = 7;
    */
-  tenant?: Tenant | undefined;
-
-  /**
-   * @generated from field: repeated opensight.v1.BusinessSummary businesses = 3;
-   */
-  businesses: BusinessSummary[];
-
-  /**
-   * @generated from field: opensight.v1.Access access = 5;
-   */
-  access: Access;
-
-  /**
-   * @generated from field: opensight.v1.Plan plan = 6;
-   */
-  plan?: Plan | undefined;
+  memberships: AccountMembershipSummary[];
 };
 
 /**
@@ -132,7 +95,7 @@ export type GetMeResponse = Message<"opensight.v1.GetMeResponse"> & {
  * Use `create(GetMeResponseSchema)` to create a new message.
  */
 export const GetMeResponseSchema: GenMessage<GetMeResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_auth, 5);
+  messageDesc(file_opensight_v1_auth, 4);
 
 /**
  * Sign-in itself is not an RPC: Google authentication is a plain HTTP

@@ -13,11 +13,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Subscription is a persisted subscriptions row: a tenant's permanent billing
-// record (migration 00010, design 08 Schema). One row per tenant, created at
+// Subscription is a persisted subscriptions row: a account's permanent billing
+// record (migration 00010, design 08 Schema). One row per account, created at
 // signup with every Stripe column null.
 type Subscription struct {
-	TenantID             domain.ID
+	AccountID             domain.ID
 	PlanCode             string
 	StripeCustomerID     *string
 	StripeSubscriptionID *string
@@ -67,7 +67,7 @@ func billingStateFromRow(comped bool, stripeSubscriptionID, stripeStatus *string
 // deliberately explicit (not a partial/patch shape) so a partial write can
 // never silently null a Stripe column out from under a concurrent reconcile.
 type UpsertSubscriptionParams struct {
-	TenantID             domain.ID
+	AccountID             domain.ID
 	PlanCode             string
 	StripeCustomerID     *string
 	StripeSubscriptionID *string
@@ -78,11 +78,11 @@ type UpsertSubscriptionParams struct {
 	CancelAtPeriodEnd    bool
 }
 
-// GetByTenant loads a tenant's subscription row. A missing row (no tenant, or
-// a tenant somehow created without one) returns ErrNotFound.
-func (s *Store) GetByTenant(ctx context.Context, tenantID domain.ID) (Subscription, error) {
+// GetByAccount loads a account's subscription row. A missing row (no account, or
+// a account somehow created without one) returns ErrNotFound.
+func (s *Store) GetByAccount(ctx context.Context, accountID domain.ID) (Subscription, error) {
 
-	row, err := s.q(ctx).GetSubscriptionByTenant(ctx, tenantID)
+	row, err := s.q(ctx).GetSubscriptionByAccount(ctx, accountID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Subscription{}, ErrNotFound
@@ -94,7 +94,7 @@ func (s *Store) GetByTenant(ctx context.Context, tenantID domain.ID) (Subscripti
 
 // GetByCustomer loads the subscription row for a Stripe Customer id — the
 // webhook's lookup: a delivery only ever carries a Customer id,
-// never a tenant id. stripe_customer_id is UNIQUE, so at most one row can
+// never a account id. stripe_customer_id is UNIQUE, so at most one row can
 // match; no match returns ErrNotFound.
 func (s *Store) GetByCustomer(ctx context.Context, customerID string) (Subscription, error) {
 
@@ -114,7 +114,7 @@ func (s *Store) GetByCustomer(ctx context.Context, customerID string) (Subscript
 func (s *Store) Upsert(ctx context.Context, params UpsertSubscriptionParams) error {
 
 	err := s.q(ctx).UpsertSubscription(ctx, storesqlc.UpsertSubscriptionParams{
-		TenantID: params.TenantID, PlanCode: params.PlanCode, StripeCustomerID: params.StripeCustomerID,
+		AccountID: params.AccountID, PlanCode: params.PlanCode, StripeCustomerID: params.StripeCustomerID,
 		StripeSubscriptionID: params.StripeSubscriptionID, StripeStatus: params.StripeStatus,
 		PastDueSince: params.PastDueSince, Comped: params.Comped, CurrentPeriodEnd: params.CurrentPeriodEnd,
 		CancelAtPeriodEnd: params.CancelAtPeriodEnd,
@@ -125,21 +125,21 @@ func (s *Store) Upsert(ctx context.Context, params UpsertSubscriptionParams) err
 	return nil
 }
 
-// SetStripeCustomerID persists a tenant's Stripe Customer id write-once and
-// returns the id that won. A tenant that already has a Customer keeps it —
+// SetStripeCustomerID persists a account's Stripe Customer id write-once and
+// returns the id that won. A account that already has a Customer keeps it —
 // the id is permanent (design 08 "Customer"), enforced by this statement
 // rather than by every caller remembering to check first. Touches no other
 // column, so it cannot race a concurrent reconcile write.
 //
-// Zero rows (unknown tenant) returns ErrNotFound. The UNIQUE constraint on
-// stripe_customer_id can only be violated across tenants, which needs Stripe
-// to have reissued an id already assigned to another tenant — that is our
+// Zero rows (unknown account) returns ErrNotFound. The UNIQUE constraint on
+// stripe_customer_id can only be violated across accounts, which needs Stripe
+// to have reissued an id already assigned to another account — that is our
 // bug, not the caller's, and is left to the generic rpcError→CodeInternal
 // mapping rather than a dedicated sentinel.
-func (s *Store) SetStripeCustomerID(ctx context.Context, tenantID domain.ID, customerID string) (string, error) {
+func (s *Store) SetStripeCustomerID(ctx context.Context, accountID domain.ID, customerID string) (string, error) {
 
 	won, err := s.q(ctx).SetStripeCustomerID(ctx, storesqlc.SetStripeCustomerIDParams{
-		TenantID: tenantID, StripeCustomerID: &customerID,
+		AccountID: accountID, StripeCustomerID: &customerID,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -151,11 +151,11 @@ func (s *Store) SetStripeCustomerID(ctx context.Context, tenantID domain.ID, cus
 }
 
 // CreateSubscriptionInTx inserts a starter subscription row for a
-// just-created tenant, in the same transaction as the tenant insert
-// (CreateTenant and CreateAccount). Every Stripe
+// just-created account, in the same transaction as the account insert
+// (CreateOperatorAccount and CreateAccount). Every Stripe
 // column stays null.
-func CreateSubscriptionInTx(ctx context.Context, q *storesqlc.Queries, tenantID domain.ID, planCode string, comped bool) error {
-	if err := q.InsertSubscription(ctx, storesqlc.InsertSubscriptionParams{TenantID: tenantID, PlanCode: planCode, Comped: comped}); err != nil {
+func CreateSubscriptionInTx(ctx context.Context, q *storesqlc.Queries, accountID domain.ID, planCode string, comped bool) error {
+	if err := q.InsertSubscription(ctx, storesqlc.InsertSubscriptionParams{AccountID: accountID, PlanCode: planCode, Comped: comped}); err != nil {
 		return fmt.Errorf("insert subscription: %w", err)
 	}
 	return nil
@@ -163,7 +163,7 @@ func CreateSubscriptionInTx(ctx context.Context, q *storesqlc.Queries, tenantID 
 
 func subscriptionFromSQLC(row storesqlc.Subscription) Subscription {
 	return Subscription{
-		TenantID: row.TenantID, PlanCode: row.PlanCode, StripeCustomerID: row.StripeCustomerID,
+		AccountID: row.AccountID, PlanCode: row.PlanCode, StripeCustomerID: row.StripeCustomerID,
 		StripeSubscriptionID: row.StripeSubscriptionID, StripeStatus: row.StripeStatus,
 		PastDueSince: row.PastDueSince, Comped: row.Comped, CurrentPeriodEnd: row.CurrentPeriodEnd,
 		CancelAtPeriodEnd: row.CancelAtPeriodEnd, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,

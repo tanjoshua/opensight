@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package opensight.v1;
+
+import "google/protobuf/timestamp.proto";
+import "opensight/v1/common.proto";
+
+// Account is the billing, collaboration, and authorization boundary. A user
+// may be a member of multiple accounts with a different role in each.
+message Account {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+}
+
+enum AccountRole {
+  ACCOUNT_ROLE_UNSPECIFIED = 0;
+  ACCOUNT_ROLE_OWNER = 1;
+  ACCOUNT_ROLE_ADMIN = 2;
+  ACCOUNT_ROLE_MEMBER = 3;
+  ACCOUNT_ROLE_VIEWER = 4;
+}
+
+message AccountMembershipSummary {
+  Account account = 1;
+  AccountRole role = 2;
+}
+
+message AccountMember {
+  string user_id = 1;
+  string email = 2;
+  AccountRole role = 3;
+  google.protobuf.Timestamp created_at = 4;
+  // Pending members have been added by email but have not linked a Google
+  // identity by signing in yet.
+  bool pending = 5;
+}
+
+message GetAccountContextRequest {
+  string account_slug = 1;
+}
+
+message GetAccountContextResponse {
+  Account account = 1;
+  AccountRole role = 2;
+  repeated BusinessSummary businesses = 3;
+  Access access = 4;
+  Plan plan = 5;
+}
+
+message CreateAccountRequest {
+  string name = 1;
+}
+
+message CreateAccountResponse {
+  AccountMembershipSummary membership = 1;
+}
+
+message ListMembersRequest {
+  string account_slug = 1;
+}
+
+message ListMembersResponse {
+  repeated AccountMember members = 1;
+}
+
+message AddMemberRequest {
+  string account_slug = 1;
+  string email = 2;
+  AccountRole role = 3;
+}
+
+message AddMemberResponse {
+  AccountMember member = 1;
+}
+
+message UpdateMemberRoleRequest {
+  string account_slug = 1;
+  string user_id = 2;
+  AccountRole role = 3;
+}
+
+message UpdateMemberRoleResponse {
+  AccountMember member = 1;
+}
+
+message RemoveMemberRequest {
+  string account_slug = 1;
+  string user_id = 2;
+}
+
+message RemoveMemberResponse {}
+
+service AccountService {
+  rpc GetAccountContext(GetAccountContextRequest) returns (GetAccountContextResponse);
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+}

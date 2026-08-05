@@ -16,7 +16,7 @@ import (
 // TestAuthStore exercises the AUTH-1 identity and session repository against
 // a real Postgres: identity lookup by google_sub and by email (incl. citext
 // case-insensitivity and ErrNotFound), session create/get with the
-// user+tenant join, expiry handling, login-time purge of expired rows,
+// user+account join, expiry handling, login-time purge of expired rows,
 // idempotent delete, and FK cascade on user delete.
 func TestAuthStore(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
@@ -31,7 +31,7 @@ func TestAuthStore(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	userID := mustNewID(t)
 	const email = "Owner@Example.com" // mixed case; citext lookup must match
 	const googleSub = "google-sub-owner"
@@ -39,13 +39,16 @@ func TestAuthStore(t *testing.T) {
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
 		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Auth Tenant")
-	if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email, google_sub) VALUES ($1, $2, $3, $4)", userID, tenantID, email, googleSub); err != nil {
+	insertAccount(t, db, ctx, accountID, "Auth Account")
+	if _, err := db.Exec(ctx, "INSERT INTO users (id, email, google_sub) VALUES ($1, $2, $3)", userID, email, googleSub); err != nil {
 		t.Fatalf("insert user: %v", err)
+	}
+	if _, err := db.Exec(ctx, "INSERT INTO account_memberships (account_id, user_id, role) VALUES ($1, $2, 'owner')", accountID, userID); err != nil {
+		t.Fatalf("insert membership: %v", err)
 	}
 
 	auth := New(db)
@@ -55,23 +58,20 @@ func TestAuthStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserByGoogleSub: %v", err)
 	}
-	if bySub.UserID != userID || bySub.TenantID != tenantID {
-		t.Fatalf("user ids = %s/%s, want %s/%s", bySub.UserID, bySub.TenantID, userID, tenantID)
-	}
-	if bySub.TenantName != "Auth Tenant" {
-		t.Fatalf("tenant name = %q, want Auth Tenant", bySub.TenantName)
+	if bySub.UserID != userID {
+		t.Fatalf("user id = %s, want %s", bySub.UserID, userID)
 	}
 	if _, err := auth.GetUserByGoogleSub(ctx, "unknown-sub"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetUserByGoogleSub(unknown) err = %v, want ErrNotFound", err)
 	}
 
-	// --- GetUserByEmail: citext case-insensitive + join to tenant. ---
+	// --- GetUserByEmail: citext case-insensitive + join to account. ---
 	byEmail, err := auth.GetUserByEmail(ctx, "owner@example.com")
 	if err != nil {
 		t.Fatalf("GetUserByEmail (lowercased): %v", err)
 	}
-	if byEmail.UserID != userID || byEmail.TenantID != tenantID {
-		t.Fatalf("creds ids = %s/%s, want %s/%s", byEmail.UserID, byEmail.TenantID, userID, tenantID)
+	if byEmail.UserID != userID {
+		t.Fatalf("user id = %s, want %s", byEmail.UserID, userID)
 	}
 	if byEmail.GoogleSub == nil || *byEmail.GoogleSub != googleSub {
 		t.Fatalf("google_sub = %v, want %q", byEmail.GoogleSub, googleSub)
@@ -80,7 +80,7 @@ func TestAuthStore(t *testing.T) {
 		t.Fatalf("GetUserByEmail(unknown) err = %v, want ErrNotFound", err)
 	}
 
-	// --- CreateSession + GetSession (join user+tenant). ---
+	// --- CreateSession + GetSession (join user+account). ---
 	liveHash := tokenHashFor("live-token")
 	if err := auth.CreateSession(ctx, CreateSessionParams{
 		TokenHash: liveHash,
@@ -93,8 +93,8 @@ func TestAuthStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSession(live): %v", err)
 	}
-	if su.UserID != userID || su.Email != email || su.TenantName != "Auth Tenant" {
-		t.Fatalf("session user = %+v, want user %s / %s / Auth Tenant", su, userID, email)
+	if su.UserID != userID || su.Email != email {
+		t.Fatalf("session user = %+v, want user %s / %s", su, userID, email)
 	}
 
 	// --- Expired session resolves as ErrNotFound. ---
@@ -154,7 +154,7 @@ func tokenHashFor(raw string) []byte {
 // TestGetSessionBillingJoin is BILL-6's GetSession integration test: the
 // LEFT JOIN to subscriptions returns plan_code and the billing columns
 // (comped, Stripe id/status), live off whatever the row currently holds, and
-// a tenant with no subscriptions row surfaces as an explicit error rather
+// a account with no subscriptions row surfaces as an explicit error rather
 // than the same ErrNotFound an absent/expired session returns.
 func TestGetSessionBillingJoin(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
@@ -173,53 +173,62 @@ func TestGetSessionBillingJoin(t *testing.T) {
 	subs := New(db)
 
 	t.Run("comped starter fixture, then a live Upsert is reflected without a new session", func(t *testing.T) {
-		tenantID := mustNewID(t)
+		accountID := mustNewID(t)
 		userID := mustNewID(t)
 		const email = "billing-join@example.com"
 		t.Cleanup(func() {
 			_, _ = db.Exec(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
 			_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
-			_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-			_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+			_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+			_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 		})
 
-		// insertTenant's fixture (tenant_fixture_test.go) inserts a comped
+		// insertAccount's fixture (account_fixture_test.go) inserts a comped
 		// starter subscription — this must keep working unchanged.
-		insertTenant(t, db, ctx, tenantID, "Billing Join Tenant")
-		if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email) VALUES ($1, $2, $3)", userID, tenantID, email); err != nil {
+		insertAccount(t, db, ctx, accountID, "Billing Join Account")
+		if _, err := db.Exec(ctx, "INSERT INTO users (id, email) VALUES ($1, $2)", userID, email); err != nil {
 			t.Fatalf("insert user: %v", err)
 		}
+		mustExec(t, db, ctx, "INSERT INTO account_memberships (account_id, user_id, role) VALUES ($1, $2, 'owner')", accountID, userID)
 
 		liveHash := tokenHashFor("billing-join-live")
 		if err := auth.CreateSession(ctx, CreateSessionParams{TokenHash: liveHash, UserID: userID, ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
 			t.Fatalf("CreateSession: %v", err)
 		}
 
-		su, err := auth.GetSession(ctx, liveHash)
+		identitySession, err := auth.GetSession(ctx, liveHash)
 		if err != nil {
 			t.Fatalf("GetSession: %v", err)
+		}
+		su, err := auth.ResolveAccountSession(ctx, identitySession, accountSlug("Billing Join Account", accountID))
+		if err != nil {
+			t.Fatalf("ResolveAccountSession: %v", err)
 		}
 		if su.PlanCode != billing.Starter.Code {
 			t.Fatalf("PlanCode = %q, want %q", su.PlanCode, billing.Starter.Code)
 		}
 		if !su.Billing.Comped {
-			t.Fatalf("Billing.Comped = false, want true (insertTenant fixture)")
+			t.Fatalf("Billing.Comped = false, want true (insertAccount fixture)")
 		}
 
 		// Live Upsert to a non-comped active Stripe subscription; GetSession
 		// re-derives from the current row on every call, no caching.
 		custID, subID, status := "cus_join_test", "sub_join_test", "active"
 		if err := subs.Upsert(ctx, UpsertSubscriptionParams{
-			TenantID: tenantID, PlanCode: billing.Starter.Code,
+			AccountID: accountID, PlanCode: billing.Starter.Code,
 			StripeCustomerID: &custID, StripeSubscriptionID: &subID, StripeStatus: &status,
 			Comped: false,
 		}); err != nil {
 			t.Fatalf("Upsert: %v", err)
 		}
 
-		su2, err := auth.GetSession(ctx, liveHash)
+		identitySession, err = auth.GetSession(ctx, liveHash)
 		if err != nil {
 			t.Fatalf("GetSession after upsert: %v", err)
+		}
+		su2, err := auth.ResolveAccountSession(ctx, identitySession, accountSlug("Billing Join Account", accountID))
+		if err != nil {
+			t.Fatalf("ResolveAccountSession after upsert: %v", err)
 		}
 		if su2.Billing.Comped {
 			t.Fatalf("Billing.Comped = true after upsert to comped=false")
@@ -232,33 +241,38 @@ func TestGetSessionBillingJoin(t *testing.T) {
 		}
 	})
 
-	t.Run("tenant with no subscriptions row returns an explicit error, not ErrNotFound", func(t *testing.T) {
-		tenantID := mustNewID(t)
+	t.Run("account with no subscriptions row returns an explicit error, not ErrNotFound", func(t *testing.T) {
+		accountID := mustNewID(t)
 		userID := mustNewID(t)
 		const email = "no-sub@example.com"
 		t.Cleanup(func() {
 			_, _ = db.Exec(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
 			_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
-			_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+			_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 		})
 
-		// A bare tenant insert (not insertTenant, which also inserts the
-		// subscription row) is the fixture for a tenant with no subscriptions
+		// A bare account insert (not insertAccount, which also inserts the
+		// subscription row) is the fixture for a account with no subscriptions
 		// row at all — structurally impossible via signup, but reachable if a
-		// tenant somehow predates the backfill.
-		if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", tenantID, "No Subscription Tenant"); err != nil {
-			t.Fatalf("insert tenant: %v", err)
+		// account somehow predates the backfill.
+		if _, err := db.Exec(ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, $2, $3)", accountID, "No Subscription Account", "test-"+accountID.String()); err != nil {
+			t.Fatalf("insert account: %v", err)
 		}
-		if _, err := db.Exec(ctx, "INSERT INTO users (id, tenant_id, email) VALUES ($1, $2, $3)", userID, tenantID, email); err != nil {
+		if _, err := db.Exec(ctx, "INSERT INTO users (id, email) VALUES ($1, $2)", userID, email); err != nil {
 			t.Fatalf("insert user: %v", err)
 		}
+		mustExec(t, db, ctx, "INSERT INTO account_memberships (account_id, user_id, role) VALUES ($1, $2, 'owner')", accountID, userID)
 
 		liveHash := tokenHashFor("no-sub-live")
 		if err := auth.CreateSession(ctx, CreateSessionParams{TokenHash: liveHash, UserID: userID, ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
 			t.Fatalf("CreateSession: %v", err)
 		}
 
-		_, err := auth.GetSession(ctx, liveHash)
+		identitySession, err := auth.GetSession(ctx, liveHash)
+		if err != nil {
+			t.Fatalf("GetSession identity: %v", err)
+		}
+		_, err = auth.ResolveAccountSession(ctx, identitySession, "test-"+accountID.String())
 		if err == nil {
 			t.Fatal("GetSession with no subscriptions row: want an error, got nil")
 		}
@@ -285,21 +299,21 @@ func TestAuthStoreLinksGoogleSubByEmail(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	userID := mustNewID(t)
 	const email = "linked@example.com"
 	const sub = "sub-linked"
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
-	insertTenant(t, db, ctx, tenantID, "Link Tenant")
+	insertAccount(t, db, ctx, accountID, "Link Account")
 
 	auth := New(db)
-	user, err := auth.CreateUser(ctx, CreateUserParams{ID: userID, TenantID: tenantID, Email: email})
+	member, err := auth.AddAccountMember(ctx, AddAccountMemberParams{UserID: userID, AccountID: accountID, Email: email, Role: AccountRoleOwner})
 	if err != nil {
-		t.Fatalf("CreateUser: %v", err)
+		t.Fatalf("AddAccountMember: %v", err)
 	}
 
 	// Before the first Google sign-in: found by email, no google_sub yet.
@@ -314,7 +328,7 @@ func TestAuthStoreLinksGoogleSubByEmail(t *testing.T) {
 		t.Fatalf("GetUserByGoogleSub before linking err = %v, want ErrNotFound", err)
 	}
 
-	if err := auth.SetUserGoogleSub(ctx, user.ID, sub); err != nil {
+	if err := auth.SetUserGoogleSub(ctx, member.UserID, sub); err != nil {
 		t.Fatalf("SetUserGoogleSub: %v", err)
 	}
 
@@ -323,8 +337,8 @@ func TestAuthStoreLinksGoogleSubByEmail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserByGoogleSub after linking: %v", err)
 	}
-	if bySub.UserID != user.ID {
-		t.Fatalf("GetUserByGoogleSub user id = %s, want %s", bySub.UserID, user.ID)
+	if bySub.UserID != member.UserID {
+		t.Fatalf("GetUserByGoogleSub user id = %s, want %s", bySub.UserID, member.UserID)
 	}
 	afterLink, err := auth.GetUserByEmail(ctx, email)
 	if err != nil {

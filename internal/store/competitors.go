@@ -36,7 +36,7 @@ type CompetitorRecord struct {
 
 type CreateManualCompetitorParams struct {
 	ID         domain.ID
-	TenantID   domain.ID
+	AccountID   domain.ID
 	BusinessID domain.ID
 	Name       string
 	Aliases    []string
@@ -44,19 +44,19 @@ type CreateManualCompetitorParams struct {
 }
 
 type SetCompetitorStatusParams struct {
-	TenantID     domain.ID
+	AccountID     domain.ID
 	CompetitorID domain.ID
 	Status       CompetitorStatus
 }
 
 type SuggestedAliasParams struct {
-	TenantID     domain.ID
+	AccountID     domain.ID
 	CompetitorID domain.ID
 	Alias        string
 }
 
 type UpdateCompetitorAliasesParams struct {
-	TenantID     domain.ID
+	AccountID     domain.ID
 	CompetitorID domain.ID
 	Aliases      []string
 }
@@ -68,7 +68,7 @@ func (s *Store) CreateManual(ctx context.Context, params CreateManualCompetitorP
 	}
 
 	row, err := s.q(ctx).CreateManualCompetitor(ctx, storesqlc.CreateManualCompetitorParams{
-		ID: params.ID, ID_2: params.BusinessID, TenantID: params.TenantID,
+		ID: params.ID, BusinessID: params.BusinessID, AccountID: params.AccountID,
 		Name: params.Name, Website: params.Website, Aliases: params.Aliases,
 	})
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Store) CreateManual(ctx context.Context, params CreateManualCompetitorP
 }
 
 func (s *Store) SetStatus(ctx context.Context, params SetCompetitorStatusParams) (CompetitorRecord, error) {
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return CompetitorRecord{}, err
 	}
 	if err := validateUUIDv7("competitor id", params.CompetitorID); err != nil {
@@ -92,7 +92,7 @@ func (s *Store) SetStatus(ctx context.Context, params SetCompetitorStatusParams)
 	}
 
 	row, err := s.q(ctx).SetCompetitorStatus(ctx, storesqlc.SetCompetitorStatusParams{
-		ID: params.CompetitorID, TenantID: params.TenantID, Status: string(params.Status),
+		ID: params.CompetitorID, AccountID: params.AccountID, Status: string(params.Status),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -112,7 +112,7 @@ func (s *Store) RejectSuggestedAlias(ctx context.Context, params SuggestedAliasP
 }
 
 func (s *Store) UpdateAliases(ctx context.Context, params UpdateCompetitorAliasesParams) (CompetitorRecord, error) {
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return CompetitorRecord{}, err
 	}
 	if err := validateUUIDv7("competitor id", params.CompetitorID); err != nil {
@@ -120,7 +120,7 @@ func (s *Store) UpdateAliases(ctx context.Context, params UpdateCompetitorAliase
 	}
 	params.Aliases = normalizeAliases(params.Aliases)
 	row, err := s.q(ctx).UpdateCompetitorAliases(ctx, storesqlc.UpdateCompetitorAliasesParams{
-		ID: params.CompetitorID, TenantID: params.TenantID, Aliases: params.Aliases,
+		ID: params.CompetitorID, AccountID: params.AccountID, Aliases: params.Aliases,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -140,11 +140,11 @@ func (s *Store) updateSuggestedAlias(ctx context.Context, params SuggestedAliasP
 	var row storesqlc.Competitor
 	if approve {
 		row, err = q.ApproveSuggestedAlias(ctx, storesqlc.ApproveSuggestedAliasParams{
-			ID: params.CompetitorID, TenantID: params.TenantID, ArrayRemove: params.Alias,
+			ID: params.CompetitorID, AccountID: params.AccountID, ArrayRemove: params.Alias,
 		})
 	} else {
 		row, err = q.RejectSuggestedAlias(ctx, storesqlc.RejectSuggestedAliasParams{
-			ID: params.CompetitorID, TenantID: params.TenantID, ArrayRemove: params.Alias,
+			ID: params.CompetitorID, AccountID: params.AccountID, ArrayRemove: params.Alias,
 		})
 	}
 	if err != nil {
@@ -169,7 +169,7 @@ func competitorFromSQLC(row storesqlc.Competitor) CompetitorRecord {
 }
 
 func normalizeSuggestedAliasParams(params SuggestedAliasParams) (SuggestedAliasParams, error) {
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return SuggestedAliasParams{}, err
 	}
 	if err := validateUUIDv7("competitor id", params.CompetitorID); err != nil {
@@ -193,7 +193,7 @@ func normalizeCreateManualCompetitorParams(params CreateManualCompetitorParams) 
 	if err := validateUUIDv7("competitor id", params.ID); err != nil {
 		return CreateManualCompetitorParams{}, err
 	}
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
 		return CreateManualCompetitorParams{}, err
 	}
 	if err := validateUUIDv7("business id", params.BusinessID); err != nil {

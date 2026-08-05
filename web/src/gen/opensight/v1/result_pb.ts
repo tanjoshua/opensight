@@ -486,7 +486,7 @@ export type ListResultsRequest = Message<"opensight.v1.ListResultsRequest"> & {
 
   /**
    * When set, returns only these results in the caller-provided order. IDs
-   * outside business_id (including another tenant's results) are omitted.
+   * outside business_id (including another account's results) are omitted.
    *
    * @generated from field: repeated string result_ids = 8;
    */

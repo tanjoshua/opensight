@@ -6,236 +6,369 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"opensight/internal/billing"
 	"opensight/internal/domain"
 	storesqlc "opensight/internal/store/sqlc"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
-// Tenant is a persisted tenants row used by admin CLI account creation.
-type Tenant struct {
+type Account struct {
 	ID        domain.ID
 	Name      string
+	Slug      string
 	CreatedAt time.Time
 }
 
-// User is a persisted users row used by admin CLI account creation.
 type User struct {
 	ID        domain.ID
-	TenantID  domain.ID
 	Email     string
+	GoogleSub *string
 	CreatedAt time.Time
 }
 
-// ErrEmailTaken is returned when a signup hits the users.email unique index.
-var ErrEmailTaken = errors.New("email already registered")
+type AccountRole string
 
-// CreateTenantParams are the inputs for creating a tenant on the starter plan.
-type CreateTenantParams struct {
+const (
+	AccountRoleOwner  AccountRole = "owner"
+	AccountRoleAdmin  AccountRole = "admin"
+	AccountRoleMember AccountRole = "member"
+	AccountRoleViewer AccountRole = "viewer"
+)
+
+func (r AccountRole) Valid() bool {
+	switch r {
+	case AccountRoleOwner, AccountRoleAdmin, AccountRoleMember, AccountRoleViewer:
+		return true
+	default:
+		return false
+	}
+}
+
+type AccountMembership struct {
+	AccountID domain.ID
+	UserID    domain.ID
+	Email     string
+	Role      AccountRole
+	CreatedAt time.Time
+	Pending   bool
+	Account   Account
+}
+
+var (
+	ErrEmailTaken = errors.New("email already registered")
+	ErrLastOwner  = errors.New("an account must have at least one owner")
+)
+
+type CreateOperatorAccountParams struct {
 	ID   domain.ID
 	Name string
 }
 
-// CreateUserParams are the inputs for creating an invite-only user. GoogleSub
-// is normally empty: an operator-created row is linked to a Google account on
-// its first sign-in (store.SetUserGoogleSub), not at creation time.
-type CreateUserParams struct {
-	ID        domain.ID
-	TenantID  domain.ID
-	Email     string
-	GoogleSub string
-}
-
-// CreateTenant creates a tenant and its subscription row, in one transaction.
-// Account creation — this method, CreateUser, and CreateAccount — is
-// intentionally tenant-unscoped: it creates the tenant context every other
-// method requires.
-// CLI-provisioned tenants are operator tenants: comped = true, no Stripe
-// objects (design 08 "Operator comps").
-func (s *Store) CreateTenant(ctx context.Context, params CreateTenantParams) (Tenant, error) {
-
-	params, err := normalizeCreateTenantParams(params)
+func (s *Store) CreateOperatorAccount(ctx context.Context, params CreateOperatorAccountParams) (Account, error) {
+	account, err := normalizeAccount(params.ID, params.Name)
 	if err != nil {
-		return Tenant{}, err
-	}
-
-	tenant := Tenant{
-		ID:   params.ID,
-		Name: params.Name,
+		return Account{}, err
 	}
 	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
-		tenant.CreatedAt, err = q.InsertTenant(ctx, storesqlc.InsertTenantParams{ID: tenant.ID, Name: tenant.Name})
+		created, err := q.InsertAccount(ctx, storesqlc.InsertAccountParams{ID: account.ID, Name: account.Name, Slug: account.Slug})
 		if err != nil {
-			return fmt.Errorf("insert tenant: %w", err)
+			return fmt.Errorf("insert account: %w", err)
 		}
-		if err := CreateSubscriptionInTx(ctx, q, tenant.ID, billing.Starter.Code, true); err != nil {
-			return err
+		account.CreatedAt = created
+		return CreateSubscriptionInTx(ctx, q, account.ID, billing.Starter.Code, true)
+	})
+	return account, err
+}
+
+type AddAccountMemberParams struct {
+	AccountID domain.ID
+	UserID    domain.ID
+	Email     string
+	Role      AccountRole
+}
+
+func (s *Store) AddAccountMember(ctx context.Context, params AddAccountMemberParams) (AccountMembership, error) {
+	if err := validateUUIDv7("account id", params.AccountID); err != nil {
+		return AccountMembership{}, err
+	}
+	params.Email = strings.ToLower(strings.TrimSpace(params.Email))
+	if !validEmail(params.Email) {
+		return AccountMembership{}, errors.New("a valid email is required")
+	}
+	if !params.Role.Valid() {
+		return AccountMembership{}, errors.New("a valid account role is required")
+	}
+	if params.UserID == uuid.Nil {
+		var err error
+		params.UserID, err = domain.NewID()
+		if err != nil {
+			return AccountMembership{}, err
 		}
+	}
+	if err := validateUUIDv7("user id", params.UserID); err != nil {
+		return AccountMembership{}, err
+	}
+
+	member := AccountMembership{AccountID: params.AccountID, Email: params.Email}
+	err := s.withTx(ctx, func(q *storesqlc.Queries) error {
+		u, err := q.UpsertUserByEmail(ctx, storesqlc.UpsertUserByEmailParams{ID: params.UserID, Email: params.Email})
+		if err != nil {
+			return fmt.Errorf("upsert member identity: %w", err)
+		}
+		member.UserID, member.Pending = u.ID, u.GoogleSub == nil
+		m, err := q.UpsertAccountMembership(ctx, storesqlc.UpsertAccountMembershipParams{
+			AccountID: params.AccountID, UserID: u.ID, Role: string(params.Role),
+		})
+		if err != nil {
+			return fmt.Errorf("add account membership: %w", err)
+		}
+		member.Role, member.CreatedAt = AccountRole(m.Role), m.CreatedAt
 		return nil
 	})
-	if err != nil {
-		return Tenant{}, err
-	}
-	return tenant, nil
+	return member, err
 }
 
-// CreateUser creates a user under an existing tenant.
-func (s *Store) CreateUser(ctx context.Context, params CreateUserParams) (User, error) {
-
-	params, err := normalizeCreateUserParams(params)
-	if err != nil {
-		return User{}, err
-	}
-
-	user := User{
-		ID:       params.ID,
-		TenantID: params.TenantID,
-		Email:    params.Email,
-	}
-	user.CreatedAt, err = s.q(ctx).InsertUser(ctx, storesqlc.InsertUserParams{
-		ID: user.ID, TenantID: user.TenantID, Email: user.Email, GoogleSub: nilIfEmpty(params.GoogleSub),
-	})
-	if err != nil {
-		return User{}, fmt.Errorf("insert user: %w", err)
-	}
-	return user, nil
-}
-
-// CreateAccountParams are the inputs for provisioning a tenant on a user's
-// first Google sign-in.
+// CreateAccountParams provisions the first unpaid account for a new Google
+// identity. AccountID is retained as the field name until all callers migrate.
 type CreateAccountParams struct {
-	TenantID  domain.ID
+	AccountID domain.ID
 	UserID    domain.ID
 	Email     string
 	GoogleSub string
 }
 
-// CreateAccount creates a tenant, its starter subscription, and its first
-// user in one transaction (design 08 "Signup"), so a half-created account is
-// impossible: any failure rolls back the whole thing. Unlike CreateTenant
-// (CLI-provisioned, comped = true), self-serve accounts are never comped and
-// carry no Stripe objects. tenants.name is seeded from the email's local
-// part; onboarding renames it to the business name (CreateBusiness).
-func (s *Store) CreateAccount(ctx context.Context, params CreateAccountParams) (Tenant, User, error) {
-
-	params, tenantName, err := normalizeCreateAccountParams(params)
-	if err != nil {
-		return Tenant{}, User{}, err
+func (s *Store) CreateAccount(ctx context.Context, params CreateAccountParams) (Account, User, error) {
+	email := strings.ToLower(strings.TrimSpace(params.Email))
+	local, _, ok := strings.Cut(email, "@")
+	if !ok || local == "" || strings.TrimSpace(params.GoogleSub) == "" {
+		return Account{}, User{}, errors.New("valid email and google sub are required")
 	}
-
-	tenant := Tenant{ID: params.TenantID, Name: tenantName}
-	user := User{ID: params.UserID, TenantID: params.TenantID, Email: params.Email}
-
-	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
-		tenant.CreatedAt, err = q.InsertTenant(ctx, storesqlc.InsertTenantParams{ID: tenant.ID, Name: tenant.Name})
+	account, err := normalizeAccount(params.AccountID, local)
+	if err != nil {
+		return Account{}, User{}, err
+	}
+	if params.UserID == uuid.Nil {
+		params.UserID, err = domain.NewID()
 		if err != nil {
-			return fmt.Errorf("insert tenant: %w", err)
+			return Account{}, User{}, err
 		}
-		if err := CreateSubscriptionInTx(ctx, q, tenant.ID, billing.Starter.Code, false); err != nil {
+	}
+	if err := validateUUIDv7("user id", params.UserID); err != nil {
+		return Account{}, User{}, err
+	}
+	user := User{ID: params.UserID, Email: email, GoogleSub: &params.GoogleSub}
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
+		account.CreatedAt, err = q.InsertAccount(ctx, storesqlc.InsertAccountParams{ID: account.ID, Name: account.Name, Slug: account.Slug})
+		if err != nil {
+			return fmt.Errorf("insert account: %w", err)
+		}
+		if err := CreateSubscriptionInTx(ctx, q, account.ID, billing.Starter.Code, false); err != nil {
 			return err
 		}
-		user.CreatedAt, err = q.InsertUser(ctx, storesqlc.InsertUserParams{
-			ID: user.ID, TenantID: user.TenantID, Email: user.Email, GoogleSub: &params.GoogleSub,
-		})
+		user.CreatedAt, err = q.InsertUser(ctx, storesqlc.InsertUserParams{ID: user.ID, Email: user.Email, GoogleSub: user.GoogleSub})
 		if err != nil {
 			if isUniqueViolation(err) {
 				return ErrEmailTaken
 			}
 			return fmt.Errorf("insert user: %w", err)
 		}
-		return nil
+		_, err = q.InsertAccountMembership(ctx, storesqlc.InsertAccountMembershipParams{AccountID: account.ID, UserID: user.ID, Role: string(AccountRoleOwner)})
+		return err
 	})
 	if err != nil {
-		return Tenant{}, User{}, err
+		return Account{}, User{}, err
 	}
-	return tenant, user, nil
+	return account, user, nil
 }
 
-// nilIfEmpty returns nil for an empty string, otherwise a pointer to s — used
-// for InsertUser's optional google_sub column.
-func nilIfEmpty(s string) *string {
-	if s == "" {
+func (s *Store) CreateNamedAccount(ctx context.Context, userID domain.ID, name string) (AccountMembership, error) {
+	account, err := normalizeAccount(uuid.Nil, name)
+	if err != nil {
+		return AccountMembership{}, err
+	}
+	var member AccountMembership
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
+		account.CreatedAt, err = q.InsertAccount(ctx, storesqlc.InsertAccountParams{ID: account.ID, Name: account.Name, Slug: account.Slug})
+		if err != nil {
+			return fmt.Errorf("insert account: %w", err)
+		}
+		if err := CreateSubscriptionInTx(ctx, q, account.ID, billing.Starter.Code, false); err != nil {
+			return err
+		}
+		created, err := q.InsertAccountMembership(ctx, storesqlc.InsertAccountMembershipParams{AccountID: account.ID, UserID: userID, Role: string(AccountRoleOwner)})
+		if err != nil {
+			return fmt.Errorf("insert owner membership: %w", err)
+		}
+		member = AccountMembership{AccountID: account.ID, UserID: userID, Role: AccountRoleOwner, CreatedAt: created, Account: account}
 		return nil
-	}
-	return &s
+	})
+	return member, err
 }
 
-func normalizeCreateTenantParams(params CreateTenantParams) (CreateTenantParams, error) {
-	if params.ID == uuid.Nil {
-		id, err := domain.NewID()
+func normalizeAccount(id domain.ID, name string) (Account, error) {
+	var err error
+	if id == uuid.Nil {
+		id, err = domain.NewID()
 		if err != nil {
-			return CreateTenantParams{}, err
+			return Account{}, err
 		}
-		params.ID = id
 	}
-	if err := validateUUIDv7("tenant id", params.ID); err != nil {
-		return CreateTenantParams{}, err
+	if err := validateUUIDv7("account id", id); err != nil {
+		return Account{}, err
 	}
-	params.Name = strings.TrimSpace(params.Name)
-	if params.Name == "" {
-		return CreateTenantParams{}, errors.New("tenant name is required")
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return Account{}, errors.New("account name is required")
 	}
-	return params, nil
+	return Account{ID: id, Name: name, Slug: accountSlug(name, id)}, nil
 }
 
-func normalizeCreateUserParams(params CreateUserParams) (CreateUserParams, error) {
-	if params.ID == uuid.Nil {
-		id, err := domain.NewID()
-		if err != nil {
-			return CreateUserParams{}, err
+func accountSlug(name string, id domain.ID) string {
+	var b strings.Builder
+	dash := false
+	for _, r := range strings.ToLower(name) {
+		if r <= unicode.MaxASCII && ((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')) {
+			if dash && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			b.WriteRune(r)
+			dash = false
+		} else {
+			dash = true
 		}
-		params.ID = id
 	}
-	if err := validateUUIDv7("user id", params.ID); err != nil {
-		return CreateUserParams{}, err
+	base := strings.Trim(b.String(), "-")
+	if base == "" {
+		base = "account"
 	}
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
-		return CreateUserParams{}, err
-	}
-	params.Email = strings.ToLower(strings.TrimSpace(params.Email))
-	if params.Email == "" {
-		return CreateUserParams{}, errors.New("user email is required")
-	}
-	params.GoogleSub = strings.TrimSpace(params.GoogleSub)
-	return params, nil
+	compact := strings.ReplaceAll(id.String(), "-", "")
+	return base + "-" + compact[len(compact)-8:]
 }
 
-// normalizeCreateAccountParams mints UUIDv7 IDs when zero, lowercases and
-// trims the email, and derives the seed tenant name from its local part
-// (design 08: "tenants.name defaults to the email local part").
-func normalizeCreateAccountParams(params CreateAccountParams) (CreateAccountParams, string, error) {
-	if params.TenantID == uuid.Nil {
-		id, err := domain.NewID()
-		if err != nil {
-			return CreateAccountParams{}, "", err
-		}
-		params.TenantID = id
-	}
-	if err := validateUUIDv7("tenant id", params.TenantID); err != nil {
-		return CreateAccountParams{}, "", err
-	}
-	if params.UserID == uuid.Nil {
-		id, err := domain.NewID()
-		if err != nil {
-			return CreateAccountParams{}, "", err
-		}
-		params.UserID = id
-	}
-	if err := validateUUIDv7("user id", params.UserID); err != nil {
-		return CreateAccountParams{}, "", err
-	}
+func validEmail(email string) bool {
+	local, domainPart, ok := strings.Cut(email, "@")
+	return ok && local != "" && domainPart != ""
+}
 
-	params.Email = strings.ToLower(strings.TrimSpace(params.Email))
-	local, domainPart, ok := strings.Cut(params.Email, "@")
-	if !ok || local == "" || domainPart == "" {
-		return CreateAccountParams{}, "", errors.New("a valid email is required")
+func (s *Store) ListAccountMemberships(ctx context.Context, userID domain.ID) ([]AccountMembership, error) {
+	rows, err := s.q(ctx).ListAccountMembershipsForUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list account memberships: %w", err)
 	}
+	out := make([]AccountMembership, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, AccountMembership{AccountID: r.AccountID, UserID: userID, Role: AccountRole(r.Role), CreatedAt: r.CreatedAt, Account: Account{ID: r.AccountID, Name: r.Name, Slug: r.Slug}})
+	}
+	return out, nil
+}
 
-	params.GoogleSub = strings.TrimSpace(params.GoogleSub)
-	if params.GoogleSub == "" {
-		return CreateAccountParams{}, "", errors.New("google sub is required")
+func (s *Store) GetAccount(ctx context.Context, accountID domain.ID) (Account, error) {
+	r, err := s.q(ctx).GetAccountByID(ctx, accountID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Account{}, ErrNotFound
 	}
-	return params, local, nil
+	if err != nil {
+		return Account{}, fmt.Errorf("get account: %w", err)
+	}
+	return Account{ID: r.ID, Name: r.Name, Slug: r.Slug, CreatedAt: r.CreatedAt}, nil
+}
+
+func (s *Store) ListAccountMembers(ctx context.Context, accountID domain.ID) ([]AccountMembership, error) {
+	rows, err := s.q(ctx).ListAccountMembers(ctx, accountID)
+	if err != nil {
+		return nil, fmt.Errorf("list account members: %w", err)
+	}
+	out := make([]AccountMembership, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, AccountMembership{AccountID: accountID, UserID: r.UserID, Email: r.Email, Role: AccountRole(r.Role), CreatedAt: r.CreatedAt, Pending: r.GoogleSub == nil})
+	}
+	return out, nil
+}
+
+func (s *Store) GetAccountMember(ctx context.Context, accountID, userID domain.ID) (AccountMembership, error) {
+	r, err := s.q(ctx).GetAccountMembership(ctx, storesqlc.GetAccountMembershipParams{AccountID: accountID, UserID: userID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return AccountMembership{}, ErrNotFound
+	}
+	if err != nil {
+		return AccountMembership{}, fmt.Errorf("get account membership: %w", err)
+	}
+	return AccountMembership{AccountID: r.AccountID, UserID: r.UserID, Role: AccountRole(r.Role), CreatedAt: r.CreatedAt}, nil
+}
+
+func (s *Store) UpdateAccountMemberRole(ctx context.Context, accountID, userID domain.ID, role AccountRole) error {
+	if !role.Valid() {
+		return errors.New("a valid account role is required")
+	}
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
+		if _, err := q.LockAccount(ctx, accountID); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return err
+		}
+		current, err := q.GetAccountMembership(ctx, storesqlc.GetAccountMembershipParams{AccountID: accountID, UserID: userID})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if AccountRole(current.Role) == AccountRoleOwner && role != AccountRoleOwner {
+			count, err := q.CountAccountOwners(ctx, accountID)
+			if err != nil {
+				return err
+			}
+			if count <= 1 {
+				return ErrLastOwner
+			}
+		}
+		n, err := q.UpdateAccountMembershipRole(ctx, storesqlc.UpdateAccountMembershipRoleParams{AccountID: accountID, UserID: userID, Role: string(role)})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
+}
+
+func (s *Store) RemoveAccountMember(ctx context.Context, accountID, userID domain.ID) error {
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
+		if _, err := q.LockAccount(ctx, accountID); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return err
+		}
+		current, err := q.GetAccountMembership(ctx, storesqlc.GetAccountMembershipParams{AccountID: accountID, UserID: userID})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if AccountRole(current.Role) == AccountRoleOwner {
+			count, err := q.CountAccountOwners(ctx, accountID)
+			if err != nil {
+				return err
+			}
+			if count <= 1 {
+				return ErrLastOwner
+			}
+		}
+		n, err := q.DeleteAccountMembership(ctx, storesqlc.DeleteAccountMembershipParams{AccountID: accountID, UserID: userID})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
 }

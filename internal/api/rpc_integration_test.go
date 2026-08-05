@@ -126,8 +126,8 @@ func TestRPCSessionLifecycleAgainstPostgres(t *testing.T) {
 	if callbackResp.StatusCode != http.StatusFound {
 		t.Fatalf("/auth/google/callback status = %d, want %d", callbackResp.StatusCode, http.StatusFound)
 	}
-	if loc, err := callbackResp.Location(); err != nil || loc.Path != "/overview" {
-		t.Fatalf("/auth/google/callback redirected to %v (err=%v), want /overview", loc, err)
+	if loc, err := callbackResp.Location(); err != nil || loc.Path != "/accounts" {
+		t.Fatalf("/auth/google/callback redirected to %v (err=%v), want /accounts", loc, err)
 	}
 
 	rpcClient := opensightv1connect.NewAuthServiceClient(browser, ts.URL+"/rpc")
@@ -136,14 +136,28 @@ func TestRPCSessionLifecycleAgainstPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMe after sign-in: %v", err)
 	}
-	tenantID, err := uuid.Parse(me.Msg.GetTenant().GetId())
-	if err != nil {
-		t.Fatalf("parse tenant id: %v", err)
+	if len(me.Msg.GetMemberships()) != 1 || me.Msg.GetMemberships()[0].GetAccount() == nil {
+		t.Fatalf("GetMe memberships = %+v, want one owner membership", me.Msg.GetMemberships())
 	}
-	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID) })
-	if me.Msg.GetUser().GetEmail() != email || me.Msg.GetPlan().GetCode() != billing.Starter.Code ||
-		me.Msg.GetAccess() != opensightv1.Access_ACCESS_NEVER {
-		t.Fatalf("GetMe = %+v, want signed-up unpaid starter account", me.Msg)
+	membership := me.Msg.GetMemberships()[0]
+	accountID, err := uuid.Parse(membership.GetAccount().GetId())
+	if err != nil {
+		t.Fatalf("parse account id: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID) })
+	if me.Msg.GetUser().GetEmail() != email || membership.GetRole() != opensightv1.AccountRole_ACCOUNT_ROLE_OWNER {
+		t.Fatalf("GetMe = %+v, want signed-up user with owner membership", me.Msg)
+	}
+
+	accountClient := opensightv1connect.NewAccountServiceClient(browser, ts.URL+"/rpc")
+	accountReq := connect.NewRequest(&opensightv1.GetAccountContextRequest{AccountSlug: membership.GetAccount().GetSlug()})
+	accountReq.Header().Set("X-OpenSight-Account-Slug", membership.GetAccount().GetSlug())
+	account, err := accountClient.GetAccountContext(ctx, accountReq)
+	if err != nil {
+		t.Fatalf("GetAccountContext after sign-in: %v", err)
+	}
+	if account.Msg.GetPlan().GetCode() != billing.Starter.Code || account.Msg.GetAccess() != opensightv1.Access_ACCESS_NEVER {
+		t.Fatalf("GetAccountContext = %+v, want unpaid Starter account", account.Msg)
 	}
 
 	if _, err := rpcClient.Logout(ctx, connect.NewRequest(&opensightv1.LogoutRequest{})); err != nil {
@@ -193,16 +207,16 @@ func TestGoogleCallbackStateMismatchRedirectsToLoginError(t *testing.T) {
 
 func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 	db, ctx := openAPITestDB(t)
-	tenantID := mustDomainID(t)
-	otherTenantID := mustDomainID(t)
+	accountID := mustDomainID(t)
+	otherAccountID := mustDomainID(t)
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = ANY($1)", []domain.ID{tenantID, otherTenantID})
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = ANY($1)", []domain.ID{accountID, otherAccountID})
 	})
-	for id, name := range map[domain.ID]string{tenantID: "API Tenant", otherTenantID: "Other Tenant"} {
-		if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", id, name); err != nil {
-			t.Fatalf("insert tenant: %v", err)
+	for id, name := range map[domain.ID]string{accountID: "API Account", otherAccountID: "Other Account"} {
+		if _, err := db.Exec(ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, $2, $3)", id, name, "test-"+id.String()); err != nil {
+			t.Fatalf("insert account: %v", err)
 		}
-		if _, err := db.Exec(ctx, "INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, $2, true)", id, billing.Starter.Code); err != nil {
+		if _, err := db.Exec(ctx, "INSERT INTO subscriptions (account_id, plan_code, comped) VALUES ($1, $2, true)", id, billing.Starter.Code); err != nil {
 			t.Fatalf("insert subscription: %v", err)
 		}
 	}
@@ -211,8 +225,8 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 	repository := store.New(db)
 	srv := New(Deps{Store: repository, Temporal: temporal, TemporalTaskQueue: "api-integration"})
 	session := withSessionUser(ctx, store.SessionUser{
-		UserID: mustDomainID(t), TenantID: tenantID, Email: "api@example.com",
-		TenantName: "API Tenant", ExpiresAt: time.Now().Add(time.Hour),
+		UserID: mustDomainID(t), AccountID: accountID, Email: "api@example.com",
+		AccountName: "API Account", ExpiresAt: time.Now().Add(time.Hour),
 		PlanCode: billing.Starter.Code, Billing: billing.State{Comped: true},
 	})
 
@@ -227,15 +241,15 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse business id: %v", err)
 	}
-	got, err := repository.GetBusiness(ctx, tenantID, businessID)
+	got, err := repository.GetBusiness(ctx, accountID, businessID)
 	if err != nil || got.Name != "Atlas Dental" || got.Status != store.BusinessStatusDraft {
 		t.Fatalf("stored business = %+v, err=%v", got, err)
 	}
 
-	otherSession := withSessionUser(ctx, store.SessionUser{TenantID: otherTenantID, PlanCode: billing.Starter.Code})
+	otherSession := withSessionUser(ctx, store.SessionUser{AccountID: otherAccountID, PlanCode: billing.Starter.Code})
 	_, err = srv.GetBusiness(otherSession, connect.NewRequest(&opensightv1.GetBusinessRequest{BusinessId: businessID.String()}))
 	if connect.CodeOf(err) != connect.CodeNotFound {
-		t.Fatalf("cross-tenant GetBusiness code = %v, want NotFound", connect.CodeOf(err))
+		t.Fatalf("cross-account GetBusiness code = %v, want NotFound", connect.CodeOf(err))
 	}
 }
 
@@ -245,14 +259,14 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 // deciding how many questions come back.
 func TestGenerateQuestionsAgainstPostgres(t *testing.T) {
 	db, ctx := openAPITestDB(t)
-	tenantID := mustDomainID(t)
+	accountID := mustDomainID(t)
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
-	if _, err := db.Exec(ctx, "INSERT INTO tenants (id, name) VALUES ($1, $2)", tenantID, "Questions Tenant"); err != nil {
-		t.Fatalf("insert tenant: %v", err)
+	if _, err := db.Exec(ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, $2, $3)", accountID, "Questions Account", "test-"+accountID.String()); err != nil {
+		t.Fatalf("insert account: %v", err)
 	}
-	if _, err := db.Exec(ctx, "INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, $2, true)", tenantID, billing.Starter.Code); err != nil {
+	if _, err := db.Exec(ctx, "INSERT INTO subscriptions (account_id, plan_code, comped) VALUES ($1, $2, true)", accountID, billing.Starter.Code); err != nil {
 		t.Fatalf("insert subscription: %v", err)
 	}
 
@@ -263,8 +277,8 @@ func TestGenerateQuestionsAgainstPostgres(t *testing.T) {
 	repository := store.New(db)
 	srv := New(Deps{Store: repository, Temporal: &fakeTemporalClient{}, TemporalTaskQueue: "api-integration", Questions: questions})
 	session := withSessionUser(ctx, store.SessionUser{
-		UserID: mustDomainID(t), TenantID: tenantID, Email: "questions@example.com",
-		TenantName: "Questions Tenant", ExpiresAt: time.Now().Add(time.Hour),
+		UserID: mustDomainID(t), AccountID: accountID, Email: "questions@example.com",
+		AccountName: "Questions Account", ExpiresAt: time.Now().Add(time.Hour),
 		PlanCode: billing.Starter.Code, Billing: billing.State{Comped: true},
 	})
 

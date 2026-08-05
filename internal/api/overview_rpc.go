@@ -12,7 +12,7 @@ import (
 var _ opensightv1connect.OverviewServiceHandler = (*Server)(nil)
 
 // GetOverview assembles the single Overview payload from the shared metrics
-// package. ListRuns doubles as the business->tenant ownership gate
+// package. ListRuns doubles as the business->account ownership gate
 // and must run before any metrics call: metrics.* return empty (not an
 // error) for an unowned business, so calling them first would leak a 200
 // with an empty-but-valid overview for someone else's business instead of a
@@ -27,28 +27,28 @@ func (s *Server) GetOverview(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	runs, err := s.store.ListRuns(ctx, su.TenantID, businessID)
+	runs, err := s.store.ListRuns(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get overview: list runs", err)
 	}
 
-	trend, err := s.metrics.VisibilityTrend(ctx, su.TenantID, businessID)
+	trend, err := s.metrics.VisibilityTrend(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get overview: visibility trend", err)
 	}
-	keywords, err := s.metrics.KeywordStats(ctx, su.TenantID, businessID)
+	keywords, err := s.metrics.KeywordStats(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get overview: keyword stats", err)
 	}
-	domains, err := s.metrics.CitationDomainStats(ctx, su.TenantID, businessID)
+	domains, err := s.metrics.CitationDomainStats(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get overview: citation domain stats", err)
 	}
-	competitors, err := s.metrics.CompetitorStats(ctx, su.TenantID, businessID)
+	competitors, err := s.metrics.CompetitorStats(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get overview: competitor stats", err)
 	}
-	changes, err := s.metrics.PromptChanges(ctx, su.TenantID, businessID)
+	changes, err := s.metrics.PromptChanges(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("get overview: prompt changes", err)
 	}

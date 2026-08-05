@@ -87,7 +87,7 @@ func TestProviderCreateCustomer(t *testing.T) {
 		jsonResponse(t, w, `{"id":"cus_1"}`)
 	})
 
-	cus, err := p.CreateCustomer(context.Background(), billing.CreateCustomerParams{TenantID: "tenant-1", Email: "a@example.com"})
+	cus, err := p.CreateCustomer(context.Background(), billing.CreateCustomerParams{AccountID: "account-1", Email: "a@example.com"})
 	if err != nil {
 		t.Fatalf("CreateCustomer: %v", err)
 	}
@@ -97,8 +97,8 @@ func TestProviderCreateCustomer(t *testing.T) {
 	if captured.method != http.MethodPost || captured.path != "/v1/customers" {
 		t.Fatalf("request = %s %s, want POST /v1/customers", captured.method, captured.path)
 	}
-	if got := captured.values.Get("metadata[tenant_id]"); got != "tenant-1" {
-		t.Fatalf("metadata[tenant_id] = %q, want tenant-1", got)
+	if got := captured.values.Get("metadata[account_id]"); got != "account-1" {
+		t.Fatalf("metadata[account_id] = %q, want account-1", got)
 	}
 	if got := captured.header.Get("Stripe-Version"); got != APIVersion {
 		t.Fatalf("Stripe-Version header = %q, want %q", got, APIVersion)
@@ -110,16 +110,16 @@ func TestProviderCreateCustomer(t *testing.T) {
 // the checkout session request body, so eligible methods stay entirely
 // dashboard-configured. It also covers the other checkout fields design 08
 // pins down: mode=subscription, client_reference_id, and
-// subscription_data.metadata.tenant_id.
+// subscription_data.metadata.account_id.
 func TestProviderCreateCheckoutSession(t *testing.T) {
 	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
-		jsonResponse(t, w, `{"id":"cs_1","url":"https://checkout.stripe.com/x","status":"open","client_reference_id":"tenant-1","customer":"cus_1","subscription":"sub_1"}`)
+		jsonResponse(t, w, `{"id":"cs_1","url":"https://checkout.stripe.com/x","status":"open","client_reference_id":"account-1","customer":"cus_1","subscription":"sub_1"}`)
 	})
 
 	got, err := p.CreateCheckoutSession(context.Background(), billing.CreateCheckoutSessionParams{
 		CustomerID:            "cus_1",
 		PriceID:               "price_starter",
-		TenantID:              "tenant-1",
+		AccountID:             "account-1",
 		IntegrationIdentifier: "opensight-signup-abcdefgh",
 		SuccessURL:            "https://app.example.com/checkout/return?session_id={CHECKOUT_SESSION_ID}",
 		CancelURL:             "https://app.example.com/billing",
@@ -129,7 +129,7 @@ func TestProviderCreateCheckoutSession(t *testing.T) {
 	}
 	want := billing.CheckoutSession{
 		ID: "cs_1", URL: "https://checkout.stripe.com/x", Status: "open",
-		CustomerID: "cus_1", SubscriptionID: "sub_1", ClientReferenceID: "tenant-1",
+		CustomerID: "cus_1", SubscriptionID: "sub_1", ClientReferenceID: "account-1",
 	}
 	if got != want {
 		t.Fatalf("CheckoutSession = %+v, want %+v", got, want)
@@ -147,11 +147,11 @@ func TestProviderCreateCheckoutSession(t *testing.T) {
 	if got := captured.values.Get("mode"); got != "subscription" {
 		t.Fatalf("mode = %q, want subscription", got)
 	}
-	if got := captured.values.Get("client_reference_id"); got != "tenant-1" {
-		t.Fatalf("client_reference_id = %q, want tenant-1", got)
+	if got := captured.values.Get("client_reference_id"); got != "account-1" {
+		t.Fatalf("client_reference_id = %q, want account-1", got)
 	}
-	if got := captured.values.Get("subscription_data[metadata][tenant_id]"); got != "tenant-1" {
-		t.Fatalf("subscription_data[metadata][tenant_id] = %q, want tenant-1", got)
+	if got := captured.values.Get("subscription_data[metadata][account_id]"); got != "account-1" {
+		t.Fatalf("subscription_data[metadata][account_id] = %q, want account-1", got)
 	}
 	if got := captured.values.Get("line_items[0][price]"); got != "price_starter" {
 		t.Fatalf("line_items[0][price] = %q, want price_starter", got)
@@ -163,7 +163,7 @@ func TestProviderCreateCheckoutSession(t *testing.T) {
 
 func TestProviderGetCheckoutSession(t *testing.T) {
 	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
-		jsonResponse(t, w, `{"id":"cs_1","url":"https://checkout.stripe.com/x","status":"complete","client_reference_id":"tenant-1","customer":"cus_1","subscription":"sub_1"}`)
+		jsonResponse(t, w, `{"id":"cs_1","url":"https://checkout.stripe.com/x","status":"complete","client_reference_id":"account-1","customer":"cus_1","subscription":"sub_1"}`)
 	})
 
 	got, err := p.GetCheckoutSession(context.Background(), "cs_1")

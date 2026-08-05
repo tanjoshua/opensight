@@ -30,7 +30,7 @@ func ScheduleID(businessID domain.ID, platform string) string {
 
 // scheduleDayOfWeek derives a stable per-business day of week (0=Sunday..6=Saturday)
 // from the business id. Hashing spreads weekly runs across the week rather than
-// firing every tenant on the same day, smoothing API rate-limit and cost spikes
+// firing every account on the same day, smoothing API rate-limit and cost spikes
 // from day one (design 04 jitter rationale).
 func scheduleDayOfWeek(businessID domain.ID) int {
 	h := fnv.New32a()
@@ -116,7 +116,7 @@ func CreateMonitorSchedule(ctx context.Context, c ScheduleCreator, params Create
 // SetMonitorSchedulePaused pauses or resumes a business's monitoring
 // Schedule on platform (design 08 "Schedule gate" — reconcile's gate 2).
 // A schedule that does not exist yet is success, not failure,
-// mirroring CreateMonitorSchedule's AlreadyExists swallow: a tenant that
+// mirroring CreateMonitorSchedule's AlreadyExists swallow: a account that
 // lapses before onboarding ever created a Schedule (or before an admin
 // re-seeds one) is a normal state, not an error the caller should surface.
 func SetMonitorSchedulePaused(ctx context.Context, c ScheduleCreator, businessID domain.ID, platform string, paused bool) error {

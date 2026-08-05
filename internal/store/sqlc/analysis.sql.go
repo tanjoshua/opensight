@@ -40,48 +40,48 @@ func (q *Queries) DeleteCitationsByResult(ctx context.Context, promptResultID uu
 const deleteResultAnalysis = `-- name: DeleteResultAnalysis :exec
 DELETE FROM result_analyses WHERE prompt_result_id=$1 AND prompt_result_id IN (
  SELECT pr.id FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id
- JOIN businesses b ON b.id=r.business_id WHERE b.tenant_id=$2)
+ JOIN businesses b ON b.id=r.business_id WHERE b.account_id = $2)
 `
 
 type DeleteResultAnalysisParams struct {
 	PromptResultID uuid.UUID
-	TenantID       uuid.UUID
+	AccountID      uuid.UUID
 }
 
 func (q *Queries) DeleteResultAnalysis(ctx context.Context, arg DeleteResultAnalysisParams) error {
-	_, err := q.db.Exec(ctx, deleteResultAnalysis, arg.PromptResultID, arg.TenantID)
+	_, err := q.db.Exec(ctx, deleteResultAnalysis, arg.PromptResultID, arg.AccountID)
 	return err
 }
 
 const deleteResultCitations = `-- name: DeleteResultCitations :exec
 DELETE FROM citations WHERE prompt_result_id=$1 AND prompt_result_id IN (
  SELECT pr.id FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id
- JOIN businesses b ON b.id=r.business_id WHERE b.tenant_id=$2)
+ JOIN businesses b ON b.id=r.business_id WHERE b.account_id = $2)
 `
 
 type DeleteResultCitationsParams struct {
 	PromptResultID uuid.UUID
-	TenantID       uuid.UUID
+	AccountID      uuid.UUID
 }
 
 func (q *Queries) DeleteResultCitations(ctx context.Context, arg DeleteResultCitationsParams) error {
-	_, err := q.db.Exec(ctx, deleteResultCitations, arg.PromptResultID, arg.TenantID)
+	_, err := q.db.Exec(ctx, deleteResultCitations, arg.PromptResultID, arg.AccountID)
 	return err
 }
 
 const deleteRunMentions = `-- name: DeleteRunMentions :exec
 DELETE FROM mentions WHERE prompt_result_id IN (
  SELECT pr.id FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id
- JOIN businesses b ON b.id=r.business_id WHERE r.id=$1 AND b.tenant_id=$2)
+ JOIN businesses b ON b.id=r.business_id WHERE r.id = $1 AND b.account_id = $2)
 `
 
 type DeleteRunMentionsParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) DeleteRunMentions(ctx context.Context, arg DeleteRunMentionsParams) error {
-	_, err := q.db.Exec(ctx, deleteRunMentions, arg.ID, arg.TenantID)
+	_, err := q.db.Exec(ctx, deleteRunMentions, arg.ID, arg.AccountID)
 	return err
 }
 
@@ -161,13 +161,13 @@ func (q *Queries) InsertMention(ctx context.Context, arg InsertMentionParams) er
 
 const listAnalysisCompetitors = `-- name: ListAnalysisCompetitors :many
 SELECT id,name,website,aliases,status FROM competitors
-WHERE business_id=$1 AND business_id IN (SELECT id FROM businesses WHERE tenant_id=$2)
+WHERE business_id = $1 AND business_id IN (SELECT id FROM businesses WHERE account_id = $2)
 ORDER BY created_at
 `
 
 type ListAnalysisCompetitorsParams struct {
 	BusinessID uuid.UUID
-	TenantID   uuid.UUID
+	AccountID  uuid.UUID
 }
 
 type ListAnalysisCompetitorsRow struct {
@@ -179,7 +179,7 @@ type ListAnalysisCompetitorsRow struct {
 }
 
 func (q *Queries) ListAnalysisCompetitors(ctx context.Context, arg ListAnalysisCompetitorsParams) ([]ListAnalysisCompetitorsRow, error) {
-	rows, err := q.db.Query(ctx, listAnalysisCompetitors, arg.BusinessID, arg.TenantID)
+	rows, err := q.db.Query(ctx, listAnalysisCompetitors, arg.BusinessID, arg.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -230,16 +230,16 @@ func (q *Queries) ListSucceededResultIDs(ctx context.Context, runID uuid.UUID) (
 
 const resultOwned = `-- name: ResultOwned :one
 SELECT 1 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id
-JOIN businesses b ON b.id=r.business_id WHERE pr.id=$1 AND b.tenant_id=$2
+JOIN businesses b ON b.id=r.business_id WHERE pr.id = $1 AND b.account_id = $2
 `
 
 type ResultOwnedParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) ResultOwned(ctx context.Context, arg ResultOwnedParams) (int32, error) {
-	row := q.db.QueryRow(ctx, resultOwned, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, resultOwned, arg.ID, arg.AccountID)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -247,16 +247,16 @@ func (q *Queries) ResultOwned(ctx context.Context, arg ResultOwnedParams) (int32
 
 const runBusinessOwned = `-- name: RunBusinessOwned :one
 SELECT b.id FROM monitoring_runs r JOIN businesses b ON b.id=r.business_id
-WHERE r.id=$1 AND b.tenant_id=$2
+WHERE r.id = $1 AND b.account_id = $2
 `
 
 type RunBusinessOwnedParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) RunBusinessOwned(ctx context.Context, arg RunBusinessOwnedParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, runBusinessOwned, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, runBusinessOwned, arg.ID, arg.AccountID)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err

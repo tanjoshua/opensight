@@ -74,23 +74,23 @@ type UpsertRunParams struct {
 
 // UpsertRun idempotently creates (or converges on) the run for
 // (business_id, platform, scheduled_for). It is LoadRunSpec's primitive: the
-// tenant-checked business lookup, the conflict-tolerant insert, and the
+// account-checked business lookup, the conflict-tolerant insert, and the
 // read-back run in one transaction, so a duplicate trigger returns the
-// existing run (any status) rather than erroring. A missing or cross-tenant
+// existing run (any status) rather than erroring. A missing or cross-account
 // business returns ErrNotFound.
-func (s *Store) UpsertRun(ctx context.Context, tenantID domain.ID, params UpsertRunParams) (Run, error) {
+func (s *Store) UpsertRun(ctx context.Context, accountID domain.ID, params UpsertRunParams) (Run, error) {
 
 	params, err := normalizeUpsertRunParams(params)
 	if err != nil {
 		return Run{}, err
 	}
-	if err := validateUUIDv7("tenant id", tenantID); err != nil {
+	if err := validateUUIDv7("account id", accountID); err != nil {
 		return Run{}, err
 	}
 
 	var run Run
 	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
-		if err := businessOwned(ctx, q, tenantID, params.BusinessID); err != nil {
+		if err := businessOwned(ctx, q, accountID, params.BusinessID); err != nil {
 			return err
 		}
 		expected := int32(params.ExpectedResults)
@@ -119,11 +119,11 @@ func (s *Store) UpsertRun(ctx context.Context, tenantID domain.ID, params Upsert
 // FinalizeRun sets the run's terminal status from its succeeded result count
 // against the run's stored expected_results (the prompt-snapshot size, so a
 // prompt whose activity never wrote a row still counts against completion).
-// It is tenant-scoped and safe under retry. A missing or cross-tenant run
+// It is account-scoped and safe under retry. A missing or cross-account run
 // returns ErrNotFound.
-func (s *Store) FinalizeRun(ctx context.Context, tenantID, runID domain.ID) (Run, error) {
+func (s *Store) FinalizeRun(ctx context.Context, accountID, runID domain.ID) (Run, error) {
 
-	row, err := s.q(ctx).FinalizeRun(ctx, storesqlc.FinalizeRunParams{ID: runID, TenantID: tenantID})
+	row, err := s.q(ctx).FinalizeRun(ctx, storesqlc.FinalizeRunParams{ID: runID, AccountID: accountID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Run{}, ErrNotFound
@@ -144,13 +144,13 @@ type RunListItem struct {
 }
 
 // ListRuns returns the business's runs with per-run result counts, newest
-// scheduled first. It enters through the tenant-checked
-// business lookup so an empty result for a business the tenant does not own
+// scheduled first. It enters through the account-checked
+// business lookup so an empty result for a business the account does not own
 // is ErrNotFound, not an empty slice.
-func (s *Store) ListRuns(ctx context.Context, tenantID, businessID domain.ID) ([]RunListItem, error) {
+func (s *Store) ListRuns(ctx context.Context, accountID, businessID domain.ID) ([]RunListItem, error) {
 
 	q := s.q(ctx)
-	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+	if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 		return nil, err
 	}
 

@@ -30,7 +30,7 @@ func TestGatingRules(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	rivalID := mustNewID(t)
 	manualRivalID := mustNewID(t)
@@ -46,12 +46,12 @@ func TestGatingRules(t *testing.T) {
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Metrics Tenant")
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
+	insertAccount(t, db, ctx, accountID, "Metrics Account")
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, accountID)
 	for _, p := range []domain.ID{p1, p2, p3, p4} {
 		mustExec(t, db, ctx, `
 			INSERT INTO prompts (id, business_id, text, status, created_at)
@@ -135,7 +135,7 @@ func TestGatingRules(t *testing.T) {
 	m := New(db)
 
 	// --- Visibility: one point (Run A), 1 self of 2 analyzed = 50%. ---
-	trend, err := m.VisibilityTrend(ctx, tenantID, businessID)
+	trend, err := m.VisibilityTrend(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("VisibilityTrend: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestGatingRules(t *testing.T) {
 	assertIDSet(t, "visibility result_ids", pt.ResultIDs, a1, a2)
 
 	// --- Competitor: Rival in both analyzed results = 100%, vs self +50. ---
-	comp, err := m.CompetitorStats(ctx, tenantID, businessID)
+	comp, err := m.CompetitorStats(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("CompetitorStats: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestGatingRules(t *testing.T) {
 	}
 
 	// --- Aggregates: exclude unanalyzed (a3) and the un-reconciled run (b1). ---
-	keywords, err := m.KeywordStats(ctx, tenantID, businessID)
+	keywords, err := m.KeywordStats(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("KeywordStats: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestGatingRules(t *testing.T) {
 	assertIDSet(t, "keyword friendly", kw["friendly"], a1)
 	assertIDSet(t, "keyword expensive", kw["expensive"], a2)
 
-	domains, err := m.CitationDomainStats(ctx, tenantID, businessID)
+	domains, err := m.CitationDomainStats(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("CitationDomainStats: %v", err)
 	}
@@ -228,7 +228,7 @@ func TestGatingRules(t *testing.T) {
 	}
 	assertIDSet(t, "domain example.com", dom["example.com"], a1)
 
-	sentiments, err := m.SentimentStats(ctx, tenantID, businessID)
+	sentiments, err := m.SentimentStats(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("SentimentStats: %v", err)
 	}
@@ -240,7 +240,7 @@ func TestGatingRules(t *testing.T) {
 	// --- Prompt presence: p1 (mentioned, order 0), p2 (absent mention);
 	// p3 has only an unanalyzed result and p4 only a failed one, so both are
 	// absent from the analyzed base entirely. p1's latest stays a1, not b1. ---
-	latest, err := m.PromptLatestStats(ctx, tenantID, businessID)
+	latest, err := m.PromptLatestStats(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("PromptLatestStats: %v", err)
 	}
@@ -274,7 +274,7 @@ func TestGatingRules(t *testing.T) {
 		INSERT INTO prompts (id, business_id, text, status, created_at)
 		VALUES ($1, $2, 'q3', 'active', '2026-07-20T10:00:00Z')`, p6, businessID)
 
-	changes, err := m.PromptChanges(ctx, tenantID, businessID)
+	changes, err := m.PromptChanges(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("PromptChanges: %v", err)
 	}
@@ -306,7 +306,7 @@ func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptID := mustNewID(t)
 	competitorID := mustNewID(t)
@@ -315,12 +315,12 @@ func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Competitor Trend Tenant")
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
+	insertAccount(t, db, ctx, accountID, "Competitor Trend Account")
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO competitors (id, business_id, name, aliases, source, status)
@@ -346,7 +346,7 @@ func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
 		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
 		VALUES ($1, $2, 'competitor', $3, 'exact', 0, 'Rival Clinic appears.')`, mustNewID(t), resultA, competitorID)
 
-	stats, err := New(db).CompetitorStats(ctx, tenantID, businessID)
+	stats, err := New(db).CompetitorStats(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("CompetitorStats: %v", err)
 	}

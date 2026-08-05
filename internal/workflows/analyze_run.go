@@ -24,15 +24,15 @@ const (
 // RunWorkflow, or manually via the Temporal CLI/UI to re-analyze an old run
 // (ReanalyzeRun is this same workflow — design 05).
 type AnalyzeRunInput struct {
-	TenantID domain.ID
-	RunID    domain.ID
+	AccountID domain.ID `json:"TenantID"`
+	RunID     domain.ID
 }
 
 // LoadAnalyzeRunSpec resolves a run's business and succeeded result ids for the
-// AnalyzeRun fan-out. A missing or cross-tenant run is non-retryable: it
+// AnalyzeRun fan-out. A missing or cross-account run is non-retryable: it
 // will not fix itself, and analysis of a bad run id should fail fast.
 func (a *Activities) LoadAnalyzeRunSpec(ctx context.Context, in AnalyzeRunInput) (store.AnalyzeRunSpec, error) {
-	spec, err := a.Store.LoadAnalyzeRunSpec(ctx, in.TenantID, in.RunID)
+	spec, err := a.Store.LoadAnalyzeRunSpec(ctx, in.AccountID, in.RunID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return store.AnalyzeRunSpec{}, temporal.NewNonRetryableApplicationError(
@@ -71,8 +71,8 @@ func AnalyzeRun(ctx workflow.Context, input AnalyzeRunInput) error {
 	futures := make([]workflow.Future, 0, len(spec.ResultIDs))
 	for _, resultID := range spec.ResultIDs {
 		futures = append(futures, workflow.ExecuteActivity(analyzeCtx, acts.AnalyzeResult, AnalyzeResultInput{
-			TenantID: input.TenantID,
-			ResultID: resultID,
+			AccountID: input.AccountID,
+			ResultID:  resultID,
 		}))
 	}
 
@@ -101,7 +101,7 @@ func AnalyzeRun(ctx workflow.Context, input AnalyzeRunInput) error {
 	})
 	var out ReconcileEntitiesOutput
 	return workflow.ExecuteActivity(reconcileCtx, acts.ReconcileEntities, ReconcileEntitiesInput{
-		TenantID:   input.TenantID,
+		AccountID:  input.AccountID,
 		BusinessID: spec.BusinessID,
 		RunID:      input.RunID,
 		Results:    results,

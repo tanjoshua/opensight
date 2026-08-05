@@ -28,7 +28,7 @@ UPDATE businesses
 SET name = $2, aliases = $3, category = $4, services = $5, location = $6,
     status = 'active', activated_at = $7
 WHERE id = $1
-RETURNING id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
 `
 
 type ActivateBusinessParams struct {
@@ -54,7 +54,7 @@ func (q *Queries) ActivateBusiness(ctx context.Context, arg ActivateBusinessPara
 	var i Business
 	err := row.Scan(
 		&i.ID,
-		&i.TenantID,
+		&i.AccountID,
 		&i.Status,
 		&i.Name,
 		&i.Website,
@@ -69,19 +69,30 @@ func (q *Queries) ActivateBusiness(ctx context.Context, arg ActivateBusinessPara
 }
 
 const businessOwned = `-- name: BusinessOwned :one
-SELECT 1 FROM businesses WHERE id = $1 AND tenant_id = $2
+SELECT 1 FROM businesses WHERE id = $1 AND account_id = $2
 `
 
 type BusinessOwnedParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) BusinessOwned(ctx context.Context, arg BusinessOwnedParams) (int32, error) {
-	row := q.db.QueryRow(ctx, businessOwned, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, businessOwned, arg.ID, arg.AccountID)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const countAccountOwners = `-- name: CountAccountOwners :one
+SELECT count(*) FROM account_memberships WHERE account_id = $1 AND role = 'owner'
+`
+
+func (q *Queries) CountAccountOwners(ctx context.Context, accountID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countAccountOwners, accountID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const countActivePrompts = `-- name: CountActivePrompts :one
@@ -93,6 +104,23 @@ func (q *Queries) CountActivePrompts(ctx context.Context, businessID uuid.UUID) 
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const deleteAccountMembership = `-- name: DeleteAccountMembership :execrows
+DELETE FROM account_memberships WHERE account_id = $1 AND user_id = $2
+`
+
+type DeleteAccountMembershipParams struct {
+	AccountID uuid.UUID
+	UserID    uuid.UUID
+}
+
+func (q *Queries) DeleteAccountMembership(ctx context.Context, arg DeleteAccountMembershipParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteAccountMembership, arg.AccountID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deleteExpiredUserSessions = `-- name: DeleteExpiredUserSessions :exec
@@ -123,22 +151,111 @@ func (q *Queries) DiscardPendingProposal(ctx context.Context, businessID uuid.UU
 	return err
 }
 
+const getAccountByID = `-- name: GetAccountByID :one
+SELECT id, name, slug, created_at FROM accounts WHERE id = $1
+`
+
+type GetAccountByIDRow struct {
+	ID        uuid.UUID
+	Name      string
+	Slug      string
+	CreatedAt time.Time
+}
+
+func (q *Queries) GetAccountByID(ctx context.Context, id uuid.UUID) (GetAccountByIDRow, error) {
+	row := q.db.QueryRow(ctx, getAccountByID, id)
+	var i GetAccountByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getAccountContextBySlug = `-- name: GetAccountContextBySlug :one
+SELECT a.id AS account_id, a.name, a.slug, am.role,
+       sub.plan_code, sub.comped, sub.stripe_subscription_id,
+       sub.stripe_status, sub.past_due_since
+FROM accounts a
+JOIN account_memberships am ON am.account_id = a.id AND am.user_id = $1
+LEFT JOIN subscriptions sub ON sub.account_id = a.id
+WHERE a.slug = $2
+`
+
+type GetAccountContextBySlugParams struct {
+	UserID uuid.UUID
+	Slug   string
+}
+
+type GetAccountContextBySlugRow struct {
+	AccountID            uuid.UUID
+	Name                 string
+	Slug                 string
+	Role                 string
+	PlanCode             *string
+	Comped               pgtype.Bool
+	StripeSubscriptionID *string
+	StripeStatus         *string
+	PastDueSince         *time.Time
+}
+
+func (q *Queries) GetAccountContextBySlug(ctx context.Context, arg GetAccountContextBySlugParams) (GetAccountContextBySlugRow, error) {
+	row := q.db.QueryRow(ctx, getAccountContextBySlug, arg.UserID, arg.Slug)
+	var i GetAccountContextBySlugRow
+	err := row.Scan(
+		&i.AccountID,
+		&i.Name,
+		&i.Slug,
+		&i.Role,
+		&i.PlanCode,
+		&i.Comped,
+		&i.StripeSubscriptionID,
+		&i.StripeStatus,
+		&i.PastDueSince,
+	)
+	return i, err
+}
+
+const getAccountMembership = `-- name: GetAccountMembership :one
+SELECT account_id, user_id, role, created_at FROM account_memberships
+WHERE account_id = $1 AND user_id = $2
+`
+
+type GetAccountMembershipParams struct {
+	AccountID uuid.UUID
+	UserID    uuid.UUID
+}
+
+func (q *Queries) GetAccountMembership(ctx context.Context, arg GetAccountMembershipParams) (AccountMembership, error) {
+	row := q.db.QueryRow(ctx, getAccountMembership, arg.AccountID, arg.UserID)
+	var i AccountMembership
+	err := row.Scan(
+		&i.AccountID,
+		&i.UserID,
+		&i.Role,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getBusiness = `-- name: GetBusiness :one
-SELECT id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at
-FROM businesses WHERE id = $1 AND tenant_id = $2
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+FROM businesses WHERE id = $1 AND account_id = $2
 `
 
 type GetBusinessParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) GetBusiness(ctx context.Context, arg GetBusinessParams) (Business, error) {
-	row := q.db.QueryRow(ctx, getBusiness, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, getBusiness, arg.ID, arg.AccountID)
 	var i Business
 	err := row.Scan(
 		&i.ID,
-		&i.TenantID,
+		&i.AccountID,
 		&i.Status,
 		&i.Name,
 		&i.Website,
@@ -174,12 +291,12 @@ func (q *Queries) GetPendingProposal(ctx context.Context, businessID uuid.UUID) 
 const getPrompt = `-- name: GetPrompt :one
 SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
 FROM prompts pr JOIN businesses b ON b.id = pr.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2
+WHERE pr.id = $1 AND b.account_id = $2
 `
 
 type GetPromptParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 type GetPromptRow struct {
@@ -192,7 +309,7 @@ type GetPromptRow struct {
 }
 
 func (q *Queries) GetPrompt(ctx context.Context, arg GetPromptParams) (GetPromptRow, error) {
-	row := q.db.QueryRow(ctx, getPrompt, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, getPrompt, arg.ID, arg.AccountID)
 	var i GetPromptRow
 	err := row.Scan(
 		&i.ID,
@@ -206,61 +323,36 @@ func (q *Queries) GetPrompt(ctx context.Context, arg GetPromptParams) (GetPrompt
 }
 
 const getSession = `-- name: GetSession :one
-SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at,
-       sub.plan_code, sub.comped, sub.stripe_subscription_id, sub.stripe_status, sub.past_due_since
-FROM sessions s
-JOIN users u ON u.id = s.user_id
-JOIN tenants t ON t.id = u.tenant_id
-LEFT JOIN subscriptions sub ON sub.tenant_id = u.tenant_id
+SELECT u.id, u.email, s.expires_at
+FROM sessions s JOIN users u ON u.id = s.user_id
 WHERE s.token_hash = $1 AND s.expires_at > now()
 `
 
 type GetSessionRow struct {
-	ID                   uuid.UUID
-	TenantID             uuid.UUID
-	Email                string
-	Name                 string
-	ExpiresAt            time.Time
-	PlanCode             *string
-	Comped               pgtype.Bool
-	StripeSubscriptionID *string
-	StripeStatus         *string
-	PastDueSince         *time.Time
+	ID        uuid.UUID
+	Email     string
+	ExpiresAt time.Time
 }
 
-// LEFT JOIN deliberately, not INNER: a missing subscriptions row must surface
-// to the caller as an explicit error, not silently masquerade as an
-// expired/absent session by disappearing from the result set.
 func (q *Queries) GetSession(ctx context.Context, tokenHash []byte) (GetSessionRow, error) {
 	row := q.db.QueryRow(ctx, getSession, tokenHash)
 	var i GetSessionRow
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Email,
-		&i.Name,
-		&i.ExpiresAt,
-		&i.PlanCode,
-		&i.Comped,
-		&i.StripeSubscriptionID,
-		&i.StripeStatus,
-		&i.PastDueSince,
-	)
+	err := row.Scan(&i.ID, &i.Email, &i.ExpiresAt)
 	return i, err
 }
 
-const getSubscriptionByCustomer = `-- name: GetSubscriptionByCustomer :one
-SELECT tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
+const getSubscriptionByAccount = `-- name: GetSubscriptionByAccount :one
+SELECT account_id, plan_code, stripe_customer_id, stripe_subscription_id,
        stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end,
        created_at, updated_at
-FROM subscriptions WHERE stripe_customer_id = $1
+FROM subscriptions WHERE account_id = $1
 `
 
-func (q *Queries) GetSubscriptionByCustomer(ctx context.Context, stripeCustomerID *string) (Subscription, error) {
-	row := q.db.QueryRow(ctx, getSubscriptionByCustomer, stripeCustomerID)
+func (q *Queries) GetSubscriptionByAccount(ctx context.Context, accountID uuid.UUID) (Subscription, error) {
+	row := q.db.QueryRow(ctx, getSubscriptionByAccount, accountID)
 	var i Subscription
 	err := row.Scan(
-		&i.TenantID,
+		&i.AccountID,
 		&i.PlanCode,
 		&i.StripeCustomerID,
 		&i.StripeSubscriptionID,
@@ -275,18 +367,18 @@ func (q *Queries) GetSubscriptionByCustomer(ctx context.Context, stripeCustomerI
 	return i, err
 }
 
-const getSubscriptionByTenant = `-- name: GetSubscriptionByTenant :one
-SELECT tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
+const getSubscriptionByCustomer = `-- name: GetSubscriptionByCustomer :one
+SELECT account_id, plan_code, stripe_customer_id, stripe_subscription_id,
        stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end,
        created_at, updated_at
-FROM subscriptions WHERE tenant_id = $1
+FROM subscriptions WHERE stripe_customer_id = $1
 `
 
-func (q *Queries) GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error) {
-	row := q.db.QueryRow(ctx, getSubscriptionByTenant, tenantID)
+func (q *Queries) GetSubscriptionByCustomer(ctx context.Context, stripeCustomerID *string) (Subscription, error) {
+	row := q.db.QueryRow(ctx, getSubscriptionByCustomer, stripeCustomerID)
 	var i Subscription
 	err := row.Scan(
-		&i.TenantID,
+		&i.AccountID,
 		&i.PlanCode,
 		&i.StripeCustomerID,
 		&i.StripeSubscriptionID,
@@ -302,55 +394,72 @@ func (q *Queries) GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUI
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
-FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.email = $1
+SELECT id, email, google_sub FROM users WHERE email = $1
 `
 
 type GetUserByEmailRow struct {
 	ID        uuid.UUID
-	TenantID  uuid.UUID
 	Email     string
-	Name      string
 	GoogleSub *string
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i GetUserByEmailRow
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Email,
-		&i.Name,
-		&i.GoogleSub,
-	)
+	err := row.Scan(&i.ID, &i.Email, &i.GoogleSub)
 	return i, err
 }
 
 const getUserByGoogleSub = `-- name: GetUserByGoogleSub :one
-SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
-FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.google_sub = $1
+SELECT id, email, google_sub FROM users WHERE google_sub = $1
 `
 
 type GetUserByGoogleSubRow struct {
 	ID        uuid.UUID
-	TenantID  uuid.UUID
 	Email     string
-	Name      string
 	GoogleSub *string
 }
 
 func (q *Queries) GetUserByGoogleSub(ctx context.Context, googleSub *string) (GetUserByGoogleSubRow, error) {
 	row := q.db.QueryRow(ctx, getUserByGoogleSub, googleSub)
 	var i GetUserByGoogleSubRow
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Email,
-		&i.Name,
-		&i.GoogleSub,
-	)
+	err := row.Scan(&i.ID, &i.Email, &i.GoogleSub)
 	return i, err
+}
+
+const insertAccount = `-- name: InsertAccount :one
+INSERT INTO accounts (id, name, slug) VALUES ($1, $2, $3) RETURNING created_at
+`
+
+type InsertAccountParams struct {
+	ID   uuid.UUID
+	Name string
+	Slug string
+}
+
+func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (time.Time, error) {
+	row := q.db.QueryRow(ctx, insertAccount, arg.ID, arg.Name, arg.Slug)
+	var created_at time.Time
+	err := row.Scan(&created_at)
+	return created_at, err
+}
+
+const insertAccountMembership = `-- name: InsertAccountMembership :one
+INSERT INTO account_memberships (account_id, user_id, role)
+VALUES ($1, $2, $3) RETURNING created_at
+`
+
+type InsertAccountMembershipParams struct {
+	AccountID uuid.UUID
+	UserID    uuid.UUID
+	Role      string
+}
+
+func (q *Queries) InsertAccountMembership(ctx context.Context, arg InsertAccountMembershipParams) (time.Time, error) {
+	row := q.db.QueryRow(ctx, insertAccountMembership, arg.AccountID, arg.UserID, arg.Role)
+	var created_at time.Time
+	err := row.Scan(&created_at)
+	return created_at, err
 }
 
 const insertActivePrompt = `-- name: InsertActivePrompt :one
@@ -379,14 +488,14 @@ func (q *Queries) InsertActivePrompt(ctx context.Context, arg InsertActivePrompt
 
 const insertBusiness = `-- name: InsertBusiness :one
 INSERT INTO businesses (
-  id, tenant_id, status, name, website, aliases, category, services, location, activated_at
+  id, account_id, status, name, website, aliases, category, services, location, activated_at
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING created_at
 `
 
 type InsertBusinessParams struct {
 	ID          uuid.UUID
-	TenantID    uuid.UUID
+	AccountID   uuid.UUID
 	Status      string
 	Name        string
 	Website     *string
@@ -400,7 +509,7 @@ type InsertBusinessParams struct {
 func (q *Queries) InsertBusiness(ctx context.Context, arg InsertBusinessParams) (time.Time, error) {
 	row := q.db.QueryRow(ctx, insertBusiness,
 		arg.ID,
-		arg.TenantID,
+		arg.AccountID,
 		arg.Status,
 		arg.Name,
 		arg.Website,
@@ -449,58 +558,115 @@ func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) er
 }
 
 const insertSubscription = `-- name: InsertSubscription :exec
-INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, $2, $3)
+INSERT INTO subscriptions (account_id, plan_code, comped) VALUES ($1, $2, $3)
 `
 
 type InsertSubscriptionParams struct {
-	TenantID uuid.UUID
-	PlanCode string
-	Comped   bool
+	AccountID uuid.UUID
+	PlanCode  string
+	Comped    bool
 }
 
 func (q *Queries) InsertSubscription(ctx context.Context, arg InsertSubscriptionParams) error {
-	_, err := q.db.Exec(ctx, insertSubscription, arg.TenantID, arg.PlanCode, arg.Comped)
+	_, err := q.db.Exec(ctx, insertSubscription, arg.AccountID, arg.PlanCode, arg.Comped)
 	return err
 }
 
-const insertTenant = `-- name: InsertTenant :one
-INSERT INTO tenants (id, name) VALUES ($1, $2) RETURNING created_at
-`
-
-type InsertTenantParams struct {
-	ID   uuid.UUID
-	Name string
-}
-
-func (q *Queries) InsertTenant(ctx context.Context, arg InsertTenantParams) (time.Time, error) {
-	row := q.db.QueryRow(ctx, insertTenant, arg.ID, arg.Name)
-	var created_at time.Time
-	err := row.Scan(&created_at)
-	return created_at, err
-}
-
 const insertUser = `-- name: InsertUser :one
-INSERT INTO users (id, tenant_id, email, google_sub)
-VALUES ($1, $2, $3, $4) RETURNING created_at
+INSERT INTO users (id, email, google_sub) VALUES ($1, $2, $3) RETURNING created_at
 `
 
 type InsertUserParams struct {
 	ID        uuid.UUID
-	TenantID  uuid.UUID
 	Email     string
 	GoogleSub *string
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (time.Time, error) {
-	row := q.db.QueryRow(ctx, insertUser,
-		arg.ID,
-		arg.TenantID,
-		arg.Email,
-		arg.GoogleSub,
-	)
+	row := q.db.QueryRow(ctx, insertUser, arg.ID, arg.Email, arg.GoogleSub)
 	var created_at time.Time
 	err := row.Scan(&created_at)
 	return created_at, err
+}
+
+const listAccountMembers = `-- name: ListAccountMembers :many
+SELECT u.id AS user_id, u.email, u.google_sub, am.role, am.created_at
+FROM account_memberships am JOIN users u ON u.id = am.user_id
+WHERE am.account_id = $1 ORDER BY lower(u.email), u.id
+`
+
+type ListAccountMembersRow struct {
+	UserID    uuid.UUID
+	Email     string
+	GoogleSub *string
+	Role      string
+	CreatedAt time.Time
+}
+
+func (q *Queries) ListAccountMembers(ctx context.Context, accountID uuid.UUID) ([]ListAccountMembersRow, error) {
+	rows, err := q.db.Query(ctx, listAccountMembers, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAccountMembersRow
+	for rows.Next() {
+		var i ListAccountMembersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Email,
+			&i.GoogleSub,
+			&i.Role,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAccountMembershipsForUser = `-- name: ListAccountMembershipsForUser :many
+SELECT a.id AS account_id, a.name, a.slug, am.role, am.created_at
+FROM account_memberships am JOIN accounts a ON a.id = am.account_id
+WHERE am.user_id = $1 ORDER BY a.name, a.id
+`
+
+type ListAccountMembershipsForUserRow struct {
+	AccountID uuid.UUID
+	Name      string
+	Slug      string
+	Role      string
+	CreatedAt time.Time
+}
+
+func (q *Queries) ListAccountMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]ListAccountMembershipsForUserRow, error) {
+	rows, err := q.db.Query(ctx, listAccountMembershipsForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAccountMembershipsForUserRow
+	for rows.Next() {
+		var i ListAccountMembershipsForUserRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.Name,
+			&i.Slug,
+			&i.Role,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listActivePrompts = `-- name: ListActivePrompts :many
@@ -545,12 +711,12 @@ func (q *Queries) ListActivePrompts(ctx context.Context, businessID uuid.UUID) (
 }
 
 const listBusinesses = `-- name: ListBusinesses :many
-SELECT id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at
-FROM businesses WHERE tenant_id = $1 ORDER BY created_at
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+FROM businesses WHERE account_id = $1 ORDER BY created_at
 `
 
-func (q *Queries) ListBusinesses(ctx context.Context, tenantID uuid.UUID) ([]Business, error) {
-	rows, err := q.db.Query(ctx, listBusinesses, tenantID)
+func (q *Queries) ListBusinesses(ctx context.Context, accountID uuid.UUID) ([]Business, error) {
+	rows, err := q.db.Query(ctx, listBusinesses, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -560,7 +726,7 @@ func (q *Queries) ListBusinesses(ctx context.Context, tenantID uuid.UUID) ([]Bus
 		var i Business
 		if err := rows.Scan(
 			&i.ID,
-			&i.TenantID,
+			&i.AccountID,
 			&i.Status,
 			&i.Name,
 			&i.Website,
@@ -581,35 +747,46 @@ func (q *Queries) ListBusinesses(ctx context.Context, tenantID uuid.UUID) ([]Bus
 	return items, nil
 }
 
+const lockAccount = `-- name: LockAccount :one
+SELECT id FROM accounts WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockAccount(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lockAccount, id)
+	var id_2 uuid.UUID
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
 const lockBusinessPlanCode = `-- name: LockBusinessPlanCode :one
 SELECT s.plan_code
-FROM businesses b JOIN subscriptions s ON s.tenant_id = b.tenant_id
-WHERE b.id = $1 AND b.tenant_id = $2 FOR UPDATE OF b
+FROM businesses b JOIN subscriptions s ON s.account_id = b.account_id
+WHERE b.id = $1 AND b.account_id = $2 FOR UPDATE OF b
 `
 
 type LockBusinessPlanCodeParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) LockBusinessPlanCode(ctx context.Context, arg LockBusinessPlanCodeParams) (string, error) {
-	row := q.db.QueryRow(ctx, lockBusinessPlanCode, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, lockBusinessPlanCode, arg.ID, arg.AccountID)
 	var plan_code string
 	err := row.Scan(&plan_code)
 	return plan_code, err
 }
 
 const lockDraftBusiness = `-- name: LockDraftBusiness :one
-SELECT status FROM businesses WHERE id = $1 AND tenant_id = $2 FOR UPDATE
+SELECT status FROM businesses WHERE id = $1 AND account_id = $2 FOR UPDATE
 `
 
 type LockDraftBusinessParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 func (q *Queries) LockDraftBusiness(ctx context.Context, arg LockDraftBusinessParams) (string, error) {
-	row := q.db.QueryRow(ctx, lockDraftBusiness, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, lockDraftBusiness, arg.ID, arg.AccountID)
 	var status string
 	err := row.Scan(&status)
 	return status, err
@@ -618,12 +795,12 @@ func (q *Queries) LockDraftBusiness(ctx context.Context, arg LockDraftBusinessPa
 const lockPromptForReplace = `-- name: LockPromptForReplace :one
 SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
 FROM prompts pr JOIN businesses b ON b.id = pr.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2 FOR UPDATE OF pr
+WHERE pr.id = $1 AND b.account_id = $2 FOR UPDATE OF pr
 `
 
 type LockPromptForReplaceParams struct {
-	ID       uuid.UUID
-	TenantID uuid.UUID
+	ID        uuid.UUID
+	AccountID uuid.UUID
 }
 
 type LockPromptForReplaceRow struct {
@@ -636,7 +813,7 @@ type LockPromptForReplaceRow struct {
 }
 
 func (q *Queries) LockPromptForReplace(ctx context.Context, arg LockPromptForReplaceParams) (LockPromptForReplaceRow, error) {
-	row := q.db.QueryRow(ctx, lockPromptForReplace, arg.ID, arg.TenantID)
+	row := q.db.QueryRow(ctx, lockPromptForReplace, arg.ID, arg.AccountID)
 	var i LockPromptForReplaceRow
 	err := row.Scan(
 		&i.ID,
@@ -670,29 +847,29 @@ func (q *Queries) ReleaseAdvisoryLock(ctx context.Context, hashtextextended stri
 	return pg_advisory_unlock, err
 }
 
-const renameTenant = `-- name: RenameTenant :exec
-UPDATE tenants SET name = $2 WHERE id = $1
+const renameAccount = `-- name: RenameAccount :exec
+UPDATE accounts SET name = $2 WHERE id = $1
 `
 
-type RenameTenantParams struct {
+type RenameAccountParams struct {
 	ID   uuid.UUID
 	Name string
 }
 
-func (q *Queries) RenameTenant(ctx context.Context, arg RenameTenantParams) error {
-	_, err := q.db.Exec(ctx, renameTenant, arg.ID, arg.Name)
+func (q *Queries) RenameAccount(ctx context.Context, arg RenameAccountParams) error {
+	_, err := q.db.Exec(ctx, renameAccount, arg.ID, arg.Name)
 	return err
 }
 
-const resolveTenantID = `-- name: ResolveTenantID :one
-SELECT tenant_id FROM businesses WHERE id = $1
+const resolveAccountID = `-- name: ResolveAccountID :one
+SELECT account_id FROM businesses WHERE id = $1
 `
 
-func (q *Queries) ResolveTenantID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, resolveTenantID, id)
-	var tenant_id uuid.UUID
-	err := row.Scan(&tenant_id)
-	return tenant_id, err
+func (q *Queries) ResolveAccountID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, resolveAccountID, id)
+	var account_id uuid.UUID
+	err := row.Scan(&account_id)
+	return account_id, err
 }
 
 const retirePrompt = `-- name: RetirePrompt :exec
@@ -708,16 +885,16 @@ const setStripeCustomerID = `-- name: SetStripeCustomerID :one
 UPDATE subscriptions
 SET stripe_customer_id=COALESCE(stripe_customer_id,$2),
     updated_at=CASE WHEN stripe_customer_id IS NULL THEN now() ELSE updated_at END
-WHERE tenant_id=$1 RETURNING stripe_customer_id
+WHERE account_id=$1 RETURNING stripe_customer_id
 `
 
 type SetStripeCustomerIDParams struct {
-	TenantID         uuid.UUID
+	AccountID        uuid.UUID
 	StripeCustomerID *string
 }
 
 func (q *Queries) SetStripeCustomerID(ctx context.Context, arg SetStripeCustomerIDParams) (*string, error) {
-	row := q.db.QueryRow(ctx, setStripeCustomerID, arg.TenantID, arg.StripeCustomerID)
+	row := q.db.QueryRow(ctx, setStripeCustomerID, arg.AccountID, arg.StripeCustomerID)
 	var stripe_customer_id *string
 	err := row.Scan(&stripe_customer_id)
 	return stripe_customer_id, err
@@ -737,6 +914,24 @@ func (q *Queries) SetUserGoogleSub(ctx context.Context, arg SetUserGoogleSubPara
 	return err
 }
 
+const updateAccountMembershipRole = `-- name: UpdateAccountMembershipRole :execrows
+UPDATE account_memberships SET role = $3 WHERE account_id = $1 AND user_id = $2
+`
+
+type UpdateAccountMembershipRoleParams struct {
+	AccountID uuid.UUID
+	UserID    uuid.UUID
+	Role      string
+}
+
+func (q *Queries) UpdateAccountMembershipRole(ctx context.Context, arg UpdateAccountMembershipRoleParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateAccountMembershipRole, arg.AccountID, arg.UserID, arg.Role)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const updateActiveBusinessProfile = `-- name: UpdateActiveBusinessProfile :one
 UPDATE businesses
 SET name = CASE WHEN $1::bool THEN $2 ELSE name END,
@@ -745,8 +940,8 @@ SET name = CASE WHEN $1::bool THEN $2 ELSE name END,
     category = CASE WHEN $7::bool THEN $8 ELSE category END,
     services = CASE WHEN $9::bool THEN $10::jsonb ELSE services END,
     location = CASE WHEN $11::bool THEN $12::jsonb ELSE location END
-WHERE id = $13 AND tenant_id = $14 AND status = 'active'
-RETURNING id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at
+WHERE id = $13 AND account_id = $14 AND status = 'active'
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
 `
 
 type UpdateActiveBusinessProfileParams struct {
@@ -763,7 +958,7 @@ type UpdateActiveBusinessProfileParams struct {
 	LocationSet bool
 	Location    json.RawMessage
 	BusinessID  uuid.UUID
-	TenantID    uuid.UUID
+	AccountID   uuid.UUID
 }
 
 func (q *Queries) UpdateActiveBusinessProfile(ctx context.Context, arg UpdateActiveBusinessProfileParams) (Business, error) {
@@ -781,12 +976,12 @@ func (q *Queries) UpdateActiveBusinessProfile(ctx context.Context, arg UpdateAct
 		arg.LocationSet,
 		arg.Location,
 		arg.BusinessID,
-		arg.TenantID,
+		arg.AccountID,
 	)
 	var i Business
 	err := row.Scan(
 		&i.ID,
-		&i.TenantID,
+		&i.AccountID,
 		&i.Status,
 		&i.Name,
 		&i.Website,
@@ -800,12 +995,37 @@ func (q *Queries) UpdateActiveBusinessProfile(ctx context.Context, arg UpdateAct
 	return i, err
 }
 
+const upsertAccountMembership = `-- name: UpsertAccountMembership :one
+INSERT INTO account_memberships (account_id, user_id, role)
+VALUES ($1, $2, $3)
+ON CONFLICT (account_id, user_id) DO UPDATE SET role = account_memberships.role
+RETURNING role, created_at
+`
+
+type UpsertAccountMembershipParams struct {
+	AccountID uuid.UUID
+	UserID    uuid.UUID
+	Role      string
+}
+
+type UpsertAccountMembershipRow struct {
+	Role      string
+	CreatedAt time.Time
+}
+
+func (q *Queries) UpsertAccountMembership(ctx context.Context, arg UpsertAccountMembershipParams) (UpsertAccountMembershipRow, error) {
+	row := q.db.QueryRow(ctx, upsertAccountMembership, arg.AccountID, arg.UserID, arg.Role)
+	var i UpsertAccountMembershipRow
+	err := row.Scan(&i.Role, &i.CreatedAt)
+	return i, err
+}
+
 const upsertSubscription = `-- name: UpsertSubscription :exec
 INSERT INTO subscriptions (
-  tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
+  account_id, plan_code, stripe_customer_id, stripe_subscription_id,
   stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end
 ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-ON CONFLICT (tenant_id) DO UPDATE SET
+ON CONFLICT (account_id) DO UPDATE SET
   plan_code=EXCLUDED.plan_code, stripe_customer_id=EXCLUDED.stripe_customer_id,
   stripe_subscription_id=EXCLUDED.stripe_subscription_id, stripe_status=EXCLUDED.stripe_status,
   past_due_since=EXCLUDED.past_due_since, comped=EXCLUDED.comped,
@@ -814,7 +1034,7 @@ ON CONFLICT (tenant_id) DO UPDATE SET
 `
 
 type UpsertSubscriptionParams struct {
-	TenantID             uuid.UUID
+	AccountID            uuid.UUID
 	PlanCode             string
 	StripeCustomerID     *string
 	StripeSubscriptionID *string
@@ -827,7 +1047,7 @@ type UpsertSubscriptionParams struct {
 
 func (q *Queries) UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) error {
 	_, err := q.db.Exec(ctx, upsertSubscription,
-		arg.TenantID,
+		arg.AccountID,
 		arg.PlanCode,
 		arg.StripeCustomerID,
 		arg.StripeSubscriptionID,
@@ -838,4 +1058,34 @@ func (q *Queries) UpsertSubscription(ctx context.Context, arg UpsertSubscription
 		arg.CancelAtPeriodEnd,
 	)
 	return err
+}
+
+const upsertUserByEmail = `-- name: UpsertUserByEmail :one
+INSERT INTO users (id, email) VALUES ($1, $2)
+ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+RETURNING id, email, google_sub, created_at
+`
+
+type UpsertUserByEmailParams struct {
+	ID    uuid.UUID
+	Email string
+}
+
+type UpsertUserByEmailRow struct {
+	ID        uuid.UUID
+	Email     string
+	GoogleSub *string
+	CreatedAt time.Time
+}
+
+func (q *Queries) UpsertUserByEmail(ctx context.Context, arg UpsertUserByEmailParams) (UpsertUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, upsertUserByEmail, arg.ID, arg.Email)
+	var i UpsertUserByEmailRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.GoogleSub,
+		&i.CreatedAt,
+	)
+	return i, err
 }

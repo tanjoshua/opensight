@@ -6,19 +6,16 @@
 // points straight at /billing, so this route never even loads for that case,
 // but a defensive check keeps a stray direct hit from erroring.
 import { Code, ConnectError, createClient } from "@connectrpc/connect"
-import { createConnectQueryKey } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import { LoaderCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Navigate, useSearchParams } from "react-router"
 
 import { transport } from "@/api/transport"
-import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
-import { AuthService } from "@/gen/opensight/v1/auth_pb"
 import { BillingService } from "@/gen/opensight/v1/billing_pb"
-import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
+import { Access } from "@/gen/opensight/v1/common_pb"
+import { accountPath } from "@/lib/account-path"
 
-const authClient = createClient(AuthService, transport)
 const billingClient = createClient(BillingService, transport)
 const CONFIRM_ATTEMPTS = 5
 
@@ -29,15 +26,17 @@ const CONFIRM_ATTEMPTS = 5
 async function confirmCheckoutWithRetry(
   sessionId: string,
   signal: AbortSignal
-): Promise<Access> {
+): Promise<{ access: Access; accountSlug: string }> {
   let access: Access = Access.UNSPECIFIED
+  let accountSlug = ""
 
   for (let attempt = 0; attempt < CONFIRM_ATTEMPTS; attempt++) {
     signal.throwIfAborted()
     try {
-      access = (await billingClient.confirmCheckout({ sessionId }, { signal }))
-        .access
-      if (access === Access.FULL) return access
+      const response = await billingClient.confirmCheckout({ sessionId }, { signal })
+      access = response.access
+      accountSlug = response.accountSlug
+      if (access === Access.FULL) return { access, accountSlug }
     } catch (error) {
       if (!isRetryableConfirmationError(error)) throw error
     }
@@ -49,7 +48,7 @@ async function confirmCheckoutWithRetry(
     }
   }
 
-  return access
+  return { access, accountSlug }
 }
 
 function isRetryableConfirmationError(error: unknown): boolean {
@@ -70,7 +69,7 @@ export function CheckoutReturnPage() {
   const sessionId = searchParams.get("session_id")
   const queryClient = useQueryClient()
   const [target, setTarget] = useState<string | undefined>(
-    sessionId ? undefined : "/billing"
+    sessionId ? undefined : "/accounts"
   )
 
   useEffect(() => {
@@ -78,38 +77,28 @@ export function CheckoutReturnPage() {
     const controller = new AbortController()
 
     void (async () => {
-      let access: Access
+      let result: { access: Access; accountSlug: string }
       try {
-        access = await confirmCheckoutWithRetry(sessionId, controller.signal)
+        result = await confirmCheckoutWithRetry(sessionId, controller.signal)
       } catch {
         if (controller.signal.aborted) return
-        // Confirmation failed — wrong tenant, unknown session, or a network
+        // Confirmation failed — wrong account, unknown session, or a network
         // failure that outlasted the bounded settling window. The billing
         // page is the safe fallback: it re-derives access itself rather than
         // trusting anything this route decided.
-        setTarget("/billing")
+        setTarget("/accounts")
         return
       }
 
       // The shell (AppLayout, OnboardingPage) reads access off /me, so it
       // must see the reconciled state before we navigate into it.
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: getMe,
-          cardinality: "finite",
-        }),
-      })
+      await queryClient.invalidateQueries()
 
-      if (access !== Access.FULL) {
-        setTarget("/billing")
+      if (!result.accountSlug) {
+        setTarget("/accounts")
         return
       }
-
-      const me = await authClient.getMe({})
-      const hasActiveBusiness = me.businesses.some(
-        (b) => b.status !== BusinessStatus.DRAFT
-      )
-      setTarget(hasActiveBusiness ? "/overview" : "/onboarding")
+      setTarget(result.access === Access.FULL ? accountPath(result.accountSlug) : accountPath(result.accountSlug, "/billing"))
     })()
 
     return () => controller.abort()

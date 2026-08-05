@@ -34,14 +34,14 @@ func writeSpec(t *testing.T, contents string) string {
 // fields.
 func TestParseBusinessCreateArgs(t *testing.T) {
 	got, err := parseBusinessCreateArgs([]string{
-		"--tenant", tenantIDForTest,
+		"--account", accountIDForTest,
 		"--file", writeSpec(t, validSpecYAML),
 	})
 	if err != nil {
 		t.Fatalf("parseBusinessCreateArgs: %v", err)
 	}
-	if got.TenantID.String() != tenantIDForTest {
-		t.Fatalf("tenant id = %s, want %s", got.TenantID, tenantIDForTest)
+	if got.AccountID.String() != accountIDForTest {
+		t.Fatalf("account id = %s, want %s", got.AccountID, accountIDForTest)
 	}
 	if got.Spec.Name != "Roots! Advanced Endodontics" {
 		t.Fatalf("name = %q", got.Spec.Name)
@@ -78,15 +78,15 @@ func TestBusinessCreateRejectsBadSpecs(t *testing.T) {
 	}
 }
 
-func TestBusinessCreateRequiresTenantAndFile(t *testing.T) {
+func TestBusinessCreateRequiresAccountAndFile(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		args []string
 		want string
 	}{
-		{"missing tenant", []string{"--file", "x.yaml"}, "--tenant is required"},
-		{"missing file", []string{"--tenant", tenantIDForTest}, "--file is required"},
-		{"bad tenant", []string{"--tenant", "nope", "--file", "x.yaml"}, "--tenant must be a UUID"},
+		{"missing account", []string{"--file", "x.yaml"}, "--account is required"},
+		{"missing file", []string{"--account", accountIDForTest}, "--file is required"},
+		{"bad account", []string{"--account", "nope", "--file", "x.yaml"}, "--account must be a UUID"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := parseBusinessCreateArgs(tc.args)

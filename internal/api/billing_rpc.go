@@ -9,6 +9,7 @@ import (
 	"opensight/internal/billing/reconcile"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,7 +23,7 @@ var _ opensightv1connect.BillingServiceHandler = (*Server)(nil)
 // it per session would produce a population of one and defeat the purpose.
 const checkoutIntegrationIdentifier = "opensight-signup-vqmzhrtk"
 
-// GetBilling returns the calling tenant's billing state for the billing page
+// GetBilling returns the calling account's billing state for the billing page
 // (design 08 "RPC surface"): derived access, plan entitlements, the
 // verbatim Stripe status, a live price for display, and the renewal-or-end
 // date pair (current_period_end + cancel_at_period_end).
@@ -32,7 +33,7 @@ func (s *Server) GetBilling(ctx context.Context, _ *connect.Request[opensightv1.
 		return nil, cerr
 	}
 
-	sub, err := s.store.GetByTenant(ctx, su.TenantID)
+	sub, err := s.store.GetByAccount(ctx, su.AccountID)
 	if err != nil {
 		// Signup guarantees the row; a miss here is our bug, not the client's.
 		return nil, s.rpcInternal("get billing: get subscription", err)
@@ -97,8 +98,8 @@ func (s *Server) cachedPrice(ctx context.Context, priceID string) (billing.Price
 	return price, nil
 }
 
-// StartCheckout sends the calling tenant to a Stripe-hosted Checkout Session
-// for the Starter plan, creating the tenant's permanent Stripe Customer on
+// StartCheckout sends the calling account to a Stripe-hosted Checkout Session
+// for the Starter plan, creating the account's permanent Stripe Customer on
 // first use (design 08 "Checkout Session", "Customer").
 func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensightv1.StartCheckoutRequest]) (*connect.Response[opensightv1.StartCheckoutResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "start checkout")
@@ -106,7 +107,7 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 		return nil, cerr
 	}
 
-	sub, err := s.store.GetByTenant(ctx, su.TenantID)
+	sub, err := s.store.GetByAccount(ctx, su.AccountID)
 	if err != nil {
 		// Signup guarantees the row; a miss here is our bug, not the client's.
 		return nil, s.rpcInternal("start checkout: get subscription", err)
@@ -114,7 +115,7 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 
 	// Enforce the same server-derived action returned by GetBilling before any
 	// Stripe call. Recoverable subscriptions belong in the Customer Portal;
-	// Checkout is only for a tenant with no subscription or a terminal one.
+	// Checkout is only for a account with no subscription or a terminal one.
 	if billing.DeriveAction(sub.AccessState()) != billing.ActionCheckout {
 		return nil, rpcFailedPrecondition("this account already has a subscription; manage it from the billing portal")
 	}
@@ -133,15 +134,15 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 	customerID := sub.StripeCustomerID
 	if customerID == nil {
 		cus, err := s.billing.CreateCustomer(ctx, billing.CreateCustomerParams{
-			TenantID: su.TenantID.String(),
-			Email:    su.Email,
+			AccountID: su.AccountID.String(),
+			Email:     su.Email,
 		})
 		if err != nil {
 			return nil, s.rpcInternal("start checkout: create customer", err)
 		}
 		// The id that won, not necessarily cus.ID: a concurrent request may
 		// already have installed a different Customer (write-once).
-		won, err := s.store.SetStripeCustomerID(ctx, su.TenantID, cus.ID)
+		won, err := s.store.SetStripeCustomerID(ctx, su.AccountID, cus.ID)
 		if err != nil {
 			return nil, s.rpcError("start checkout: set stripe customer id", err)
 		}
@@ -154,10 +155,10 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 	session, err := s.billing.CreateCheckoutSession(ctx, billing.CreateCheckoutSessionParams{
 		CustomerID:            *customerID,
 		PriceID:               priceID,
-		TenantID:              su.TenantID.String(),
+		AccountID:             su.AccountID.String(),
 		IntegrationIdentifier: checkoutIntegrationIdentifier,
 		SuccessURL:            s.appBaseURL + "/checkout/return?session_id={CHECKOUT_SESSION_ID}",
-		CancelURL:             s.appBaseURL + "/billing",
+		CancelURL:             s.appBaseURL + "/a/" + su.AccountSlug + "/billing",
 	})
 	if err != nil {
 		return nil, s.rpcInternal("start checkout: create checkout session", err)
@@ -167,7 +168,7 @@ func (s *Server) StartCheckout(ctx context.Context, _ *connect.Request[opensight
 }
 
 // ConfirmCheckout retrieves a Checkout Session server-side, confirms it
-// belongs to the calling tenant, and runs the same reconcile the webhook
+// belongs to the calling account, and runs the same reconcile the webhook
 // runs (design 08 "Checkout return") — so a customer who just paid is never
 // told they haven't while a webhook is in flight.
 func (s *Server) ConfirmCheckout(ctx context.Context, req *connect.Request[opensightv1.ConfirmCheckoutRequest]) (*connect.Response[opensightv1.ConfirmCheckoutResponse], error) {
@@ -189,46 +190,51 @@ func (s *Server) ConfirmCheckout(ctx context.Context, req *connect.Request[opens
 		return nil, s.rpcInternal("confirm checkout: get checkout session", err)
 	}
 
-	// Another tenant's session must be indistinguishable from one that never
-	// existed — the identical NotFound, byte for byte, returned before any
-	// write. A distinct code here would make ConfirmCheckout a session-id
-	// oracle.
-	if cs.ClientReferenceID != su.TenantID.String() {
+	accountID, idErr := rpcID("client_reference_id", cs.ClientReferenceID)
+	if idErr != nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("not found"))
+	}
+	membership, memberErr := s.store.GetAccountMember(ctx, accountID, su.UserID)
+	if memberErr != nil || membership.Role != store.AccountRoleOwner {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("not found"))
+	}
+	account, err := s.store.GetAccount(ctx, accountID)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("not found"))
 	}
 
 	// Keyed off the row's own customer id, never cs.CustomerID: a second belt
 	// alongside the check above, so even a forged session id could not cause
-	// a write against another tenant's Customer. Reconcile runs
+	// a write against another account's Customer. Reconcile runs
 	// unconditionally, without branching on cs.Status — the session carries
 	// identity, not truth. An abandoned (open) session reconciles to "no
 	// subscription", the row is untouched, and the response is ACCESS_NEVER,
 	// which is exactly right.
-	sub, err := s.reconciler.Tenant(ctx, su.TenantID)
+	sub, err := s.reconciler.Account(ctx, accountID)
 	if err != nil && !errors.Is(err, reconcile.ErrNoCustomer) {
 		return nil, s.rpcInternal("confirm checkout: reconcile", err)
 	}
 	// ErrNoCustomer would mean the row lost its Customer id after this
-	// session was created for this tenant, which StartCheckout's write-once
-	// persistence makes structurally impossible — reconcile.Tenant still
+	// session was created for this account, which StartCheckout's write-once
+	// persistence makes structurally impossible — reconcile.Account still
 	// returns the (unwritten) row alongside it, so access derives correctly
 	// either way.
 
 	access := billing.DeriveAccess(sub.AccessState(), nowUTC())
-	return connect.NewResponse(&opensightv1.ConfirmCheckoutResponse{Access: accessToProto(access)}), nil
+	return connect.NewResponse(&opensightv1.ConfirmCheckoutResponse{Access: accessToProto(access), AccountSlug: account.Slug}), nil
 }
 
 // CreatePortalSession starts a Stripe-hosted Customer Portal session for the
-// calling tenant (design 08 "Customer Portal"). A tenant with no Stripe
+// calling account (design 08 "Customer Portal"). A account with no Stripe
 // Customer is refused rather than sent somewhere broken — this correctly
-// covers a comped tenant too, which has no Stripe objects at all (AC #1).
+// covers a comped account too, which has no Stripe objects at all (AC #1).
 func (s *Server) CreatePortalSession(ctx context.Context, _ *connect.Request[opensightv1.CreatePortalSessionRequest]) (*connect.Response[opensightv1.CreatePortalSessionResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "create portal session")
 	if cerr != nil {
 		return nil, cerr
 	}
 
-	sub, err := s.store.GetByTenant(ctx, su.TenantID)
+	sub, err := s.store.GetByAccount(ctx, su.AccountID)
 	if err != nil {
 		// Signup guarantees the row; a miss here is our bug, not the client's.
 		return nil, s.rpcInternal("create portal session: get subscription", err)
@@ -240,7 +246,7 @@ func (s *Server) CreatePortalSession(ctx context.Context, _ *connect.Request[ope
 	session, err := s.billing.CreatePortalSession(ctx, billing.CreatePortalSessionParams{
 		CustomerID:      *sub.StripeCustomerID,
 		ConfigurationID: s.stripePortalConfigurationID,
-		ReturnURL:       s.appBaseURL + "/billing",
+		ReturnURL:       s.appBaseURL + "/a/" + su.AccountSlug + "/billing",
 	})
 	if err != nil {
 		return nil, s.rpcInternal("create portal session: create portal session", err)

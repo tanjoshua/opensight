@@ -12,7 +12,7 @@ package billing
 
 import "fmt"
 
-// Plan is a tenant's entitlements: how many prompts it may run, how often
+// Plan is a account's entitlements: how many prompts it may run, how often
 // monitoring runs, which platforms it covers, and the Stripe Price it is sold
 // against.
 type Plan struct {
@@ -20,7 +20,7 @@ type Plan struct {
 	// metadata) and persisted as subscriptions.plan_code.
 	Code string
 	Name string
-	// PromptLimit bounds the tenant's active prompts (design 02).
+	// PromptLimit bounds the account's active prompts (design 02).
 	PromptLimit int
 	// RunInterval drives the Temporal Schedule spec (design 04). A plain string,
 	// not an enum: the domain of valid intervals lives in the catalog, not the

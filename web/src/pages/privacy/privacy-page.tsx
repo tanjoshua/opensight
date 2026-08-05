@@ -1,6 +1,8 @@
 import { Link } from "react-router"
+import { useAccountPath } from "@/lib/account-path"
 
 export function PrivacyPage() {
+  const path = useAccountPath()
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -93,7 +95,7 @@ export function PrivacyPage() {
         For how monitoring results and metrics are produced, read{" "}
         <Link
           className="font-medium text-foreground underline underline-offset-4"
-          to="/methodology"
+          to={path("/methodology")}
         >
           How we measure
         </Link>

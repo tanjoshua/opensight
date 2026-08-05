@@ -116,9 +116,9 @@ export const AccessDeniedSchema: GenMessage<AccessDenied> = /*@__PURE__*/
   messageDesc(file_opensight_v1_common, 3);
 
 /**
- * Plan is the tenant's plan config (internal/billing catalog). It lives here
+ * Plan is the account's plan config (internal/billing catalog). It lives here
  * because AuthService.GetMe carries it alongside Access; a business's plan is
- * a tenant fact, not a per-business fact.
+ * an account fact, not a per-business fact.
  *
  * @generated from message opensight.v1.Plan
  */
@@ -637,7 +637,7 @@ export const GenerationStageSchema: GenEnum<GenerationStage> = /*@__PURE__*/
   enumDesc(file_opensight_v1_common, 12);
 
 /**
- * Access is the tenant's derived billing authorization (design 08 "Access").
+ * Access is the account's derived billing authorization (design 08 "Access").
  * Derived from the subscriptions row and the current time, never stored.
  *
  * @generated from enum opensight.v1.Access
@@ -665,7 +665,7 @@ export const Access = {
 } as const;
 
 /**
- * Access is the tenant's derived billing authorization (design 08 "Access").
+ * Access is the account's derived billing authorization (design 08 "Access").
  * Derived from the subscriptions row and the current time, never stored.
  *
  * @generated from enum opensight.v1.Access

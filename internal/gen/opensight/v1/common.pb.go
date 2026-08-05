@@ -698,7 +698,7 @@ func (GenerationStage) EnumDescriptor() ([]byte, []int) {
 	return file_opensight_v1_common_proto_rawDescGZIP(), []int{12}
 }
 
-// Access is the tenant's derived billing authorization (design 08 "Access").
+// Access is the account's derived billing authorization (design 08 "Access").
 // Derived from the subscriptions row and the current time, never stored.
 type Access int32
 
@@ -971,9 +971,9 @@ func (x *AccessDenied) GetAccess() Access {
 	return Access_ACCESS_UNSPECIFIED
 }
 
-// Plan is the tenant's plan config (internal/billing catalog). It lives here
+// Plan is the account's plan config (internal/billing catalog). It lives here
 // because AuthService.GetMe carries it alongside Access; a business's plan is
-// a tenant fact, not a per-business fact.
+// an account fact, not a per-business fact.
 type Plan struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Code        string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`

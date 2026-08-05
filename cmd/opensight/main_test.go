@@ -31,10 +31,10 @@ func TestRunRejectsUnknownAndMissingSubcommands(t *testing.T) {
 	}{
 		{"no subcommand", nil, "no subcommand given"},
 		{"unknown subcommand", []string{"bogus"}, "unknown subcommand"},
-		{"missing tenant subcommand", []string{"tenant"}, "tenant subcommand required"},
-		{"unknown tenant subcommand", []string{"tenant", "bogus"}, "unknown tenant subcommand"},
-		{"missing user subcommand", []string{"user"}, "user subcommand required"},
-		{"unknown user subcommand", []string{"user", "bogus"}, "unknown user subcommand"},
+		{"missing account subcommand", []string{"account"}, "account subcommand required"},
+		{"unknown account subcommand", []string{"account", "bogus"}, "unknown account subcommand"},
+		{"missing account member subcommand", []string{"account", "member"}, "account member subcommand"},
+		{"unknown account member subcommand", []string{"account", "member", "bogus"}, "account member subcommand"},
 		{"missing business subcommand", []string{"business"}, "business subcommand required"},
 		{"unknown business subcommand", []string{"business", "bogus"}, "unknown business subcommand"},
 		{"missing seed subcommand", []string{"seed"}, "seed subcommand required"},
@@ -90,48 +90,54 @@ func TestValidateServeRuntimeConfig(t *testing.T) {
 	}
 }
 
-func TestParseTenantCreateArgs(t *testing.T) {
-	opts, err := parseTenantCreateArgs([]string{"--name", "  Acme Clinic  "})
+func TestParseAccountCreateArgs(t *testing.T) {
+	opts, err := parseAccountCreateArgs([]string{"--name", "  Acme Clinic  "})
 	if err != nil {
-		t.Fatalf("parseTenantCreateArgs: %v", err)
+		t.Fatalf("parseAccountCreateArgs: %v", err)
 	}
 	if opts.Name != "Acme Clinic" {
-		t.Fatalf("tenant name = %q, want %q", opts.Name, "Acme Clinic")
+		t.Fatalf("account name = %q, want %q", opts.Name, "Acme Clinic")
 	}
 
-	if _, err := parseTenantCreateArgs(nil); err == nil || !strings.Contains(err.Error(), "--name is required") {
+	if _, err := parseAccountCreateArgs(nil); err == nil || !strings.Contains(err.Error(), "--name is required") {
 		t.Fatalf("error = %v, want missing-name error", err)
 	}
 }
 
-func TestParseUserCreateArgs(t *testing.T) {
-	opts, err := parseUserCreateArgs([]string{
-		"--tenant", tenantIDForTest,
+func TestParseAccountMemberAddArgs(t *testing.T) {
+	opts, err := parseAccountMemberAddArgs([]string{
+		"--account", accountIDForTest,
 		"--email", "  Owner@Example.com  ",
+		"--role", "admin",
 	})
 	if err != nil {
-		t.Fatalf("parseUserCreateArgs: %v", err)
+		t.Fatalf("parseAccountMemberAddArgs: %v", err)
 	}
-	if opts.TenantID.String() != tenantIDForTest {
-		t.Fatalf("tenant id = %s, want %s", opts.TenantID, tenantIDForTest)
+	if opts.AccountID.String() != accountIDForTest {
+		t.Fatalf("account id = %s, want %s", opts.AccountID, accountIDForTest)
 	}
 	if opts.Email != "Owner@Example.com" {
 		t.Fatalf("email = %q, want trimmed email preserving case", opts.Email)
 	}
+	if opts.Role != "admin" {
+		t.Fatalf("role = %q, want admin", opts.Role)
+	}
 }
 
-func TestParseUserCreateArgsRejectsBadInput(t *testing.T) {
+func TestParseAccountMemberAddArgsRejectsBadInput(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		args []string
 		want string
 	}{
-		{"missing tenant", []string{"--email", "owner@example.com"}, "--tenant is required"},
-		{"bad tenant", []string{"--tenant", "not-a-uuid", "--email", "owner@example.com"}, "--tenant must be a UUID"},
-		{"missing email", []string{"--tenant", tenantIDForTest}, "--email is required"},
+		{"missing account", []string{"--email", "owner@example.com", "--role", "member"}, "--account is required"},
+		{"bad account", []string{"--account", "not-a-uuid", "--email", "owner@example.com", "--role", "member"}, "--account must be a UUID"},
+		{"missing email", []string{"--account", accountIDForTest, "--role", "member"}, "--email is required"},
+		{"missing role", []string{"--account", accountIDForTest, "--email", "owner@example.com"}, "--role must be"},
+		{"bad role", []string{"--account", accountIDForTest, "--email", "owner@example.com", "--role", "superuser"}, "--role must be"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := parseUserCreateArgs(tc.args); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if _, err := parseAccountMemberAddArgs(tc.args); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error = %v, want containing %q", err, tc.want)
 			}
 		})
@@ -180,4 +186,4 @@ func TestNewLoggerEmitsJSON(t *testing.T) {
 	}
 }
 
-const tenantIDForTest = "01950000-0000-7000-8000-0000000000b2"
+const accountIDForTest = "01950000-0000-7000-8000-0000000000b2"

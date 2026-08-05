@@ -8,6 +8,7 @@ import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { LayoutDashboard, TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router"
+import { useAccountPath } from "@/lib/account-path"
 
 import { pollWhileRunning, useCurrentBusiness, usePlan } from "@/api/hooks"
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
@@ -174,6 +175,7 @@ function OverviewFrame({ children }: { children: React.ReactNode }) {
 }
 
 function OverviewHeader() {
+  const path = useAccountPath()
   return (
     <PageHeader
       title="Your visibility brief"
@@ -181,7 +183,7 @@ function OverviewHeader() {
       actions={
         <Link
           className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-          to="/methodology"
+          to={path("/methodology")}
         >
           How we measure
         </Link>

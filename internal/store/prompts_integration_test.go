@@ -16,11 +16,11 @@ import (
 // fillActivePrompts creates n active prompts with distinct text, up to (and
 // possibly at) the catalog's starter prompt limit, so limit-boundary tests
 // don't hardcode a literal.
-func fillActivePrompts(t *testing.T, ctx context.Context, promptStore *Store, tenantID, businessID domain.ID, n int) {
+func fillActivePrompts(t *testing.T, ctx context.Context, promptStore *Store, accountID, businessID domain.ID, n int) {
 	t.Helper()
 	for i := 0; i < n; i++ {
 		if _, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-			TenantID:   tenantID,
+			AccountID:   accountID,
 			BusinessID: businessID,
 			Text:       fmt.Sprintf("filler prompt %d", i),
 		}); err != nil {
@@ -42,28 +42,28 @@ func TestPromptStoreCreateActivePromptHonorsPlanLimit(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Prompt Limit Tenant")
+	insertAccount(t, db, ctx, accountID, "Prompt Limit Account")
 	if _, err := db.Exec(ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID); err != nil {
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Prompt Limit Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
 
 	promptStore := New(db)
-	fillActivePrompts(t, ctx, promptStore, tenantID, businessID, billing.Starter.PromptLimit)
+	fillActivePrompts(t, ctx, promptStore, accountID, businessID, billing.Starter.PromptLimit)
 
 	_, err = promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-		TenantID:   tenantID,
+		AccountID:   accountID,
 		BusinessID: businessID,
 		Text:       "where should I book a clinic appointment",
 	})
@@ -97,20 +97,20 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Replace Tenant")
+	insertAccount(t, db, ctx, accountID, "Replace Account")
 	if _, err := db.Exec(ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Replace Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID); err != nil {
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Replace Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
 
@@ -118,9 +118,9 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 	// Fill to the catalog's starter limit minus one, then create the original as
 	// the last slot: the replace below only fits because retiring the original
 	// frees its slot before the insert counts (at the limit boundary).
-	fillActivePrompts(t, ctx, promptStore, tenantID, businessID, billing.Starter.PromptLimit-1)
+	fillActivePrompts(t, ctx, promptStore, accountID, businessID, billing.Starter.PromptLimit-1)
 	original, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-		TenantID:   tenantID,
+		AccountID:   accountID,
 		BusinessID: businessID,
 		Text:       "best clinic near me",
 	})
@@ -129,7 +129,7 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 	}
 
 	replacement, err := promptStore.ReplacePrompt(ctx, ReplacePromptParams{
-		TenantID:    tenantID,
+		AccountID:    accountID,
 		OldPromptID: original.ID,
 		Text:        "top rated clinic nearby",
 	})
@@ -153,7 +153,7 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 
 	// Replacing the now-retired original is rejected.
 	if _, err := promptStore.ReplacePrompt(ctx, ReplacePromptParams{
-		TenantID:    tenantID,
+		AccountID:    accountID,
 		OldPromptID: original.ID,
 		Text:        "another prompt",
 	}); !errors.Is(err, ErrPromptNotActive) {

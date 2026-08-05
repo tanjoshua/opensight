@@ -25,8 +25,8 @@ import (
 
 // businessCreateOptions carries the parsed inputs for `business create`.
 type businessCreateOptions struct {
-	TenantID domain.ID
-	Spec     businessSpec
+	AccountID domain.ID
+	Spec      businessSpec
 }
 
 // businessSpec is a business profile plus its prompts, ready for the store: the
@@ -57,7 +57,7 @@ type businessSpecFile struct {
 func parseBusinessCreateArgs(args []string) (businessCreateOptions, error) {
 	flags := flag.NewFlagSet("business create", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	tenantRaw := flags.String("tenant", "", "tenant id")
+	accountRaw := flags.String("account", "", "account id")
 	file := flags.String("file", "", "path to the business spec (YAML or JSON)")
 	if err := flags.Parse(args); err != nil {
 		return businessCreateOptions{}, fmt.Errorf("%s", businessCreateUsage)
@@ -65,23 +65,23 @@ func parseBusinessCreateArgs(args []string) (businessCreateOptions, error) {
 	if flags.NArg() != 0 {
 		return businessCreateOptions{}, fmt.Errorf("unexpected argument %q; %s", flags.Arg(0), businessCreateUsage)
 	}
-	if strings.TrimSpace(*tenantRaw) == "" {
-		return businessCreateOptions{}, fmt.Errorf("--tenant is required; %s", businessCreateUsage)
+	if strings.TrimSpace(*accountRaw) == "" {
+		return businessCreateOptions{}, fmt.Errorf("--account is required; %s", businessCreateUsage)
 	}
 	if strings.TrimSpace(*file) == "" {
 		return businessCreateOptions{}, fmt.Errorf("--file is required; %s", businessCreateUsage)
 	}
 
-	tenantID, err := uuid.Parse(strings.TrimSpace(*tenantRaw))
+	accountID, err := uuid.Parse(strings.TrimSpace(*accountRaw))
 	if err != nil {
-		return businessCreateOptions{}, fmt.Errorf("--tenant must be a UUID: %w", err)
+		return businessCreateOptions{}, fmt.Errorf("--account must be a UUID: %w", err)
 	}
 
 	spec, err := loadBusinessSpec(*file)
 	if err != nil {
 		return businessCreateOptions{}, err
 	}
-	return businessCreateOptions{TenantID: tenantID, Spec: spec}, nil
+	return businessCreateOptions{AccountID: accountID, Spec: spec}, nil
 }
 
 // loadBusinessSpec reads and validates a business spec file into a store-ready
@@ -182,10 +182,10 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 	dataStore := store.New(db)
 
 	// Fail fast on plan lookup: the schedule spec derives from run_interval, and a
-	// missing tenant/subscription should stop us before we write a business.
-	sub, err := dataStore.GetByTenant(ctx, opts.TenantID)
+	// A missing account/subscription should stop us before we write a business.
+	sub, err := dataStore.GetByAccount(ctx, opts.AccountID)
 	if err != nil {
-		return fmt.Errorf("load tenant subscription: %w", err)
+		return fmt.Errorf("load account subscription: %w", err)
 	}
 	plan, err := billing.PlanFor(sub.PlanCode)
 	if err != nil {
@@ -194,7 +194,7 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 
 	activatedAt := time.Now().UTC()
 	business, err := dataStore.CreateBusiness(ctx, store.CreateBusinessParams{
-		TenantID:    opts.TenantID,
+		AccountID:   opts.AccountID,
 		Status:      store.BusinessStatusActive,
 		Name:        opts.Spec.Name,
 		Website:     opts.Spec.Website,
@@ -210,7 +210,7 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 
 	for _, text := range opts.Spec.Prompts {
 		if _, err := dataStore.CreateActivePrompt(ctx, store.CreateActivePromptParams{
-			TenantID:   opts.TenantID,
+			AccountID:  opts.AccountID,
 			BusinessID: business.ID,
 			Text:       text,
 		}); err != nil {
@@ -249,8 +249,8 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 	}
 
 	_, err = fmt.Fprintf(out,
-		"created business\ntenant_id=%s\nbusiness_id=%s\nprompts=%d\nrun_interval=%s\nschedule_id=%s\nfirst_run_workflow_id=%s\n",
-		opts.TenantID, business.ID, len(opts.Spec.Prompts), plan.RunInterval, scheduleID, workflowID,
+		"created business\naccount_id=%s\nbusiness_id=%s\nprompts=%d\nrun_interval=%s\nschedule_id=%s\nfirst_run_workflow_id=%s\n",
+		opts.AccountID, business.ID, len(opts.Spec.Prompts), plan.RunInterval, scheduleID, workflowID,
 	)
 	return err
 }

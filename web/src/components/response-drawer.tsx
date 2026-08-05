@@ -3,6 +3,7 @@ import { timestampDate, type Timestamp } from "@bufbuild/protobuf/wkt"
 import { type ReactNode, useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight, ExternalLink, FileJson } from "lucide-react"
 import { Link } from "react-router"
+import { useAccountPath } from "@/lib/account-path"
 
 import {
   citationSubjectLabel,
@@ -72,6 +73,7 @@ function ResponseDrawerContent({
   resultIds: string[]
   onOpenChange: (open: boolean) => void
 }) {
+  const path = useAccountPath()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [includeRaw, setIncludeRaw] = useState(false)
   const resultId = resultIds[currentIndex]
@@ -203,7 +205,7 @@ function ResponseDrawerContent({
                         {result.model ?? "Not recorded"}{" "}
                         <Link
                           className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                          to="/methodology"
+                          to={path("/methodology")}
                         >
                           How measured
                         </Link>

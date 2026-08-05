@@ -2,22 +2,22 @@ package billing
 
 import "time"
 
-// Access is the tenant's derived billing authorization (design 08 "Access").
+// Access is the account's derived billing authorization (design 08 "Access").
 // It is never stored — always recomputed from a State and the current time.
 type Access int
 
 const (
 	// AccessNever means signed up, never paid: nothing to read.
 	AccessNever Access = iota
-	// AccessFull means the tenant has a live subscription, so reads, edits,
+	// AccessFull means the account has a live subscription, so reads, edits,
 	// profile generation, and monitoring runs are available.
 	AccessFull
-	// AccessLapsed means the tenant was once full but is not now: reads and
+	// AccessLapsed means the account was once full but is not now: reads and
 	// cost-free edits stay available, while generation and runs are blocked.
 	AccessLapsed
 )
 
-// Action is the one billing operation a tenant may take from the billing
+// Action is the one billing operation a account may take from the billing
 // page. It is derived alongside Access so the API and SPA cannot disagree
 // about whether an existing Stripe subscription should be managed or a new
 // one should be created.
@@ -29,7 +29,7 @@ const (
 	ActionPortal
 )
 
-// Active reports whether the tenant currently has a live subscription. Every
+// Active reports whether the account currently has a live subscription. Every
 // spend-side safeguard asks this one question — never a per-feature variant.
 func (a Access) Active() bool { return a == AccessFull }
 
@@ -102,7 +102,7 @@ func DeriveAccess(st State, now time.Time) Access {
 	return AccessLapsed
 }
 
-// DeriveAction prevents a tenant from creating a second Stripe subscription
+// DeriveAction prevents a account from creating a second Stripe subscription
 // alongside one the Customer Portal could still recover. The dividing line is
 // whether the subscription has ever been paid: past_due, unpaid and paused
 // all follow a successful first charge, so the portal can revive them and

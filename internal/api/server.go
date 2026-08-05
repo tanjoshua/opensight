@@ -1,4 +1,4 @@
-// Package api hosts the Connect RPC handlers and tenant scoping for the
+// Package api hosts the Connect RPC handlers and account scoping for the
 // OpenSight API server (01-D2). Routes() mounts /healthz, the /rpc tree
 // (rpc.go), and the embedded SPA fallback (static.go).
 package api
@@ -75,7 +75,7 @@ type Server struct {
 	// sessionTTL is a field (not a bare const) so tests can shrink it.
 	sessionTTL time.Duration
 	// billing, reconciler, stripePriceIDs, and appBaseURL drive checkout:
-	// create/reuse the tenant's Stripe Customer, start a Checkout
+	// create/reuse the account's Stripe Customer, start a Checkout
 	// Session against the plan's Price, and reconcile on return.
 	billing        billingProvider
 	reconciler     *reconcile.Reconciler

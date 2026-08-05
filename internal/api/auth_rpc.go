@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"opensight/internal/billing"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
 
@@ -28,8 +27,8 @@ func (s *Server) Logout(ctx context.Context, req *connect.Request[opensightv1.Lo
 	return res, nil
 }
 
-// GetMe returns the current session's user, tenant, businesses, access, and
-// plan — one authoritative payload, and the SPA's one call site for its own billing state. It does not extend expiry.
+// GetMe returns the global identity and every account membership. Account
+// billing/business context is loaded separately after the user selects one.
 func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.GetMeRequest]) (*connect.Response[opensightv1.GetMeResponse], error) {
 	su, ok := sessionUserFromContext(ctx)
 	if !ok {
@@ -37,33 +36,18 @@ func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.Get
 		// reaching here means the wiring is broken, not a normal auth failure.
 		return nil, s.rpcError("rpc: get me: missing session context", errors.New("missing session context"))
 	}
-	access, ok := accessFromContext(ctx)
-	if !ok {
-		return nil, s.rpcError("rpc: get me: missing access context", errors.New("missing access context"))
-	}
-
-	businesses, err := s.store.ListBusinesses(ctx, su.TenantID)
+	memberships, err := s.store.ListAccountMemberships(ctx, su.UserID)
 	if err != nil {
-		return nil, s.rpcError("me: list businesses", err)
+		return nil, s.rpcError("me: list account memberships", err)
 	}
-	// No store round trip: the plan_code came off the session.
-	plan, err := billing.PlanFor(su.PlanCode)
-	if err != nil {
-		return nil, s.rpcInternal("me: resolve plan", err)
-	}
-
 	resp := &opensightv1.GetMeResponse{
-		User:       &opensightv1.User{Id: su.UserID.String(), Email: su.Email},
-		Tenant:     &opensightv1.Tenant{Id: su.TenantID.String(), Name: su.TenantName},
-		Businesses: make([]*opensightv1.BusinessSummary, 0, len(businesses)),
-		Access:     accessToProto(access),
-		Plan:       planToProto(plan),
+		User:        &opensightv1.User{Id: su.UserID.String(), Email: su.Email},
+		Memberships: make([]*opensightv1.AccountMembershipSummary, 0, len(memberships)),
 	}
-	for _, b := range businesses {
-		resp.Businesses = append(resp.Businesses, &opensightv1.BusinessSummary{
-			Id:     b.ID.String(),
-			Name:   b.Name,
-			Status: businessStatusToProto(b.Status),
+	for _, m := range memberships {
+		resp.Memberships = append(resp.Memberships, &opensightv1.AccountMembershipSummary{
+			Account: &opensightv1.Account{Id: m.Account.ID.String(), Name: m.Account.Name, Slug: m.Account.Slug},
+			Role:    accountRoleToProto(m.Role),
 		})
 	}
 	return connect.NewResponse(resp), nil

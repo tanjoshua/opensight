@@ -14,7 +14,7 @@ import (
 
 // rpcError is the single translation from an internal error to a
 // *connect.Error. Never leaks error detail to the client: the real error goes
-// to slog, a generic message goes to the client. All 7 services are now
+// to slog, a generic message goes to the client. All RPC services are
 // mounted; this switch covers every store sentinel reachable from any of
 // them.
 func (s *Server) rpcError(op string, err error) *connect.Error {
@@ -33,6 +33,8 @@ func (s *Server) rpcError(op string, err error) *connect.Error {
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("prompt is not active"))
 	case errors.Is(err, store.ErrPromptLimitExceeded):
 		return connect.NewError(connect.CodeResourceExhausted, errors.New("prompt count exceeds the plan limit"))
+	case errors.Is(err, store.ErrLastOwner):
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("an account must have at least one owner"))
 	}
 
 	var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted

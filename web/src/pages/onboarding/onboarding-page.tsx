@@ -15,15 +15,16 @@ import { Check, LoaderCircle, Sparkles, TriangleAlert } from "lucide-react"
 import { Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
-import { useBillingAccess, useMe, usePlan } from "@/api/hooks"
+import { useAccountContext, useBillingAccess, useMe, usePlan } from "@/api/hooks"
 import { BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
+import { AccountRole } from "@/gen/opensight/v1/account_pb"
 import { ProposalPayloadSchema, type ProposalPayload } from "@/gen/opensight/v1/business_pb"
 import {
   createBusiness,
   getProposal,
   regenerateProposal,
 } from "@/gen/opensight/v1/business-BusinessService_connectquery"
-import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
+import { accountPath } from "@/lib/account-path"
 import { ReviewScreen } from "@/pages/onboarding/review-screen"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,11 +46,12 @@ const EMPTY_PAYLOAD: ProposalPayload = create(ProposalPayloadSchema, {
 
 export function OnboardingPage() {
   const me = useMe()
+  const account = useAccountContext()
   const plan = usePlan()
   const { isActive } = useBillingAccess()
   const [createdId, setCreatedId] = useState<string>()
 
-  if (me.isLoading) {
+  if (me.isLoading || account.isLoading) {
     return (
       <OnboardingShell>{<Skeleton className="h-64 w-full" />}</OnboardingShell>
     )
@@ -57,7 +59,7 @@ export function OnboardingPage() {
   if (isUnauthenticated(me.error)) {
     return <Navigate to="/login" replace />
   }
-  if (me.isError || !me.data) {
+  if (me.isError || !me.data || account.isError || !account.data || !account.data.account) {
     return (
       <OnboardingShell>
         <ProgressState
@@ -73,24 +75,28 @@ export function OnboardingPage() {
       </OnboardingShell>
     )
   }
+  const slug = account.data.account.slug
+  if (account.data.role !== AccountRole.OWNER && account.data.role !== AccountRole.ADMIN) {
+    return <Navigate to={accountPath(slug)} replace />
+  }
   // Onboarding renders outside AppLayout, so it needs its own copy of this
   // redirect (BILL-9). Onboarding is entirely classActive (BILL-10 — it
   // creates a business and generates a proposal, both LLM spend), so a
-  // lapsed tenant that never finished onboarding has nowhere else useful to
+  // lapsed account that never finished onboarding has nowhere else useful to
   // go either — not just a never-paid one.
   if (!isActive) {
-    return <Navigate to="/billing" replace />
+    return <Navigate to={accountPath(slug, "/billing")} replace />
   }
 
-  const businesses = me.data.businesses
+  const businesses = account.data.businesses
   const draft = businesses.find((b) => b.status === BusinessStatus.DRAFT)
-  // MVP is one business per tenant: an already-active business means onboarding
+  // MVP is one business per account: an already-active business means onboarding
   // is done, so send the user into the app rather than letting them start over.
   const active = businesses.find((b) => b.status !== BusinessStatus.DRAFT)
   const businessId = createdId ?? draft?.id
 
   if (!businessId) {
-    if (active) return <Navigate to="/overview" replace />
+    if (active) return <Navigate to={accountPath(slug)} replace />
     return (
       <OnboardingShell>
         <CreateForm onCreated={setCreatedId} />
@@ -128,9 +134,7 @@ function CreateForm({ onCreated }: { onCreated: (id: string) => void }) {
   const create = useMutation(createBusiness, {
     onSuccess: async (data) => {
       // Refresh /me so the draft is resumable on reload, then enter the flow.
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
-      })
+      await queryClient.invalidateQueries()
       if (data.business) onCreated(data.business.id)
     },
   })
@@ -206,6 +210,7 @@ function ProposalFlow({
   promptLimit: number
 }) {
   const navigate = useNavigate()
+  const account = useAccountContext()
   const queryClient = useQueryClient()
   // useProposal polled while generation is running; a ready or failed
   // proposal is terminal, so polling stops (matches ResultService.ListRuns'
@@ -233,10 +238,8 @@ function ProposalFlow({
   })
 
   const onApplied = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: createConnectQueryKey({ schema: getMe, cardinality: "finite" }),
-    })
-    navigate("/overview", { replace: true })
+    await queryClient.invalidateQueries()
+    if (account.data?.account) navigate(accountPath(account.data.account.slug), { replace: true })
   }
 
   if (proposal.isError) {

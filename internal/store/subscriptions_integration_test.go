@@ -10,7 +10,7 @@ import (
 )
 
 // TestSubscriptionStoreUpsertRoundTrips covers SubscriptionStore against real
-// Postgres: GetByTenant on a missing row is ErrNotFound, Upsert inserts when
+// Postgres: GetByAccount on a missing row is ErrNotFound, Upsert inserts when
 // absent, a second Upsert overwrites in full (round-tripping the nullable
 // Stripe columns both null and populated), and updated_at advances.
 func TestSubscriptionStoreUpsertRoundTrips(t *testing.T) {
@@ -26,31 +26,31 @@ func TestSubscriptionStoreUpsertRoundTrips(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
-	mustExec(t, db, ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Subscription Tenant')", tenantID)
+	mustExec(t, db, ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, 'Subscription Account', $2)", accountID, "test-"+accountID.String())
 
 	subs := New(db)
 
-	if _, err := subs.GetByTenant(ctx, tenantID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetByTenant before upsert = %v, want ErrNotFound", err)
+	if _, err := subs.GetByAccount(ctx, accountID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetByAccount before upsert = %v, want ErrNotFound", err)
 	}
 
 	// Insert with every Stripe column null (the signup-time shape).
 	if err := subs.Upsert(ctx, UpsertSubscriptionParams{
-		TenantID: tenantID,
-		PlanCode: "starter",
-		Comped:   true,
+		AccountID: accountID,
+		PlanCode:  "starter",
+		Comped:    true,
 	}); err != nil {
 		t.Fatalf("Upsert (insert): %v", err)
 	}
 
-	sub, err := subs.GetByTenant(ctx, tenantID)
+	sub, err := subs.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after insert: %v", err)
+		t.Fatalf("GetByAccount after insert: %v", err)
 	}
 	if sub.PlanCode != "starter" || !sub.Comped {
 		t.Fatalf("subscription = %+v, want plan_code=starter comped=true", sub)
@@ -66,7 +66,7 @@ func TestSubscriptionStoreUpsertRoundTrips(t *testing.T) {
 	subscriptionID := "sub_123"
 	status := "active"
 	if err := subs.Upsert(ctx, UpsertSubscriptionParams{
-		TenantID:             tenantID,
+		AccountID:            accountID,
 		PlanCode:             "starter",
 		StripeCustomerID:     &customerID,
 		StripeSubscriptionID: &subscriptionID,
@@ -77,9 +77,9 @@ func TestSubscriptionStoreUpsertRoundTrips(t *testing.T) {
 		t.Fatalf("Upsert (update): %v", err)
 	}
 
-	updated, err := subs.GetByTenant(ctx, tenantID)
+	updated, err := subs.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after update: %v", err)
+		t.Fatalf("GetByAccount after update: %v", err)
 	}
 	if updated.StripeCustomerID == nil || *updated.StripeCustomerID != customerID {
 		t.Fatalf("stripe_customer_id = %v, want %q", updated.StripeCustomerID, customerID)
@@ -120,17 +120,17 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
-	mustExec(t, db, ctx, "INSERT INTO tenants (id, name) VALUES ($1, 'Customer Id Tenant')", tenantID)
+	mustExec(t, db, ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, 'Customer Id Account', $2)", accountID, "test-"+accountID.String())
 
 	subs := New(db)
 
 	if _, err := subs.SetStripeCustomerID(ctx, mustNewID(t), "cus_ghost"); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("SetStripeCustomerID(unknown tenant) = %v, want ErrNotFound", err)
+		t.Fatalf("SetStripeCustomerID(unknown account) = %v, want ErrNotFound", err)
 	}
 
 	// A prior full Upsert with populated Stripe columns must survive
@@ -139,7 +139,7 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 	subscriptionID := "sub_before"
 	status := "active"
 	if err := subs.Upsert(ctx, UpsertSubscriptionParams{
-		TenantID:             tenantID,
+		AccountID:            accountID,
 		PlanCode:             "starter",
 		StripeSubscriptionID: &subscriptionID,
 		StripeStatus:         &status,
@@ -147,7 +147,7 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 		t.Fatalf("Upsert (seed): %v", err)
 	}
 
-	won, err := subs.SetStripeCustomerID(ctx, tenantID, "cus_first")
+	won, err := subs.SetStripeCustomerID(ctx, accountID, "cus_first")
 	if err != nil {
 		t.Fatalf("SetStripeCustomerID (first): %v", err)
 	}
@@ -155,9 +155,9 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 		t.Fatalf("SetStripeCustomerID (first) = %q, want cus_first", won)
 	}
 
-	after, err := subs.GetByTenant(ctx, tenantID)
+	after, err := subs.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after first SetStripeCustomerID: %v", err)
+		t.Fatalf("GetByAccount after first SetStripeCustomerID: %v", err)
 	}
 	if after.StripeCustomerID == nil || *after.StripeCustomerID != "cus_first" {
 		t.Fatalf("stripe_customer_id = %v, want cus_first", after.StripeCustomerID)
@@ -170,7 +170,7 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 	}
 
 	// A second call with a different id loses: the first id already won.
-	won, err = subs.SetStripeCustomerID(ctx, tenantID, "cus_second")
+	won, err = subs.SetStripeCustomerID(ctx, accountID, "cus_second")
 	if err != nil {
 		t.Fatalf("SetStripeCustomerID (second): %v", err)
 	}
@@ -178,9 +178,9 @@ func TestSubscriptionStoreSetStripeCustomerID(t *testing.T) {
 		t.Fatalf("SetStripeCustomerID (second) = %q, want cus_first (write-once)", won)
 	}
 
-	final, err := subs.GetByTenant(ctx, tenantID)
+	final, err := subs.GetByAccount(ctx, accountID)
 	if err != nil {
-		t.Fatalf("GetByTenant after second SetStripeCustomerID: %v", err)
+		t.Fatalf("GetByAccount after second SetStripeCustomerID: %v", err)
 	}
 	if final.StripeCustomerID == nil || *final.StripeCustomerID != "cus_first" {
 		t.Fatalf("stripe_customer_id after second call = %v, want cus_first unchanged", final.StripeCustomerID)

@@ -13,7 +13,7 @@ import (
 func genInput(t *testing.T) GenerateProfileWorkflowInput {
 	t.Helper()
 	return GenerateProfileWorkflowInput{
-		TenantID:   mustID(t),
+		AccountID:   mustID(t),
 		BusinessID: mustID(t),
 		Name:       "Acme Clinic",
 		Website:    "https://acme.example",

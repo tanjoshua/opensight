@@ -143,7 +143,7 @@ enum GenerationStage {
   GENERATION_STAGE_DRAFTING = 2;
 }
 
-// Access is the tenant's derived billing authorization (design 08 "Access").
+// Access is the account's derived billing authorization (design 08 "Access").
 // Derived from the subscriptions row and the current time, never stored.
 enum Access {
   ACCESS_UNSPECIFIED = 0;
@@ -159,9 +159,9 @@ message AccessDenied {
   Access access = 1;
 }
 
-// Plan is the tenant's plan config (internal/billing catalog). It lives here
+// Plan is the account's plan config (internal/billing catalog). It lives here
 // because AuthService.GetMe carries it alongside Access; a business's plan is
-// a tenant fact, not a per-business fact.
+// an account fact, not a per-business fact.
 message Plan {
   string code = 1;
   int32 prompt_limit = 2;

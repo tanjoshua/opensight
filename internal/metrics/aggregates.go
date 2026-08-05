@@ -83,11 +83,11 @@ type CitationPrompt struct {
 
 // KeywordStats returns the business's keywords by descending frequency across
 // all analyzed results.
-func (m *Metrics) KeywordStats(ctx context.Context, tenantID, businessID domain.ID) ([]KeywordStat, error) {
+func (m *Metrics) KeywordStats(ctx context.Context, accountID, businessID domain.ID) ([]KeywordStat, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.q.KeywordStats(ctx, db.KeywordStatsParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.KeywordStats(ctx, db.KeywordStatsParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("keyword stats: %w", err)
 	}
@@ -100,11 +100,11 @@ func (m *Metrics) KeywordStats(ctx context.Context, tenantID, businessID domain.
 
 // SentimentStats returns the distribution of business sentiment across all
 // analyzed results, most common first.
-func (m *Metrics) SentimentStats(ctx context.Context, tenantID, businessID domain.ID) ([]SentimentStat, error) {
+func (m *Metrics) SentimentStats(ctx context.Context, accountID, businessID domain.ID) ([]SentimentStat, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.q.SentimentStats(ctx, db.SentimentStatsParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.SentimentStats(ctx, db.SentimentStatsParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("sentiment stats: %w", err)
 	}
@@ -117,11 +117,11 @@ func (m *Metrics) SentimentStats(ctx context.Context, tenantID, businessID domai
 
 // CitationDomainStats returns cited domains by descending frequency across all
 // analyzed results.
-func (m *Metrics) CitationDomainStats(ctx context.Context, tenantID, businessID domain.ID) ([]DomainStat, error) {
+func (m *Metrics) CitationDomainStats(ctx context.Context, accountID, businessID domain.ID) ([]DomainStat, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.q.CitationDomainStats(ctx, db.CitationDomainStatsParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.CitationDomainStats(ctx, db.CitationDomainStatsParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("citation domain stats: %w", err)
 	}
@@ -135,11 +135,11 @@ func (m *Metrics) CitationDomainStats(ctx context.Context, tenantID, businessID 
 // CitationSources returns the full citation-sources drill-down across all
 // analyzed results: domains, cited pages, associated prompts, subject splits,
 // and result_id doors for every aggregate.
-func (m *Metrics) CitationSources(ctx context.Context, tenantID, businessID domain.ID) ([]CitationSource, error) {
+func (m *Metrics) CitationSources(ctx context.Context, accountID, businessID domain.ID) ([]CitationSource, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
-	rows, err := m.q.CitationSources(ctx, db.CitationSourcesParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.CitationSources(ctx, db.CitationSourcesParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("citation sources: %w", err)
 	}

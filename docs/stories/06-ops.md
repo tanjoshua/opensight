@@ -28,7 +28,7 @@ Deps: OPS-1 · Phase 1 · Ref: design 07 (Backups — restore drill is part of M
 
 As the operator, I want a real business running weekly on production with results viewable behind login, so that Phase 1's internal checkpoint is met with real data.
 
-- [ ] Test tenant + user created (AUTH-2); an internal test business + prompts seeded and schedule created (RUN-5); first run triggered and completed against the real OpenAI API.
+- [ ] Test account + owner membership created (AUTH-2); an internal test business + prompts seeded and schedule created (RUN-5); first run triggered and completed against the real OpenAI API.
 - [ ] Logging in shows the run's responses in the Responses section.
 - [ ] OpenAI dashboard budget cap confirmed set; cost query (RUN-6) run against the first real week.
 - [ ] Backups landing offsite (OPS-1); Sentry receiving from prod; Temporal UI reachable via SSH tunnel; ops runbook covers: check runs weekly, deploy, restore.

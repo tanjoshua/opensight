@@ -4,10 +4,10 @@
 //	opensight serve           # HTTP API server (01-D2)
 //	opensight work            # Temporal worker (01-D2)
 //	opensight migrate         # apply database migrations, then exit
-//	opensight tenant create   # create an invite-only tenant
-//	opensight user create     # create an invite-only user
+//	opensight account create     # create an operator-provisioned account
+//	opensight account member add # add a member to an account
 //	opensight business create # seed an active business from a spec file
-//	opensight seed dev        # seed a dev tenant and login account
+//	opensight seed dev        # seed a dev account and login
 //	opensight stripe portal-config  # apply the Billing Portal configuration
 //	opensight stripe webhook-config # create/update the production webhook endpoint
 //
@@ -46,11 +46,11 @@ import (
 )
 
 const (
-	usage               = "usage: opensight <serve|work|migrate|tenant|user|business|seed|stripe>"
-	tenantCreateUsage   = "usage: opensight tenant create --name <tenant-name>"
-	userCreateUsage     = "usage: opensight user create --tenant <tenant-id> --email <email>"
-	businessCreateUsage = "usage: opensight business create --tenant <tenant-id> --file <spec.yaml>"
-	seedUsage           = seedDevArgsUsage
+	usage                 = "usage: opensight <serve|work|migrate|account|business|seed|stripe>"
+	accountCreateUsage    = "usage: opensight account create --name <account-name>"
+	accountMemberAddUsage = "usage: opensight account member add --account <account-id> --email <email> --role <owner|admin|member|viewer>"
+	businessCreateUsage   = "usage: opensight business create --account <account-id> --file <spec.yaml>"
+	seedUsage             = seedDevArgsUsage
 )
 
 func main() {
@@ -71,13 +71,14 @@ func newLogger(w io.Writer) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelInfo}))
 }
 
-type tenantCreateOptions struct {
+type accountCreateOptions struct {
 	Name string
 }
 
-type userCreateOptions struct {
-	TenantID domain.ID
-	Email    string
+type accountMemberAddOptions struct {
+	AccountID domain.ID
+	Email     string
+	Role      store.AccountRole
 }
 
 // run dispatches the chosen subcommand. It is separated from main so it can be
@@ -99,10 +100,8 @@ func run(ctx context.Context, args []string) error {
 		return work(ctx, cfg)
 	case "migrate":
 		return migrate(ctx, cfg)
-	case "tenant":
-		return runTenantCommand(ctx, cfg, args[1:])
-	case "user":
-		return runUserCommand(ctx, cfg, args[1:])
+	case "account":
+		return runAccountCommand(ctx, cfg, args[1:])
 	case "business":
 		return runBusinessCommand(ctx, cfg, args[1:])
 	case "seed":
@@ -114,35 +113,28 @@ func run(ctx context.Context, args []string) error {
 	}
 }
 
-func runTenantCommand(ctx context.Context, cfg config.Config, args []string) error {
+func runAccountCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("tenant subcommand required; %s", tenantCreateUsage)
+		return fmt.Errorf("account subcommand required; %s", accountCreateUsage)
 	}
 	switch args[0] {
 	case "create":
-		opts, err := parseTenantCreateArgs(args[1:])
+		opts, err := parseAccountCreateArgs(args[1:])
 		if err != nil {
 			return err
 		}
-		return createTenantCLI(ctx, cfg, opts, os.Stdout)
-	default:
-		return fmt.Errorf("unknown tenant subcommand %q; %s", args[0], tenantCreateUsage)
-	}
-}
-
-func runUserCommand(ctx context.Context, cfg config.Config, args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("user subcommand required; %s", userCreateUsage)
-	}
-	switch args[0] {
-	case "create":
-		opts, err := parseUserCreateArgs(args[1:])
+		return createAccountCLI(ctx, cfg, opts, os.Stdout)
+	case "member":
+		if len(args) < 2 || args[1] != "add" {
+			return fmt.Errorf("account member subcommand must be add; %s", accountMemberAddUsage)
+		}
+		opts, err := parseAccountMemberAddArgs(args[2:])
 		if err != nil {
 			return err
 		}
-		return createUserCLI(ctx, cfg, opts, os.Stdout)
+		return addAccountMemberCLI(ctx, cfg, opts, os.Stdout)
 	default:
-		return fmt.Errorf("unknown user subcommand %q; %s", args[0], userCreateUsage)
+		return fmt.Errorf("unknown account subcommand %q; %s", args[0], accountCreateUsage)
 	}
 }
 
@@ -178,51 +170,65 @@ func runSeedCommand(ctx context.Context, cfg config.Config, args []string) error
 	}
 }
 
-func parseTenantCreateArgs(args []string) (tenantCreateOptions, error) {
-	flags := flag.NewFlagSet("tenant create", flag.ContinueOnError)
+func parseAccountCreateArgs(args []string) (accountCreateOptions, error) {
+	flags := flag.NewFlagSet("account create", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	name := flags.String("name", "", "tenant name")
+	name := flags.String("name", "", "account name")
 	if err := flags.Parse(args); err != nil {
-		return tenantCreateOptions{}, fmt.Errorf("%s", tenantCreateUsage)
+		return accountCreateOptions{}, fmt.Errorf("%s", accountCreateUsage)
 	}
 	if flags.NArg() != 0 {
-		return tenantCreateOptions{}, fmt.Errorf("unexpected argument %q; %s", flags.Arg(0), tenantCreateUsage)
+		return accountCreateOptions{}, fmt.Errorf("unexpected argument %q; %s", flags.Arg(0), accountCreateUsage)
 	}
 
-	opts := tenantCreateOptions{Name: strings.TrimSpace(*name)}
+	opts := accountCreateOptions{Name: strings.TrimSpace(*name)}
 	if opts.Name == "" {
-		return tenantCreateOptions{}, fmt.Errorf("--name is required; %s", tenantCreateUsage)
+		return accountCreateOptions{}, fmt.Errorf("--name is required; %s", accountCreateUsage)
 	}
 	return opts, nil
 }
 
-func parseUserCreateArgs(args []string) (userCreateOptions, error) {
-	flags := flag.NewFlagSet("user create", flag.ContinueOnError)
+func parseAccountMemberAddArgs(args []string) (accountMemberAddOptions, error) {
+	flags := flag.NewFlagSet("account member add", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	tenantRaw := flags.String("tenant", "", "tenant id")
-	email := flags.String("email", "", "user email")
+	accountRaw := flags.String("account", "", "account id")
+	email := flags.String("email", "", "member email")
+	roleRaw := flags.String("role", "", "account role")
 	if err := flags.Parse(args); err != nil {
-		return userCreateOptions{}, fmt.Errorf("%s", userCreateUsage)
+		return accountMemberAddOptions{}, fmt.Errorf("%s", accountMemberAddUsage)
 	}
 	if flags.NArg() != 0 {
-		return userCreateOptions{}, fmt.Errorf("unexpected argument %q; %s", flags.Arg(0), userCreateUsage)
+		return accountMemberAddOptions{}, fmt.Errorf("unexpected argument %q; %s", flags.Arg(0), accountMemberAddUsage)
 	}
-	if strings.TrimSpace(*tenantRaw) == "" {
-		return userCreateOptions{}, fmt.Errorf("--tenant is required; %s", userCreateUsage)
+	if strings.TrimSpace(*accountRaw) == "" {
+		return accountMemberAddOptions{}, fmt.Errorf("--account is required; %s", accountMemberAddUsage)
 	}
 	if strings.TrimSpace(*email) == "" {
-		return userCreateOptions{}, fmt.Errorf("--email is required; %s", userCreateUsage)
+		return accountMemberAddOptions{}, fmt.Errorf("--email is required; %s", accountMemberAddUsage)
 	}
 
-	tenantID, err := uuid.Parse(strings.TrimSpace(*tenantRaw))
+	accountID, err := uuid.Parse(strings.TrimSpace(*accountRaw))
 	if err != nil {
-		return userCreateOptions{}, fmt.Errorf("--tenant must be a UUID: %w", err)
+		return accountMemberAddOptions{}, fmt.Errorf("--account must be a UUID: %w", err)
+	}
+	var role store.AccountRole
+	switch strings.TrimSpace(*roleRaw) {
+	case string(store.AccountRoleOwner):
+		role = store.AccountRoleOwner
+	case string(store.AccountRoleAdmin):
+		role = store.AccountRoleAdmin
+	case string(store.AccountRoleMember):
+		role = store.AccountRoleMember
+	case string(store.AccountRoleViewer):
+		role = store.AccountRoleViewer
+	default:
+		return accountMemberAddOptions{}, errors.New("--role must be owner, admin, member, or viewer")
 	}
 
-	return userCreateOptions{TenantID: tenantID, Email: strings.TrimSpace(*email)}, nil
+	return accountMemberAddOptions{AccountID: accountID, Email: strings.TrimSpace(*email), Role: role}, nil
 }
 
-func createTenantCLI(ctx context.Context, cfg config.Config, opts tenantCreateOptions, out io.Writer) error {
+func createAccountCLI(ctx context.Context, cfg config.Config, opts accountCreateOptions, out io.Writer) error {
 	if ctx.Err() != nil {
 		return nil
 	}
@@ -233,18 +239,19 @@ func createTenantCLI(ctx context.Context, cfg config.Config, opts tenantCreateOp
 	}
 	defer closeStore()
 
-	tenant, err := account.CreateTenant(ctx, store.CreateTenantParams{Name: opts.Name})
+	created, err := account.CreateOperatorAccount(ctx, store.CreateOperatorAccountParams{Name: opts.Name})
 	if err != nil {
 		return err
 	}
 
-	_, err = fmt.Fprintf(out, "tenant_id=%s\nname=%s\nplan=%s\n", tenant.ID, tenant.Name, billing.Starter.Code)
+	_, err = fmt.Fprintf(out, "account_id=%s\nname=%s\nplan=%s\n", created.ID, created.Name, billing.Starter.Code)
 	return err
 }
 
-// createUserCLI creates a user row with no Google identity yet — the first
-// sign-in with that email links it (design 07 "Auth and accounts").
-func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOptions, out io.Writer) error {
+// addAccountMemberCLI creates or reuses a global user and grants access to the
+// account. A user with no Google identity links it on first sign-in (design 07
+// "Auth and accounts").
+func addAccountMemberCLI(ctx context.Context, cfg config.Config, opts accountMemberAddOptions, out io.Writer) error {
 	if ctx.Err() != nil {
 		return nil
 	}
@@ -255,15 +262,16 @@ func createUserCLI(ctx context.Context, cfg config.Config, opts userCreateOption
 	}
 	defer closeStore()
 
-	user, err := account.CreateUser(ctx, store.CreateUserParams{
-		TenantID: opts.TenantID,
-		Email:    opts.Email,
+	member, err := account.AddAccountMember(ctx, store.AddAccountMemberParams{
+		AccountID: opts.AccountID,
+		Email:     opts.Email,
+		Role:      opts.Role,
 	})
 	if err != nil {
 		return err
 	}
 
-	_, err = fmt.Fprintf(out, "user_id=%s\ntenant_id=%s\nemail=%s\n", user.ID, user.TenantID, user.Email)
+	_, err = fmt.Fprintf(out, "user_id=%s\naccount_id=%s\nemail=%s\nrole=%s\n", member.UserID, member.AccountID, member.Email, member.Role)
 	return err
 }
 

@@ -11,6 +11,20 @@ import (
 	"github.com/google/uuid"
 )
 
+type Account struct {
+	ID        uuid.UUID
+	Name      string
+	CreatedAt time.Time
+	Slug      string
+}
+
+type AccountMembership struct {
+	AccountID uuid.UUID
+	UserID    uuid.UUID
+	Role      string
+	CreatedAt time.Time
+}
+
 type AnalyzedResult struct {
 	ID             uuid.UUID
 	RunID          uuid.UUID
@@ -25,7 +39,7 @@ type AnalyzedResult struct {
 	CompletedAt    time.Time
 	ScheduledFor   time.Time
 	BusinessID     uuid.UUID
-	TenantID       uuid.UUID
+	AccountID      uuid.UUID
 	Sentiment      *string
 	Keywords       []string
 	HasSelfMention bool
@@ -33,7 +47,7 @@ type AnalyzedResult struct {
 
 type Business struct {
 	ID          uuid.UUID
-	TenantID    uuid.UUID
+	AccountID   uuid.UUID
 	Status      string
 	Name        string
 	Website     *string
@@ -143,7 +157,7 @@ type Session struct {
 }
 
 type Subscription struct {
-	TenantID             uuid.UUID
+	AccountID            uuid.UUID
 	PlanCode             string
 	StripeCustomerID     *string
 	StripeSubscriptionID *string
@@ -156,15 +170,8 @@ type Subscription struct {
 	UpdatedAt            time.Time
 }
 
-type Tenant struct {
-	ID        uuid.UUID
-	Name      string
-	CreatedAt time.Time
-}
-
 type User struct {
 	ID        uuid.UUID
-	TenantID  uuid.UUID
 	Email     string
 	CreatedAt time.Time
 	GoogleSub *string

@@ -15,11 +15,11 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-// AnalyzeResultInput identifies one succeeded result to analyze. The tenant is
+// AnalyzeResultInput identifies one succeeded result to analyze. The account is
 // resolved by the parent workflow (AnalyzeRun).
 type AnalyzeResultInput struct {
-	TenantID domain.ID
-	ResultID domain.ID
+	AccountID domain.ID `json:"TenantID"`
+	ResultID  domain.ID
 }
 
 // AnalyzeResultOutput is the extraction outcome. Analyzed is false when the
@@ -38,7 +38,7 @@ type AnalyzeResultOutput struct {
 // re-extracts (never short-circuits on an existing row) so a re-analysis pass
 // can rewrite onto a bumped extraction_version.
 func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (AnalyzeResultOutput, error) {
-	detail, err := a.Store.GetResultDetail(ctx, in.TenantID, in.ResultID)
+	detail, err := a.Store.GetResultDetail(ctx, in.AccountID, in.ResultID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
@@ -59,7 +59,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	}
 	responseText := *detail.Result.ResponseText
 
-	business, err := a.Store.GetBusiness(ctx, in.TenantID, detail.BusinessID)
+	business, err := a.Store.GetBusiness(ctx, in.AccountID, detail.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
@@ -103,7 +103,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 		// (e.g. a ReanalyzeRun whose new extraction attempt failed): a failed
 		// analysis must never leave old sentiment/keywords counting toward
 		// metrics under a result that today has no valid analysis (design 05).
-		if err := a.Store.DeleteResultAnalysis(ctx, in.TenantID, in.ResultID); err != nil {
+		if err := a.Store.DeleteResultAnalysis(ctx, in.AccountID, in.ResultID); err != nil {
 			return AnalyzeResultOutput{}, err
 		}
 		return AnalyzeResultOutput{ResultID: in.ResultID, Analyzed: false}, nil
@@ -131,7 +131,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 		}
 	}
 
-	if err := a.Store.SaveResultAnalysis(ctx, in.TenantID, store.SaveResultAnalysisParams{
+	if err := a.Store.SaveResultAnalysis(ctx, in.AccountID, store.SaveResultAnalysisParams{
 		PromptResultID:    in.ResultID,
 		Sentiment:         sentiment,
 		Keywords:          keywords,

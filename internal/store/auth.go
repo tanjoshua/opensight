@@ -13,35 +13,35 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// The identity and session methods below are deliberately NOT tenant-scoped:
-// they are the sanctioned unscoped path that *establishes* tenant context (the
-// login/session equivalent of ResolveTenantID). The Google callback looks up a
-// user by google_sub or email before any tenant is known, and a session token
-// resolves to exactly one user/tenant.
+// The identity and session methods below are deliberately NOT account-scoped:
+// they are the sanctioned unscoped path that *establishes* account context (the
+// login/session equivalent of ResolveAccountID). The Google callback looks up a
+// user by google_sub or email before any account is known, and a session token
+// resolves to exactly one user/account.
 
-// UserIdentity is the sign-in-time view of a user joined to its tenant.
+// UserIdentity is the sign-in-time view of a user joined to its account.
 type UserIdentity struct {
-	UserID     domain.ID
-	TenantID   domain.ID
-	Email      string
-	TenantName string
-	GoogleSub  *string // NULL until the first Google sign-in links this row.
+	UserID    domain.ID
+	Email     string
+	GoogleSub *string // NULL until the first Google sign-in links this row.
 }
 
-// SessionUser is a live session resolved to its owning user and tenant, plus
-// the tenant's billing state. PlanCode and Billing come from the
+// SessionUser is a live session resolved to its owning user and account, plus
+// the account's billing state. PlanCode and Billing come from the
 // same joined row as the rest of SessionUser — no second lookup. Billing is
 // the raw State, not a derived Access: access must be computed per-request
 // against the current time (billing.DeriveAccess), never cached on the
 // session, or the dunning bound would stop taking effect immediately.
 type SessionUser struct {
-	UserID     domain.ID
-	TenantID   domain.ID
-	Email      string
-	TenantName string
-	ExpiresAt  time.Time
-	PlanCode   string
-	Billing    billing.State
+	UserID      domain.ID
+	AccountID   domain.ID
+	Email       string
+	AccountName string
+	AccountSlug string
+	Role        AccountRole
+	ExpiresAt   time.Time
+	PlanCode    string
+	Billing     billing.State
 }
 
 // CreateSessionParams are the inputs for persisting a new session row. TokenHash
@@ -65,7 +65,7 @@ func (s *Store) GetUserByGoogleSub(ctx context.Context, sub string) (UserIdentit
 		}
 		return UserIdentity{}, fmt.Errorf("get user by google sub: %w", err)
 	}
-	return UserIdentity{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, GoogleSub: row.GoogleSub}, nil
+	return UserIdentity{UserID: row.ID, Email: row.Email, GoogleSub: row.GoogleSub}, nil
 }
 
 // GetUserByEmail loads a user by email. Matching is case-insensitive because
@@ -81,7 +81,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (UserIdentity,
 		}
 		return UserIdentity{}, fmt.Errorf("get user by email: %w", err)
 	}
-	return UserIdentity{UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, GoogleSub: row.GoogleSub}, nil
+	return UserIdentity{UserID: row.ID, Email: row.Email, GoogleSub: row.GoogleSub}, nil
 }
 
 // SetUserGoogleSub links a user row to its Google subject claim on first
@@ -119,13 +119,13 @@ func (s *Store) CreateSession(ctx context.Context, params CreateSessionParams) e
 }
 
 // GetSession resolves a live (unexpired) session by token hash to its user,
-// tenant, and billing state. An absent or expired session both
+// account, and billing state. An absent or expired session both
 // return ErrNotFound — the two are deliberately indistinguishable so an
 // expired token leaks nothing.
 //
-// The subscriptions join is a LEFT JOIN, deliberately: every tenant is
+// The subscriptions join is a LEFT JOIN, deliberately: every account is
 // supposed to have exactly one subscriptions row (signup creates it in the
-// same transaction as the tenant), so a missing one is our bug, not an
+// same transaction as the account), so a missing one is our bug, not an
 // absent session. Masquerading it as ErrNotFound would silently log the user
 // out instead of surfacing the inconsistency; this returns a distinct error
 // instead, which the RPC layer maps to CodeInternal.
@@ -141,15 +141,29 @@ func (s *Store) GetSession(ctx context.Context, tokenHash []byte) (SessionUser, 
 		}
 		return SessionUser{}, fmt.Errorf("get session: %w", err)
 	}
-	if row.PlanCode == nil {
-		return SessionUser{}, fmt.Errorf("get session: tenant %s has no subscriptions row", row.TenantID)
-	}
-
 	return SessionUser{
-		UserID: row.ID, TenantID: row.TenantID, Email: row.Email, TenantName: row.Name, ExpiresAt: row.ExpiresAt,
-		PlanCode: *row.PlanCode,
-		Billing:  billingStateFromRow(row.Comped.Valid && row.Comped.Bool, row.StripeSubscriptionID, row.StripeStatus, row.PastDueSince),
+		UserID: row.ID, Email: row.Email, ExpiresAt: row.ExpiresAt,
 	}, nil
+}
+
+// ResolveAccountSession verifies that the global session user belongs to the
+// selected account and attaches its current billing state for authorization.
+func (s *Store) ResolveAccountSession(ctx context.Context, su SessionUser, slug string) (SessionUser, error) {
+	row, err := s.q(ctx).GetAccountContextBySlug(ctx, storesqlc.GetAccountContextBySlugParams{UserID: su.UserID, Slug: slug})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return SessionUser{}, ErrNotFound
+		}
+		return SessionUser{}, fmt.Errorf("resolve account session: %w", err)
+	}
+	if row.PlanCode == nil {
+		return SessionUser{}, fmt.Errorf("resolve account session: account %s has no subscription", row.AccountID)
+	}
+	su.AccountID = row.AccountID
+	su.AccountName, su.AccountSlug, su.Role = row.Name, row.Slug, AccountRole(row.Role)
+	su.PlanCode = *row.PlanCode
+	su.Billing = billingStateFromRow(row.Comped.Valid && row.Comped.Bool, row.StripeSubscriptionID, row.StripeStatus, row.PastDueSince)
+	return su, nil
 }
 
 // DeleteSession removes a session row by token hash. A missing row is not an

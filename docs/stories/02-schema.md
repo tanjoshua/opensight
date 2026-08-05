@@ -1,14 +1,14 @@
 # Epic 02 — Core Schema & Store (SCH)
 
-The Phase-1 data model (analysis tables land in epic 07) and the tenant-scoped repository layer. Phase 1.
+The Phase-1 data model (analysis tables land in epic 07) and the account-scoped repository layer. Phase 1.
 
 ---
 
 ## SCH-1 — Plans and tenancy tables
 
-As the developer, I want `plans`, `tenants`, and `users` migrated with a seeded starter plan, so that entitlements come from data, never constants.
+As the developer, I want accounts and global users migrated, so that customer data and identities have distinct ownership boundaries.
 
-- [x] Migration creates `plans (id, slug UNIQUE, prompt_limit, run_interval, platforms)`, `tenants (id, name, plan_id, created_at)`, `users (id, tenant_id, email citext UNIQUE, created_at)`; all IDs UUIDv7.
+- [x] Schema has `accounts (id, name, slug UNIQUE, created_at)`, global `users (id, email citext UNIQUE, google_sub UNIQUE, created_at)`, and `account_memberships (account_id, user_id, role, created_at)`; all IDs UUIDv7.
 - [x] `starter` plan row (20 prompts, weekly, `{chatgpt}`) seeded **in a migration**.
 - [x] No code path reads a hardcoded "20" or "weekly" — grep-verifiable.
 
@@ -35,22 +35,22 @@ As the developer, I want the append-only `monitoring_runs` and `prompt_results` 
 
 Deps: SCH-2 · Phase 1 · Ref: design 02 (Runs and results)
 
-## SCH-4 — Tenant-scoped repository layer
+## SCH-4 — Account-scoped repository layer
 
-As the developer, I want all data access to go through repositories that enter via a tenant-checked business lookup, so that there is no unscoped query path.
+As the developer, I want all data access to go through repositories that enter via an account-checked business lookup, so that there is no unscoped query path.
 
-- [x] `internal/store` repositories for the tables above; every business-owned read/write requires tenant context and validates business→tenant ownership.
-- [x] Deeper tables (prompts, runs, results) scope through the business join — no direct-by-id access without the tenant check.
-- [x] Tests: cross-tenant access attempts return not-found.
+- [x] `internal/store` repositories for the tables above; every business-owned read/write requires account context and validates business→account ownership.
+- [x] Deeper tables (prompts, runs, results) scope through the business join — no direct-by-id access without the account check.
+- [x] Tests: cross-account access attempts return not-found.
 
 Deps: SCH-3 · Phase 1 · Ref: design 01 (D4 multi-tenancy), 06 (API conventions)
 
 ## SCH-5 — Fix broken store integration test fixtures
 
-As the developer, I want the opt-in `internal/store` integration tests to actually pass against a real Postgres, so that the tenant-scoping and constraint guarantees they claim to verify are still checked rather than silently rotted.
+As the developer, I want the opt-in `internal/store` integration tests to actually pass against a real Postgres, so that account scoping and constraint guarantees remain checked.
 
-- [x] `TestRepositoriesEnforceTenantScoping` compares JSONB services as parsed values rather than relying on Postgres's serialized whitespace.
-- [x] `TestCompetitorStoreTenantScopingAndHistoryPreservation` gives its `active` business fixture a valid category, location country, and activation timestamp.
+- [x] Repository account-scoping tests compare JSONB services as parsed values rather than relying on Postgres's serialized whitespace.
+- [x] Competitor account-scoping tests give the active business fixture a valid category, location country, and activation timestamp.
 - [x] `OPENSIGHT_STORE_TEST_DATABASE_URL=<dsn> go test ./internal/store/...` passes clean against a freshly migrated database (all migrations applied, no skipped/failing tests).
 
-Deps: SCH-2 (active-profile constraint), SCH-4 (tenant-scoping test) · Phase 1 (backfill) · Ref: design 02 (Businesses and profile — active-profile invariant), 01 (D4 multi-tenancy)
+Deps: SCH-2 (active-profile constraint), SCH-4 (account-scoping test) · Phase 1 (backfill) · Ref: design 02 (Businesses and profile — active-profile invariant), 01 (D4 account isolation)

@@ -50,7 +50,7 @@ type RunResult struct {
 }
 
 // RunWorkflow is the weekly monitoring run (design 04): CheckRunAccess gates
-// spend on the tenant's current billing access, LoadRunSpec snapshots the run
+// spend on the account's current billing access, LoadRunSpec snapshots the run
 // and prompts, ExecutePrompt fans out one activity per prompt, and FinalizeRun
 // sets the terminal status. A single prompt's failure never aborts the run —
 // its already-succeeded siblings must survive.
@@ -73,7 +73,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 		return RunResult{}, err
 	}
 	if gate.Access != billing.AccessFull.String() {
-		workflow.GetLogger(ctx).Warn("run skipped: tenant access is not full",
+		workflow.GetLogger(ctx).Warn("run skipped: account access is not full",
 			"business_id", input.BusinessID.String(), "access", gate.Access)
 		return RunResult{Skipped: true, SkipReason: "billing access " + gate.Access}, nil
 	}
@@ -114,7 +114,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 	futures := make([]workflow.Future, 0, len(spec.Prompts))
 	for _, prompt := range spec.Prompts {
 		futures = append(futures, workflow.ExecuteActivity(execCtx, acts.ExecutePrompt, ExecutePromptInput{
-			TenantID: spec.TenantID,
+			AccountID: spec.AccountID,
 			RunID:    spec.RunID,
 			Prompt:   prompt,
 			Location: spec.Location,
@@ -142,7 +142,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 	})
 	var run store.Run
 	if err := workflow.ExecuteActivity(finalizeCtx, acts.FinalizeRun, FinalizeRunInput{
-		TenantID: spec.TenantID,
+		AccountID: spec.AccountID,
 		RunID:    spec.RunID,
 	}).Get(ctx, &run); err != nil {
 		return RunResult{}, err
@@ -158,7 +158,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 		WorkflowID: fmt.Sprintf("analyze-%s", spec.RunID),
 	})
 	if err := workflow.ExecuteChildWorkflow(childCtx, AnalyzeRun, AnalyzeRunInput{
-		TenantID: spec.TenantID,
+		AccountID: spec.AccountID,
 		RunID:    spec.RunID,
 	}).Get(ctx, nil); err != nil {
 		workflow.GetLogger(ctx).Error("analyze run failed; run left flagged for re-analysis",

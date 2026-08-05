@@ -30,16 +30,16 @@ func (s *Server) ListPrompts(ctx context.Context, req *connect.Request[opensight
 		return nil, cerr
 	}
 
-	prompts, err := s.store.ListActivePrompts(ctx, su.TenantID, businessID)
+	prompts, err := s.store.ListActivePrompts(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list prompts: list active prompts", err)
 	}
 
-	latest, err := s.metrics.PromptLatestStats(ctx, su.TenantID, businessID)
+	latest, err := s.metrics.PromptLatestStats(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list prompts: prompt latest stats", err)
 	}
-	trends, err := s.metrics.PromptTrends(ctx, su.TenantID, businessID)
+	trends, err := s.metrics.PromptTrends(ctx, su.AccountID, businessID)
 	if err != nil {
 		return nil, s.rpcError("list prompts: prompt trends", err)
 	}
@@ -85,7 +85,7 @@ func (s *Server) AddPrompt(ctx context.Context, req *connect.Request[opensightv1
 	}
 
 	prompt, err := s.store.CreateActivePrompt(ctx, store.CreateActivePromptParams{
-		TenantID:   su.TenantID,
+		AccountID:   su.AccountID,
 		BusinessID: businessID,
 		Text:       req.Msg.Text,
 	})
@@ -97,7 +97,7 @@ func (s *Server) AddPrompt(ctx context.Context, req *connect.Request[opensightv1
 }
 
 // GetPrompt serves the prompt (active or retired), its full result history,
-// and its lineage chain. GetPrompt is the tenant gate; the result history is scoped through
+// and its lineage chain. GetPrompt is the account gate; the result history is scoped through
 // prompt.BusinessID from the fetched row, never the request.
 func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1.GetPromptRequest]) (*connect.Response[opensightv1.GetPromptResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "get prompt")
@@ -109,17 +109,17 @@ func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1
 		return nil, cerr
 	}
 
-	prompt, err := s.store.GetPrompt(ctx, su.TenantID, promptID)
+	prompt, err := s.store.GetPrompt(ctx, su.AccountID, promptID)
 	if err != nil {
 		return nil, s.rpcError("get prompt", err)
 	}
 
-	lineage, err := s.promptLineage(ctx, su.TenantID, prompt)
+	lineage, err := s.promptLineage(ctx, su.AccountID, prompt)
 	if err != nil {
 		return nil, s.rpcError("get prompt: lineage", err)
 	}
 
-	results, err := s.store.ListResults(ctx, su.TenantID, prompt.BusinessID, store.ResultFilter{PromptID: &promptID})
+	results, err := s.store.ListResults(ctx, su.AccountID, prompt.BusinessID, store.ResultFilter{PromptID: &promptID})
 	if err != nil {
 		return nil, s.rpcError("get prompt: list results", err)
 	}
@@ -164,7 +164,7 @@ func (s *Server) ReplacePrompt(ctx context.Context, req *connect.Request[opensig
 	}
 
 	prompt, err := s.store.ReplacePrompt(ctx, store.ReplacePromptParams{
-		TenantID:    su.TenantID,
+		AccountID:    su.AccountID,
 		OldPromptID: promptID,
 		Text:        req.Msg.Text,
 	})
@@ -176,11 +176,11 @@ func (s *Server) ReplacePrompt(ctx context.Context, req *connect.Request[opensig
 }
 
 // promptLineage walks the replaces_prompt_id chain back from prompt, newest
-// predecessor first. Each hop is a tenant-scoped GetPrompt, so the chain can
-// never cross a tenant. A missing predecessor stops the walk rather than 500-ing
+// predecessor first. Each hop is a account-scoped GetPrompt, so the chain can
+// never cross a account. A missing predecessor stops the walk rather than 500-ing
 // (data is retained indefinitely, so this is defensive); the visited set guards
 // against a malformed cycle.
-func (s *Server) promptLineage(ctx context.Context, tenantID domain.ID, prompt store.Prompt) ([]store.Prompt, error) {
+func (s *Server) promptLineage(ctx context.Context, accountID domain.ID, prompt store.Prompt) ([]store.Prompt, error) {
 	lineage := []store.Prompt{}
 	visited := map[domain.ID]bool{prompt.ID: true}
 	cur := prompt.ReplacesPromptID
@@ -189,7 +189,7 @@ func (s *Server) promptLineage(ctx context.Context, tenantID domain.ID, prompt s
 			break
 		}
 		visited[*cur] = true
-		ancestor, err := s.store.GetPrompt(ctx, tenantID, *cur)
+		ancestor, err := s.store.GetPrompt(ctx, accountID, *cur)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				break

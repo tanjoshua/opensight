@@ -28,6 +28,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00011_drop_stripe_events.sql",
 		"migrations/00012_create_analyzed_results_view.sql",
 		"migrations/00013_google_identity.sql",
+		"migrations/00014_accounts_memberships.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
@@ -252,7 +253,7 @@ func TestInitialMigrationEnablesCITEXT(t *testing.T) {
 	}
 }
 
-func TestTenancyMigrationCreatesTablesAndStarterPlan(t *testing.T) {
+func TestInitialAccountMigrationCreatesTablesAndStarterPlan(t *testing.T) {
 	content, err := embeddedMigrations.ReadFile("migrations/00002_create_plans_tenants_users.sql")
 	if err != nil {
 		t.Fatalf("read tenancy migration: %v", err)
@@ -337,6 +338,28 @@ func TestSubscriptionsStripeEventsMigrationDropsPlans(t *testing.T) {
 	} {
 		if !strings.Contains(sql, marker) {
 			t.Errorf("subscriptions/stripe_events migration missing %q", marker)
+		}
+	}
+}
+
+func TestAccountsMembershipsMigration(t *testing.T) {
+	content, err := embeddedMigrations.ReadFile("migrations/00014_accounts_memberships.sql")
+	if err != nil {
+		t.Fatalf("read accounts migration: %v", err)
+	}
+	sql := string(content)
+	for _, marker := range []string{
+		"ALTER TABLE tenants RENAME TO accounts",
+		"ALTER TABLE businesses RENAME COLUMN tenant_id TO account_id",
+		"ALTER TABLE subscriptions RENAME COLUMN tenant_id TO account_id",
+		"CREATE TABLE account_memberships",
+		"PRIMARY KEY (account_id, user_id)",
+		"SELECT tenant_id, id, 'owner' FROM users",
+		"ALTER TABLE users DROP COLUMN tenant_id",
+		"every user must have exactly one account membership",
+	} {
+		if !strings.Contains(sql, marker) {
+			t.Errorf("accounts migration missing %q", marker)
 		}
 	}
 }

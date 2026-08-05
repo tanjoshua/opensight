@@ -51,7 +51,7 @@ func GenerateProfileWorkflowID(businessID domain.ID) string {
 // GenerateQuestions once the user reviews Services (design 03) — this input
 // carries no prompt limit.
 type GenerateProfileWorkflowInput struct {
-	TenantID   domain.ID
+	AccountID  domain.ID `json:"TenantID"`
 	BusinessID domain.ID
 	Name       string
 	Website    string
@@ -130,7 +130,7 @@ func GenerateProfileWorkflow(ctx workflow.Context, input GenerateProfileWorkflow
 		StartToCloseTimeout: 15 * time.Second,
 	})
 	return workflow.ExecuteActivity(persistCtx, acts.PersistProposal, PersistProposalInput{
-		TenantID:   input.TenantID,
+		AccountID:  input.AccountID,
 		BusinessID: input.BusinessID,
 		Payload:    payload,
 	}).Get(ctx, nil)

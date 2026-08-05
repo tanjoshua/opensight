@@ -43,10 +43,10 @@ type ProfileProposal struct {
 }
 
 // CreatePending inserts a pending proposal for the business, entering through
-// the tenant-checked business lookup in the same transaction as the write. A
-// missing or cross-tenant business returns ErrNotFound; an existing pending
+// the account-checked business lookup in the same transaction as the write. A
+// missing or cross-account business returns ErrNotFound; an existing pending
 // proposal returns ErrPendingProposalExists.
-func (s *Store) CreatePending(ctx context.Context, tenantID, businessID domain.ID, payload json.RawMessage) (ProfileProposal, error) {
+func (s *Store) CreatePending(ctx context.Context, accountID, businessID domain.ID, payload json.RawMessage) (ProfileProposal, error) {
 	if len(payload) == 0 {
 		return ProfileProposal{}, errors.New("proposal payload is required")
 	}
@@ -63,7 +63,7 @@ func (s *Store) CreatePending(ctx context.Context, tenantID, businessID domain.I
 		Status:     ProfileProposalStatusPending,
 	}
 	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
-		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+		if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 			return err
 		}
 		proposal.CreatedAt, err = q.InsertPendingProposal(ctx, storesqlc.InsertPendingProposalParams{
@@ -84,12 +84,12 @@ func (s *Store) CreatePending(ctx context.Context, tenantID, businessID domain.I
 }
 
 // GetPending returns the business's pending proposal. It enters through the
-// tenant-checked business lookup; a missing or cross-tenant business, or a
+// account-checked business lookup; a missing or cross-account business, or a
 // business with no pending proposal, returns ErrNotFound.
-func (s *Store) GetPending(ctx context.Context, tenantID, businessID domain.ID) (ProfileProposal, error) {
+func (s *Store) GetPending(ctx context.Context, accountID, businessID domain.ID) (ProfileProposal, error) {
 
 	q := s.q(ctx)
-	if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+	if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 		return ProfileProposal{}, err
 	}
 
@@ -109,11 +109,11 @@ func (s *Store) GetPending(ctx context.Context, tenantID, businessID domain.ID) 
 // DiscardPending marks the business's pending proposal (if any) discarded. It is
 // the discard half of regenerate: a safe no-op when there is no pending
 // row, so the caller can always call it before starting a fresh generation. It
-// enters through the tenant-checked business lookup in the same transaction as
-// the update; a missing or cross-tenant business returns ErrNotFound.
-func (s *Store) DiscardPending(ctx context.Context, tenantID, businessID domain.ID) error {
+// enters through the account-checked business lookup in the same transaction as
+// the update; a missing or cross-account business returns ErrNotFound.
+func (s *Store) DiscardPending(ctx context.Context, accountID, businessID domain.ID) error {
 	return s.withTx(ctx, func(q *storesqlc.Queries) error {
-		if err := businessOwned(ctx, q, tenantID, businessID); err != nil {
+		if err := businessOwned(ctx, q, accountID, businessID); err != nil {
 			return err
 		}
 		if err := q.DiscardPendingProposal(ctx, businessID); err != nil {

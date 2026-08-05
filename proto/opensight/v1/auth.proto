@@ -2,16 +2,11 @@ syntax = "proto3";
 
 package opensight.v1;
 
-import "opensight/v1/common.proto";
+import "opensight/v1/account.proto";
 
 message User {
   string id = 1;
   string email = 2;
-}
-
-message Tenant {
-  string id = 1;
-  string name = 2;
 }
 
 message LogoutRequest {}
@@ -22,14 +17,9 @@ message GetMeRequest {}
 
 message GetMeResponse {
   User user = 1;
-  Tenant tenant = 2;
-  repeated BusinessSummary businesses = 3;
-  // Field 4's old bare prompt_limit is superseded by access + plan: the SPA
-  // needs the billing state and complete plan, not one entitlement number.
-  reserved 4;
-  reserved "prompt_limit";
-  Access access = 5;
-  Plan plan = 6;
+  repeated AccountMembershipSummary memberships = 7;
+  reserved 2, 3, 4, 5, 6;
+  reserved "tenant", "businesses", "prompt_limit", "access", "plan";
 }
 
 // Sign-in itself is not an RPC: Google authentication is a plain HTTP

@@ -14,11 +14,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TestRepositoriesEnforceTenantScoping is the SCH-4 acceptance test: every
-// business-owned repository rejects cross-tenant access with ErrNotFound
+// TestRepositoriesEnforceAccountScoping is the SCH-4 acceptance test: every
+// business-owned repository rejects cross-account access with ErrNotFound
 // (direct business lookup, deeper-table writes, and deep-by-id joins), while
-// the owning tenant's calls succeed and idempotency behaves as designed.
-func TestRepositoriesEnforceTenantScoping(t *testing.T) {
+// the owning account's calls succeed and idempotency behaves as designed.
+func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
 		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
@@ -31,8 +31,8 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantA := mustNewID(t)
-	tenantB := mustNewID(t)
+	accountA := mustNewID(t)
+	accountB := mustNewID(t)
 	businessA := mustNewID(t)
 
 	t.Cleanup(func() {
@@ -41,12 +41,12 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM profile_proposals WHERE business_id = $1", businessA)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id = $1", businessA)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessA)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = ANY($1)", []domain.ID{tenantA, tenantB})
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = ANY($1)", []domain.ID{tenantA, tenantB})
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = ANY($1)", []domain.ID{accountA, accountB})
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = ANY($1)", []domain.ID{accountA, accountB})
 	})
 
-	insertTenant(t, db, ctx, tenantA, "Tenant A")
-	insertTenant(t, db, ctx, tenantB, "Tenant B")
+	insertAccount(t, db, ctx, accountA, "Account A")
+	insertAccount(t, db, ctx, accountB, "Account B")
 
 	pool := db
 	businesses := New(pool)
@@ -55,10 +55,10 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	results := New(pool)
 	proposals := New(pool)
 
-	// --- BusinessStore: create (write) + direct tenant-scoped lookups. ---
+	// --- BusinessStore: create (write) + direct account-scoped lookups. ---
 	created, err := businesses.CreateBusiness(ctx, CreateBusinessParams{
 		ID:          businessA,
-		TenantID:    tenantA,
+		AccountID:    accountA,
 		Status:      BusinessStatusActive,
 		Name:        "Acme Clinic",
 		Aliases:     []string{"Acme", "ACME Clinic"},
@@ -72,22 +72,22 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	if len(created.Aliases) != 2 {
 		t.Fatalf("created aliases = %v, want 2 elements", created.Aliases)
 	}
-	// CreateBusiness renames the owning tenant atomically with the business
+	// CreateBusiness renames the owning account atomically with the business
 	// insert (BILL-3): onboarding's first business replaces signup's
 	// email-local-part placeholder name with the real business name.
-	var tenantAName string
-	if err := db.QueryRow(ctx, "SELECT name FROM tenants WHERE id = $1", tenantA).Scan(&tenantAName); err != nil {
-		t.Fatalf("load tenant name: %v", err)
+	var accountAName string
+	if err := db.QueryRow(ctx, "SELECT name FROM accounts WHERE id = $1", accountA).Scan(&accountAName); err != nil {
+		t.Fatalf("load account name: %v", err)
 	}
-	if tenantAName != "Acme Clinic" {
-		t.Fatalf("tenant name after CreateBusiness = %q, want %q", tenantAName, "Acme Clinic")
+	if accountAName != "Acme Clinic" {
+		t.Fatalf("account name after CreateBusiness = %q, want %q", accountAName, "Acme Clinic")
 	}
 	updatedName, updatedCategory := "Updated Clinic", "clinic"
 	updatedAliases := []string{"Updated"}
 	updatedServices := json.RawMessage(`["screening"]`)
 	updatedLocation := json.RawMessage(`{"country":"SG"}`)
 	updated, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
-		TenantID: tenantA, BusinessID: businessA, Name: &updatedName,
+		AccountID: accountA, BusinessID: businessA, Name: &updatedName,
 		Aliases: &updatedAliases, Category: &updatedCategory,
 		Services: &updatedServices,
 		Location: &updatedLocation,
@@ -100,7 +100,7 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	}
 	secondServices := json.RawMessage(`["screening","consultation"]`)
 	disjoint, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
-		TenantID: tenantA, BusinessID: businessA, Services: &secondServices,
+		AccountID: accountA, BusinessID: businessA, Services: &secondServices,
 	})
 	if err != nil {
 		t.Fatalf("disjoint UpdateActiveProfile: %v", err)
@@ -118,76 +118,76 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	}
 	leaked := "Leaked"
 	if _, err := businesses.UpdateActiveProfile(ctx, UpdateBusinessProfileParams{
-		TenantID: tenantB, BusinessID: businessA, Name: &leaked,
+		AccountID: accountB, BusinessID: businessA, Name: &leaked,
 	}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("cross-tenant UpdateActiveProfile error = %v, want ErrNotFound", err)
+		t.Fatalf("cross-account UpdateActiveProfile error = %v, want ErrNotFound", err)
 	}
 
-	if _, err := businesses.GetBusiness(ctx, tenantA, businessA); err != nil {
-		t.Fatalf("GetBusiness(tenantA): %v", err)
+	if _, err := businesses.GetBusiness(ctx, accountA, businessA); err != nil {
+		t.Fatalf("GetBusiness(accountA): %v", err)
 	}
-	got, err := businesses.GetBusiness(ctx, tenantB, businessA)
+	got, err := businesses.GetBusiness(ctx, accountB, businessA)
 	if !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetBusiness(tenantB) err = %v (business %+v), want ErrNotFound", err, got)
+		t.Fatalf("GetBusiness(accountB) err = %v (business %+v), want ErrNotFound", err, got)
 	}
 
-	resolved, err := businesses.ResolveTenantID(ctx, businessA)
+	resolved, err := businesses.ResolveAccountID(ctx, businessA)
 	if err != nil {
-		t.Fatalf("ResolveTenantID: %v", err)
+		t.Fatalf("ResolveAccountID: %v", err)
 	}
-	if resolved != tenantA {
-		t.Fatalf("ResolveTenantID = %s, want %s", resolved, tenantA)
+	if resolved != accountA {
+		t.Fatalf("ResolveAccountID = %s, want %s", resolved, accountA)
 	}
 
-	if list, err := businesses.ListBusinesses(ctx, tenantA); err != nil || len(list) != 1 {
-		t.Fatalf("ListBusinesses(tenantA) = %d,%v, want 1,nil", len(list), err)
+	if list, err := businesses.ListBusinesses(ctx, accountA); err != nil || len(list) != 1 {
+		t.Fatalf("ListBusinesses(accountA) = %d,%v, want 1,nil", len(list), err)
 	}
-	if list, err := businesses.ListBusinesses(ctx, tenantB); err != nil || len(list) != 0 {
-		t.Fatalf("ListBusinesses(tenantB) = %d,%v, want 0,nil", len(list), err)
+	if list, err := businesses.ListBusinesses(ctx, accountB); err != nil || len(list) != 0 {
+		t.Fatalf("ListBusinesses(accountB) = %d,%v, want 0,nil", len(list), err)
 	}
 
 	// --- PromptStore: deeper-table write + reads. ---
 	prompt, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
-		TenantID:   tenantA,
+		AccountID:   accountA,
 		BusinessID: businessA,
 		Text:       "best clinic near me",
 	})
 	if err != nil {
-		t.Fatalf("CreateActivePrompt(tenantA): %v", err)
+		t.Fatalf("CreateActivePrompt(accountA): %v", err)
 	}
 
 	if _, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
-		TenantID:   tenantB,
+		AccountID:   accountB,
 		BusinessID: businessA,
-		Text:       "cross tenant prompt",
+		Text:       "cross account prompt",
 	}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("CreateActivePrompt(tenantB) err = %v, want ErrNotFound", err)
+		t.Fatalf("CreateActivePrompt(accountB) err = %v, want ErrNotFound", err)
 	}
-	// The rejected cross-tenant write must not have inserted a row.
+	// The rejected cross-account write must not have inserted a row.
 	var promptCount int
 	if err := db.QueryRow(ctx, "SELECT count(*) FROM prompts WHERE business_id = $1", businessA).Scan(&promptCount); err != nil {
 		t.Fatalf("count prompts: %v", err)
 	}
 	if promptCount != 1 {
-		t.Fatalf("prompt count after rejected cross-tenant write = %d, want 1", promptCount)
+		t.Fatalf("prompt count after rejected cross-account write = %d, want 1", promptCount)
 	}
 
-	if list, err := prompts.ListActivePrompts(ctx, tenantA, businessA); err != nil || len(list) != 1 {
-		t.Fatalf("ListActivePrompts(tenantA) = %d,%v, want 1,nil", len(list), err)
+	if list, err := prompts.ListActivePrompts(ctx, accountA, businessA); err != nil || len(list) != 1 {
+		t.Fatalf("ListActivePrompts(accountA) = %d,%v, want 1,nil", len(list), err)
 	}
-	if _, err := prompts.ListActivePrompts(ctx, tenantB, businessA); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("ListActivePrompts(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := prompts.ListActivePrompts(ctx, accountB, businessA); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("ListActivePrompts(accountB) err = %v, want ErrNotFound", err)
 	}
-	if _, err := prompts.GetPrompt(ctx, tenantA, prompt.ID); err != nil {
-		t.Fatalf("GetPrompt(tenantA): %v", err)
+	if _, err := prompts.GetPrompt(ctx, accountA, prompt.ID); err != nil {
+		t.Fatalf("GetPrompt(accountA): %v", err)
 	}
-	if _, err := prompts.GetPrompt(ctx, tenantB, prompt.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetPrompt(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := prompts.GetPrompt(ctx, accountB, prompt.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetPrompt(accountB) err = %v, want ErrNotFound", err)
 	}
 
-	// --- RunStore: idempotent upsert + tenant scoping. ---
+	// --- RunStore: idempotent upsert + account scoping. ---
 	scheduledFor := time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC)
-	run, err := runs.UpsertRun(ctx, tenantA, UpsertRunParams{
+	run, err := runs.UpsertRun(ctx, accountA, UpsertRunParams{
 		BusinessID:      businessA,
 		Platform:        "chatgpt",
 		Trigger:         RunTriggerScheduled,
@@ -196,10 +196,10 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		ExpectedResults: 1,
 	})
 	if err != nil {
-		t.Fatalf("UpsertRun(tenantA): %v", err)
+		t.Fatalf("UpsertRun(accountA): %v", err)
 	}
 	// Idempotency: same key converges on the same run id.
-	again, err := runs.UpsertRun(ctx, tenantA, UpsertRunParams{
+	again, err := runs.UpsertRun(ctx, accountA, UpsertRunParams{
 		BusinessID:   businessA,
 		Platform:     "chatgpt",
 		Trigger:      RunTriggerManual,
@@ -207,7 +207,7 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		WorkflowID:   "run-duplicate",
 	})
 	if err != nil {
-		t.Fatalf("UpsertRun(tenantA) second: %v", err)
+		t.Fatalf("UpsertRun(accountA) second: %v", err)
 	}
 	if again.ID != run.ID {
 		t.Fatalf("second UpsertRun id = %s, want %s", again.ID, run.ID)
@@ -216,25 +216,25 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		t.Fatalf("second UpsertRun trigger = %q, want the original %q", again.Trigger, RunTriggerScheduled)
 	}
 
-	if _, err := runs.UpsertRun(ctx, tenantB, UpsertRunParams{
+	if _, err := runs.UpsertRun(ctx, accountB, UpsertRunParams{
 		BusinessID:   businessA,
 		Platform:     "chatgpt",
 		Trigger:      RunTriggerManual,
 		ScheduledFor: scheduledFor,
-		WorkflowID:   "run-cross-tenant",
+		WorkflowID:   "run-cross-account",
 	}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("UpsertRun(tenantB) err = %v, want ErrNotFound", err)
+		t.Fatalf("UpsertRun(accountB) err = %v, want ErrNotFound", err)
 	}
 
-	if list, err := runs.ListRuns(ctx, tenantA, businessA); err != nil || len(list) != 1 {
-		t.Fatalf("ListRuns(tenantA) = %d,%v, want 1,nil", len(list), err)
+	if list, err := runs.ListRuns(ctx, accountA, businessA); err != nil || len(list) != 1 {
+		t.Fatalf("ListRuns(accountA) = %d,%v, want 1,nil", len(list), err)
 	}
-	if _, err := runs.ListRuns(ctx, tenantB, businessA); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("ListRuns(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := runs.ListRuns(ctx, accountB, businessA); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("ListRuns(accountB) err = %v, want ErrNotFound", err)
 	}
 
 	// --- ResultStore: append-only write + deep-by-id join scoping. ---
-	result, err := results.CreateResult(ctx, tenantA, CreateResultParams{
+	result, err := results.CreateResult(ctx, accountA, CreateResultParams{
 		RunID:        run.ID,
 		PromptID:     prompt.ID,
 		Status:       ResultStatusSucceeded,
@@ -244,11 +244,11 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		ResponseText: ptr("Acme Clinic is a good option."),
 	})
 	if err != nil {
-		t.Fatalf("CreateResult(tenantA): %v", err)
+		t.Fatalf("CreateResult(accountA): %v", err)
 	}
 
 	// Duplicate (run, prompt) surfaces ErrDuplicateResult, never a silent dupe.
-	if _, err := results.CreateResult(ctx, tenantA, CreateResultParams{
+	if _, err := results.CreateResult(ctx, accountA, CreateResultParams{
 		RunID:        run.ID,
 		PromptID:     prompt.ID,
 		Status:       ResultStatusSucceeded,
@@ -260,20 +260,20 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		t.Fatalf("duplicate CreateResult err = %v, want ErrDuplicateResult", err)
 	}
 
-	if _, err := results.CreateResult(ctx, tenantB, CreateResultParams{
+	if _, err := results.CreateResult(ctx, accountB, CreateResultParams{
 		RunID:    run.ID,
 		PromptID: prompt.ID,
 		Status:   ResultStatusFailed,
 		Request:  json.RawMessage(`{"model":"gpt-5-mini"}`),
 		Error:    ptr("boom"),
 	}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("CreateResult(tenantB) err = %v, want ErrNotFound", err)
+		t.Fatalf("CreateResult(accountB) err = %v, want ErrNotFound", err)
 	}
 
 	businessB := mustNewID(t)
 	otherBusiness, err := businesses.CreateBusiness(ctx, CreateBusinessParams{
 		ID:          businessB,
-		TenantID:    tenantB,
+		AccountID:    accountB,
 		Status:      BusinessStatusActive,
 		Name:        "Other Clinic",
 		Category:    ptr("clinic"),
@@ -284,14 +284,14 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		t.Fatalf("create other business: %v", err)
 	}
 	otherPrompt, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
-		TenantID:   tenantB,
+		AccountID:   accountB,
 		BusinessID: otherBusiness.ID,
 		Text:       "other clinic prompt",
 	})
 	if err != nil {
 		t.Fatalf("CreateActivePrompt(other business): %v", err)
 	}
-	if _, err := results.CreateResult(ctx, tenantA, CreateResultParams{
+	if _, err := results.CreateResult(ctx, accountA, CreateResultParams{
 		RunID:        run.ID,
 		PromptID:     otherPrompt.ID,
 		Status:       ResultStatusSucceeded,
@@ -303,47 +303,47 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 		t.Fatalf("CreateResult with cross-business prompt err = %v, want ErrNotFound", err)
 	}
 
-	if _, err := results.GetResult(ctx, tenantA, result.ID); err != nil {
-		t.Fatalf("GetResult(tenantA): %v", err)
+	if _, err := results.GetResult(ctx, accountA, result.ID); err != nil {
+		t.Fatalf("GetResult(accountA): %v", err)
 	}
-	if _, err := results.GetResult(ctx, tenantB, result.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetResult(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := results.GetResult(ctx, accountB, result.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetResult(accountB) err = %v, want ErrNotFound", err)
 	}
-	detail, err := results.GetResultDetail(ctx, tenantA, result.ID)
+	detail, err := results.GetResultDetail(ctx, accountA, result.ID)
 	if err != nil {
-		t.Fatalf("GetResultDetail(tenantA): %v", err)
+		t.Fatalf("GetResultDetail(accountA): %v", err)
 	}
 	if detail.Prompt.Text != prompt.Text || detail.Run.WorkflowID != "run-"+businessA.String()+"-chatgpt-2026-07-13" {
 		t.Fatalf("GetResultDetail returned prompt/run %+v/%+v", detail.Prompt, detail.Run)
 	}
-	if _, err := results.GetResultDetail(ctx, tenantB, result.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetResultDetail(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := results.GetResultDetail(ctx, accountB, result.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetResultDetail(accountB) err = %v, want ErrNotFound", err)
 	}
-	if _, err := results.GetResultByRunAndPrompt(ctx, tenantA, run.ID, prompt.ID); err != nil {
-		t.Fatalf("GetResultByRunAndPrompt(tenantA): %v", err)
+	if _, err := results.GetResultByRunAndPrompt(ctx, accountA, run.ID, prompt.ID); err != nil {
+		t.Fatalf("GetResultByRunAndPrompt(accountA): %v", err)
 	}
-	if _, err := results.GetResultByRunAndPrompt(ctx, tenantB, run.ID, prompt.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetResultByRunAndPrompt(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := results.GetResultByRunAndPrompt(ctx, accountB, run.ID, prompt.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetResultByRunAndPrompt(accountB) err = %v, want ErrNotFound", err)
 	}
 
-	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{ResultIDs: []domain.ID{result.ID}}); err != nil || len(list) != 1 {
-		t.Fatalf("ListResults(tenantA, result IDs) = %d,%v, want 1,nil", len(list), err)
+	if list, err := results.ListResults(ctx, accountA, businessA, ResultFilter{ResultIDs: []domain.ID{result.ID}}); err != nil || len(list) != 1 {
+		t.Fatalf("ListResults(accountA, result IDs) = %d,%v, want 1,nil", len(list), err)
 	}
 	failed := ResultStatusFailed
-	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{Status: &failed}); err != nil || len(list) != 0 {
-		t.Fatalf("ListResults(tenantA, status=failed) = %d,%v, want 0,nil", len(list), err)
+	if list, err := results.ListResults(ctx, accountA, businessA, ResultFilter{Status: &failed}); err != nil || len(list) != 0 {
+		t.Fatalf("ListResults(accountA, status=failed) = %d,%v, want 0,nil", len(list), err)
 	}
-	if list, err := results.ListResults(ctx, tenantA, businessA, ResultFilter{RunID: &run.ID, Limit: 10}); err != nil || len(list) != 1 {
-		t.Fatalf("ListResults(tenantA, run filter) = %d,%v, want 1,nil", len(list), err)
+	if list, err := results.ListResults(ctx, accountA, businessA, ResultFilter{RunID: &run.ID, Limit: 10}); err != nil || len(list) != 1 {
+		t.Fatalf("ListResults(accountA, run filter) = %d,%v, want 1,nil", len(list), err)
 	}
-	if _, err := results.ListResults(ctx, tenantB, businessA, ResultFilter{ResultIDs: []domain.ID{result.ID}}); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("ListResults(tenantB, result IDs) err = %v, want ErrNotFound", err)
+	if _, err := results.ListResults(ctx, accountB, businessA, ResultFilter{ResultIDs: []domain.ID{result.ID}}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("ListResults(accountB, result IDs) err = %v, want ErrNotFound", err)
 	}
 
-	// --- FinalizeRun: 1 expected (from the row) + 1 succeeded -> completed; tenant scoped. ---
-	finalized, err := runs.FinalizeRun(ctx, tenantA, run.ID)
+	// --- FinalizeRun: 1 expected (from the row) + 1 succeeded -> completed; account scoped. ---
+	finalized, err := runs.FinalizeRun(ctx, accountA, run.ID)
 	if err != nil {
-		t.Fatalf("FinalizeRun(tenantA): %v", err)
+		t.Fatalf("FinalizeRun(accountA): %v", err)
 	}
 	if finalized.Status != RunStatusCompleted {
 		t.Fatalf("FinalizeRun status = %q, want %q", finalized.Status, RunStatusCompleted)
@@ -351,25 +351,25 @@ func TestRepositoriesEnforceTenantScoping(t *testing.T) {
 	if finalized.CompletedAt == nil {
 		t.Fatal("FinalizeRun completed_at is nil, want set")
 	}
-	if _, err := runs.FinalizeRun(ctx, tenantB, run.ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("FinalizeRun(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := runs.FinalizeRun(ctx, accountB, run.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("FinalizeRun(accountB) err = %v, want ErrNotFound", err)
 	}
 
 	// --- ProfileProposalStore (thin): create-pending + get-pending. ---
-	if _, err := proposals.CreatePending(ctx, tenantA, businessA, json.RawMessage(`{"name":"Acme Clinic"}`)); err != nil {
-		t.Fatalf("CreatePending(tenantA): %v", err)
+	if _, err := proposals.CreatePending(ctx, accountA, businessA, json.RawMessage(`{"name":"Acme Clinic"}`)); err != nil {
+		t.Fatalf("CreatePending(accountA): %v", err)
 	}
-	if _, err := proposals.CreatePending(ctx, tenantA, businessA, json.RawMessage(`{"name":"Acme"}`)); !errors.Is(err, ErrPendingProposalExists) {
+	if _, err := proposals.CreatePending(ctx, accountA, businessA, json.RawMessage(`{"name":"Acme"}`)); !errors.Is(err, ErrPendingProposalExists) {
 		t.Fatalf("second CreatePending err = %v, want ErrPendingProposalExists", err)
 	}
-	if _, err := proposals.CreatePending(ctx, tenantB, businessA, json.RawMessage(`{"name":"Evil"}`)); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("CreatePending(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := proposals.CreatePending(ctx, accountB, businessA, json.RawMessage(`{"name":"Evil"}`)); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("CreatePending(accountB) err = %v, want ErrNotFound", err)
 	}
-	if _, err := proposals.GetPending(ctx, tenantA, businessA); err != nil {
-		t.Fatalf("GetPending(tenantA): %v", err)
+	if _, err := proposals.GetPending(ctx, accountA, businessA); err != nil {
+		t.Fatalf("GetPending(accountA): %v", err)
 	}
-	if _, err := proposals.GetPending(ctx, tenantB, businessA); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("GetPending(tenantB) err = %v, want ErrNotFound", err)
+	if _, err := proposals.GetPending(ctx, accountB, businessA); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetPending(accountB) err = %v, want ErrNotFound", err)
 	}
 }
 

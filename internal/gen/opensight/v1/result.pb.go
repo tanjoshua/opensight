@@ -818,7 +818,7 @@ type ListResultsRequest struct {
 	Limit     int32 `protobuf:"varint,6,opt,name=limit,proto3" json:"limit,omitempty"`
 	Offset    int32 `protobuf:"varint,7,opt,name=offset,proto3" json:"offset,omitempty"`
 	// When set, returns only these results in the caller-provided order. IDs
-	// outside business_id (including another tenant's results) are omitted.
+	// outside business_id (including another account's results) are omitted.
 	ResultIds     []string `protobuf:"bytes,8,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

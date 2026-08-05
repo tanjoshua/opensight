@@ -29,12 +29,12 @@ type VisibilityPoint struct {
 // versus the previous run is the caller's subtraction. Runs without
 // analysis_completed_at and results without a result_analyses row are
 // excluded from both sides.
-func (m *Metrics) VisibilityTrend(ctx context.Context, tenantID, businessID domain.ID) ([]VisibilityPoint, error) {
+func (m *Metrics) VisibilityTrend(ctx context.Context, accountID, businessID domain.ID) ([]VisibilityPoint, error) {
 	if err := m.ready(); err != nil {
 		return nil, err
 	}
 
-	rows, err := m.q.VisibilityTrend(ctx, db.VisibilityTrendParams{BusinessID: businessID, TenantID: tenantID})
+	rows, err := m.q.VisibilityTrend(ctx, db.VisibilityTrendParams{BusinessID: businessID, AccountID: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("visibility trend: %w", err)
 	}

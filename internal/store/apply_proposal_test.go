@@ -8,7 +8,7 @@ import (
 
 func TestNormalizeApplyProposalParams(t *testing.T) {
 	got, err := normalizeApplyProposalParams(ApplyProposalParams{
-		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000000101"),
+		AccountID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000000101"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000000102"),
 		Name:       "Atlas Clinic", Category: "Dental", ActivatedAt: time.Now(),
 	})
@@ -25,7 +25,7 @@ func TestNormalizeApplyProposalParams(t *testing.T) {
 
 func TestNormalizeApplyProposalParamsRejectsIncompleteProfile(t *testing.T) {
 	base := ApplyProposalParams{
-		TenantID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000000111"),
+		AccountID:   mustUUIDV7(t, "01950000-0000-7000-8000-000000000111"),
 		BusinessID: mustUUIDV7(t, "01950000-0000-7000-8000-000000000112"),
 		Name:       "Atlas Clinic", Category: "Dental", Services: json.RawMessage("[]"),
 		ActivatedAt: time.Now(),

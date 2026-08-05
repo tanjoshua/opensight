@@ -13,6 +13,11 @@ export function isUnauthenticated(err: unknown): boolean {
   return ConnectError.from(err).code === Code.Unauthenticated
 }
 
+export function isMissingAccountAccess(err: unknown): boolean {
+  const code = ConnectError.from(err).code
+  return code === Code.PermissionDenied || code === Code.NotFound
+}
+
 // accessDeniedFrom extracts the RPC access gate's AccessDenied detail (BILL-6):
 // the billing state that caused the rejection, so the SPA renders the right
 // state rather than parsing the error message. Returns undefined for any

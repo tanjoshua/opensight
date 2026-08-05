@@ -23,7 +23,7 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	otherBusinessID := mustNewID(t)
 	p1, p2, p3, foreignPrompt := mustNewID(t), mustNewID(t), mustNewID(t), mustNewID(t)
@@ -37,13 +37,13 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", otherBusinessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Citation Tenant")
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, tenantID)
-	mustExec(t, db, ctx, "INSERT INTO businesses (id, tenant_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')", otherBusinessID, tenantID)
+	insertAccount(t, db, ctx, accountID, "Citation Account")
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Clinic')", businessID, accountID)
+	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Other Clinic')", otherBusinessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'root canal clinic', 'active')", p1, businessID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best specialist near me', 'active')", p2, businessID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'excluded prompt', 'active')", p3, businessID)
@@ -98,7 +98,7 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	citation(a4, "https://foreign.com/page", "Foreign", "foreign.com", "business", 0)
 	citation(b1, "https://excluded.com/page", "Excluded", "excluded.com", "other", 0)
 
-	sources, err := New(db).CitationSources(ctx, tenantID, businessID)
+	sources, err := New(db).CitationSources(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("CitationSources: %v", err)
 	}

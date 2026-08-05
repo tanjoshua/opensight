@@ -14,18 +14,23 @@ import { PromptsPage } from "@/pages/prompts/prompts-page"
 import { RunDetailPage } from "@/pages/runs/run-detail-page"
 import { RunsPage } from "@/pages/runs/runs-page"
 import { SetupPage } from "@/pages/setup/setup-page"
+import { AccountsPage, NewAccountPage } from "@/pages/accounts/accounts-page"
+import { TeamPage } from "@/pages/team/team-page"
+import { useParams } from "react-router"
+import { accountPath } from "@/lib/account-path"
 
 // ResponsesRedirect keeps the old /responses(?run=X) deep links working after
 // the RUNS-6 rename: a bare wildcard route would drop ?run=, so this reads it
 // explicitly and forwards the run-scoped filters (status/prompt) along.
 function ResponsesRedirect() {
   const [searchParams] = useSearchParams()
+  const { accountSlug = "" } = useParams<{ accountSlug: string }>()
   const run = searchParams.get("run")
-  if (!run) return <Navigate to="/runs" replace />
+  if (!run) return <Navigate to={accountPath(accountSlug, "/runs")} replace />
   const params = new URLSearchParams(searchParams)
   params.delete("run")
   const query = params.toString()
-  return <Navigate to={`/runs/${run}${query ? `?${query}` : ""}`} replace />
+  return <Navigate to={`${accountPath(accountSlug, `/runs/${run}`)}${query ? `?${query}` : ""}`} replace />
 }
 
 export function App() {
@@ -35,23 +40,27 @@ export function App() {
       {/* Google is the only sign-in method (design 07): signup is login. The
           marketing site links here from four pages. */}
       <Route path="/signup" element={<Navigate to="/login" replace />} />
-      <Route path="/billing" element={<BillingPage />} />
+      <Route path="/accounts" element={<AccountsPage />} />
+      <Route path="/accounts/new" element={<NewAccountPage />} />
       <Route path="/checkout/return" element={<CheckoutReturnPage />} />
-      <Route path="/onboarding" element={<OnboardingPage />} />
-      <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/overview" replace />} />
-        <Route path="/overview" element={<OverviewPage />} />
-        <Route path="/prompts" element={<PromptsPage />} />
-        <Route path="/prompts/:id" element={<PromptDetailPage />} />
-        <Route path="/competitors" element={<CompetitorsPage />} />
-        <Route path="/runs" element={<RunsPage />} />
-        <Route path="/runs/:id" element={<RunDetailPage />} />
-        <Route path="/responses" element={<ResponsesRedirect />} />
-        <Route path="/setup" element={<SetupPage />} />
-        <Route path="/methodology" element={<MethodologyPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<Navigate to="/overview" replace />} />
+      <Route path="/a/:accountSlug/billing" element={<BillingPage />} />
+      <Route path="/a/:accountSlug/onboarding" element={<OnboardingPage />} />
+      <Route path="/a/:accountSlug" element={<AppLayout />}>
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<OverviewPage />} />
+        <Route path="prompts" element={<PromptsPage />} />
+        <Route path="prompts/:id" element={<PromptDetailPage />} />
+        <Route path="competitors" element={<CompetitorsPage />} />
+        <Route path="runs" element={<RunsPage />} />
+        <Route path="runs/:id" element={<RunDetailPage />} />
+        <Route path="responses" element={<ResponsesRedirect />} />
+        <Route path="setup" element={<SetupPage />} />
+        <Route path="team" element={<TeamPage />} />
+        <Route path="methodology" element={<MethodologyPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="*" element={<Navigate to="overview" replace />} />
       </Route>
+      <Route path="*" element={<Navigate to="/accounts" replace />} />
     </Routes>
   )
 }

@@ -16,11 +16,10 @@ import (
 
 // Fixed UUIDv7-form IDs make `opensight seed dev` idempotent.
 var (
-	seedTenantID = uuid.MustParse("01950000-0000-7000-8000-0000000000d0")
-	seedUserID   = uuid.MustParse("01950000-0000-7000-8000-0000000000d1")
+	seedAccountID = uuid.MustParse("01950000-0000-7000-8000-0000000000d0")
 )
 
-const seedTenantName = "Local Dev Tenant"
+const seedAccountName = "Local Dev Account"
 
 // seedDevArgsUsage documents seed dev's one flag.
 const seedDevArgsUsage = "usage: opensight seed dev --email <your google account email>"
@@ -31,7 +30,7 @@ const seedDevArgsUsage = "usage: opensight seed dev --email <your google account
 func parseSeedDevArgs(args []string, getenv func(string) string) (string, error) {
 	flags := flag.NewFlagSet("seed dev", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	email := flags.String("email", "", "google account email to seed as the dev tenant's user")
+	email := flags.String("email", "", "google account email to seed as the dev account's owner")
 	if err := flags.Parse(args); err != nil {
 		return "", fmt.Errorf("%s", seedDevArgsUsage)
 	}
@@ -49,7 +48,7 @@ func parseSeedDevArgs(args []string, getenv func(string) string) (string, error)
 	return value, nil
 }
 
-// seedDevCLI creates a comped tenant and a user row for email, with no Google
+// seedDevCLI creates a comped account and an owner membership for email, with no Google
 // identity yet, so local development can sign in with a real Google account
 // and land straight in the app instead of hitting the billing wall (design 07
 // "Auth and accounts"; design 08 "Signup"). The first Google sign-in with
@@ -66,34 +65,27 @@ func seedDevCLI(ctx context.Context, cfg config.Config, email string, out io.Wri
 	defer db.Close()
 
 	dataStore := store.New(db)
-	if _, err := dataStore.GetUserByEmail(ctx, email); err == nil {
-		_, err = fmt.Fprintln(out, "dev account already seeded; nothing to do")
-		return err
-	} else if !errors.Is(err, store.ErrNotFound) {
-		return err
-	}
-
-	// If a previous attempt stopped after creating the tenant, reuse it and
-	// finish creating the account.
-	if _, err := dataStore.GetByTenant(ctx, seedTenantID); errors.Is(err, store.ErrNotFound) {
-		if _, err := dataStore.CreateTenant(ctx, store.CreateTenantParams{ID: seedTenantID, Name: seedTenantName}); err != nil {
+	// If a previous attempt stopped after creating the account, reuse it and
+	// finish creating the owner membership.
+	if _, err := dataStore.GetByAccount(ctx, seedAccountID); errors.Is(err, store.ErrNotFound) {
+		if _, err := dataStore.CreateOperatorAccount(ctx, store.CreateOperatorAccountParams{ID: seedAccountID, Name: seedAccountName}); err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
 	}
 
-	if _, err := dataStore.CreateUser(ctx, store.CreateUserParams{
-		ID:       seedUserID,
-		TenantID: seedTenantID,
-		Email:    email,
+	if _, err := dataStore.AddAccountMember(ctx, store.AddAccountMemberParams{
+		AccountID: seedAccountID,
+		Email:     email,
+		Role:      store.AccountRoleOwner,
 	}); err != nil {
 		return err
 	}
 
 	_, err = fmt.Fprintf(out,
-		"seeded dev account\ntenant_id=%s\nuser_email=%s\nsign in with Google using this address\n",
-		seedTenantID, email,
+		"seeded dev account\naccount_id=%s\nuser_email=%s\nsign in with Google using this address\n",
+		seedAccountID, email,
 	)
 	return err
 }

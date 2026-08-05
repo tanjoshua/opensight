@@ -1,23 +1,35 @@
 -- name: BusinessOwned :one
-SELECT 1 FROM businesses WHERE id = $1 AND tenant_id = $2;
+SELECT 1 FROM businesses WHERE id = @id AND account_id = @account_id;
 
--- name: InsertTenant :one
-INSERT INTO tenants (id, name) VALUES ($1, $2) RETURNING created_at;
+-- name: InsertAccount :one
+INSERT INTO accounts (id, name, slug) VALUES ($1, $2, $3) RETURNING created_at;
 
 -- name: InsertUser :one
-INSERT INTO users (id, tenant_id, email, google_sub)
-VALUES ($1, $2, $3, $4) RETURNING created_at;
+INSERT INTO users (id, email, google_sub) VALUES ($1, $2, $3) RETURNING created_at;
+
+-- name: UpsertUserByEmail :one
+INSERT INTO users (id, email) VALUES ($1, $2)
+ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+RETURNING id, email, google_sub, created_at;
+
+-- name: InsertAccountMembership :one
+INSERT INTO account_memberships (account_id, user_id, role)
+VALUES ($1, $2, $3) RETURNING created_at;
+
+-- name: UpsertAccountMembership :one
+INSERT INTO account_memberships (account_id, user_id, role)
+VALUES ($1, $2, $3)
+ON CONFLICT (account_id, user_id) DO UPDATE SET role = account_memberships.role
+RETURNING role, created_at;
 
 -- name: InsertSubscription :exec
-INSERT INTO subscriptions (tenant_id, plan_code, comped) VALUES ($1, $2, $3);
+INSERT INTO subscriptions (account_id, plan_code, comped) VALUES ($1, $2, $3);
 
 -- name: GetUserByGoogleSub :one
-SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
-FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.google_sub = $1;
+SELECT id, email, google_sub FROM users WHERE google_sub = $1;
 
 -- name: GetUserByEmail :one
-SELECT u.id, u.tenant_id, u.email, t.name, u.google_sub
-FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.email = $1;
+SELECT id, email, google_sub FROM users WHERE email = $1;
 
 -- name: SetUserGoogleSub :exec
 UPDATE users SET google_sub = $2 WHERE id = $1;
@@ -29,39 +41,70 @@ INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3);
 DELETE FROM sessions WHERE user_id = $1 AND expires_at <= now();
 
 -- name: GetSession :one
--- LEFT JOIN deliberately, not INNER: a missing subscriptions row must surface
--- to the caller as an explicit error, not silently masquerade as an
--- expired/absent session by disappearing from the result set.
-SELECT u.id, u.tenant_id, u.email, t.name, s.expires_at,
-       sub.plan_code, sub.comped, sub.stripe_subscription_id, sub.stripe_status, sub.past_due_since
-FROM sessions s
-JOIN users u ON u.id = s.user_id
-JOIN tenants t ON t.id = u.tenant_id
-LEFT JOIN subscriptions sub ON sub.tenant_id = u.tenant_id
+SELECT u.id, u.email, s.expires_at
+FROM sessions s JOIN users u ON u.id = s.user_id
 WHERE s.token_hash = $1 AND s.expires_at > now();
+
+-- name: ListAccountMembershipsForUser :many
+SELECT a.id AS account_id, a.name, a.slug, am.role, am.created_at
+FROM account_memberships am JOIN accounts a ON a.id = am.account_id
+WHERE am.user_id = $1 ORDER BY a.name, a.id;
+
+-- name: GetAccountContextBySlug :one
+SELECT a.id AS account_id, a.name, a.slug, am.role,
+       sub.plan_code, sub.comped, sub.stripe_subscription_id,
+       sub.stripe_status, sub.past_due_since
+FROM accounts a
+JOIN account_memberships am ON am.account_id = a.id AND am.user_id = @user_id
+LEFT JOIN subscriptions sub ON sub.account_id = a.id
+WHERE a.slug = @slug;
+
+-- name: GetAccountMembership :one
+SELECT account_id, user_id, role, created_at FROM account_memberships
+WHERE account_id = $1 AND user_id = $2;
+
+-- name: GetAccountByID :one
+SELECT id, name, slug, created_at FROM accounts WHERE id = $1;
+
+-- name: ListAccountMembers :many
+SELECT u.id AS user_id, u.email, u.google_sub, am.role, am.created_at
+FROM account_memberships am JOIN users u ON u.id = am.user_id
+WHERE am.account_id = $1 ORDER BY lower(u.email), u.id;
+
+-- name: UpdateAccountMembershipRole :execrows
+UPDATE account_memberships SET role = $3 WHERE account_id = $1 AND user_id = $2;
+
+-- name: DeleteAccountMembership :execrows
+DELETE FROM account_memberships WHERE account_id = $1 AND user_id = $2;
+
+-- name: LockAccount :one
+SELECT id FROM accounts WHERE id = $1 FOR UPDATE;
+
+-- name: CountAccountOwners :one
+SELECT count(*) FROM account_memberships WHERE account_id = $1 AND role = 'owner';
 
 -- name: DeleteSession :exec
 DELETE FROM sessions WHERE token_hash = $1;
 
 -- name: InsertBusiness :one
 INSERT INTO businesses (
-  id, tenant_id, status, name, website, aliases, category, services, location, activated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+  id, account_id, status, name, website, aliases, category, services, location, activated_at
+) VALUES (@id, @account_id, @status, @name, @website, @aliases, @category, @services, @location, @activated_at)
 RETURNING created_at;
 
 -- name: GetBusiness :one
-SELECT id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at
-FROM businesses WHERE id = $1 AND tenant_id = $2;
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+FROM businesses WHERE id = @id AND account_id = @account_id;
 
 -- name: ListBusinesses :many
-SELECT id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at
-FROM businesses WHERE tenant_id = $1 ORDER BY created_at;
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+FROM businesses WHERE account_id = $1 ORDER BY created_at;
 
--- name: ResolveTenantID :one
-SELECT tenant_id FROM businesses WHERE id = $1;
+-- name: ResolveAccountID :one
+SELECT account_id FROM businesses WHERE id = $1;
 
--- name: RenameTenant :exec
-UPDATE tenants SET name = $2 WHERE id = $1;
+-- name: RenameAccount :exec
+UPDATE accounts SET name = $2 WHERE id = $1;
 
 -- name: UpdateActiveBusinessProfile :one
 UPDATE businesses
@@ -71,18 +114,18 @@ SET name = CASE WHEN @name_set::bool THEN @name ELSE name END,
     category = CASE WHEN @category_set::bool THEN @category ELSE category END,
     services = CASE WHEN @services_set::bool THEN @services::jsonb ELSE services END,
     location = CASE WHEN @location_set::bool THEN @location::jsonb ELSE location END
-WHERE id = @business_id AND tenant_id = @tenant_id AND status = 'active'
-RETURNING id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at;
+WHERE id = @business_id AND account_id = @account_id AND status = 'active'
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
 
 -- name: LockDraftBusiness :one
-SELECT status FROM businesses WHERE id = $1 AND tenant_id = $2 FOR UPDATE;
+SELECT status FROM businesses WHERE id = @id AND account_id = @account_id FOR UPDATE;
 
 -- name: ActivateBusiness :one
 UPDATE businesses
 SET name = $2, aliases = $3, category = $4, services = $5, location = $6,
     status = 'active', activated_at = $7
 WHERE id = $1
-RETURNING id, tenant_id, status, name, website, aliases, category, services, location, created_at, activated_at;
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
 
 -- name: MarkProposalApplied :exec
 UPDATE profile_proposals SET status = 'applied', resolved_at = now()
@@ -90,8 +133,8 @@ WHERE business_id = $1 AND status = 'pending';
 
 -- name: LockBusinessPlanCode :one
 SELECT s.plan_code
-FROM businesses b JOIN subscriptions s ON s.tenant_id = b.tenant_id
-WHERE b.id = $1 AND b.tenant_id = $2 FOR UPDATE OF b;
+FROM businesses b JOIN subscriptions s ON s.account_id = b.account_id
+WHERE b.id = @id AND b.account_id = @account_id FOR UPDATE OF b;
 
 -- name: CountActivePrompts :one
 SELECT count(*) FROM prompts WHERE business_id = $1 AND status = 'active';
@@ -107,34 +150,34 @@ FROM prompts WHERE business_id = $1 AND status = 'active' ORDER BY created_at;
 -- name: GetPrompt :one
 SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
 FROM prompts pr JOIN businesses b ON b.id = pr.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2;
+WHERE pr.id = @id AND b.account_id = @account_id;
 
 -- name: LockPromptForReplace :one
 SELECT pr.id, pr.business_id, pr.text, pr.status, pr.replaces_prompt_id, pr.created_at
 FROM prompts pr JOIN businesses b ON b.id = pr.business_id
-WHERE pr.id = $1 AND b.tenant_id = $2 FOR UPDATE OF pr;
+WHERE pr.id = @id AND b.account_id = @account_id FOR UPDATE OF pr;
 
 -- name: RetirePrompt :exec
 UPDATE prompts SET status = 'retired', retired_at = now() WHERE id = $1;
 
--- name: GetSubscriptionByTenant :one
-SELECT tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
+-- name: GetSubscriptionByAccount :one
+SELECT account_id, plan_code, stripe_customer_id, stripe_subscription_id,
        stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end,
        created_at, updated_at
-FROM subscriptions WHERE tenant_id = $1;
+FROM subscriptions WHERE account_id = $1;
 
 -- name: GetSubscriptionByCustomer :one
-SELECT tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
+SELECT account_id, plan_code, stripe_customer_id, stripe_subscription_id,
        stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end,
        created_at, updated_at
 FROM subscriptions WHERE stripe_customer_id = $1;
 
 -- name: UpsertSubscription :exec
 INSERT INTO subscriptions (
-  tenant_id, plan_code, stripe_customer_id, stripe_subscription_id,
+  account_id, plan_code, stripe_customer_id, stripe_subscription_id,
   stripe_status, past_due_since, comped, current_period_end, cancel_at_period_end
-) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-ON CONFLICT (tenant_id) DO UPDATE SET
+) VALUES (@account_id,@plan_code,@stripe_customer_id,@stripe_subscription_id,@stripe_status,@past_due_since,@comped,@current_period_end,@cancel_at_period_end)
+ON CONFLICT (account_id) DO UPDATE SET
   plan_code=EXCLUDED.plan_code, stripe_customer_id=EXCLUDED.stripe_customer_id,
   stripe_subscription_id=EXCLUDED.stripe_subscription_id, stripe_status=EXCLUDED.stripe_status,
   past_due_since=EXCLUDED.past_due_since, comped=EXCLUDED.comped,
@@ -145,7 +188,7 @@ ON CONFLICT (tenant_id) DO UPDATE SET
 UPDATE subscriptions
 SET stripe_customer_id=COALESCE(stripe_customer_id,$2),
     updated_at=CASE WHEN stripe_customer_id IS NULL THEN now() ELSE updated_at END
-WHERE tenant_id=$1 RETURNING stripe_customer_id;
+WHERE account_id=$1 RETURNING stripe_customer_id;
 
 -- name: InsertPendingProposal :one
 INSERT INTO profile_proposals (id,business_id,payload,status)

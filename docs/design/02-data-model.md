@@ -1,21 +1,22 @@
 # Design 02 — Data Model
 
-Depends on: [01 Architecture](01-architecture.md) (Postgres, tenant scoping, billing)
+Depends on: [01 Architecture](01-architecture.md) (Postgres, account scoping, billing)
 
 ## Principles
 
 - **Immutable facts, derived insights.** Prompt executions and raw responses are append-only. Everything the user sees (visibility %, sentiment, competitor stats) is derived from them and can be recomputed. Analysis tables can be wiped and rebuilt; results tables cannot.
 - **New measurement = new identity.** A prompt's text is immutable. Changing it creates a new prompt row — that is what makes "replacement starts a new trend, old history remains" (PRD §4) fall out of the schema instead of being special-cased.
-- **Entitlements over constants.** Nothing reads a bare "20" or "weekly" at a use site; limits come from the tenant's plan entitlements, resolved through `subscriptions.plan_code` against the plan catalog (08).
+- **Entitlements over constants.** Nothing reads a bare "20" or "weekly" at a use site; limits come from the account's plan entitlements, resolved through `subscriptions.plan_code` against the plan catalog (08).
 - **No pre-aggregation.** At ≤20 results/business/week, every chart is a live query. Rollup tables are a future optimization, not a schema concern.
 
 ## Entity overview
 
 ```mermaid
 erDiagram
-    tenants ||--|| subscriptions : ""
-    tenants ||--o{ users : ""
-    tenants ||--o{ businesses : ""
+    accounts ||--|| subscriptions : ""
+    accounts ||--o{ account_memberships : ""
+    users ||--o{ account_memberships : ""
+    accounts ||--o{ businesses : ""
     businesses ||--o{ profile_proposals : ""
     businesses ||--o{ prompts : ""
     businesses ||--o{ competitors : ""
@@ -28,26 +29,35 @@ erDiagram
     competitors ||--o{ mentions : ""
 ```
 
-All IDs are UUIDv7 (time-ordered, index-friendly). `tenant_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through a tenant-checked business lookup. Callers without ambient tenant context (Temporal activities, CLI) first resolve the business's tenant via a single bootstrap lookup (`store.Store.ResolveTenantID`), then use the same tenant-checked repositories.
+All IDs are UUIDv7 (time-ordered, index-friendly). `account_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through an account-checked business lookup. Callers without ambient account context (Temporal activities, CLI) first resolve the business's account via a single bootstrap lookup (`store.Store.ResolveAccountID`), then use the same account-checked repositories.
 
 All application and metrics statements are named sqlc queries in the unified
 `internal/store/queries/` catalog. Generated row types stay inside the
 persistence/metrics adapters; public repository types express domain meaning
-and preserve tenant-scoping and sentinel-error contracts. Optional result
+and preserve account-scoping and sentinel-error contracts. Optional result
 filters are one static query using nullable parameters and an ID array, so no
 runtime SQL assembly is needed.
 
 ## Tables
 
-### Tenancy and subscription
+### Accounts, identities, memberships, and subscription
 
 ```sql
-tenants  ( id uuid PK, name text, created_at )
-users    ( id uuid PK, tenant_id uuid FK, email citext UNIQUE, google_sub text UNIQUE, created_at )
+accounts ( id uuid PK, name text, slug text UNIQUE, created_at )
+users    ( id uuid PK, email citext UNIQUE, google_sub text UNIQUE NULL, created_at )
+
+account_memberships (
+  account_id uuid FK REFERENCES accounts(id) ON DELETE CASCADE,
+  user_id    uuid FK REFERENCES users(id) ON DELETE CASCADE,
+  role       text CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+  created_at timestamptz,
+  PRIMARY KEY (account_id, user_id)
+)
+-- index on (user_id, account_id) supports account listing for a signed-in user
 -- auth mechanics (Google sign-in/sessions) owned by design 07
 
 subscriptions (
-  tenant_id              uuid PK FK,   -- one permanent billing record per tenant
+  account_id             uuid PK FK,   -- one permanent billing record per account
   plan_code              text,         -- 'starter' — resolves against the code catalog (08)
   stripe_customer_id     text UNIQUE NULL,
   stripe_subscription_id text UNIQUE NULL,
@@ -60,13 +70,15 @@ subscriptions (
 )
 ```
 
-**There is no `plans` table.** Entitlements — prompt limit, run interval, platforms — are a versioned catalog in code (design 08), because a limit and the Stripe Price it is sold against must ship as one unit rather than as two independently seeded systems. The database stores only what code cannot: this tenant's Stripe state. `plan_code` is the join between them, and an unknown code is an error, never a silent default.
+**There is no `plans` table.** Entitlements — prompt limit, run interval, platforms — are a versioned catalog in code (design 08), because a limit and the Stripe Price it is sold against must ship as one unit rather than as two independently seeded systems. The database stores only what code cannot: this account's Stripe state. `plan_code` is the join between them, and an unknown code is an error, never a silent default.
+
+A user is one global identity and may have memberships in multiple accounts with a different role in each. Membership grants access to every business in the account; business-specific ACLs are deferred. Accounts may have multiple owners, but the application locks the account row and rejects any owner removal or demotion that would leave no owner.
 
 ### Businesses and profile
 
 ```sql
 businesses (
-  id UUID PK, tenant_id FK, status text,   -- 'draft' | 'active'
+  id UUID PK, account_id FK, status text,   -- 'draft' | 'active'
   name text, website text,
   aliases text[],     -- organization trading names ONLY; never a person's name unless
                       -- it is genuinely part of the trading identity
@@ -87,7 +99,7 @@ profile_proposals (
 
 The PRD's "confirmed profile values are not overwritten automatically" is enforced structurally: **generation only ever writes `profile_proposals`**; values reach `businesses` through the user-driven onboarding apply step or an explicit post-activation Setup edit. Setup updates only profile columns and never changes lifecycle, plan, prompts, runs, or derived history. There is no code path where the pipeline writes business columns directly. (Onboarding flow details: design 03.)
 
-MVP has one business per tenant, but the FK shape makes multi-location (PRD §9) additive.
+MVP has one business per account. The account remains distinct because it owns billing and memberships; a business is the monitored real-world organization.
 
 ### Prompts
 
@@ -201,7 +213,7 @@ Every row above carries `prompt_result_id`, satisfying "every metric links to th
 
 ## Retention
 
-Indefinite. Historical results are the product; at this volume (a few MB/tenant/year) deletion is a non-feature until legal/privacy requirements say otherwise.
+Indefinite. Historical results are the product; at this volume (a few MB/account/year) deletion is a non-feature until legal/privacy requirements say otherwise.
 
 ## Open questions (owned by later increments)
 

@@ -13,7 +13,7 @@ export function LoginPage() {
   const [searchParams] = useSearchParams()
 
   if (me.data) {
-    return <Navigate to="/overview" replace />
+    return <Navigate to="/accounts" replace />
   }
 
   const error = searchParams.get("error")

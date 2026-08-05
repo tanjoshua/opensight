@@ -91,12 +91,13 @@ go run ./cmd/opensight migrate
 Create an invite-only account:
 
 ```sh
-go run ./cmd/opensight tenant create --name "Acme Clinic"
-go run ./cmd/opensight user create --tenant <tenant_id> --email owner@example.com
+go run ./cmd/opensight account create --name "Acme Clinic"
+go run ./cmd/opensight account member add --account <account_id> --email owner@example.com --role owner
 ```
 
-`user create` creates the row with no Google identity; the owner's first sign-in
-with that email at `/login` links it.
+`account member add` creates or reuses a global user with no Google identity;
+the person's first sign-in with that email at `/login` links it. No invitation
+email or acceptance step is involved.
 
 ## Tests
 

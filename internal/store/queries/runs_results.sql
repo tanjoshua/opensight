@@ -13,8 +13,8 @@ SET status=CASE WHEN sub.succeeded=0 THEN 'failed'
   WHEN sub.succeeded=COALESCE(r.expected_results,sub.total) THEN 'completed' ELSE 'partial' END,
   completed_at=now()
 FROM businesses b,(SELECT count(*) FILTER (WHERE status='succeeded') AS succeeded,count(*) AS total
-  FROM prompt_results WHERE run_id=$1) sub
-WHERE r.id=$1 AND r.business_id=b.id AND b.tenant_id=$2
+  FROM prompt_results WHERE run_id = @id) sub
+WHERE r.id = @id AND r.business_id=b.id AND b.account_id = @account_id
 RETURNING r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.workflow_id,
  r.started_at,r.completed_at,r.analysis_completed_at,r.expected_results;
 
@@ -33,8 +33,8 @@ LEFT JOIN LATERAL (
 -- name: RunPromptOwned :one
 SELECT 1 FROM monitoring_runs r
 JOIN businesses b ON b.id=r.business_id
-JOIN prompts p ON p.id=$2 AND p.business_id=r.business_id
-WHERE r.id=$1 AND b.tenant_id=$3;
+JOIN prompts p ON p.id = @prompt_id AND p.business_id=r.business_id
+WHERE r.id = @id AND b.account_id = @account_id;
 
 -- name: InsertResult :one
 INSERT INTO prompt_results (id,run_id,prompt_id,status,model,request,raw_response,response_text,error,requested_at,completed_at)
@@ -49,13 +49,13 @@ RETURNING requested_at,completed_at;
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE pr.run_id=$1 AND pr.prompt_id=$2 AND b.tenant_id=$3;
+WHERE pr.run_id = @run_id AND pr.prompt_id = @prompt_id AND b.account_id = @account_id;
 
 -- name: GetResult :one
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE pr.id=$1 AND b.tenant_id=$2;
+WHERE pr.id = @id AND b.account_id = @account_id;
 
 -- name: GetResultDetail :one
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
@@ -63,23 +63,23 @@ SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_respons
  r.status AS run_status,r.workflow_id,r.started_at,r.completed_at AS run_completed_at,r.analysis_completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
 JOIN prompts p ON p.id=pr.prompt_id AND p.business_id=r.business_id
-WHERE pr.id=$1 AND b.tenant_id=$2;
+WHERE pr.id = @id AND b.account_id = @account_id;
 
 -- name: GetResultAnalysisRow :one
 SELECT ra.sentiment,ra.keywords,ra.excerpts FROM result_analyses ra
 JOIN prompt_results pr ON pr.id=ra.prompt_result_id JOIN monitoring_runs r ON r.id=pr.run_id
-JOIN businesses b ON b.id=r.business_id WHERE ra.prompt_result_id=$1 AND b.tenant_id=$2;
+JOIN businesses b ON b.id=r.business_id WHERE ra.prompt_result_id = @prompt_result_id AND b.account_id = @account_id;
 
 -- name: ListResultMentions :many
 SELECT m.subject,COALESCE(m.verbatim_name,m.excerpt)::text AS verbatim_name,m.matched_by,m.mention_order,m.excerpt
 FROM mentions m JOIN prompt_results pr ON pr.id=m.prompt_result_id
 JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE m.prompt_result_id=$1 AND b.tenant_id=$2 ORDER BY m.mention_order,m.id;
+WHERE m.prompt_result_id = @prompt_result_id AND b.account_id = @account_id ORDER BY m.mention_order,m.id;
 
 -- name: ListResultCitations :many
 SELECT c.url,c.domain,c.title,c.cite_order,c.subject FROM citations c
 JOIN prompt_results pr ON pr.id=c.prompt_result_id JOIN monitoring_runs r ON r.id=pr.run_id
-JOIN businesses b ON b.id=r.business_id WHERE c.prompt_result_id=$1 AND b.tenant_id=$2
+JOIN businesses b ON b.id=r.business_id WHERE c.prompt_result_id = @prompt_result_id AND b.account_id = @account_id
 ORDER BY c.cite_order,c.id;
 
 -- name: ListResults :many

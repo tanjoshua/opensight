@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// resultAnalysisFixture is the plan/tenant/business/prompt/run scaffolding the
+// resultAnalysisFixture is the plan/account/business/prompt/run scaffolding the
 // MET-5 read-path tests share; each test inserts its own prompt_results on top.
 type resultAnalysisFixture struct {
-	tenantID   domain.ID
+	accountID   domain.ID
 	businessID domain.ID
 	promptID   domain.ID
 	promptID2  domain.ID
@@ -24,7 +24,7 @@ func seedResultAnalysisBusiness(t *testing.T, db *pgxpool.Pool, ctx context.Cont
 	t.Helper()
 
 	fx := resultAnalysisFixture{
-		tenantID:   mustNewID(t),
+		accountID:   mustNewID(t),
 		businessID: mustNewID(t),
 		promptID:   mustNewID(t),
 		promptID2:  mustNewID(t),
@@ -55,14 +55,14 @@ func seedResultAnalysisBusiness(t *testing.T, db *pgxpool.Pool, ctx context.Cont
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", fx.businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id = $1", fx.businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", fx.businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", fx.tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", fx.tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", fx.accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", fx.accountID)
 	})
 
-	insertTenant(t, db, ctx, fx.tenantID, "Result Analysis Tenant")
+	insertAccount(t, db, ctx, fx.accountID, "Result Analysis Account")
 	mustExec(t, db, ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Result Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, fx.businessID, fx.tenantID)
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Result Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, fx.businessID, fx.accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", fx.promptID, fx.businessID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'cheapest clinic near me', 'active')", fx.promptID2, fx.businessID)
 	mustExec(t, db, ctx, `
@@ -75,8 +75,8 @@ func seedResultAnalysisBusiness(t *testing.T, db *pgxpool.Pool, ctx context.Cont
 // TestGetResultAnalysis pins the MET-5 drawer read model: an analyzed result
 // returns its sentiment/keywords/excerpts plus mentions and citations, a
 // succeeded-but-unanalyzed result returns Analyzed=false with empty slices, and
-// the tenant scoping makes a foreign tenant look exactly like the unanalyzed
-// case rather than leaking another tenant's analysis.
+// the account scoping makes a foreign account look exactly like the unanalyzed
+// case rather than leaking another account's analysis.
 func TestGetResultAnalysis(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
@@ -123,7 +123,7 @@ func TestGetResultAnalysis(t *testing.T) {
 
 	store := New(db)
 
-	got, err := store.GetResultAnalysis(ctx, fx.tenantID, analyzedID)
+	got, err := store.GetResultAnalysis(ctx, fx.accountID, analyzedID)
 	if err != nil {
 		t.Fatalf("GetResultAnalysis(analyzed): %v", err)
 	}
@@ -160,7 +160,7 @@ func TestGetResultAnalysis(t *testing.T) {
 	}
 
 	// Succeeded-but-unanalyzed: no result_analyses row, empty child slices.
-	un, err := store.GetResultAnalysis(ctx, fx.tenantID, unanalyzedID)
+	un, err := store.GetResultAnalysis(ctx, fx.accountID, unanalyzedID)
 	if err != nil {
 		t.Fatalf("GetResultAnalysis(unanalyzed): %v", err)
 	}
@@ -168,14 +168,14 @@ func TestGetResultAnalysis(t *testing.T) {
 		t.Fatalf("unanalyzed result = %+v, want Analyzed=false and empty children", un)
 	}
 
-	// A foreign tenant must not see the analyzed result's analysis: it looks
+	// A foreign account must not see the analyzed result's analysis: it looks
 	// exactly like the unanalyzed case, not an error.
 	cross, err := store.GetResultAnalysis(ctx, mustNewID(t), analyzedID)
 	if err != nil {
-		t.Fatalf("GetResultAnalysis(cross-tenant): %v", err)
+		t.Fatalf("GetResultAnalysis(cross-account): %v", err)
 	}
 	if cross.Analyzed || len(cross.Mentions) != 0 || len(cross.Citations) != 0 {
-		t.Fatalf("cross-tenant analysis = %+v, want empty/unanalyzed", cross)
+		t.Fatalf("cross-account analysis = %+v, want empty/unanalyzed", cross)
 	}
 }
 
@@ -225,7 +225,7 @@ func TestListResultsMentionedFilterAndAnalyzedFlag(t *testing.T) {
 	}
 
 	// No filter: both results present, Analyzed flag set only on the analyzed one.
-	all, err := store.ListResults(ctx, fx.tenantID, fx.businessID, ResultFilter{})
+	all, err := store.ListResults(ctx, fx.accountID, fx.businessID, ResultFilter{})
 	if err != nil {
 		t.Fatalf("ListResults(no filter): %v", err)
 	}
@@ -242,7 +242,7 @@ func TestListResultsMentionedFilterAndAnalyzedFlag(t *testing.T) {
 
 	// mentioned=true keeps only the self-mention result.
 	yes := true
-	withMention, err := store.ListResults(ctx, fx.tenantID, fx.businessID, ResultFilter{Mentioned: &yes})
+	withMention, err := store.ListResults(ctx, fx.accountID, fx.businessID, ResultFilter{Mentioned: &yes})
 	if err != nil {
 		t.Fatalf("ListResults(mentioned=true): %v", err)
 	}
@@ -252,7 +252,7 @@ func TestListResultsMentionedFilterAndAnalyzedFlag(t *testing.T) {
 
 	// mentioned=false keeps only the non-self-mention result.
 	no := false
-	withoutMention, err := store.ListResults(ctx, fx.tenantID, fx.businessID, ResultFilter{Mentioned: &no})
+	withoutMention, err := store.ListResults(ctx, fx.accountID, fx.businessID, ResultFilter{Mentioned: &no})
 	if err != nil {
 		t.Fatalf("ListResults(mentioned=false): %v", err)
 	}

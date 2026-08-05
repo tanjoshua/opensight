@@ -25,7 +25,7 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptID := mustNewID(t)
 	runID := mustNewID(t)
@@ -36,14 +36,14 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Runs Results Tenant")
+	insertAccount(t, db, ctx, accountID, "Runs Results Account")
 	if _, err := db.Exec(ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Runs Results Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID); err != nil {
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Runs Results Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
 	if _, err := db.Exec(ctx, `
@@ -106,7 +106,7 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 
 	resultStore := New(db)
 	failedStatus := ResultStatusFailed
-	list, err := resultStore.ListResults(ctx, tenantID, businessID, ResultFilter{Status: &failedStatus})
+	list, err := resultStore.ListResults(ctx, accountID, businessID, ResultFilter{Status: &failedStatus})
 	if err != nil {
 		t.Fatalf("ListResults(status=failed): %v", err)
 	}
@@ -119,7 +119,7 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 	// Evidence drill-downs pass aggregate result IDs in their display order.
 	// Filtering must retain that order, then apply pagination to the ordered
 	// set rather than falling back to response timestamps.
-	ordered, err := resultStore.ListResults(ctx, tenantID, businessID, ResultFilter{
+	ordered, err := resultStore.ListResults(ctx, accountID, businessID, ResultFilter{
 		ResultIDs: []domain.ID{failedResultID, resultID},
 		Limit:     1,
 		Offset:    1,
@@ -130,7 +130,7 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 	if len(ordered) != 1 || ordered[0].ID != resultID {
 		t.Fatalf("ListResults(result IDs, paged) = %+v, want second requested result %s", ordered, resultID)
 	}
-	if _, err := resultStore.GetResultDetail(ctx, tenantID, failedResultID); err != nil {
+	if _, err := resultStore.GetResultDetail(ctx, accountID, failedResultID); err != nil {
 		t.Fatalf("GetResultDetail(failed result): %v", err)
 	}
 }
@@ -153,7 +153,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptID := mustNewID(t)
 	runID := mustNewID(t)
@@ -163,14 +163,14 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE id = $1", runID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", promptID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "Finalize Partial Tenant")
+	insertAccount(t, db, ctx, accountID, "Finalize Partial Account")
 	if _, err := db.Exec(ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Finalize Partial Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID); err != nil {
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Finalize Partial Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
 	if _, err := db.Exec(ctx, `
@@ -183,7 +183,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 	runs := New(pool)
 	results := New(pool)
 
-	run, err := runs.UpsertRun(ctx, tenantID, UpsertRunParams{
+	run, err := runs.UpsertRun(ctx, accountID, UpsertRunParams{
 		ID:              runID,
 		BusinessID:      businessID,
 		Platform:        PlatformChatGPT,
@@ -200,7 +200,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 	// activity never completed) — the run must finalize as partial, not
 	// completed. The unique (run_id, prompt_id) constraint means the two
 	// succeeded results need two distinct prompts.
-	if _, err := results.CreateResult(ctx, tenantID, CreateResultParams{
+	if _, err := results.CreateResult(ctx, accountID, CreateResultParams{
 		ID:           mustNewID(t),
 		RunID:        run.ID,
 		PromptID:     promptID,
@@ -224,7 +224,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 		VALUES ($1, $2, 'cheapest clinic near me', 'active')`, secondPromptID, businessID); err != nil {
 		t.Fatalf("insert second prompt: %v", err)
 	}
-	if _, err := results.CreateResult(ctx, tenantID, CreateResultParams{
+	if _, err := results.CreateResult(ctx, accountID, CreateResultParams{
 		ID:           mustNewID(t),
 		RunID:        run.ID,
 		PromptID:     secondPromptID,
@@ -239,7 +239,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 		t.Fatalf("create second result: %v", err)
 	}
 
-	finalized, err := runs.FinalizeRun(ctx, tenantID, run.ID)
+	finalized, err := runs.FinalizeRun(ctx, accountID, run.ID)
 	if err != nil {
 		t.Fatalf("FinalizeRun: %v", err)
 	}
@@ -265,7 +265,7 @@ func TestListRunsAggregatesResultCounts(t *testing.T) {
 	}
 	t.Cleanup(db.Close)
 
-	tenantID := mustNewID(t)
+	accountID := mustNewID(t)
 	businessID := mustNewID(t)
 	promptA := mustNewID(t)
 	promptB := mustNewID(t)
@@ -281,14 +281,14 @@ func TestListRunsAggregatesResultCounts(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE business_id = $1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE tenant_id = $1", tenantID)
-		_, _ = db.Exec(ctx, "DELETE FROM tenants WHERE id = $1", tenantID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertTenant(t, db, ctx, tenantID, "List Runs Counts Tenant")
+	insertAccount(t, db, ctx, accountID, "List Runs Counts Account")
 	if _, err := db.Exec(ctx, `
-		INSERT INTO businesses (id, tenant_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'List Runs Counts Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, tenantID); err != nil {
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'List Runs Counts Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID); err != nil {
 		t.Fatalf("insert test business: %v", err)
 	}
 	if _, err := db.Exec(ctx, `
@@ -320,7 +320,7 @@ func TestListRunsAggregatesResultCounts(t *testing.T) {
 	}
 
 	runs := New(db)
-	list, err := runs.ListRuns(ctx, tenantID, businessID)
+	list, err := runs.ListRuns(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatalf("ListRuns: %v", err)
 	}
