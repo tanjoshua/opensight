@@ -11,13 +11,7 @@ import {
 } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import { type FormEvent, type ReactNode, useState } from "react"
-import {
-  Building2,
-  Check,
-  LoaderCircle,
-  Sparkles,
-  TriangleAlert,
-} from "lucide-react"
+import { Check, LoaderCircle, Sparkles, TriangleAlert } from "lucide-react"
 import { Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
@@ -33,6 +27,7 @@ import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { ReviewScreen } from "@/pages/onboarding/review-screen"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Logo } from "@/components/logo"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const EMPTY_PAYLOAD: ProposalPayload = create(ProposalPayloadSchema, {
@@ -415,7 +410,7 @@ function OnboardingShell({
   return (
     <main className="flex min-h-svh flex-col items-center bg-background p-6">
       <div className="flex w-full items-center gap-2 py-2">
-        <Building2 className="size-5" />
+        <Logo className="size-5" />
         <span className="font-heading text-sm font-medium">OpenSight</span>
       </div>
       <div

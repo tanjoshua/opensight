@@ -4,9 +4,10 @@
 // AC "an account that has never paid cannot wander into the app").
 import { timestampDate } from "@bufbuild/protobuf/wkt"
 import { useMutation, useQuery } from "@connectrpc/connect-query"
-import { CreditCard, RefreshCw, Search } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { CreditCard, LogOut, RefreshCw } from "lucide-react"
 import { type ReactNode } from "react"
-import { Link, Navigate } from "react-router"
+import { Link, Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
 import { useMe } from "@/api/hooks"
@@ -21,6 +22,7 @@ import {
   getBilling,
   startCheckout,
 } from "@/gen/opensight/v1/billing-BillingService_connectquery"
+import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,6 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Logo } from "@/components/logo"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function BillingPage() {
@@ -242,11 +245,30 @@ function formatPrice(unitAmount: bigint, currency: string): string {
 }
 
 function BillingShell({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const logoutMutation = useMutation(logout, {
+    onSettled: () => {
+      queryClient.clear()
+      navigate("/login", { replace: true })
+    },
+  })
+
   return (
     <main className="flex min-h-svh flex-col items-center bg-background p-6">
       <div className="flex w-full max-w-md items-center gap-2 py-2">
-        <Search className="size-5" />
+        <Logo className="size-5" />
         <span className="font-heading text-sm font-medium">OpenSight</span>
+        <Button
+          className="ms-auto"
+          variant="ghost"
+          size="sm"
+          disabled={logoutMutation.isPending}
+          onClick={() => logoutMutation.mutate({})}
+        >
+          <LogOut data-icon="inline-start" />
+          Log out
+        </Button>
       </div>
       <div className="mt-6 flex w-full max-w-md flex-col">{children}</div>
     </main>

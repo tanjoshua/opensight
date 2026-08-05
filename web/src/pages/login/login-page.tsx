@@ -2,6 +2,7 @@ import { Navigate, useSearchParams } from "react-router"
 
 import { useMe } from "@/api/hooks"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/logo"
 
 // Google is the only sign-in method (design 07 "Auth and accounts"): there is
 // no password to enter, so this is a link, not a form. /auth/google/start is
@@ -23,7 +24,10 @@ export function LoginPage() {
     <main className="flex min-h-svh items-center justify-center bg-background p-6">
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-lg border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-xl font-semibold">OpenSight</h1>
+          <div className="flex items-center gap-2">
+            <Logo className="size-5" />
+            <h1 className="font-heading text-xl font-semibold">OpenSight</h1>
+          </div>
           <p className="text-sm text-muted-foreground">
             Sign in to continue.
           </p>

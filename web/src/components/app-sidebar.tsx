@@ -4,7 +4,6 @@ import {
   Newspaper,
   LogOut,
   MessageSquareText,
-  Search,
   Settings,
   Users,
 } from "lucide-react"
@@ -15,6 +14,7 @@ import { NavLink, useLocation, useNavigate } from "react-router"
 import { useMe } from "@/api/hooks"
 import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/logo"
 import {
   Sidebar,
   SidebarContent,
@@ -52,7 +52,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <Search className="size-5" aria-hidden="true" />
+          <Logo className="size-5" />
           <span className="font-heading text-base font-semibold tracking-tight">
             OpenSight
           </span>
