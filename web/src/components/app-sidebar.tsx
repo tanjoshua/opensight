@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   Settings,
   Users,
+  Lightbulb,
 } from "lucide-react"
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
@@ -48,6 +49,10 @@ const businessSections = [
 
 const businessSettings = [
   { title: "Business profile", to: "/setup", icon: Settings },
+]
+
+const improveSections = [
+  { title: "Opportunities", to: "/opportunities", icon: Lightbulb },
 ]
 
 const workspaceSections = [{ title: "Members", to: "/team", icon: Users }]
@@ -135,6 +140,27 @@ export function AppSidebar() {
       <SidebarContent>
         {hasBusinessNavigation && (
           <>
+            <SidebarGroup>
+              <SidebarGroupLabel>Improve</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {improveSections.map((section) => (
+                    <SidebarMenuItem key={section.to}>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith(
+                          accountPath(slug, section.to)
+                        )}
+                        tooltip={section.title}
+                        render={<NavLink to={accountPath(slug, section.to)} />}
+                      >
+                        <section.icon />
+                        <span>{section.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
             <SidebarGroup>
               <SidebarGroupLabel>Monitor</SidebarGroupLabel>
               <SidebarGroupContent>

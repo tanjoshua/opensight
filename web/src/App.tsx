@@ -16,6 +16,7 @@ import { RunsPage } from "@/pages/runs/runs-page"
 import { SetupPage } from "@/pages/setup/setup-page"
 import { AccountsPage, NewAccountPage } from "@/pages/accounts/accounts-page"
 import { TeamPage } from "@/pages/team/team-page"
+import { OpportunitiesPage } from "@/pages/opportunities/opportunities-page"
 import { useParams } from "react-router"
 import { accountPath } from "@/lib/account-path"
 
@@ -55,6 +56,7 @@ export function App() {
         <Route path="prompts" element={<PromptsPage />} />
         <Route path="prompts/:id" element={<PromptDetailPage />} />
         <Route path="competitors" element={<CompetitorsPage />} />
+        <Route path="opportunities" element={<OpportunitiesPage />} />
         <Route path="runs" element={<RunsPage />} />
         <Route path="runs/:id" element={<RunDetailPage />} />
         <Route path="responses" element={<ResponsesRedirect />} />

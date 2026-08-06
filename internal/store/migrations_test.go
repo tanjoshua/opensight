@@ -29,6 +29,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00012_create_analyzed_results_view.sql",
 		"migrations/00013_google_identity.sql",
 		"migrations/00014_accounts_memberships.sql",
+		"migrations/00015_create_visibility_assessments.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)

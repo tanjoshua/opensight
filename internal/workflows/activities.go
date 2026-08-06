@@ -11,6 +11,7 @@ import (
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
+	"opensight/internal/visibility"
 
 	"go.temporal.io/sdk/temporal"
 )
@@ -22,11 +23,12 @@ import (
 // exercising one activity leave the rest at their nil zero value instead of
 // padding a long positional constructor call.
 type Activities struct {
-	Store     *store.Store
-	Runner    llm.PromptRunner
-	Extractor llm.ExtractionRunner
-	Matcher   llm.MatchRunner
-	Proposer  llm.ProposeProfileRunner
+	Store           *store.Store
+	Runner          llm.PromptRunner
+	Extractor       llm.ExtractionRunner
+	Matcher         llm.MatchRunner
+	Proposer        llm.ProposeProfileRunner
+	AssessmentModes map[string]visibility.RolloutMode
 }
 
 // PromptSnapshot is one active prompt captured at run start. The workflow
@@ -40,10 +42,11 @@ type PromptSnapshot struct {
 // RunSpec is LoadRunSpec's output: the resolved account, the upserted run, the
 // business location for web search, and the prompt snapshot to fan out over.
 type RunSpec struct {
-	AccountID domain.ID `json:"TenantID"`
-	RunID     domain.ID
-	Location  llm.Location
-	Prompts   []PromptSnapshot
+	AccountID  domain.ID `json:"TenantID"`
+	BusinessID domain.ID
+	RunID      domain.ID
+	Location   llm.Location
+	Prompts    []PromptSnapshot
 }
 
 // CheckRunAccessInput identifies the business whose account access gates the run.
@@ -167,10 +170,11 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 	}
 
 	return RunSpec{
-		AccountID: accountID,
-		RunID:     run.ID,
-		Location:  location,
-		Prompts:   snapshots,
+		AccountID:  accountID,
+		BusinessID: in.BusinessID,
+		RunID:      run.ID,
+		Location:   location,
+		Prompts:    snapshots,
 	}, nil
 }
 

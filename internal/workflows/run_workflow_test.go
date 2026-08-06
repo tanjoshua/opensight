@@ -28,7 +28,7 @@ func specWithPrompts(t *testing.T, n int) RunSpec {
 	for i := 0; i < n; i++ {
 		prompts = append(prompts, PromptSnapshot{ID: mustID(t), Text: "prompt"})
 	}
-	return RunSpec{AccountID: mustID(t), RunID: mustID(t), Prompts: prompts}
+	return RunSpec{AccountID: mustID(t), BusinessID: mustID(t), RunID: mustID(t), Prompts: prompts}
 }
 
 func runInput(t *testing.T) RunWorkflowInput {
@@ -59,6 +59,7 @@ func TestRunWorkflowFansOutAndFinalizes(t *testing.T) {
 		return in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusCompleted}, nil).Once()
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
+	env.OnWorkflow(AssessmentWorkflow, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, runInput(t))
 
@@ -93,6 +94,7 @@ func TestRunWorkflowContinuesPastPromptError(t *testing.T) {
 		return in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusPartial}, nil).Once()
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
+	env.OnWorkflow(AssessmentWorkflow, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, runInput(t))
 
@@ -123,6 +125,7 @@ func TestRunWorkflowZeroPrompts(t *testing.T) {
 		return in.RunID == spec.RunID
 	})).Return(store.Run{Status: store.RunStatusFailed}, nil).Once()
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Once()
+	env.OnWorkflow(AssessmentWorkflow, mock.Anything, mock.Anything).Return(nil).Once()
 
 	env.ExecuteWorkflow(RunWorkflow, runInput(t))
 

@@ -80,6 +80,7 @@ func TestRunWorkflowGateAgainstPostgres(t *testing.T) {
 	// AnalyzeRun is a separate pipeline (analysis) with its own DB fixtures;
 	// stubbing it here only proves it is never invoked for a skipped run.
 	env.OnWorkflow(AnalyzeRun, mock.Anything, mock.Anything).Return(nil).Maybe()
+	env.OnWorkflow(AssessmentWorkflow, mock.Anything, mock.Anything).Return(nil).Maybe()
 
 	scheduledFor := time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC)
 	env.ExecuteWorkflow(RunWorkflow, RunWorkflowInput{

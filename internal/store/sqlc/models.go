@@ -45,6 +45,20 @@ type AnalyzedResult struct {
 	HasSelfMention bool
 }
 
+type AssessmentGeneration struct {
+	ID              uuid.UUID
+	AccountID       uuid.UUID
+	BusinessID      uuid.UUID
+	MonitoringRunID uuid.UUID
+	Status          string
+	CompilerVersion int32
+	RankerVersion   int32
+	ModulePlan      json.RawMessage
+	Error           *string
+	StartedAt       time.Time
+	CompletedAt     *time.Time
+}
+
 type Business struct {
 	ID          uuid.UUID
 	AccountID   uuid.UUID
@@ -81,6 +95,19 @@ type Competitor struct {
 	CreatedAt        time.Time
 }
 
+type EvidenceArtifact struct {
+	ID               uuid.UUID
+	GenerationID     uuid.UUID
+	AccountID        uuid.UUID
+	CollectorKey     string
+	CollectorVersion int32
+	PayloadVersion   int32
+	Status           string
+	CheckedAt        time.Time
+	Payload          json.RawMessage
+	Error            *string
+}
+
 type Mention struct {
 	ID             uuid.UUID
 	PromptResultID uuid.UUID
@@ -104,6 +131,32 @@ type MonitoringRun struct {
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
 	ExpectedResults     *int32
+}
+
+type Opportunity struct {
+	ID                  uuid.UUID
+	AccountID           uuid.UUID
+	BusinessID          uuid.UUID
+	PracticeKey         string
+	SubjectKey          string
+	CurrentAssessmentID uuid.UUID
+	Rank                int32
+	Presentation        json.RawMessage
+	UserStatus          string
+	DismissalReason     *string
+	CompletionBaseline  *json.RawMessage
+	FirstSeenAt         time.Time
+	UpdatedAt           time.Time
+}
+
+type OpportunityEvent struct {
+	ID            uuid.UUID
+	OpportunityID uuid.UUID
+	AccountID     uuid.UUID
+	EventKey      string
+	EventType     string
+	Payload       json.RawMessage
+	CreatedAt     time.Time
 }
 
 type ProfileProposal struct {
@@ -175,4 +228,31 @@ type User struct {
 	Email     string
 	CreatedAt time.Time
 	GoogleSub *string
+}
+
+type VisibilityAssessment struct {
+	ID              uuid.UUID
+	GenerationID    uuid.UUID
+	AccountID       uuid.UUID
+	BusinessID      uuid.UUID
+	PracticeKey     string
+	CriteriaVersion int32
+	AssessorKey     string
+	AssessorVersion int32
+	SubjectKey      string
+	Status          string
+	RolloutMode     string
+	ResultIds       []uuid.UUID
+	PromptIds       []uuid.UUID
+	CheckedSources  []string
+	Confidence      float64
+	Explanation     string
+	Reach           int32
+	Persistence     int32
+	EvidenceQuality int32
+	Actionability   int32
+	Effort          int32
+	PayloadVersion  int32
+	Payload         json.RawMessage
+	AssessedAt      time.Time
 }
