@@ -115,9 +115,9 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 	for _, prompt := range spec.Prompts {
 		futures = append(futures, workflow.ExecuteActivity(execCtx, acts.ExecutePrompt, ExecutePromptInput{
 			AccountID: spec.AccountID,
-			RunID:    spec.RunID,
-			Prompt:   prompt,
-			Location: spec.Location,
+			RunID:     spec.RunID,
+			Prompt:    prompt,
+			Location:  spec.Location,
 		}))
 	}
 	for _, f := range futures {
@@ -143,7 +143,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 	var run store.Run
 	if err := workflow.ExecuteActivity(finalizeCtx, acts.FinalizeRun, FinalizeRunInput{
 		AccountID: spec.AccountID,
-		RunID:    spec.RunID,
+		RunID:     spec.RunID,
 	}).Get(ctx, &run); err != nil {
 		return RunResult{}, err
 	}
@@ -157,12 +157,28 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 	childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 		WorkflowID: fmt.Sprintf("analyze-%s", spec.RunID),
 	})
-	if err := workflow.ExecuteChildWorkflow(childCtx, AnalyzeRun, AnalyzeRunInput{
+	analysisErr := workflow.ExecuteChildWorkflow(childCtx, AnalyzeRun, AnalyzeRunInput{
 		AccountID: spec.AccountID,
-		RunID:    spec.RunID,
-	}).Get(ctx, nil); err != nil {
+		RunID:     spec.RunID,
+	}).Get(ctx, nil)
+	if analysisErr != nil {
 		workflow.GetLogger(ctx).Error("analyze run failed; run left flagged for re-analysis",
-			"run_id", spec.RunID.String(), "error", err.Error())
+			"run_id", spec.RunID.String(), "error", analysisErr.Error())
+	}
+
+	// This child was added after RunWorkflow was already deployed. The version
+	// marker preserves replay compatibility for histories that completed after
+	// AnalyzeRun without scheduling assessment generation.
+	if analysisErr == nil && workflow.GetVersion(ctx, "add-assessment-generation", workflow.DefaultVersion, 1) == 1 {
+		assessmentCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
+			WorkflowID: fmt.Sprintf("assess-%s", spec.RunID),
+		})
+		if err := workflow.ExecuteChildWorkflow(assessmentCtx, AssessmentWorkflow, AssessmentWorkflowInput{
+			AccountID: spec.AccountID, BusinessID: spec.BusinessID, RunID: spec.RunID,
+		}).Get(ctx, nil); err != nil {
+			workflow.GetLogger(ctx).Error("assessment generation failed; latest successful opportunities preserved",
+				"run_id", spec.RunID.String(), "error", err.Error())
+		}
 	}
 
 	return RunResult{}, nil

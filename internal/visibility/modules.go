@@ -1,0 +1,423 @@
+package visibility
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"sort"
+	"strings"
+)
+
+const (
+	CollectorMonitoring = "monitoring-snapshot"
+	CollectorOwnedSite  = "owned-site-scan"
+	RankerVersion       = 1
+	CompilerVersion     = 1
+)
+
+type MonitoringSnapshot struct {
+	PayloadVersion            int `json:"payload_version"`
+	BusinessName, WebsiteHost string
+	Runs                      []SnapshotRun `json:"runs"`
+}
+type SnapshotRun struct {
+	RunID   string           `json:"run_id"`
+	Results []SnapshotResult `json:"results"`
+}
+type SnapshotResult struct {
+	ResultID, PromptID, Prompt, ResponseText   string
+	Mentioned                                  bool
+	Competitors, CitationDomains, CitationURLs []string
+}
+type OwnedSiteScan struct {
+	PayloadVersion                              int      `json:"payload_version"`
+	Host                                        string   `json:"host"`
+	CheckedURLs                                 []string `json:"checked_urls"`
+	Summaries                                   []string `json:"summaries"`
+	Hashes                                      []string `json:"hashes"`
+	Text                                        string   `json:"text"`
+	Reachable, AuthBarrier, NoIndex, OAIBlocked bool
+	Failure                                     string `json:"failure,omitempty"`
+}
+
+type staticAssessor struct{ manifest AssessorManifest }
+
+func (a staticAssessor) Manifest() AssessorManifest { return a.manifest }
+func (a staticAssessor) Assess(ctx context.Context, evidence EvidenceView, research BoundedResearcher) ([]AssessmentDraft, error) {
+	switch a.manifest.Key {
+	case "search-access":
+		return assessSearchAccess(evidence, a.manifest)
+	case "influential-source":
+		return assessAuthority(ctx, evidence, research, a.manifest)
+	case "tracked-topic":
+		return assessTopics(evidence, a.manifest)
+	default:
+		return nil, fmt.Errorf("unknown assessor %q", a.manifest.Key)
+	}
+}
+
+func Assessors(modes map[string]RolloutMode) []PracticeAssessor {
+	mode := func(k string) RolloutMode {
+		if m := modes[k]; m != "" {
+			return m
+		}
+		return RolloutShadow
+	}
+	return []PracticeAssessor{
+		staticAssessor{AssessorManifest{Key: "search-access", ModuleVersion: 1, PracticeKeys: []string{PracticeSearchAccess}, RequiredCollectors: []string{CollectorOwnedSite}, Mode: mode("search-access"), MaxURLInspections: 2, MaxRuntime: 30_000_000_000, MaxOutput: 1, PresenterKey: "search-access", EvaluatorKey: "site-access"}},
+		staticAssessor{AssessorManifest{Key: "influential-source", ModuleVersion: 1, PracticeKeys: []string{PracticeAuthority}, RequiredCollectors: []string{CollectorMonitoring}, Mode: mode("influential-source"), MaxURLInspections: 5, MaxRuntime: 45_000_000_000, MaxOutput: 10, PresenterKey: "influential-source", EvaluatorKey: "question-presence"}},
+		staticAssessor{AssessorManifest{Key: "tracked-topic", ModuleVersion: 1, PracticeKeys: []string{PracticeTopicCoverage}, RequiredCollectors: []string{CollectorMonitoring, CollectorOwnedSite}, Mode: mode("tracked-topic"), MaxOutput: 10, MaxRuntime: 10_000_000_000, PresenterKey: "tracked-topic", EvaluatorKey: "question-presence"}},
+	}
+}
+
+func decodeArtifact[T any](v EvidenceView, key string, version int) (T, error) {
+	var out T
+	a, ok := v.Artifact(key)
+	if !ok {
+		return out, fmt.Errorf("missing collector %s", key)
+	}
+	if a.PayloadVersion != version {
+		return out, fmt.Errorf("unsupported %s payload version %d", key, a.PayloadVersion)
+	}
+	if err := json.Unmarshal(a.Payload, &out); err != nil {
+		return out, err
+	}
+	return out, nil
+}
+func payload(v any) json.RawMessage { b, _ := json.Marshal(v); return b }
+
+func assessSearchAccess(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error) {
+	s, err := decodeArtifact[OwnedSiteScan](v, CollectorOwnedSite, 1)
+	if err != nil {
+		return nil, err
+	}
+	d := AssessmentDraft{PracticeKey: PracticeSearchAccess, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: s.Host, Confidence: .95, Reach: 100, Persistence: 100, EvidenceQuality: 100, Actionability: 100, Effort: 2, PayloadVersion: 1}
+	switch {
+	case s.Failure != "":
+		d.Status = StatusUnknown
+		d.Confidence = .2
+		d.Explanation = "The website could not be inspected reliably: " + s.Failure
+	case s.AuthBarrier || s.NoIndex || s.OAIBlocked || !s.Reachable:
+		d.Status = StatusNotMet
+		d.Explanation = "A confirmed access or indexing barrier prevents OpenAI search from retrieving the public site."
+	default:
+		d.Status = StatusMet
+		d.Explanation = "The checked public pages were reachable, indexable, and not denied to OAI-SearchBot."
+	}
+	d.CheckedSources = append(d.CheckedSources, s.CheckedURLs...)
+	d.Payload = payload(map[string]any{"reachable": s.Reachable, "auth_barrier": s.AuthBarrier, "noindex": s.NoIndex, "oai_blocked": s.OAIBlocked})
+	return []AssessmentDraft{d}, nil
+}
+
+func assessAuthority(ctx context.Context, v EvidenceView, research BoundedResearcher, m AssessorManifest) ([]AssessmentDraft, error) {
+	s, err := decodeArtifact[MonitoringSnapshot](v, CollectorMonitoring, 1)
+	if err != nil {
+		return nil, err
+	}
+	type agg struct {
+		prompts, runs              map[string]bool
+		results, urls, competitors []string
+	}
+	by := map[string]*agg{}
+	for _, run := range s.Runs {
+		for _, r := range run.Results {
+			if r.Mentioned {
+				continue
+			}
+			for _, domain := range r.CitationDomains {
+				domain = strings.ToLower(domain)
+				if domain == "" || domain == s.WebsiteHost {
+					continue
+				}
+				x := by[domain]
+				if x == nil {
+					x = &agg{map[string]bool{}, map[string]bool{}, nil, nil, nil}
+					by[domain] = x
+				}
+				x.prompts[r.PromptID] = true
+				x.runs[run.RunID] = true
+				x.results = append(x.results, r.ResultID)
+				x.competitors = append(x.competitors, r.Competitors...)
+				for _, rawURL := range r.CitationURLs {
+					if parsed, parseErr := url.Parse(rawURL); parseErr == nil && strings.EqualFold(parsed.Hostname(), domain) {
+						x.urls = append(x.urls, rawURL)
+					}
+				}
+			}
+		}
+	}
+	keys := make([]string, 0, len(by))
+	for k := range by {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := []AssessmentDraft{}
+	for _, domain := range keys {
+		x := by[domain]
+		recurring := len(x.prompts) >= 2 || (len(x.prompts) == 1 && len(x.runs) >= 2)
+		if !recurring {
+			continue
+		}
+		d := AssessmentDraft{PracticeKey: PracticeAuthority, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: domain, Status: StatusUnknown, Confidence: .35, Explanation: "This source recurs in affected answers, but business presence could not be verified reliably.", ResultIDs: dedupe(x.results), Reach: len(x.prompts), Persistence: len(x.runs), EvidenceQuality: 2, Actionability: 2, Effort: 2, PayloadVersion: 1}
+		found := false
+		for _, raw := range dedupe(x.urls) {
+			if research == nil {
+				break
+			}
+			rr, e := research.Inspect(ctx, ResearchRequest{URL: raw})
+			if e != nil {
+				continue
+			}
+			d.CheckedSources = append(d.CheckedSources, rr.URL)
+			if containsName(rr.Text, s.BusinessName) {
+				found = true
+				break
+			}
+		}
+		if found {
+			d.Status = StatusMet
+			d.Confidence = .8
+			d.Explanation = "The business is present on this recurring influential source."
+		} else if len(d.CheckedSources) > 0 && len(x.competitors) > 0 {
+			d.Status = StatusNotMet
+			d.Confidence = .75
+			d.Explanation = "Competitors appear in affected answers using this recurring source, while the inspected relevant pages do not mention the business."
+		}
+		d.Payload = payload(map[string]any{"domain": domain, "affected_questions": len(x.prompts), "recurring_runs": len(x.runs)})
+		out = append(out, d)
+		if len(out) >= m.MaxOutput {
+			break
+		}
+	}
+	return out, nil
+}
+
+func assessTopics(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error) {
+	mon, err := decodeArtifact[MonitoringSnapshot](v, CollectorMonitoring, 1)
+	if err != nil {
+		return nil, err
+	}
+	site, err := decodeArtifact[OwnedSiteScan](v, CollectorOwnedSite, 1)
+	if err != nil {
+		return nil, err
+	}
+	type topic struct {
+		prompt   string
+		promptID string
+		results  map[string]bool
+		runs     map[string]bool
+	}
+	topics := map[string]*topic{}
+	for _, run := range mon.Runs {
+		for _, r := range run.Results {
+			if r.Mentioned {
+				continue
+			}
+			key := topicKey(r.Prompt)
+			if key == "" {
+				continue
+			}
+			t := topics[key]
+			if t == nil {
+				t = &topic{r.Prompt, r.PromptID, map[string]bool{}, map[string]bool{}}
+				topics[key] = t
+			}
+			t.results[r.ResultID] = true
+			t.runs[run.RunID] = true
+		}
+	}
+	keys := make([]string, 0, len(topics))
+	for k := range topics {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := []AssessmentDraft{}
+	for _, key := range keys {
+		t := topics[key]
+		if len(t.results) < 2 && len(t.runs) < 2 {
+			continue
+		}
+		d := AssessmentDraft{PracticeKey: PracticeTopicCoverage, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: key, PromptIDs: []string{t.promptID}, ResultIDs: mapKeys(t.results), Reach: len(t.results), Persistence: len(t.runs), EvidenceQuality: 2, Actionability: 3, Effort: 2, PayloadVersion: 1}
+		switch {
+		case site.Failure != "":
+			d.Status = StatusUnknown
+			d.Confidence = .2
+			d.Explanation = "Owned content could not be assessed reliably."
+		case topicCovered(site.Text, key):
+			d.Status = StatusMet
+			d.Confidence = .75
+			d.Explanation = "Accessible owned content clearly covers this tracked customer need."
+		case strings.Contains(strings.ToLower(site.Text), strings.Fields(key)[0]):
+			d.Status = StatusPartial
+			d.Confidence = .65
+			d.Explanation = "The topic is mentioned on the site but important details are difficult to find or incomplete."
+		default:
+			d.Status = StatusNotMet
+			d.Confidence = .7
+			d.Explanation = "No clear accessible owned coverage was found for this recurring customer need."
+		}
+		d.CheckedSources = site.CheckedURLs
+		d.Payload = payload(map[string]any{"topic": key, "question": t.prompt})
+		out = append(out, d)
+		if len(out) >= m.MaxOutput {
+			break
+		}
+	}
+	return out, nil
+}
+
+func containsName(text, name string) bool {
+	return strings.Contains(strings.ToLower(text), strings.ToLower(strings.TrimSpace(name)))
+}
+func topicKey(prompt string) string {
+	words := strings.Fields(strings.ToLower(prompt))
+	stop := map[string]bool{"what": true, "which": true, "where": true, "who": true, "are": true, "is": true, "the": true, "a": true, "an": true, "for": true, "in": true, "near": true, "best": true, "recommend": true, "recommended": true, "me": true}
+	out := []string{}
+	for _, w := range words {
+		w = strings.Trim(w, ".,?!:;()[]\"")
+		if len(w) > 3 && !stop[w] {
+			out = append(out, w)
+		}
+		if len(out) == 3 {
+			break
+		}
+	}
+	return strings.Join(out, " ")
+}
+func topicCovered(text, key string) bool {
+	lower := strings.ToLower(text)
+	words := strings.Fields(key)
+	hits := 0
+	for _, w := range words {
+		if strings.Contains(lower, w) {
+			hits++
+		}
+	}
+	return len(words) > 0 && hits >= min(2, len(words))
+}
+func dedupe(in []string) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, v := range in {
+		if v != "" && !seen[v] {
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+func mapKeys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+type standardPresenter struct{ key string }
+
+func (p standardPresenter) Key() string { return p.key }
+func (p standardPresenter) Present(d AssessmentDraft) (Presentation, error) {
+	def, _ := Practice(d.PracticeKey)
+	effort := []string{"", "Small", "Small", "Medium", "Large"}[min(4, max(1, d.Effort))]
+	title := def.Title
+	if d.PracticeKey != PracticeSearchAccess {
+		title += ": " + d.SubjectKey
+	}
+	blocks := []PresentationBlock{{Type: BlockText, Title: "Why this is showing", Text: d.Explanation}}
+	blocks = append(blocks, PresentationBlock{Type: BlockQuestionList, Title: "Suggested steps", Items: stepsFor(d.PracticeKey)})
+	if len(d.ResultIDs) > 0 {
+		blocks = append(blocks, PresentationBlock{Type: BlockMetric, Title: "Affected responses", Value: fmt.Sprint(len(d.ResultIDs)), ResultIDs: d.ResultIDs})
+	}
+	if len(d.CheckedSources) > 0 {
+		for _, u := range d.CheckedSources {
+			if parsed, e := url.Parse(u); e == nil && parsed.IsAbs() {
+				blocks = append(blocks, PresentationBlock{Type: BlockLink, Title: "Checked source", URL: u})
+			}
+		}
+	}
+	blocks = append(blocks, PresentationBlock{Type: BlockNotice, Text: "OpenSight can observe later changes, but cannot prove that one action caused a ranking change."})
+	blocks = append(blocks, PresentationBlock{Type: BlockNotice, Text: "For regulated services, have a qualified reviewer confirm every claim before publishing."})
+	pres := Presentation{Title: title, Summary: d.Explanation, Effort: effort, Blocks: blocks}
+	return pres, ValidatePresentation(pres)
+}
+
+func stepsFor(practiceKey string) []string {
+	switch practiceKey {
+	case PracticeSearchAccess:
+		return []string{"Remove the confirmed access or indexing barrier.", "Publish the affected pages without authentication.", "Wait for a later monitoring run to verify access again."}
+	case PracticeAuthority:
+		return []string{"Review the checked source and its contribution rules.", "Add a complete, accurate business presence without incentives or fabricated reviews.", "Keep claims factual and avoid competitor comparisons."}
+	case PracticeTopicCoverage:
+		return []string{"Answer the tracked customer need explicitly on an appropriate owned page.", "Include concrete service, location, eligibility, and next-step details that are true.", "Make the page reachable from normal site navigation."}
+	default:
+		return nil
+	}
+}
+func Presenters() map[string]Presenter {
+	return map[string]Presenter{"search-access": standardPresenter{"search-access"}, "influential-source": standardPresenter{"influential-source"}, "tracked-topic": standardPresenter{"tracked-topic"}}
+}
+
+func Compile(drafts []AssessmentDraft, modes map[string]RolloutMode) ([]struct {
+	Draft        AssessmentDraft
+	Presentation Presentation
+}, error) {
+	eligible := []AssessmentDraft{}
+	for _, d := range drafts {
+		if Eligible(d, modes[d.AssessorKey]) {
+			if err := ValidateSafety(d); err != nil {
+				continue
+			}
+			eligible = append(eligible, d)
+		}
+	}
+	Rank(eligible)
+	if len(eligible) > 5 {
+		eligible = eligible[:5]
+	}
+	presenters := Presenters()
+	out := make([]struct {
+		Draft        AssessmentDraft
+		Presentation Presentation
+	}, 0, len(eligible))
+	for _, d := range eligible {
+		p, ok := presenters[d.AssessorKey]
+		if !ok {
+			return nil, fmt.Errorf("missing presenter")
+		}
+		pres, err := p.Present(d)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, struct {
+			Draft        AssessmentDraft
+			Presentation Presentation
+		}{d, pres})
+	}
+	return out, nil
+}
+
+type statusEvaluator struct{ key string }
+
+func (e statusEvaluator) Key() string { return e.key }
+func (e statusEvaluator) Evaluate(_ context.Context, opportunity Opportunity, _ EvidenceView) ([]OutcomeObservation, error) {
+	payload, err := json.Marshal(map[string]any{
+		"assessment_status": opportunity.Assessment.Status,
+		"result_ids":        opportunity.Assessment.ResultIDs,
+		"prompt_ids":        opportunity.Assessment.PromptIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return []OutcomeObservation{{Key: "assessment", Payload: payload}}, nil
+}
+
+func Evaluators() map[string]OpportunityEvaluator {
+	return map[string]OpportunityEvaluator{
+		"site-access":       statusEvaluator{key: "site-access"},
+		"question-presence": statusEvaluator{key: "question-presence"},
+	}
+}

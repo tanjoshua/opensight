@@ -460,11 +460,12 @@ func work(ctx context.Context, cfg config.Config) error {
 	)
 
 	activities := &workflows.Activities{
-		Store:     store.New(db),
-		Runner:    runner,
-		Extractor: extractor,
-		Matcher:   matcher,
-		Proposer:  proposer,
+		Store:           store.New(db),
+		Runner:          runner,
+		Extractor:       extractor,
+		Matcher:         matcher,
+		Proposer:        proposer,
+		AssessmentModes: cfg.AssessmentModes,
 	}
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
@@ -473,6 +474,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterWorkflow(workflows.RunWorkflow)
 	w.RegisterWorkflow(workflows.AnalyzeRun)
 	w.RegisterWorkflow(workflows.GenerateProfileWorkflow)
+	w.RegisterWorkflow(workflows.AssessmentWorkflow)
 	w.RegisterActivity(activities.CheckRunAccess)
 	w.RegisterActivity(activities.LoadRunSpec)
 	w.RegisterActivity(activities.ExecutePrompt)
@@ -483,6 +485,10 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.ReconcileEntities)
 	w.RegisterActivity(activities.ProposeProfile)
 	w.RegisterActivity(activities.PersistProposal)
+	w.RegisterActivity(activities.ResolveAssessmentPlan)
+	w.RegisterActivity(activities.CollectAssessmentEvidence)
+	w.RegisterActivity(activities.RunPracticeAssessor)
+	w.RegisterActivity(activities.CompileOpportunities)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)

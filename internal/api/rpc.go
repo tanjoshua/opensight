@@ -130,6 +130,9 @@ var procedureAccess = map[string]procedurePolicy{
 	opensightv1connect.ResultServiceListRunsProcedure:                    policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.ResultServiceListResultsProcedure:                 policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.ResultServiceGetResultProcedure:                   policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.OpportunityServiceListOpportunitiesProcedure:      policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.OpportunityServiceGetOpportunityProcedure:         policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.OpportunityServiceSetOpportunityStatusProcedure:   policy(scopeAccount, store.AccountRoleMember, classSubscriber),
 
 	// classActive — needs full. Exactly the procedures that reach an LLM or
 	// start a Temporal Schedule.
@@ -216,6 +219,7 @@ func (s *Server) rpcHandler() http.Handler {
 	mux.Handle(opensightv1connect.NewPromptServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewCompetitorServiceHandler(s, opts...))
 	mux.Handle(opensightv1connect.NewResultServiceHandler(s, opts...))
+	mux.Handle(opensightv1connect.NewOpportunityServiceHandler(s, opts...))
 	return http.StripPrefix("/rpc", mux)
 }
 

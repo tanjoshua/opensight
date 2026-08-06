@@ -107,6 +107,12 @@ Show:
 
 Users can track, dismiss, or manually add competitors.
 
+### Opportunities
+
+Show at most three evidence-backed focus items derived from currently assessed visibility practices. A confirmed site-access blocker appears first. Each item shows the supporting responses or checked sources, affected questions, effort, suggested steps, and verification limits.
+
+Users can start, complete, dismiss, and restore an opportunity. Completion records the affected questions and latest analyzed baseline. Later monitoring adds observations without claiming that the action caused a visibility change.
+
 ## 7. Product Structure
 
 ### Brief
@@ -134,6 +140,10 @@ Discovered and tracked competitors with simple visibility comparisons.
 
 Monitoring runs and all stored ChatGPT responses with mentions and citations.
 
+### Improve
+
+Opportunities: the small prioritized queue of work worth considering now. A complete visibility-practice checklist is deferred; assessment data accumulates from launch so that future checklist states can distinguish met, partial, unmet, unknown, and not applicable.
+
 ### Settings
 
 Business profile, prompts, and competitor configuration.
@@ -150,6 +160,7 @@ A user can:
 6. Understand where the business appears, how it is described, which sources are cited, and which competitors appear instead.
 7. Compare visibility with relevant competitors.
 8. Compare results across weekly runs.
+9. Act on a small evidence-backed opportunity queue and see later verification observations.
 
 ## 9. Future Plans
 
