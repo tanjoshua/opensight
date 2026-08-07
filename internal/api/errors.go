@@ -35,6 +35,8 @@ func (s *Server) rpcError(op string, err error) *connect.Error {
 		return connect.NewError(connect.CodeResourceExhausted, errors.New("prompt count exceeds the plan limit"))
 	case errors.Is(err, store.ErrLastOwner):
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("an account must have at least one owner"))
+	case errors.Is(err, store.ErrInvalidActionTransition):
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("action status transition is not allowed"))
 	}
 
 	var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted

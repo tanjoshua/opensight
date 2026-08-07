@@ -120,6 +120,9 @@ message GetProposalResponse {
 // retry.
 message RegenerateProposalRequest {
   string business_id = 1;
+  // When present, replaces the draft's research website before regenerating.
+  // An explicit empty value clears the website; omission keeps it unchanged.
+  optional string website = 2;
 }
 
 message RegenerateProposalResponse {

@@ -56,7 +56,7 @@
   },
   {
     "name": "business absent but no competitor was extracted",
-    "note": "Absence alone is not an opportunity under the stated criteria: the practice requires verified competitor presence too.",
+    "note": "Absence alone is not an action under the stated criteria: the practice requires verified competitor presence too.",
     "practice": "authority.influential_source_presence",
     "subject": "portlandliving.com",
     "expect": "UNKNOWN",
@@ -232,7 +232,7 @@
   },
   {
     "name": "the business's own site cited under a www host",
-    "note": "This practice is about third-party sources. The business's own website can never be an influential-source opportunity, however its host is spelled.",
+    "note": "This practice is about third-party sources. The business's own website can never be an influential-source action subject, however its host is spelled.",
     "practice": "authority.influential_source_presence",
     "subject": "www.brightsmiledental.com",
     "expect": "NONE",

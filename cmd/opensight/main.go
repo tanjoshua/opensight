@@ -490,7 +490,7 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.ResolveAssessmentPlan)
 	w.RegisterActivity(activities.CollectAssessmentEvidence)
 	w.RegisterActivity(activities.RunPracticeAssessor)
-	w.RegisterActivity(activities.CompileOpportunities)
+	w.RegisterActivity(activities.PublishAssessments)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)

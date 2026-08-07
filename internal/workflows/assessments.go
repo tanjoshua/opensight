@@ -23,6 +23,7 @@ import (
 type AssessmentWorkflowInput struct{ AccountID, BusinessID, RunID domain.ID }
 type AssessmentPlan struct {
 	GenerationID domain.ID
+	Status       string
 	Entries      []store.ModulePlanEntry
 }
 
@@ -44,7 +45,7 @@ func (a *Activities) ResolveAssessmentPlan(ctx context.Context, in AssessmentWor
 	if err != nil {
 		return AssessmentPlan{}, err
 	}
-	return AssessmentPlan{GenerationID: generation.ID, Entries: entries}, nil
+	return AssessmentPlan{GenerationID: generation.ID, Status: generation.Status, Entries: entries}, nil
 }
 
 type CollectEvidenceInput struct {
@@ -290,6 +291,7 @@ type RunAssessorInput struct {
 	Artifacts    []visibility.EvidenceArtifact
 }
 type RunAssessorOutput struct {
+	AssessorKey   string
 	Drafts        []visibility.AssessmentDraft
 	AssessmentIDs []domain.ID
 }
@@ -315,7 +317,7 @@ func (a *Activities) RunPracticeAssessor(ctx context.Context, in RunAssessorInpu
 	if len(drafts) > m.MaxOutput {
 		return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("assessor output exceeds limit", "BadAssessorOutput", nil)
 	}
-	out := RunAssessorOutput{Drafts: drafts}
+	out := RunAssessorOutput{AssessorKey: m.Key, Drafts: drafts}
 	for _, d := range drafts {
 		if err := visibility.ValidateDraft(d, m); err != nil {
 			return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("invalid assessment", "BadAssessorOutput", err)
@@ -329,14 +331,14 @@ func (a *Activities) RunPracticeAssessor(ctx context.Context, in RunAssessorInpu
 	return out, nil
 }
 
-type CompileOpportunitiesInput struct {
+type PublishAssessmentsInput struct {
 	AssessmentWorkflowInput
 	GenerationID domain.ID
 	Outputs      []RunAssessorOutput
-	HadFailure   bool
+	Outcomes     []store.ModuleOutcome
 }
 
-func (a *Activities) CompileOpportunities(ctx context.Context, in CompileOpportunitiesInput) error {
+func (a *Activities) PublishAssessments(ctx context.Context, in PublishAssessmentsInput) error {
 	drafts := []visibility.AssessmentDraft{}
 	ids := map[string]domain.ID{}
 	for _, o := range in.Outputs {
@@ -349,36 +351,14 @@ func (a *Activities) CompileOpportunities(ctx context.Context, in CompileOpportu
 	}
 	compiled, err := visibility.Compile(drafts)
 	if err != nil {
-		_ = a.Store.FinishAssessmentGeneration(ctx, in.GenerationID, in.AccountID, "FAILED", err)
+		_ = a.Store.FailAssessmentGeneration(ctx, in.GenerationID, in.AccountID, in.Outcomes, err)
 		return err
 	}
-	items := make([]store.CompiledOpportunity, 0, len(compiled))
+	items := make([]store.CompiledAction, 0, len(compiled))
 	for _, item := range compiled {
-		items = append(items, store.CompiledOpportunity{AssessmentID: ids[item.Draft.PracticeKey+"\x00"+item.Draft.SubjectKey], CompiledAssessment: item})
+		items = append(items, store.CompiledAction{AssessmentID: ids[item.Draft.PracticeKey+"\x00"+item.Draft.SubjectKey], CompiledAssessment: item})
 	}
-	if err := a.Store.RebuildOpportunities(ctx, in.AccountID, in.BusinessID, in.GenerationID, items); err != nil {
-		return err
-	}
-	candidates, err := a.Store.ListCompletedOutcomeCandidates(ctx, in.GenerationID, in.AccountID, in.BusinessID)
-	if err != nil {
-		return err
-	}
-	evaluator := visibility.Evaluator()
-	for _, candidate := range candidates {
-		observations, evaluateErr := evaluator.Evaluate(ctx, visibility.Opportunity{ID: candidate.ID.String(), PracticeKey: candidate.PracticeKey, SubjectKey: candidate.SubjectKey, Assessment: candidate.Assessment}, visibility.NewEvidenceView(nil))
-		if evaluateErr != nil {
-			continue
-		}
-		for _, observation := range observations {
-			key := fmt.Sprintf("outcome:%s:%s", in.GenerationID, observation.Key)
-			_ = a.Store.AppendOutcomeObservation(ctx, in.AccountID, candidate.ID, key, observation.Payload)
-		}
-	}
-	status := "READY"
-	if in.HadFailure {
-		status = "PARTIAL"
-	}
-	return a.Store.FinishAssessmentGeneration(ctx, in.GenerationID, in.AccountID, status, nil)
+	return a.Store.PublishAssessmentGeneration(ctx, in.AccountID, in.BusinessID, in.GenerationID, in.Outcomes, items)
 }
 
 func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error {
@@ -386,6 +366,9 @@ func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error 
 	var plan AssessmentPlan
 	if err := workflow.ExecuteActivity(activityCtx, acts.ResolveAssessmentPlan, in).Get(ctx, &plan); err != nil {
 		return err
+	}
+	if plan.Status != "RUNNING" {
+		return nil
 	}
 	collectorSet := map[string]bool{}
 	for _, entry := range plan.Entries {
@@ -407,17 +390,16 @@ func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error 
 		pendingCollectors = append(pendingCollectors, pending{key, workflow.ExecuteActivity(activityCtx, acts.CollectAssessmentEvidence, CollectEvidenceInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, CollectorKey: key})})
 	}
 	artifacts := map[string]visibility.EvidenceArtifact{}
-	failed := false
 	for _, p := range pendingCollectors {
 		var artifact visibility.EvidenceArtifact
 		if err := p.future.Get(ctx, &artifact); err != nil {
-			failed = true
 			workflow.GetLogger(ctx).Error("evidence collector failed", "collector", p.key, "error", err.Error())
 			continue
 		}
 		artifacts[p.key] = artifact
 	}
 	outputs := []RunAssessorOutput{}
+	outcomes := []store.ModuleOutcome{}
 	for _, entry := range plan.Entries {
 		available := true
 		deps := make([]visibility.EvidenceArtifact, 0, len(entry.RequiredCollectors))
@@ -430,17 +412,18 @@ func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error 
 			deps = append(deps, artifact)
 		}
 		if !available {
-			failed = true
+			outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "SKIPPED", Error: "required evidence was unavailable"})
 			continue
 		}
 		assessorCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{StartToCloseTimeout: time.Minute, RetryPolicy: &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 2}})
 		var out RunAssessorOutput
 		if err := workflow.ExecuteActivity(assessorCtx, acts.RunPracticeAssessor, RunAssessorInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Entry: entry, Artifacts: deps}).Get(ctx, &out); err != nil {
-			failed = true
+			outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "FAILED", Error: err.Error()})
 			workflow.GetLogger(ctx).Error("practice assessor failed", "assessor", entry.AssessorKey, "error", err.Error())
 			continue
 		}
 		outputs = append(outputs, out)
+		outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "SUCCEEDED"})
 	}
-	return workflow.ExecuteActivity(activityCtx, acts.CompileOpportunities, CompileOpportunitiesInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Outputs: outputs, HadFailure: failed}).Get(ctx, nil)
+	return workflow.ExecuteActivity(activityCtx, acts.PublishAssessments, PublishAssessmentsInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Outputs: outputs, Outcomes: outcomes}).Get(ctx, nil)
 }

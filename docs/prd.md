@@ -107,11 +107,11 @@ Show:
 
 Users can track, dismiss, or manually add competitors.
 
-### Opportunities
+### Improve
 
-Show at most three evidence-backed focus items derived from currently assessed visibility practices. A confirmed site-access blocker appears first. Each item shows the supporting responses or checked sources, affected questions, effort, suggested steps, and verification limits.
+Show at most three evidence-backed focus actions followed by additional active recommendations. Each action shows supporting responses or checked sources, effort, steps, and verification limits. Users can start, complete, dismiss, and restore repeatable action cycles without changing the underlying assessment standing.
 
-Users can start, complete, dismiss, and restore an opportunity. Completion records the affected questions and their latest analyzed baseline. Later monitoring reports whether those questions mention the business now compared with that baseline, as a dated observation that never claims the action caused the change.
+Show a complete visibility checklist derived from the practice catalog, current successful assessments, freshness, and action history. Practices are checks, continuous improvement areas, or tracked signals. The checklist has filterable standing counts and no score or grade. Activity history records what happened to action cycles and when; it never claims an action caused a visibility change. Completion preserves a baseline for a future genuine measured-outcome evaluator, which is not yet shown.
 
 ## 7. Product Structure
 
@@ -142,7 +142,7 @@ Monitoring runs and all stored ChatGPT responses with mentions and citations.
 
 ### Improve
 
-Opportunities: the small prioritized queue of work worth considering now. A complete visibility-practice checklist is deferred; assessment data accumulates from launch so that future checklist states can distinguish met, partial, unmet, unknown, and not applicable.
+Next actions: prioritized current work. Visibility checklist: every catalog practice and the standing OpenSight can support. Activity history: the lifecycle of repeatable action cycles.
 
 ### Settings
 
@@ -160,7 +160,7 @@ A user can:
 6. Understand where the business appears, how it is described, which sources are cited, and which competitors appear instead.
 7. Compare visibility with relevant competitors.
 8. Compare results across weekly runs.
-9. Act on a small evidence-backed opportunity queue and see later verification observations.
+9. Act on a small evidence-backed action queue, inspect every catalog practice, and review lifecycle history without unsupported causal claims.
 
 ## 9. Future Plans
 

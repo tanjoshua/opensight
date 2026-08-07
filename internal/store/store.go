@@ -12,7 +12,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrNotFound = errors.New("not found")
+var (
+	ErrNotFound                = errors.New("not found")
+	ErrInvalidActionTransition = errors.New("invalid action status transition")
+)
 
 // Store is the single Postgres repository: one connection pool, every query
 // method. A Store that exists is valid — New is the only way to build one and

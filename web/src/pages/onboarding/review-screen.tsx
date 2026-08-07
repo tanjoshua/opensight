@@ -33,6 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ResearchWebsite } from "@/pages/onboarding/research-website"
 
 const EMPTY_LOCATION = { address: "", area: "", city: "", country: "" }
 
@@ -50,7 +51,11 @@ const EMPTY_PROFILE: ProposedProfile = create(ProposedProfileSchema, {
 // Services only re-generates when one of these actually changed — an
 // unrelated edit (business name, aliases) or a plain Back/Next round trip
 // reuses the existing questions.
-function questionsFingerprint(category: string, city: string, services: string[]): string {
+function questionsFingerprint(
+  category: string,
+  city: string,
+  services: string[]
+): string {
   return `${category}::${city}::${services.join(",")}`
 }
 
@@ -59,6 +64,8 @@ export function ReviewScreen({
   payload,
   promptLimit,
   onRegenerate,
+  website,
+  onWebsiteChange,
   regenerating,
   regenError,
   canRegenerate,
@@ -68,6 +75,8 @@ export function ReviewScreen({
   payload: ProposalPayload
   promptLimit: number
   onRegenerate: () => void
+  website: string
+  onWebsiteChange: (website: string) => void
   regenerating: boolean
   regenError?: string
   canRegenerate: boolean
@@ -245,6 +254,13 @@ export function ReviewScreen({
           </AlertDescription>
         </Alert>
       )}
+
+      <ResearchWebsite
+        website={website}
+        onChange={onWebsiteChange}
+        pending={regenerating}
+        confirmBeforeChange={hasLocalEdits}
+      />
 
       <StepIndicator current={step} />
 
@@ -426,7 +442,10 @@ export function ReviewScreen({
           </p>
         )}
         {genError && (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-destructive" role="alert">
+          <div
+            className="flex flex-wrap items-center gap-3 text-sm text-destructive"
+            role="alert"
+          >
             <p>{genError}</p>
             <Button
               type="button"

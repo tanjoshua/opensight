@@ -1,51 +1,45 @@
-# Epic 15 — Visibility assessments and opportunities
+# Epic 15 — Improve and visibility assessments
 
-Design: [09 Opportunities](../design/09-opportunities.md) · Phase 5
+Design: [09 Improve](../design/09-opportunities.md) · Phase 5
 
-## OPP-1 — Catalog, contracts and persistence
+## IMP-1 — Catalog and assessment truth
 
-As the product, I need visibility practices and evidence to be durable and versioned so new techniques do not require a new architecture.
+As a user, I can see every visibility practice OpenSight knows about, including practices it cannot yet assess.
 
-Acceptance: compiled catalog; collector/assessor/presenter/evaluator contracts; version validation; account-scoped generation, artifact, assessment, opportunity and event tables; durable opportunity identity.
+Acceptance: catalog modes, subject scope, and recommendation capability; stable `business` identity; missing websites are unverifiable; all catalog entries appear with final checklist standings and mode-specific labels.
 
-## OPP-2 — Assessment orchestration
+## IMP-2 — Partial-failure-safe publication
 
-As an operator, I need independent modules to survive partial failure without making Temporal histories non-deterministic.
+As an operator, I can publish independent assessor results without erasing valid prior state when another assessor fails.
 
-Acceptance: recorded sorted module plan; shared collectors run once; generic assessor activity; partial generation status; replay-safe child stage; stale successful set preservation.
+Acceptance: succeeded/failed/skipped module outcomes; one atomic assessment/action/generation publication; failed/skipped scopes remain stale; dynamic subjects retire only following assessor success; running and failed generations are excluded.
 
-## OPP-3 — Initial practices
+## IMP-3 — Repeatable action cycles
 
-As a business, I need checks grounded in current monitored evidence and my owned site.
+As a user, I can start, complete, dismiss, and restore an action while preserving every prior cycle.
 
-Acceptance: deterministic search-access practice as the only registered assessor; recurring influential-source and tracked-topic assessors implemented but unregistered pending a quality gate; unmet and highly visible met fixtures; unknown on unreliable inspection.
+Acceptance: stable recommendation key and numbered cycles; active cycles update in place; completed and dismissed cycles are immutable; verified regressions and materially changed recommendations recur; identical dismissed recommendations remain suppressed; automatic retirement and supersession create activity events; completion baseline is frozen once.
 
-## OPP-4 — Safe compilation and presentation
+## IMP-4 — Next actions
 
-As a user, I need a small consistent action queue rather than arbitrary generated advice.
+As a user, I can focus on the most relevant active work.
 
-Acceptance: shared eligibility validation with the copy standard enforced at review time on catalog-authored strings; independently versioned ranker; blocker-first order; the derived half of every opportunity rebuilt wholesale per generation in one transaction, capped at five current items and three focus items, with user status/dismissal/baseline/first-seen untouched; typed standard blocks only; evidence and verification limitations included.
+Acceptance: three focus actions followed by all additional active recommendations; only open/in-progress cycles; evidence, sources, effort, steps, limitations, and mutation feedback; healthy, incomplete-check, and insufficient-capability empty states.
 
-## OPP-5 — Lifecycle and outcomes
+## IMP-5 — Visibility checklist
 
-As a user, I can start, complete, dismiss and restore work without later assessments erasing my decisions.
+As a user, I can understand OpenSight’s current standing for every practice without a misleading score.
 
-Acceptance: typed RPC enums; required dismissal reason; frozen completion baseline; append-only idempotent events; site/question evaluators append later observations without causal claims.
+Acceptance: ordered catalog sections; clickable standing counts; expandable dynamic subjects; historical acted-on subjects remain “No longer tracked”; evidence, limitations, last successful check, sources/responses, current action, and local cycle history; healthy copy is limited to what OpenSight can verify; no score or grade.
 
-## OPP-6 — Opportunities UI
+## IMP-6 — Activity history
 
-As a user, I can use Improve → Opportunities to understand what to do and why.
+As a user, I can review what happened to action cycles over time.
 
-Acceptance: three focus cards; Fix first blocker; evidence, affected responses, effort, steps and limitations; more-opportunities, no-longer-detected, completed and dismissed sections so every returned opportunity renders in exactly one place; no confidence or certainty claim on a card; checklist explicitly deferred while assessment data accumulates.
+Acceptance: newest-first pagination; created/recurring, started, completed, dismissed, restored, retired, and superseded events; action and checklist links; no causal attribution.
 
-## OPP-7 — Outcome observation
+## IMP-7 — Deferred measured outcomes and health
 
-As a user, I can see whether the questions an opportunity affected mention me now, measured against what I completed against.
+As the product, we do not present a re-check as evidence that completed work changed visibility.
 
-Acceptance: completion freezes per-question prompt, result and mention state, or the run's mentioned/analyzed counts when the assessment carries no question evidence; readings at the second and fourth analyzed run after completion and never again, threshold-based and idempotent per run ordinal; both sides recomputed over frozen questions still tracked, dropped ones counted, no comparison claimed when none survive; evaluator reads current mentions from the generation's monitoring snapshot and does no I/O; dated readings link every number to its response, state unchanged and negative results in the same shape, and never state or imply causation.
-
-## OPP-8 — Generation health
-
-As the operator, I need quiet assessment degradation to be visible in the weekly check.
-
-Acceptance: `opensight assess health` reports generation status distribution, per-collector failure rate with the latest error, and per-assessor assessment-status distribution over a window; read-only with the same business and date filters as `assess replay`; no thresholds, alerts or stored aggregates; weekly manual check covers it.
+Acceptance: status-only later observations removed; future-compatible completion baselines retained; genuine scheduled outcome evaluation and operator generation-health reporting remain deferred.

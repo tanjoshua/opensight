@@ -117,6 +117,12 @@ SET name = CASE WHEN @name_set::bool THEN @name ELSE name END,
 WHERE id = @business_id AND account_id = @account_id AND status = 'active'
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
 
+-- name: UpdateDraftBusinessWebsite :one
+UPDATE businesses
+SET website = @website
+WHERE id = @business_id AND account_id = @account_id AND status = 'draft'
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
+
 -- name: LockDraftBusiness :one
 SELECT status FROM businesses WHERE id = @id AND account_id = @account_id FOR UPDATE;
 

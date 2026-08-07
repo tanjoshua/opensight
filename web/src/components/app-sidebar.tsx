@@ -8,6 +8,8 @@ import {
   Settings,
   Users,
   Lightbulb,
+  ClipboardCheck,
+  Activity,
 } from "lucide-react"
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
@@ -52,7 +54,13 @@ const businessSettings = [
 ]
 
 const improveSections = [
-  { title: "Opportunities", to: "/opportunities", icon: Lightbulb },
+  { title: "Next actions", to: "/improve/actions", icon: Lightbulb },
+  {
+    title: "Visibility checklist",
+    to: "/improve/checklist",
+    icon: ClipboardCheck,
+  },
+  { title: "Activity history", to: "/improve/activity", icon: Activity },
 ]
 
 const workspaceSections = [{ title: "Members", to: "/team", icon: Users }]

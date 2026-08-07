@@ -45,8 +45,8 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 
 	params := store.CreateBusinessParams{
 		AccountID: su.AccountID,
-		Status:   store.BusinessStatusDraft,
-		Name:     name,
+		Status:    store.BusinessStatusDraft,
+		Name:      name,
 	}
 	if website != "" {
 		params.Website = &website
@@ -253,6 +253,28 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 	if business.Status != store.BusinessStatusDraft {
 		return nil, rpcFailedPrecondition("proposal can only be regenerated while the business is in draft")
 	}
+	if req.Msg.Website != nil {
+		value := strings.TrimSpace(*req.Msg.Website)
+		var website *string
+		if value != "" {
+			website = &value
+		}
+		business, err = s.store.UpdateDraftWebsite(ctx, su.AccountID, businessID, website)
+		if err != nil {
+			return nil, s.rpcError("regen proposal: update website", err)
+		}
+	}
+
+	// Editing the website is available while generation is in flight. Stop the
+	// old run before starting the replacement under the same deterministic ID.
+	// Closed or just-finished runs cannot be terminated and need no action.
+	if err := s.temporal.TerminateWorkflow(ctx, workflows.GenerateProfileWorkflowID(businessID), "", "research inputs changed"); err != nil {
+		var notFound *serviceerror.NotFound
+		var failedPrecondition *serviceerror.FailedPrecondition
+		if !errors.As(err, &notFound) && !errors.As(err, &failedPrecondition) {
+			return nil, s.rpcInternal("regen proposal: stop current generation", err)
+		}
+	}
 
 	if err := s.store.DiscardPending(ctx, su.AccountID, businessID); err != nil {
 		return nil, s.rpcInternal("regen proposal: discard pending", err)
@@ -323,7 +345,7 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 
 	now := nowUTC()
 	result, err := s.store.Apply(ctx, store.ApplyProposalParams{
-		AccountID:    su.AccountID,
+		AccountID:   su.AccountID,
 		BusinessID:  businessID,
 		Name:        payload.Profile.Name,
 		Aliases:     payload.Profile.Aliases,
@@ -436,7 +458,7 @@ func (s *Server) startGeneration(ctx context.Context, accountID, businessID doma
 		ID:        workflows.GenerateProfileWorkflowID(businessID),
 		TaskQueue: s.temporalTaskQueue,
 	}, workflows.GenerateProfileWorkflow, workflows.GenerateProfileWorkflowInput{
-		AccountID:   accountID,
+		AccountID:  accountID,
 		BusinessID: businessID,
 		Name:       name,
 		Website:    website,

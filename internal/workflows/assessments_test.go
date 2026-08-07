@@ -21,7 +21,7 @@ func TestAssessmentWorkflowSharesCollectorsAndPreservesPartialProgress(t *testin
 	env := suite.NewTestWorkflowEnvironment()
 	var activities *Activities
 	in := AssessmentWorkflowInput{AccountID: mustID(t), BusinessID: mustID(t), RunID: mustID(t)}
-	plan := AssessmentPlan{GenerationID: mustID(t), Entries: []store.ModulePlanEntry{
+	plan := AssessmentPlan{GenerationID: mustID(t), Status: "RUNNING", Entries: []store.ModulePlanEntry{
 		{AssessorKey: "influential-source", ModuleVersion: 1, RequiredCollectors: []string{visibility.CollectorMonitoring}},
 		{AssessorKey: "tracked-topic", ModuleVersion: 1, RequiredCollectors: []string{visibility.CollectorMonitoring, visibility.CollectorOwnedSite}},
 	}}
@@ -32,7 +32,9 @@ func TestAssessmentWorkflowSharesCollectorsAndPreservesPartialProgress(t *testin
 	env.OnActivity(activities.RunPracticeAssessor, mock.Anything, mock.MatchedBy(func(input RunAssessorInput) bool {
 		return input.Entry.AssessorKey == "influential-source" && len(input.Artifacts) == 1
 	})).Return(RunAssessorOutput{}, nil).Once()
-	env.OnActivity(activities.CompileOpportunities, mock.Anything, mock.MatchedBy(func(input CompileOpportunitiesInput) bool { return input.HadFailure && len(input.Outputs) == 1 })).Return(nil).Once()
+	env.OnActivity(activities.PublishAssessments, mock.Anything, mock.MatchedBy(func(input PublishAssessmentsInput) bool {
+		return len(input.Outputs) == 1 && len(input.Outcomes) == 2 && input.Outcomes[0].Status == "SUCCEEDED" && input.Outcomes[1].Status == "SKIPPED"
+	})).Return(nil).Once()
 
 	env.ExecuteWorkflow(AssessmentWorkflow, in)
 	if err := env.GetWorkflowError(); err != nil {

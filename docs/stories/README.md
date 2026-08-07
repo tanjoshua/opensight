@@ -23,7 +23,7 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 12 | [Protobuf/Connect RPC migration](12-rpc-migration.md) | RPC | 9 | 3 |
 | 13 | [Runs UI](13-runs-ui.md) | RUNS | 6 | 3 |
 | 14 | [Self-serve signup & billing](14-billing.md) | BILL | 12 | 4 |
-| 15 | [Visibility assessments & opportunities](15-opportunities.md) | OPP | 8 | 5 |
+| 15 | [Improve & visibility assessments](15-opportunities.md) | IMP | 7 | 5 |
 
 **93 stories: Phase 1 = 30, Phase 2 = 16, Phase 3 = 27, Phase 4 = 12, Phase 5 = 8.**
 

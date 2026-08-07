@@ -29,7 +29,7 @@ const (
 // tenancy anchor every deeper table scopes through.
 type Business struct {
 	ID          domain.ID
-	AccountID    domain.ID
+	AccountID   domain.ID
 	Status      BusinessStatus
 	Name        string
 	Website     *string
@@ -47,7 +47,7 @@ type Business struct {
 // to an empty array; Location stays NULL when nil.
 type CreateBusinessParams struct {
 	ID          domain.ID
-	AccountID    domain.ID
+	AccountID   domain.ID
 	Status      BusinessStatus
 	Name        string
 	Website     *string
@@ -59,7 +59,7 @@ type CreateBusinessParams struct {
 }
 
 type UpdateBusinessProfileParams struct {
-	AccountID   domain.ID
+	AccountID  domain.ID
 	BusinessID domain.ID
 	Name       *string
 	WebsiteSet bool
@@ -84,7 +84,7 @@ func (s *Store) CreateBusiness(ctx context.Context, params CreateBusinessParams)
 
 	business := Business{
 		ID:          params.ID,
-		AccountID:    params.AccountID,
+		AccountID:   params.AccountID,
 		Status:      params.Status,
 		Name:        params.Name,
 		Website:     params.Website,
@@ -174,6 +174,37 @@ func (s *Store) UpdateActiveProfile(ctx context.Context, params UpdateBusinessPr
 			return Business{}, ErrNotFound
 		}
 		return Business{}, fmt.Errorf("update active business profile: %w", err)
+	}
+	return businessFromSQLC(row), nil
+}
+
+// UpdateDraftWebsite changes the research website while onboarding is still
+// in progress. Profile fields remain owned by ApplyProposal.
+func (s *Store) UpdateDraftWebsite(ctx context.Context, accountID, businessID domain.ID, website *string) (Business, error) {
+	if err := validateUUIDv7("account id", accountID); err != nil {
+		return Business{}, err
+	}
+	if err := validateUUIDv7("business id", businessID); err != nil {
+		return Business{}, err
+	}
+	if website != nil {
+		value := strings.TrimSpace(*website)
+		if value == "" {
+			website = nil
+		} else {
+			website = &value
+		}
+	}
+	row, err := s.q(ctx).UpdateDraftBusinessWebsite(ctx, storesqlc.UpdateDraftBusinessWebsiteParams{
+		BusinessID: businessID,
+		AccountID:  accountID,
+		Website:    website,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Business{}, ErrNotFound
+		}
+		return Business{}, fmt.Errorf("update draft business website: %w", err)
 	}
 	return businessFromSQLC(row), nil
 }

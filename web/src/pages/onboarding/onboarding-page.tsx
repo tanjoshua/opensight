@@ -4,28 +4,44 @@
 // draft is recoverable via /me, so a reload mid-flow resumes rather than
 // restarting.
 import { create } from "@bufbuild/protobuf"
-import {
-  createConnectQueryKey,
-  useMutation,
-  useQuery,
-} from "@connectrpc/connect-query"
+import { useMutation, useQuery } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import { type FormEvent, type ReactNode, useState } from "react"
-import { Check, LoaderCircle, Sparkles, TriangleAlert } from "lucide-react"
+import {
+  ArrowLeft,
+  Check,
+  LoaderCircle,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react"
 import { Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
-import { useAccountContext, useBillingAccess, useMe, usePlan } from "@/api/hooks"
-import { BusinessStatus, GenerationStage, ProposalStatus } from "@/gen/opensight/v1/common_pb"
+import {
+  useAccountContext,
+  useBillingAccess,
+  useMe,
+  usePlan,
+} from "@/api/hooks"
+import {
+  BusinessStatus,
+  GenerationStage,
+  ProposalStatus,
+} from "@/gen/opensight/v1/common_pb"
 import { AccountRole } from "@/gen/opensight/v1/account_pb"
-import { ProposalPayloadSchema, type ProposalPayload } from "@/gen/opensight/v1/business_pb"
+import {
+  ProposalPayloadSchema,
+  type ProposalPayload,
+} from "@/gen/opensight/v1/business_pb"
 import {
   createBusiness,
+  getBusiness,
   getProposal,
   regenerateProposal,
 } from "@/gen/opensight/v1/business-BusinessService_connectquery"
 import { accountPath } from "@/lib/account-path"
 import { ReviewScreen } from "@/pages/onboarding/review-screen"
+import { ResearchWebsite } from "@/pages/onboarding/research-website"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Logo } from "@/components/logo"
@@ -59,7 +75,13 @@ export function OnboardingPage() {
   if (isUnauthenticated(me.error)) {
     return <Navigate to="/login" replace />
   }
-  if (me.isError || !me.data || account.isError || !account.data || !account.data.account) {
+  if (
+    me.isError ||
+    !me.data ||
+    account.isError ||
+    !account.data ||
+    !account.data.account
+  ) {
     return (
       <OnboardingShell>
         <ProgressState
@@ -76,7 +98,10 @@ export function OnboardingPage() {
     )
   }
   const slug = account.data.account.slug
-  if (account.data.role !== AccountRole.OWNER && account.data.role !== AccountRole.ADMIN) {
+  if (
+    account.data.role !== AccountRole.OWNER &&
+    account.data.role !== AccountRole.ADMIN
+  ) {
     return <Navigate to={accountPath(slug)} replace />
   }
   // Onboarding renders outside AppLayout, so it needs its own copy of this
@@ -130,6 +155,7 @@ function CreateForm({ onCreated }: { onCreated: (id: string) => void }) {
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
   const [website, setWebsite] = useState("")
+  const [step, setStep] = useState<"name" | "website">("name")
 
   const create = useMutation(createBusiness, {
     onSuccess: async (data) => {
@@ -143,9 +169,17 @@ function CreateForm({ onCreated }: { onCreated: (id: string) => void }) {
     ? errorMessage(create.error, "Could not start setup. Try again.")
     : undefined
 
+  function startSetup(withWebsite: string) {
+    create.mutate({ name: name.trim(), website: withWebsite.trim() })
+  }
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    create.mutate({ name: name.trim(), website: website.trim() })
+    if (step === "name") {
+      if (name.trim() !== "") setStep("website")
+      return
+    }
+    if (website.trim() !== "") startSetup(website)
   }
 
   return (
@@ -155,34 +189,40 @@ function CreateForm({ onCreated }: { onCreated: (id: string) => void }) {
           Set up your business
         </h1>
         <p className="text-sm text-muted-foreground">
-          Enter your name and website. We'll research it and propose a profile
-          and prompts for you to review — this usually takes a few minutes.
+          {step === "name"
+            ? "First, tell us which business you want to monitor."
+            : "A website gives us the most reliable information about your business."}
         </p>
       </div>
 
-      <label className="flex flex-col gap-1.5 text-sm font-medium">
-        Business name
-        <Input
-          value={name}
-          placeholder="e.g. Novena Orthopaedic Clinic"
-          onChange={(e) => setName(e.currentTarget.value)}
-          disabled={create.isPending}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm font-medium">
-        Website
-        <Input
-          type="url"
-          value={website}
-          placeholder="https://example.com"
-          onChange={(e) => setWebsite(e.currentTarget.value)}
-          disabled={create.isPending}
-        />
-        <span className="text-xs font-normal text-muted-foreground">
-          Optional, but a website gives us far more to work with.
-        </span>
-      </label>
+      {step === "name" ? (
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Business name
+          <Input
+            value={name}
+            placeholder="e.g. Novena Orthopaedic Clinic"
+            onChange={(e) => setName(e.currentTarget.value)}
+            disabled={create.isPending}
+            autoFocus
+            required
+          />
+        </label>
+      ) : (
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Website (optional)
+          <Input
+            type="url"
+            value={website}
+            placeholder="https://example.com"
+            onChange={(e) => setWebsite(e.currentTarget.value)}
+            disabled={create.isPending}
+            autoFocus
+          />
+          <span className="text-xs font-normal text-muted-foreground">
+            Recommended — it makes your generated setup much more accurate.
+          </span>
+        </label>
+      )}
 
       {error && (
         <p className="text-sm text-destructive" role="alert">
@@ -190,14 +230,42 @@ function CreateForm({ onCreated }: { onCreated: (id: string) => void }) {
         </p>
       )}
 
-      <Button
-        type="submit"
-        className="self-start"
-        disabled={create.isPending || name.trim() === ""}
-      >
-        <Sparkles data-icon="inline-start" />
-        {create.isPending ? "Starting" : "Generate my setup"}
-      </Button>
+      {step === "name" ? (
+        <Button
+          type="submit"
+          className="self-start"
+          disabled={name.trim() === ""}
+        >
+          Continue
+        </Button>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="submit"
+            disabled={create.isPending || website.trim() === ""}
+          >
+            <Sparkles data-icon="inline-start" />
+            {create.isPending ? "Starting" : "Generate my setup"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => startSetup("")}
+            disabled={create.isPending}
+          >
+            Continue without a website
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setStep("name")}
+            disabled={create.isPending}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            Back
+          </Button>
+        </div>
+      )}
     </form>
   )
 }
@@ -212,6 +280,7 @@ function ProposalFlow({
   const navigate = useNavigate()
   const account = useAccountContext()
   const queryClient = useQueryClient()
+  const business = useQuery(getBusiness, { businessId })
   // useProposal polled while generation is running; a ready or failed
   // proposal is terminal, so polling stops (matches ResultService.ListRuns'
   // data-driven refetchInterval elsewhere).
@@ -226,48 +295,65 @@ function ProposalFlow({
     }
   )
   const regen = useMutation(regenerateProposal, {
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: getProposal,
-          input: { businessId },
-          cardinality: "finite",
-        }),
-      })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries()
     },
   })
 
   const onApplied = async () => {
     await queryClient.invalidateQueries()
-    if (account.data?.account) navigate(accountPath(account.data.account.slug), { replace: true })
+    if (account.data?.account)
+      navigate(accountPath(account.data.account.slug), { replace: true })
   }
 
-  if (proposal.isError) {
+  if (proposal.isError || business.isError) {
     return (
       <ProgressState
         icon={<TriangleAlert className="text-destructive" />}
         title="Couldn't load your setup"
         description="Something went wrong fetching generation status."
         action={
-          <Button type="button" onClick={() => void proposal.refetch()}>
+          <Button
+            type="button"
+            onClick={() => {
+              void proposal.refetch()
+              void business.refetch()
+            }}
+          >
             Try again
           </Button>
         }
       />
     )
   }
-  if (proposal.isLoading || !proposal.data?.state) {
+  if (
+    proposal.isLoading ||
+    business.isLoading ||
+    !proposal.data?.state ||
+    !business.data?.business
+  ) {
     return <Skeleton className="h-64 w-full" />
   }
 
   const status = proposal.data.state.status
+  const website = business.data.business.website ?? ""
 
   const regenError = regen.isError
     ? errorMessage(regen.error, "Couldn't regenerate. Try again.")
     : undefined
 
   if (status === ProposalStatus.GENERATING || regen.isPending) {
-    return <GenerationProgress stage={proposal.data.state.stage} />
+    return (
+      <GenerationProgress
+        stage={proposal.data.state.stage}
+        website={website}
+        onWebsiteChange={(value) =>
+          regen.mutate({ businessId, website: value })
+        }
+        changingWebsite={regen.isPending}
+        error={regenError}
+      />
+    )
   }
 
   if (status === ProposalStatus.FAILED) {
@@ -283,6 +369,10 @@ function ProposalFlow({
           payload={EMPTY_PAYLOAD}
           promptLimit={promptLimit}
           onRegenerate={() => regen.mutate({ businessId })}
+          website={website}
+          onWebsiteChange={(value) =>
+            regen.mutate({ businessId, website: value })
+          }
           regenerating={regen.isPending}
           regenError={regenError}
           canRegenerate
@@ -299,6 +389,8 @@ function ProposalFlow({
       payload={proposal.data.state.payload ?? EMPTY_PAYLOAD}
       promptLimit={promptLimit}
       onRegenerate={() => regen.mutate({ businessId })}
+      website={website}
+      onWebsiteChange={(value) => regen.mutate({ businessId, website: value })}
       regenerating={regen.isPending}
       regenError={regenError}
       canRegenerate
@@ -313,7 +405,10 @@ function ProposalFlow({
 // swaps this screen for the review screen.
 const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
   { stage: GenerationStage.FETCHING_SITE, label: "Reading your website" },
-  { stage: GenerationStage.DRAFTING, label: "Researching and drafting your profile" },
+  {
+    stage: GenerationStage.DRAFTING,
+    label: "Researching and drafting your profile",
+  },
 ]
 
 // GenerationProgress renders the live, stage-driven step list while the
@@ -322,7 +417,19 @@ const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
 // falls back to step 1. The only motion tied to progress is the real polled
 // stage — completed steps get a checkmark that transitions in as the workflow
 // advances.
-function GenerationProgress({ stage }: { stage: GenerationStage }) {
+function GenerationProgress({
+  stage,
+  website,
+  onWebsiteChange,
+  changingWebsite,
+  error,
+}: {
+  stage: GenerationStage
+  website: string
+  onWebsiteChange: (website: string) => void
+  changingWebsite: boolean
+  error?: string
+}) {
   const current = Math.max(
     0,
     GENERATION_STEPS.findIndex((s) => s.stage === stage)
@@ -330,7 +437,9 @@ function GenerationProgress({ stage }: { stage: GenerationStage }) {
   return (
     <div className="flex flex-col items-center gap-6 rounded-3xl border border-dashed p-12 text-center">
       <div className="flex max-w-md flex-col gap-2">
-        <h1 className="font-heading text-lg font-medium">Building your setup</h1>
+        <h1 className="font-heading text-lg font-medium">
+          Building your setup
+        </h1>
         <p className="text-sm/relaxed text-muted-foreground">
           This usually takes a few minutes — you can leave this page and come
           back.
@@ -340,6 +449,10 @@ function GenerationProgress({ stage }: { stage: GenerationStage }) {
         {GENERATION_STEPS.map((step, index) => {
           const done = index < current
           const active = index === current
+          const label =
+            step.stage === GenerationStage.FETCHING_SITE && website === ""
+              ? "Looking up your business"
+              : step.label
           return (
             <li key={step.stage} className="flex items-center gap-3">
               <span
@@ -368,12 +481,24 @@ function GenerationProgress({ stage }: { stage: GenerationStage }) {
                       : "text-muted-foreground"
                 }`}
               >
-                {step.label}
+                {label}
               </span>
             </li>
           )
         })}
       </ol>
+      <div className="w-full max-w-md text-left">
+        <ResearchWebsite
+          website={website}
+          onChange={onWebsiteChange}
+          pending={changingWebsite}
+        />
+      </div>
+      {error && (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

@@ -33,6 +33,38 @@ const (
 	TierExperimental         EvidenceTier = "EXPERIMENTAL"
 )
 
+// PracticeMode describes how a catalog practice is presented. Checks can be
+// verified as in place, continuous practices can be in good standing without
+// ever being permanently complete, and tracked practices are informational.
+type PracticeMode string
+
+const (
+	ModeCheck      PracticeMode = "CHECK"
+	ModeContinuous PracticeMode = "CONTINUOUS"
+	ModeTracked    PracticeMode = "TRACKED"
+)
+
+type SubjectScope string
+
+const (
+	ScopeBusiness      SubjectScope = "BUSINESS"
+	ScopeDynamic       SubjectScope = "DYNAMIC"
+	BusinessSubjectKey              = "business"
+)
+
+type ChecklistStanding string
+
+const (
+	StandingGood            ChecklistStanding = "GOOD"
+	StandingImprovable      ChecklistStanding = "IMPROVABLE"
+	StandingNeedsAttention  ChecklistStanding = "NEEDS_ATTENTION"
+	StandingTracking        ChecklistStanding = "TRACKING"
+	StandingCouldNotVerify  ChecklistStanding = "COULD_NOT_VERIFY"
+	StandingNotAssessed     ChecklistStanding = "NOT_ASSESSED"
+	StandingNotApplicable   ChecklistStanding = "NOT_APPLICABLE"
+	StandingNoLongerTracked ChecklistStanding = "NO_LONGER_TRACKED"
+)
+
 // PracticeDefinition is the complete description of a visibility practice.
 // Everything the ranker and the presenter need about a practice lives here, so
 // adding a practice is one catalog entry plus one assessor.
@@ -40,8 +72,13 @@ type PracticeDefinition struct {
 	Key, Section, Title, Description string
 	CriteriaVersion                  int
 	Tier                             EvidenceTier
-	Why                              string
-	References                       []string
+	Mode                             PracticeMode
+	SubjectScope                     SubjectScope
+	// RecommendsActions is explicit because tracked signals normally do not
+	// produce work, while a future tracked practice may opt in deliberately.
+	RecommendsActions bool
+	Why               string
+	References        []string
 	// DirectBlocker marks a prerequisite whose NOT_MET result prevents the
 	// other practices from working at all. The ranker orders those first.
 	DirectBlocker bool
@@ -49,7 +86,7 @@ type PracticeDefinition struct {
 	// set for practices assessed once per subject (a source domain, a tracked
 	// topic) and left off for practices assessed once for the business.
 	SubjectInTitle bool
-	// Steps is the suggested-steps block shown on every opportunity compiled
+	// Steps is the suggested-steps block shown on every action compiled
 	// from this practice.
 	Steps       []string
 	AssessorKey string
@@ -66,7 +103,7 @@ var catalog = []PracticeDefinition{
 		Key: PracticeSearchAccess, CriteriaVersion: 1, Section: "Discoverability",
 		Title:       "Allow OpenAI search access",
 		Description: "Relevant public pages can be reached and indexed by OpenAI search.",
-		Tier:        TierOfficialPrerequisite,
+		Tier:        TierOfficialPrerequisite, Mode: ModeCheck, SubjectScope: ScopeBusiness, RecommendsActions: true,
 		Why:         "Blocked pages cannot be retrieved as search evidence.",
 		References:  []string{"https://platform.openai.com/docs/bots"},
 		AssessorKey: "search-access", DirectBlocker: true,
@@ -80,7 +117,7 @@ var catalog = []PracticeDefinition{
 		Key: PracticeAuthority, CriteriaVersion: 1, Section: "Third-party authority",
 		Title:       "Be present on influential sources",
 		Description: "The business is represented on sources that repeatedly shape monitored answers.",
-		Tier:        TierObservedPattern,
+		Tier:        TierObservedPattern, Mode: ModeContinuous, SubjectScope: ScopeDynamic, RecommendsActions: true,
 		Why:         "Frequently cited relevant sources can shape which businesses are recommended.",
 		AssessorKey: "influential-source", SubjectInTitle: true,
 		Steps: []string{
@@ -93,7 +130,7 @@ var catalog = []PracticeDefinition{
 		Key: PracticeTopicCoverage, CriteriaVersion: 1, Section: "Owned content",
 		Title:       "Cover tracked customer needs",
 		Description: "Accessible owned pages clearly answer important tracked customer topics.",
-		Tier:        TierObservedPattern,
+		Tier:        TierObservedPattern, Mode: ModeContinuous, SubjectScope: ScopeDynamic, RecommendsActions: true,
 		Why:         "Explicit, accessible information gives retrieval systems evidence about fit.",
 		AssessorKey: "tracked-topic", SubjectInTitle: true,
 		Steps: []string{
@@ -192,27 +229,12 @@ type Presentation struct {
 	Title, Summary, Effort string
 	Blocks                 []PresentationBlock
 }
+
 // Presenter renders an eligible assessment into standard typed blocks. The
 // catalog-driven presenter is the only implementation; the interface is the
 // seam for a future practice that needs bespoke rendering.
 type Presenter interface {
 	Present(AssessmentDraft) (Presentation, error)
-}
-
-type Opportunity struct {
-	ID, PracticeKey, SubjectKey string
-	Assessment                  AssessmentDraft
-}
-type OutcomeObservation struct {
-	Key        string
-	ObservedAt time.Time
-	Payload    json.RawMessage
-}
-// OpportunityEvaluator appends later observations to a completed opportunity.
-// The assessment-status evaluator is the only implementation; the interface is
-// the seam for a real before/after outcome evaluator.
-type OpportunityEvaluator interface {
-	Evaluate(context.Context, Opportunity, EvidenceView) ([]OutcomeObservation, error)
 }
 
 type artifactView map[string]EvidenceArtifact
@@ -268,7 +290,55 @@ func ValidatePresentation(p Presentation) error {
 }
 
 func Eligible(d AssessmentDraft) bool {
-	return d.Status == StatusPartial || d.Status == StatusNotMet
+	p, ok := Practice(d.PracticeKey)
+	return ok && p.RecommendsActions && (d.Status == StatusPartial || d.Status == StatusNotMet)
+}
+
+func Standing(def PracticeDefinition, status AssessmentStatus) ChecklistStanding {
+	if def.Mode == ModeTracked {
+		if status == StatusNotApplicable {
+			return StandingNotApplicable
+		}
+		if status == StatusUnknown {
+			return StandingCouldNotVerify
+		}
+		return StandingTracking
+	}
+	switch status {
+	case StatusMet:
+		return StandingGood
+	case StatusPartial:
+		return StandingImprovable
+	case StatusNotMet:
+		return StandingNeedsAttention
+	case StatusUnknown:
+		return StandingCouldNotVerify
+	case StatusNotApplicable:
+		return StandingNotApplicable
+	default:
+		return StandingNotAssessed
+	}
+}
+
+func ModeLabel(mode PracticeMode, standing ChecklistStanding) string {
+	switch mode {
+	case ModeCheck:
+		if standing == StandingGood {
+			return "In place"
+		}
+	case ModeContinuous:
+		if standing == StandingGood {
+			return "In good standing"
+		}
+		if standing == StandingImprovable || standing == StandingNeedsAttention {
+			return "Room to improve"
+		}
+	case ModeTracked:
+		if standing == StandingTracking {
+			return "Being tracked"
+		}
+	}
+	return strings.ReplaceAll(strings.ToLower(string(standing)), "_", " ")
 }
 
 // Rank orders unmet assessments: active direct blockers first, then reach,

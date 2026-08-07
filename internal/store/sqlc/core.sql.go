@@ -995,6 +995,38 @@ func (q *Queries) UpdateActiveBusinessProfile(ctx context.Context, arg UpdateAct
 	return i, err
 }
 
+const updateDraftBusinessWebsite = `-- name: UpdateDraftBusinessWebsite :one
+UPDATE businesses
+SET website = $1
+WHERE id = $2 AND account_id = $3 AND status = 'draft'
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+`
+
+type UpdateDraftBusinessWebsiteParams struct {
+	Website    *string
+	BusinessID uuid.UUID
+	AccountID  uuid.UUID
+}
+
+func (q *Queries) UpdateDraftBusinessWebsite(ctx context.Context, arg UpdateDraftBusinessWebsiteParams) (Business, error) {
+	row := q.db.QueryRow(ctx, updateDraftBusinessWebsite, arg.Website, arg.BusinessID, arg.AccountID)
+	var i Business
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Status,
+		&i.Name,
+		&i.Website,
+		&i.Aliases,
+		&i.Category,
+		&i.Services,
+		&i.Location,
+		&i.CreatedAt,
+		&i.ActivatedAt,
+	)
+	return i, err
+}
+
 const upsertAccountMembership = `-- name: UpsertAccountMembership :one
 INSERT INTO account_memberships (account_id, user_id, role)
 VALUES ($1, $2, $3)

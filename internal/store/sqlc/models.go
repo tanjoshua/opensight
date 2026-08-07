@@ -59,6 +59,15 @@ type AssessmentGeneration struct {
 	CompletedAt     *time.Time
 }
 
+type AssessmentModuleOutcome struct {
+	GenerationID uuid.UUID
+	AccountID    uuid.UUID
+	AssessorKey  string
+	Status       string
+	Error        *string
+	CompletedAt  time.Time
+}
+
 type Business struct {
 	ID          uuid.UUID
 	AccountID   uuid.UUID
@@ -108,6 +117,36 @@ type EvidenceArtifact struct {
 	Error            *string
 }
 
+type ImprovementAction struct {
+	ID                  uuid.UUID
+	AccountID           uuid.UUID
+	BusinessID          uuid.UUID
+	PracticeKey         string
+	SubjectKey          string
+	Cycle               int32
+	RecommendationKey   string
+	CurrentAssessmentID *uuid.UUID
+	Rank                int32
+	Presentation        json.RawMessage
+	Status              string
+	DismissalReason     *string
+	CompletionBaseline  *json.RawMessage
+	StartedAt           *time.Time
+	CompletedAt         *time.Time
+	FirstSeenAt         time.Time
+	UpdatedAt           time.Time
+}
+
+type ImprovementActionEvent struct {
+	ID        uuid.UUID
+	ActionID  uuid.UUID
+	AccountID uuid.UUID
+	EventKey  string
+	EventType string
+	Payload   json.RawMessage
+	CreatedAt time.Time
+}
+
 type Mention struct {
 	ID             uuid.UUID
 	PromptResultID uuid.UUID
@@ -131,38 +170,6 @@ type MonitoringRun struct {
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
 	ExpectedResults     *int32
-}
-
-type Opportunity struct {
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-	BusinessID          uuid.UUID
-	PracticeKey         string
-	SubjectKey          string
-	CurrentAssessmentID uuid.UUID
-	CurrentGenerationID *uuid.UUID
-	Rank                int32
-	Presentation        json.RawMessage
-	UserStatus          string
-	DismissalReason     *string
-	CompletionBaseline  *json.RawMessage
-	FirstSeenAt         time.Time
-	UpdatedAt           time.Time
-}
-
-type OpportunityEvent struct {
-	ID            uuid.UUID
-	OpportunityID uuid.UUID
-	AccountID     uuid.UUID
-	EventKey      string
-	EventType     string
-	Payload       json.RawMessage
-	CreatedAt     time.Time
-}
-
-type OpportunityFocu struct {
-	ID    uuid.UUID
-	Focus bool
 }
 
 type ProfileProposal struct {
@@ -258,5 +265,6 @@ type VisibilityAssessment struct {
 	Effort          int32
 	PayloadVersion  int32
 	Payload         json.RawMessage
+	Published       bool
 	AssessedAt      time.Time
 }

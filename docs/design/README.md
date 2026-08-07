@@ -12,7 +12,7 @@ Technical design for the [Starter MVP PRD](../prd.md), split into focused docs t
 | 06 | [API + frontend](06-api-frontend.md) | Endpoints, five sections, response-drawer traceability, shadcn preset |
 | 07 | [Cross-cutting](07-cross-cutting.md) | Auth, secrets, deploys, backups, observability, spend guardrails |
 | 08 | [Billing](08-billing.md) | Self-serve signup, Stripe Checkout/Portal/webhooks, entitlement catalog, lapse behaviour |
-| 09 | [Opportunities](09-opportunities.md) | Visibility-practice catalog, modular assessments, opportunity compilation and lifecycle |
+| 09 | [Improve](09-opportunities.md) | Visibility checklist, modular assessments, repeatable actions, and lifecycle activity |
 
 Stack: React (Vite, shadcn preset `bLTjNXma`) · Go monolith · PostgreSQL · Temporal (self-hosted) · OpenAI Responses API · Stripe Billing · single Hetzner VPS.
 

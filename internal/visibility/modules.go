@@ -118,7 +118,7 @@ func assessSearchAccess(_ context.Context, v EvidenceView, _ BoundedResearcher, 
 	if err != nil {
 		return nil, err
 	}
-	d := AssessmentDraft{PracticeKey: PracticeSearchAccess, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: s.Host, Reach: 100, Persistence: 100, EvidenceQuality: 100, Actionability: 100, Effort: 2, PayloadVersion: 1}
+	d := AssessmentDraft{PracticeKey: PracticeSearchAccess, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: BusinessSubjectKey, Reach: 100, Persistence: 100, EvidenceQuality: 100, Actionability: 100, Effort: 2, PayloadVersion: 1}
 	switch {
 	case s.Failure != "":
 		d.Status = StatusUnknown
@@ -384,9 +384,6 @@ func Compile(drafts []AssessmentDraft) ([]CompiledAssessment, error) {
 		}
 	}
 	Rank(eligible)
-	if len(eligible) > 5 {
-		eligible = eligible[:5]
-	}
 	// Practices are described entirely by their catalog entry, so one presenter
 	// serves all of them; the interface stays the compiler's rendering seam.
 	var presenter Presenter = catalogPresenter{}
@@ -400,25 +397,3 @@ func Compile(drafts []AssessmentDraft) ([]CompiledAssessment, error) {
 	}
 	return out, nil
 }
-
-// statusEvaluator reports the practice's latest assessment status against a
-// completed opportunity, without claiming the completed work caused it.
-type statusEvaluator struct{}
-
-func (statusEvaluator) Evaluate(_ context.Context, opportunity Opportunity, _ EvidenceView) ([]OutcomeObservation, error) {
-	payload, err := json.Marshal(map[string]any{
-		"assessment_status": opportunity.Assessment.Status,
-		"result_ids":        opportunity.Assessment.ResultIDs,
-		"prompt_ids":        opportunity.Assessment.PromptIDs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return []OutcomeObservation{{Key: "assessment", Payload: payload}}, nil
-}
-
-// Evaluator returns the outcome evaluator applied to every completed
-// opportunity. Observing the latest assessment is practice-independent, so one
-// implementation serves all of them; the interface stays as the seam for a real
-// before/after outcome evaluator.
-func Evaluator() OpportunityEvaluator { return statusEvaluator{} }
