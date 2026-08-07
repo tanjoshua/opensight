@@ -73,9 +73,9 @@ func NewStubQuestionsRunner() (*StubQuestionsRunner, error) {
 // cycles through to satisfy validation offline.
 var stubQuestionsPrompts = []ProposedPrompt{
 	{Text: "best orthopaedic clinic in Singapore"},
-	{Text: "where can I get ACL reconstruction in Singapore"},
-	{Text: "knee pain that won't go away, who should I see in Singapore"},
-	{Text: "top rated orthopaedic specialist in Singapore"},
+	{Text: "which orthopaedic clinics in Singapore offer ACL reconstruction"},
+	{Text: "which specialist in Singapore treats knee pain that won't go away"},
+	{Text: "where can I get an orthopaedic second opinion in Singapore"},
 }
 
 // RunQuestions returns a canned prompt list shaped by in.PromptLimit. The

@@ -63,6 +63,16 @@ func TestOpenAIQuestionsBuildsStructuredRequest(t *testing.T) {
 	if len(input) != 2 {
 		t.Fatalf("input turns = %d, want 2 (developer, user)", len(input))
 	}
+	developerContent := input[0].(map[string]any)["content"].(string)
+	for _, rule := range []string{
+		"Every question must therefore have provider-discovery intent",
+		"could a complete, helpful answer omit all provider names?",
+		"Do NOT ask primarily for health advice",
+	} {
+		if !strings.Contains(developerContent, rule) {
+			t.Errorf("developer instructions missing %q", rule)
+		}
+	}
 	userContent := input[1].(map[string]any)["content"].(string)
 	if !strings.Contains(userContent, `"prompt_count":1`) {
 		t.Errorf("user content missing prompt_count: %s", userContent)
