@@ -29,12 +29,17 @@ const (
 	fetchSiteMaxRequests      = 20
 	fetchSiteMaxRedirects     = 5
 	fetchSiteTimeout          = 20 * time.Second
+	fetchSiteUserAgent        = "OpenSight/0.1 (+https://opensight.local)"
 )
 
 var (
 	errUnsafeFetchURL  = errors.New("unsafe fetch url")
 	errUnusablePage    = errors.New("unusable page")
 	errNoUsableContent = errors.New("no usable site content")
+	// errAuthBarrier marks a page the site refused without credentials. It is
+	// wrapped into the fetch error so the owned-site scan can report a confirmed
+	// authentication barrier without re-requesting the page.
+	errAuthBarrier = errors.New("authentication barrier")
 )
 
 var blockedFetchIPPrefixes = []netip.Prefix{
@@ -105,6 +110,17 @@ type FetchSiteInput struct {
 type FetchSiteOutput struct {
 	Text string   `json:"text"`
 	URLs []string `json:"urls"`
+	// NoIndexURLs is the subset of URLs whose page denied indexing through a
+	// robots/oai-searchbot meta tag or an X-Robots-Tag header. Onboarding
+	// ignores it; the owned-site scan reads it so the indexing verdict needs no
+	// second request for markup the fetcher already had in hand.
+	NoIndexURLs []string `json:"noindex_urls,omitempty"`
+	// HomeNoIndex and HomeAuthBarrier report the same two barriers for the
+	// homepage specifically, which is reported even when other pages were
+	// retrievable: the entry page is the site's most linked and most cited
+	// page, so a barrier there is never incidental.
+	HomeNoIndex     bool `json:"home_noindex,omitempty"`
+	HomeAuthBarrier bool `json:"home_auth_barrier,omitempty"`
 }
 
 type siteFetcher struct {
@@ -119,6 +135,16 @@ type fetchedPage struct {
 	URL      *url.URL
 	Text     string
 	NavHrefs []string
+	NoIndex  bool
+}
+
+// fetchedBody is one retrieved response: the capped body plus the metadata the
+// callers need from it.
+type fetchedBody struct {
+	Body        []byte
+	FinalURL    *url.URL
+	ContentType string
+	Header      http.Header
 }
 
 // FetchSite reads a clinic website with SSRF protections and returns stripped,
@@ -270,19 +296,28 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 
 	requests := 0
 	acc := textAccumulator{limit: f.textLimit}
-	var urls []string
+	var urls, noIndexURLs []string
 	seen := make(map[string]bool)
 	queued := make(map[string]bool)
 	var firstTransientErr error
 
+	record := func(page *fetchedPage) {
+		if !acc.addPage(page.URL.String(), page.Text) {
+			return
+		}
+		urls = append(urls, page.URL.String())
+		if page.NoIndex {
+			noIndexURLs = append(noIndexURLs, page.URL.String())
+		}
+	}
+
 	home, err := f.fetchHTMLPage(ctx, startURL, &requests)
 	origin := originFor(startURL)
+	homeAuthBarrier := errors.Is(err, errAuthBarrier)
 	if err == nil {
 		origin = originFor(home.URL)
 		seen[canonicalFetchURLKey(home.URL)] = true
-		if acc.addPage(home.URL.String(), home.Text) {
-			urls = append(urls, home.URL.String())
-		}
+		record(home)
 	} else if errors.Is(err, errUnsafeFetchURL) {
 		return FetchSiteOutput{}, err
 	} else if !errors.Is(err, errUnusablePage) {
@@ -336,9 +371,7 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 				continue
 			}
 			seen[finalKey] = true
-			if acc.addPage(page.URL.String(), page.Text) {
-				urls = append(urls, page.URL.String())
-			}
+			record(page)
 		}
 		return nil
 	}
@@ -372,9 +405,16 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 		if firstTransientErr != nil {
 			return FetchSiteOutput{}, firstTransientErr
 		}
+		if homeAuthBarrier {
+			return FetchSiteOutput{}, fmt.Errorf("%w: %w", errNoUsableContent, errAuthBarrier)
+		}
 		return FetchSiteOutput{}, errNoUsableContent
 	}
-	return FetchSiteOutput{Text: text, URLs: urls}, nil
+	out := FetchSiteOutput{Text: text, URLs: urls, NoIndexURLs: noIndexURLs, HomeAuthBarrier: homeAuthBarrier}
+	if home != nil {
+		out.HomeNoIndex = home.NoIndex
+	}
+	return out, nil
 }
 
 func (f *siteFetcher) withDefaults() *siteFetcher {
@@ -398,38 +438,49 @@ func (f *siteFetcher) withDefaults() *siteFetcher {
 }
 
 func (f *siteFetcher) fetchHTMLPage(ctx context.Context, target *url.URL, requests *int) (*fetchedPage, error) {
-	body, finalURL, contentType, err := f.fetchURL(ctx, target, "text/html,application/xhtml+xml", f.pageBodyLimit, requests)
+	res, err := f.fetchURL(ctx, target, "text/html,application/xhtml+xml", f.pageBodyLimit, requests)
 	if err != nil {
 		return nil, err
 	}
-	if !isHTMLContentType(contentType) {
+	if !isHTMLContentType(res.ContentType) {
 		return nil, errUnusablePage
 	}
 
-	text, navHrefs, err := extractHTMLTextAndNav(body)
+	content, err := extractHTMLContent(res.Body)
 	if err != nil {
 		return nil, errUnusablePage
 	}
-	if strings.TrimSpace(text) == "" {
+	if strings.TrimSpace(content.Text) == "" {
 		return nil, errUnusablePage
 	}
-	return &fetchedPage{URL: finalURL, Text: text, NavHrefs: navHrefs}, nil
+	return &fetchedPage{
+		URL:      res.FinalURL,
+		Text:     content.Text,
+		NavHrefs: content.NavHrefs,
+		NoIndex:  content.NoIndex || headerDeniesIndexing(res.Header),
+	}, nil
+}
+
+// headerDeniesIndexing reports an X-Robots-Tag response header denying
+// indexing.
+func headerDeniesIndexing(header http.Header) bool {
+	return strings.Contains(strings.ToLower(header.Get("X-Robots-Tag")), "noindex")
 }
 
 func (f *siteFetcher) fetchSitemap(ctx context.Context, origin, target *url.URL, requests *int, depth int, firstTransientErr *error) ([]*url.URL, error) {
 	if depth > 1 {
 		return nil, nil
 	}
-	body, _, contentType, err := f.fetchURL(ctx, target, "application/xml,text/xml,*/*", f.sitemapBodyLimit, requests)
+	res, err := f.fetchURL(ctx, target, "application/xml,text/xml,*/*", f.sitemapBodyLimit, requests)
 	if err != nil {
 		recordFetchTransient(firstTransientErr, err)
 		return nil, err
 	}
-	if contentType != "" && !isXMLLikeContentType(contentType) {
+	if res.ContentType != "" && !isXMLLikeContentType(res.ContentType) {
 		return nil, nil
 	}
 
-	locs := parseSitemapLocs(body)
+	locs := parseSitemapLocs(res.Body)
 	var pageCandidates []*url.URL
 	var childSitemaps []*url.URL
 	for _, loc := range locs {
@@ -499,52 +550,52 @@ func recordFetchTransient(dest *error, err error) {
 	*dest = err
 }
 
-func (f *siteFetcher) fetchURL(ctx context.Context, target *url.URL, accept string, bodyLimit int64, requests *int) ([]byte, *url.URL, string, error) {
+func (f *siteFetcher) fetchURL(ctx context.Context, target *url.URL, accept string, bodyLimit int64, requests *int) (fetchedBody, error) {
 	if requests != nil {
 		if *requests >= f.maxRequests {
-			return nil, nil, "", errUnusablePage
+			return fetchedBody{}, errUnusablePage
 		}
 		*requests++
 	}
 	if err := validateFetchURL(target); err != nil {
-		return nil, nil, "", err
+		return fetchedBody{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("%w: build request: %v", errUnsafeFetchURL, err)
+		return fetchedBody{}, fmt.Errorf("%w: build request: %v", errUnsafeFetchURL, err)
 	}
 	req.Header.Set("Accept", accept)
-	req.Header.Set("User-Agent", "OpenSight/0.1 (+https://opensight.local)")
+	req.Header.Set("User-Agent", fetchSiteUserAgent)
 
 	resp, err := f.client.Do(req)
 	if err != nil {
 		if resp != nil && resp.Body != nil {
 			_ = resp.Body.Close()
 		}
-		return nil, nil, "", fmt.Errorf("fetch %s: %w", target.Redacted(), err)
+		return fetchedBody{}, fmt.Errorf("fetch %s: %w", target.Redacted(), err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	finalURL := resp.Request.URL
 	if err := validateFetchURL(finalURL); err != nil {
-		return nil, nil, "", err
+		return fetchedBody{}, err
 	}
-	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-		return nil, finalURL, "", errUnusablePage
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return fetchedBody{}, fmt.Errorf("%w: %w", errUnusablePage, errAuthBarrier)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if resp.StatusCode >= 500 {
-			return nil, finalURL, "", fmt.Errorf("fetch %s: status %d", finalURL.Redacted(), resp.StatusCode)
+			return fetchedBody{}, fmt.Errorf("fetch %s: status %d", finalURL.Redacted(), resp.StatusCode)
 		}
-		return nil, finalURL, "", errUnusablePage
+		return fetchedBody{}, errUnusablePage
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, bodyLimit))
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("read %s: %w", finalURL.Redacted(), err)
+		return fetchedBody{}, fmt.Errorf("read %s: %w", finalURL.Redacted(), err)
 	}
-	return body, finalURL, resp.Header.Get("Content-Type"), nil
+	return fetchedBody{Body: body, FinalURL: finalURL, ContentType: resp.Header.Get("Content-Type"), Header: resp.Header}, nil
 }
 
 func parseFetchURL(raw string) (*url.URL, error) {
@@ -776,14 +827,23 @@ func isXMLLikeContentType(contentType string) bool {
 	return strings.Contains(mediaType, "xml") || mediaType == "text/plain"
 }
 
-func extractHTMLTextAndNav(body []byte) (string, []string, error) {
+// htmlContent is everything one parse of a page yields: its stripped text, its
+// navigation links, and whether it denies indexing. The noindex meta tag is
+// read here so no caller has to fetch the markup a second time.
+type htmlContent struct {
+	Text     string
+	NavHrefs []string
+	NoIndex  bool
+}
+
+func extractHTMLContent(body []byte) (htmlContent, error) {
 	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		return "", nil, err
+		return htmlContent{}, err
 	}
 
 	var text strings.Builder
-	var navHrefs []string
+	out := htmlContent{}
 	var walk func(*html.Node, bool, bool)
 	walk = func(n *html.Node, skip, inNav bool) {
 		if n.Type == html.ElementNode {
@@ -796,8 +856,11 @@ func extractHTMLTextAndNav(body []byte) (string, []string, error) {
 			}
 			if inNav && tag == "a" {
 				if href := attrValue(n, "href"); href != "" {
-					navHrefs = append(navHrefs, href)
+					out.NavHrefs = append(out.NavHrefs, href)
 				}
+			}
+			if tag == "meta" && metaDeniesIndexing(n) {
+				out.NoIndex = true
 			}
 		}
 		if n.Type == html.TextNode && !skip {
@@ -808,7 +871,19 @@ func extractHTMLTextAndNav(body []byte) (string, []string, error) {
 		}
 	}
 	walk(doc, false, false)
-	return strings.TrimSpace(text.String()), navHrefs, nil
+	out.Text = strings.TrimSpace(text.String())
+	return out, nil
+}
+
+// metaDeniesIndexing reports a robots or OAI-SearchBot meta tag carrying a
+// noindex directive.
+func metaDeniesIndexing(n *html.Node) bool {
+	switch strings.ToLower(strings.TrimSpace(attrValue(n, "name"))) {
+	case "robots", "oai-searchbot":
+		return strings.Contains(strings.ToLower(attrValue(n, "content")), "noindex")
+	default:
+		return false
+	}
 }
 
 func skipHTMLTag(tag string) bool {

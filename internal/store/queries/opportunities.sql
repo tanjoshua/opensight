@@ -15,55 +15,68 @@ ON CONFLICT (generation_id,collector_key) DO UPDATE SET collector_version=EXCLUD
 
 -- name: UpsertVisibilityAssessment :one
 INSERT INTO visibility_assessments (id,generation_id,account_id,business_id,practice_key,criteria_version,
- assessor_key,assessor_version,subject_key,status,rollout_mode,result_ids,prompt_ids,checked_sources,
- confidence,explanation,reach,persistence,evidence_quality,actionability,effort,payload_version,payload)
+ assessor_key,assessor_version,subject_key,status,result_ids,prompt_ids,checked_sources,
+ explanation,reach,persistence,evidence_quality,actionability,effort,payload_version,payload)
 SELECT @id,@generation_id,@account_id,@business_id,@practice_key,@criteria_version,@assessor_key,
- @assessor_version,@subject_key,@status,@rollout_mode,@result_ids,@prompt_ids,@checked_sources,
- @confidence,@explanation,@reach,@persistence,@evidence_quality,@actionability,@effort,@payload_version,@payload
+ @assessor_version,@subject_key,@status,@result_ids,@prompt_ids,@checked_sources,
+ @explanation,@reach,@persistence,@evidence_quality,@actionability,@effort,@payload_version,@payload
 WHERE EXISTS (SELECT 1 FROM assessment_generations WHERE id = sqlc.arg('generation_id') AND account_id = sqlc.arg('account_id') AND business_id = sqlc.arg('business_id'))
 ON CONFLICT (generation_id,practice_key,subject_key) DO UPDATE SET status=EXCLUDED.status,
  result_ids=EXCLUDED.result_ids,prompt_ids=EXCLUDED.prompt_ids,checked_sources=EXCLUDED.checked_sources,
- confidence=EXCLUDED.confidence,explanation=EXCLUDED.explanation,reach=EXCLUDED.reach,
+ explanation=EXCLUDED.explanation,reach=EXCLUDED.reach,
  persistence=EXCLUDED.persistence,evidence_quality=EXCLUDED.evidence_quality,actionability=EXCLUDED.actionability,
  effort=EXCLUDED.effort,payload=EXCLUDED.payload
 RETURNING id;
 
--- name: RefreshExistingOpportunity :one
-UPDATE opportunities SET current_assessment_id = sqlc.arg('current_assessment_id'), presentation = sqlc.arg('presentation'), updated_at = now()
-WHERE business_id = sqlc.arg('business_id') AND account_id = sqlc.arg('account_id') AND practice_key = sqlc.arg('practice_key') AND subject_key = sqlc.arg('subject_key')
-RETURNING id;
-
 -- name: UpsertOpportunity :one
-INSERT INTO opportunities (id,account_id,business_id,practice_key,subject_key,current_assessment_id,rank,presentation)
-SELECT @id,@account_id,@business_id,@practice_key,@subject_key,@current_assessment_id,@rank,@presentation
+INSERT INTO opportunities (id,account_id,business_id,practice_key,subject_key,current_assessment_id,current_generation_id,rank,presentation)
+SELECT @id,@account_id,@business_id,@practice_key,@subject_key,@current_assessment_id,sqlc.arg('current_generation_id')::uuid,@rank,@presentation
 WHERE EXISTS (SELECT 1 FROM visibility_assessments WHERE id = sqlc.arg('current_assessment_id') AND account_id = sqlc.arg('account_id') AND business_id = sqlc.arg('business_id'))
 ON CONFLICT (business_id,practice_key,subject_key) DO UPDATE SET current_assessment_id=EXCLUDED.current_assessment_id,
- rank=EXCLUDED.rank,presentation=EXCLUDED.presentation,updated_at=now()
+ current_generation_id=EXCLUDED.current_generation_id,rank=EXCLUDED.rank,presentation=EXCLUDED.presentation,updated_at=now()
 RETURNING id;
+
+-- Everything the compiler did not produce this generation stops being current.
+-- The last-known presentation stays on the row so acted-on history still renders.
+-- name: SweepStaleOpportunities :exec
+UPDATE opportunities SET current_generation_id = NULL, updated_at = now()
+WHERE business_id = sqlc.arg('business_id') AND account_id = sqlc.arg('account_id')
+ AND current_generation_id IS NOT NULL AND current_generation_id <> sqlc.arg('current_generation_id')::uuid;
 
 -- name: FinishAssessmentGeneration :exec
 UPDATE assessment_generations SET status = sqlc.arg('status'), error = sqlc.narg('error'), completed_at = now()
 WHERE id = sqlc.arg('id') AND account_id = sqlc.arg('account_id');
 
+-- A row that stopped being current and that the user never acted on is not
+-- history — it simply disappears.
 -- name: ListCurrentOpportunities :many
 SELECT o.id,o.practice_key,o.subject_key,o.rank,o.presentation,o.user_status,o.dismissal_reason,
- o.completion_baseline,o.first_seen_at,o.updated_at,a.status AS assessment_status,a.confidence,
+ o.completion_baseline,o.first_seen_at,o.updated_at,(o.current_generation_id IS NOT NULL)::bool AS current,
+ COALESCE(f.focus,false)::bool AS focus,a.status AS assessment_status,
  a.result_ids,a.prompt_ids,a.checked_sources,a.explanation,a.assessed_at
 FROM opportunities o JOIN visibility_assessments a ON a.id=o.current_assessment_id
+ LEFT JOIN opportunity_focus f ON f.id=o.id
 WHERE o.business_id = sqlc.arg('business_id') AND o.account_id = sqlc.arg('account_id')
-ORDER BY CASE WHEN o.user_status='DISMISSED' THEN 1 ELSE 0 END,o.rank,o.practice_key,o.subject_key;
+ AND (o.current_generation_id IS NOT NULL OR o.user_status <> 'OPEN')
+ORDER BY o.rank,o.practice_key,o.subject_key;
 
+-- Outcome observations match this generation's assessment by practice identity,
+-- not by the opportunity's current assessment pointer, so a completed item that
+-- has since turned MET still receives its later observation.
 -- name: ListCompletedGenerationOpportunities :many
 SELECT o.id,o.practice_key,o.subject_key,a.status AS assessment_status,a.result_ids,a.prompt_ids
-FROM opportunities o JOIN visibility_assessments a ON a.id=o.current_assessment_id
+FROM opportunities o JOIN visibility_assessments a
+ ON a.business_id=o.business_id AND a.practice_key=o.practice_key AND a.subject_key=o.subject_key
 WHERE o.account_id = sqlc.arg('account_id') AND o.business_id = sqlc.arg('business_id') AND o.user_status='COMPLETED'
  AND a.generation_id = sqlc.arg('generation_id') ORDER BY o.id;
 
 -- name: GetCurrentOpportunity :one
 SELECT o.id,o.business_id,o.practice_key,o.subject_key,o.rank,o.presentation,o.user_status,o.dismissal_reason,
- o.completion_baseline,o.first_seen_at,o.updated_at,a.status AS assessment_status,a.confidence,
+ o.completion_baseline,o.first_seen_at,o.updated_at,(o.current_generation_id IS NOT NULL)::bool AS current,
+ COALESCE(f.focus,false)::bool AS focus,a.status AS assessment_status,
  a.result_ids,a.prompt_ids,a.checked_sources,a.explanation,a.assessed_at
 FROM opportunities o JOIN visibility_assessments a ON a.id=o.current_assessment_id
+ LEFT JOIN opportunity_focus f ON f.id=o.id
 WHERE o.id = sqlc.arg('id') AND o.account_id = sqlc.arg('account_id');
 
 -- name: SetOpportunityStatus :one

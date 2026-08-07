@@ -11,7 +11,6 @@ import (
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-	"opensight/internal/visibility"
 
 	"go.temporal.io/sdk/temporal"
 )
@@ -23,12 +22,11 @@ import (
 // exercising one activity leave the rest at their nil zero value instead of
 // padding a long positional constructor call.
 type Activities struct {
-	Store           *store.Store
-	Runner          llm.PromptRunner
-	Extractor       llm.ExtractionRunner
-	Matcher         llm.MatchRunner
-	Proposer        llm.ProposeProfileRunner
-	AssessmentModes map[string]visibility.RolloutMode
+	Store     *store.Store
+	Runner    llm.PromptRunner
+	Extractor llm.ExtractionRunner
+	Matcher   llm.MatchRunner
+	Proposer  llm.ProposeProfileRunner
 }
 
 // PromptSnapshot is one active prompt captured at run start. The workflow

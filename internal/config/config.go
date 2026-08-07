@@ -11,7 +11,6 @@ import (
 	"github.com/joho/godotenv"
 
 	"opensight/internal/billing"
-	"opensight/internal/visibility"
 )
 
 type PromptRunnerMode string
@@ -74,7 +73,6 @@ type Config struct {
 	// redirect URI is derived from AppBaseURL, not configured separately.
 	GoogleClientID     string
 	GoogleClientSecret string
-	AssessmentModes    map[string]visibility.RolloutMode
 }
 
 // Load reads runtime settings from the process environment. It first loads a
@@ -115,10 +113,6 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 	stripeSecretKey := getenv("STRIPE_SECRET_KEY")
 	stripeWebhookSecret := getenv("STRIPE_WEBHOOK_SECRET")
 	stripePortalConfigurationID := getenv("STRIPE_PORTAL_CONFIGURATION_ID")
-	assessmentModes, err := parseAssessmentModes(getenv("VISIBILITY_ASSESSOR_MODES"))
-	if err != nil {
-		return Config{}, err
-	}
 
 	// Built by iterating the catalog, not hardcoded to Starter, so a plan
 	// added later is required in config for free (design 08 "the pairing is
@@ -150,37 +144,7 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		StripePriceIDs:              stripePriceIDs,
 		GoogleClientID:              getenv("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret:          getenv("GOOGLE_CLIENT_SECRET"),
-		AssessmentModes:             assessmentModes,
 	}, nil
-}
-
-func parseAssessmentModes(raw string) (map[string]visibility.RolloutMode, error) {
-	modes := map[string]visibility.RolloutMode{
-		"search-access":      visibility.RolloutActive,
-		"influential-source": visibility.RolloutShadow,
-		"tracked-topic":      visibility.RolloutShadow,
-	}
-	if strings.TrimSpace(raw) == "" {
-		return modes, nil
-	}
-	known := map[string]bool{}
-	for _, assessor := range visibility.Assessors(modes) {
-		known[assessor.Manifest().Key] = true
-	}
-	for _, item := range strings.Split(raw, ",") {
-		parts := strings.SplitN(strings.TrimSpace(item), "=", 2)
-		if len(parts) != 2 || !known[parts[0]] {
-			return nil, fmt.Errorf("VISIBILITY_ASSESSOR_MODES contains unknown assessor %q", parts[0])
-		}
-		mode := visibility.RolloutMode(strings.ToUpper(parts[1]))
-		switch mode {
-		case visibility.RolloutDisabled, visibility.RolloutShadow, visibility.RolloutActive:
-			modes[parts[0]] = mode
-		default:
-			return nil, fmt.Errorf("VISIBILITY_ASSESSOR_MODES has invalid mode %q", parts[1])
-		}
-	}
-	return modes, nil
 }
 
 func validPromptRunnerMode(mode PromptRunnerMode) bool {

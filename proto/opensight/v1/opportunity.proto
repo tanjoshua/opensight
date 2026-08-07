@@ -57,13 +57,19 @@ message Opportunity {
   OpportunityStatus status = 8;
   DismissalReason dismissal_reason = 9;
   string assessment_status = 10;
-  double confidence = 11;
+  reserved 11;
+  reserved "confidence";
   repeated string result_ids = 12;
   repeated string prompt_ids = 13;
   repeated string checked_sources = 14;
   string assessed_at = 15;
   bool focus = 16;
   repeated OutcomeObservation observations = 17;
+  // The newest assessment generation still produced this opportunity.
+  bool current = 18;
+  // The practice is a prerequisite that blocks the others while unmet. Set
+  // from the practice catalog so the UI never has to know a practice key.
+  bool direct_blocker = 19;
 }
 
 message ListOpportunitiesRequest {

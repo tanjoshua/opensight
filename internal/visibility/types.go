@@ -25,14 +25,6 @@ const (
 	StatusNotApplicable AssessmentStatus = "NOT_APPLICABLE"
 )
 
-type RolloutMode string
-
-const (
-	RolloutDisabled RolloutMode = "DISABLED"
-	RolloutShadow   RolloutMode = "SHADOW"
-	RolloutActive   RolloutMode = "ACTIVE"
-)
-
 type EvidenceTier string
 
 const (
@@ -41,13 +33,26 @@ const (
 	TierExperimental         EvidenceTier = "EXPERIMENTAL"
 )
 
+// PracticeDefinition is the complete description of a visibility practice.
+// Everything the ranker and the presenter need about a practice lives here, so
+// adding a practice is one catalog entry plus one assessor.
 type PracticeDefinition struct {
-	Key, Section, Title, Description        string
-	CriteriaVersion                         int
-	Tier                                    EvidenceTier
-	Why                                     string
-	References                              []string
-	AssessorKey, PresenterKey, EvaluatorKey string
+	Key, Section, Title, Description string
+	CriteriaVersion                  int
+	Tier                             EvidenceTier
+	Why                              string
+	References                       []string
+	// DirectBlocker marks a prerequisite whose NOT_MET result prevents the
+	// other practices from working at all. The ranker orders those first.
+	DirectBlocker bool
+	// SubjectInTitle appends the assessed subject to the presented title. It is
+	// set for practices assessed once per subject (a source domain, a tracked
+	// topic) and left off for practices assessed once for the business.
+	SubjectInTitle bool
+	// Steps is the suggested-steps block shown on every opportunity compiled
+	// from this practice.
+	Steps       []string
+	AssessorKey string
 }
 
 const (
@@ -57,9 +62,46 @@ const (
 )
 
 var catalog = []PracticeDefinition{
-	{Key: PracticeSearchAccess, CriteriaVersion: 1, Section: "Discoverability", Title: "Allow OpenAI search access", Description: "Relevant public pages can be reached and indexed by OpenAI search.", Tier: TierOfficialPrerequisite, Why: "Blocked pages cannot be retrieved as search evidence.", References: []string{"https://platform.openai.com/docs/bots"}, AssessorKey: "search-access", PresenterKey: "search-access", EvaluatorKey: "site-access"},
-	{Key: PracticeAuthority, CriteriaVersion: 1, Section: "Third-party authority", Title: "Be present on influential sources", Description: "The business is represented on sources that repeatedly shape monitored answers.", Tier: TierObservedPattern, Why: "Frequently cited relevant sources can shape which businesses are recommended.", AssessorKey: "influential-source", PresenterKey: "influential-source", EvaluatorKey: "question-presence"},
-	{Key: PracticeTopicCoverage, CriteriaVersion: 1, Section: "Owned content", Title: "Cover tracked customer needs", Description: "Accessible owned pages clearly answer important tracked customer topics.", Tier: TierObservedPattern, Why: "Explicit, accessible information gives retrieval systems evidence about fit.", AssessorKey: "tracked-topic", PresenterKey: "tracked-topic", EvaluatorKey: "question-presence"},
+	{
+		Key: PracticeSearchAccess, CriteriaVersion: 1, Section: "Discoverability",
+		Title:       "Allow OpenAI search access",
+		Description: "Relevant public pages can be reached and indexed by OpenAI search.",
+		Tier:        TierOfficialPrerequisite,
+		Why:         "Blocked pages cannot be retrieved as search evidence.",
+		References:  []string{"https://platform.openai.com/docs/bots"},
+		AssessorKey: "search-access", DirectBlocker: true,
+		Steps: []string{
+			"Remove the confirmed access or indexing barrier.",
+			"Publish the affected pages without authentication.",
+			"Wait for a later monitoring run to verify access again.",
+		},
+	},
+	{
+		Key: PracticeAuthority, CriteriaVersion: 1, Section: "Third-party authority",
+		Title:       "Be present on influential sources",
+		Description: "The business is represented on sources that repeatedly shape monitored answers.",
+		Tier:        TierObservedPattern,
+		Why:         "Frequently cited relevant sources can shape which businesses are recommended.",
+		AssessorKey: "influential-source", SubjectInTitle: true,
+		Steps: []string{
+			"Review the checked source and its contribution rules.",
+			"Add a complete, accurate business presence without incentives or fabricated reviews.",
+			"Keep claims factual and avoid competitor comparisons.",
+		},
+	},
+	{
+		Key: PracticeTopicCoverage, CriteriaVersion: 1, Section: "Owned content",
+		Title:       "Cover tracked customer needs",
+		Description: "Accessible owned pages clearly answer important tracked customer topics.",
+		Tier:        TierObservedPattern,
+		Why:         "Explicit, accessible information gives retrieval systems evidence about fit.",
+		AssessorKey: "tracked-topic", SubjectInTitle: true,
+		Steps: []string{
+			"Answer the tracked customer need explicitly on an appropriate owned page.",
+			"Include concrete service, location, eligibility, and next-step details that are true.",
+			"Make the page reachable from normal site navigation.",
+		},
+	},
 }
 
 func Catalog() []PracticeDefinition { return append([]PracticeDefinition(nil), catalog...) }
@@ -92,10 +134,8 @@ type AssessorManifest struct {
 	Key                                                       string
 	ModuleVersion                                             int
 	PracticeKeys, RequiredCollectors                          []string
-	Mode                                                      RolloutMode
 	MaxLLMCalls, MaxWebSearches, MaxURLInspections, MaxOutput int
 	MaxRuntime                                                time.Duration
-	PresenterKey, EvaluatorKey                                string
 }
 
 type ResearchRequest struct{ URL string }
@@ -122,7 +162,6 @@ type AssessmentDraft struct {
 	SubjectKey                                                 string
 	Status                                                     AssessmentStatus
 	ResultIDs, PromptIDs, CheckedSources                       []string
-	Confidence                                                 float64
 	Explanation                                                string
 	Reach, Persistence, EvidenceQuality, Actionability, Effort int
 	PayloadVersion                                             int
@@ -153,8 +192,10 @@ type Presentation struct {
 	Title, Summary, Effort string
 	Blocks                 []PresentationBlock
 }
+// Presenter renders an eligible assessment into standard typed blocks. The
+// catalog-driven presenter is the only implementation; the interface is the
+// seam for a future practice that needs bespoke rendering.
 type Presenter interface {
-	Key() string
 	Present(AssessmentDraft) (Presentation, error)
 }
 
@@ -167,8 +208,10 @@ type OutcomeObservation struct {
 	ObservedAt time.Time
 	Payload    json.RawMessage
 }
+// OpportunityEvaluator appends later observations to a completed opportunity.
+// The assessment-status evaluator is the only implementation; the interface is
+// the seam for a real before/after outcome evaluator.
 type OpportunityEvaluator interface {
-	Key() string
 	Evaluate(context.Context, Opportunity, EvidenceView) ([]OutcomeObservation, error)
 }
 
@@ -199,9 +242,6 @@ func ValidateDraft(d AssessmentDraft, m AssessorManifest) error {
 	default:
 		return errors.New("invalid assessment status")
 	}
-	if d.Confidence < 0 || d.Confidence > 1 {
-		return errors.New("confidence must be between zero and one")
-	}
 	if d.PayloadVersion < 1 || !json.Valid(d.Payload) {
 		return errors.New("invalid versioned payload")
 	}
@@ -227,8 +267,8 @@ func ValidatePresentation(p Presentation) error {
 	return nil
 }
 
-func Eligible(d AssessmentDraft, mode RolloutMode) bool {
-	return mode == RolloutActive && (d.Status == StatusPartial || d.Status == StatusNotMet)
+func Eligible(d AssessmentDraft) bool {
+	return d.Status == StatusPartial || d.Status == StatusNotMet
 }
 
 func ValidateSafety(d AssessmentDraft) error {
@@ -240,10 +280,20 @@ func ValidateSafety(d AssessmentDraft) error {
 	}
 	return nil
 }
+// Rank orders unmet assessments: active direct blockers first, then reach,
+// persistence, evidence quality, actionability, lower effort, and finally the
+// stable practice and subject keys. Which practices block is catalog data, so
+// the ranker never names one.
 func Rank(drafts []AssessmentDraft) {
+	blocking := map[string]bool{}
+	for _, d := range drafts {
+		if p, ok := Practice(d.PracticeKey); ok && p.DirectBlocker {
+			blocking[d.PracticeKey] = true
+		}
+	}
 	sort.SliceStable(drafts, func(i, j int) bool {
 		a, b := drafts[i], drafts[j]
-		ab, bb := a.PracticeKey == PracticeSearchAccess && a.Status == StatusNotMet, b.PracticeKey == PracticeSearchAccess && b.Status == StatusNotMet
+		ab, bb := blocking[a.PracticeKey] && a.Status == StatusNotMet, blocking[b.PracticeKey] && b.Status == StatusNotMet
 		if ab != bb {
 			return ab
 		}

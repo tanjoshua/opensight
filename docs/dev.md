@@ -99,6 +99,31 @@ go run ./cmd/opensight account member add --account <account_id> --email owner@e
 the person's first sign-in with that email at `/login` links it. No invitation
 email or acceptance step is involved.
 
+Re-derive past assessment verdicts from stored evidence:
+
+```sh
+go run ./cmd/opensight assess replay
+go run ./cmd/opensight assess replay --business <business_id> --since 2026-07-01 --until 2026-08-01 --limit 50
+```
+
+`assess replay` loads each selected generation's `evidence_artifacts`, runs the
+currently registered assessors over them, and prints the stored verdict against
+the freshly derived one per practice and subject, plus a summary of how many
+changed. It answers "would my assessor change alter any verdict, and which
+ones?" against real history instead of waiting weeks for fresh data.
+
+It writes nothing, and there is no `--write`: `assessment_generations` is unique
+per monitoring run, so a replay cannot be recorded as a second generation, and
+upserting into the existing one would overwrite the historical record design 09
+preserves across criteria changes. Every filter is optional; `--since`/`--until`
+take `YYYY-MM-DD` or RFC3339 and match `started_at`. Replay is offline —
+research inspections are refused rather than fetched, so the comparison depends
+on the assessor change rather than on today's network, and the report says how
+often that happened. A generation whose collectors failed at capture time is
+reported as skipped, but an assessor that cannot decode an evidence
+`payload_version` it no longer understands fails that generation and the
+command exits non-zero.
+
 ## Tests
 
 `make test` runs the unit suite; it needs no infrastructure.
@@ -156,7 +181,6 @@ Runtime config is env-driven with development-safe defaults:
 - `OPENAI_ONBOARDING_MODEL` defaults to `gpt-5.6-terra` (quality-sensitive business-profile research, design 03)
 - `OPENAI_QUESTIONS_MODEL` defaults to `gpt-5-mini` — a cheap non-reasoning model, since on-demand customer-question generation (design 03) does no research
 - `PROMPT_CONCURRENCY` defaults to `2`
-- `VISIBILITY_ASSESSOR_MODES` optionally overrides the typed rollout registry as comma-separated `assessor=DISABLED|SHADOW|ACTIVE` entries. Defaults: `search-access=ACTIVE,influential-source=SHADOW,tracked-topic=SHADOW`.
 - `APP_BASE_URL` has no default and must be an absolute `http`/`https` URL; local `.env` should set `http://localhost:5173`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PORTAL_CONFIGURATION_ID` have no default and are required by `opensight serve`; other commands validate only the settings they use
 

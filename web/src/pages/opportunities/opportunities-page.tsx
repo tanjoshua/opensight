@@ -83,15 +83,7 @@ export function OpportunitiesPage() {
     )
   if (!isReady || !business || !query.data) return <ListSkeleton />
 
-  const focus = query.data.opportunities.filter(
-    (item) => item.focus && item.status !== OpportunityStatus.DISMISSED
-  )
-  const completed = query.data.opportunities.filter(
-    (item) => item.status === OpportunityStatus.COMPLETED
-  )
-  const dismissed = query.data.opportunities.filter(
-    (item) => item.status === OpportunityStatus.DISMISSED
-  )
+  const buckets = groupIntoSections(query.data.opportunities)
   const update = (
     item: Opportunity,
     status: OpportunityStatus,
@@ -104,7 +96,7 @@ export function OpportunitiesPage() {
         title="Opportunities"
         description="A small, evidence-backed queue of visibility work worth considering now."
       />
-      {focus.length === 0 ? (
+      {buckets.focus.length === 0 && (
         <Empty>
           <EmptyMedia variant="icon">
             <CircleCheck />
@@ -118,63 +110,83 @@ export function OpportunitiesPage() {
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
-      ) : (
-        <section className="flex flex-col gap-3" aria-labelledby="focus-title">
-          <h2 id="focus-title" className="font-heading text-xl font-medium">
-            Focus now
-          </h2>
-          {focus.map((item, index) => (
-            <OpportunityCard
-              key={item.id}
-              item={item}
-              direct={
-                index === 0 &&
-                item.practiceKey === "discoverability.openai_search_access"
-              }
-              pending={mutation.isPending}
-              update={update}
-            />
-          ))}
-        </section>
       )}
-      {completed.length > 0 && (
-        <section
-          className="flex flex-col gap-3"
-          aria-labelledby="completed-title"
-        >
-          <h2 id="completed-title" className="font-heading text-xl font-medium">
-            Completed, awaiting observation
-          </h2>
-          {completed.map((item) => (
-            <OpportunityCard
-              key={item.id}
-              item={item}
-              pending={mutation.isPending}
-              update={update}
-            />
-          ))}
-        </section>
-      )}
-      {dismissed.length > 0 && (
-        <section
-          className="flex flex-col gap-3"
-          aria-labelledby="dismissed-title"
-        >
-          <h2 id="dismissed-title" className="font-heading text-xl font-medium">
-            Dismissed
-          </h2>
-          {dismissed.map((item) => (
-            <OpportunityCard
-              key={item.id}
-              item={item}
-              pending={mutation.isPending}
-              update={update}
-            />
-          ))}
-        </section>
+      {sections.map(({ key, title, description }) =>
+        buckets[key].length === 0 ? null : (
+          <section
+            key={key}
+            className="flex flex-col gap-3"
+            aria-labelledby={`${key}-title`}
+          >
+            <div className="flex flex-col gap-1">
+              <h2
+                id={`${key}-title`}
+                className="font-heading text-xl font-medium"
+              >
+                {title}
+              </h2>
+              {description && (
+                <p className="text-sm text-muted-foreground">{description}</p>
+              )}
+            </div>
+            {buckets[key].map((item, index) => (
+              <OpportunityCard
+                key={item.id}
+                item={item}
+                direct={key === "focus" && index === 0 && item.directBlocker}
+                pending={mutation.isPending}
+                update={update}
+              />
+            ))}
+          </section>
+        )
       )}
     </div>
   )
+}
+
+const sections = [
+  { key: "focus", title: "Focus now", description: "" },
+  {
+    key: "more",
+    title: "More opportunities",
+    description:
+      "Also detected right now, ranked below your focus items. They move up as focus items are completed or dismissed.",
+  },
+  {
+    key: "resolved",
+    title: "No longer detected",
+    description:
+      "You acted on these and the latest check no longer detects the issue. That is an observation, not proof that your work caused the change.",
+  },
+  {
+    key: "completed",
+    title: "Completed",
+    description:
+      "You marked these complete. The latest check still detects the issue, which can lag behind a change.",
+  },
+  { key: "dismissed", title: "Dismissed", description: "" },
+] as const
+
+type SectionKey = (typeof sections)[number]["key"]
+
+// Every opportunity the API returns lands in exactly one section: the switch is
+// total over (status, current, focus), so nothing can be silently invisible. An
+// item that stopped being current and that the user never touched is not
+// returned by the API at all.
+function sectionOf(item: Opportunity): SectionKey {
+  if (item.status === OpportunityStatus.DISMISSED) return "dismissed"
+  if (!item.current) return "resolved"
+  if (item.status === OpportunityStatus.COMPLETED) return "completed"
+  return item.focus ? "focus" : "more"
+}
+
+function groupIntoSections(items: Opportunity[]) {
+  const buckets = Object.fromEntries(
+    sections.map(({ key }) => [key, [] as Opportunity[]])
+  ) as Record<SectionKey, Opportunity[]>
+  for (const item of items) buckets[sectionOf(item)].push(item)
+  return buckets
 }
 
 function OpportunityCard({
@@ -198,9 +210,6 @@ function OpportunityCard({
         <div className="flex flex-wrap items-center gap-2">
           {direct && <Badge variant="destructive">Fix first</Badge>}
           <Badge variant="secondary">{item.effort} effort</Badge>
-          <Badge variant="outline">
-            {Math.round(item.confidence * 100)}% confidence
-          </Badge>
         </div>
         <CardTitle>{item.title}</CardTitle>
         <CardDescription>{item.summary}</CardDescription>

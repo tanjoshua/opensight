@@ -1,0 +1,234 @@
+[
+  {
+    "name": "public site with no barrier",
+    "note": "Pages were fetched and nothing denies indexing, which is the practice's whole requirement.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "brightsmiledental.com",
+    "expect": "MET",
+    "site": {
+      "payload_version": 1,
+      "host": "brightsmiledental.com",
+      "checked_urls": ["https://brightsmiledental.com/", "https://brightsmiledental.com/robots.txt"],
+      "text": "Bright Smile Dental. Family and cosmetic dentistry in Portland. Book an appointment online.",
+      "Reachable": true
+    }
+  },
+  {
+    "name": "robots disallows every agent",
+    "note": "A blanket Disallow: / covers OAI-SearchBot, so retrieval is confirmed blocked.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "brightsmiledental.com",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "brightsmiledental.com",
+      "checked_urls": ["https://brightsmiledental.com/", "https://brightsmiledental.com/robots.txt"],
+      "text": "Bright Smile Dental. Family and cosmetic dentistry in Portland.",
+      "Reachable": true,
+      "OAIBlocked": true
+    }
+  },
+  {
+    "name": "robots disallows OAI-SearchBot specifically",
+    "note": "A named denial for the one agent this practice is about is the clearest NOT_MET there is.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "cascadedental.org",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "cascadedental.org",
+      "checked_urls": ["https://cascadedental.org/", "https://cascadedental.org/robots.txt"],
+      "text": "Cascade Dental Group. Implants, crowns, and whitening.",
+      "Reachable": true,
+      "OAIBlocked": true
+    }
+  },
+  {
+    "name": "meta robots noindex",
+    "note": "A reachable page that forbids indexing cannot become search evidence.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "riverbendclinic.com",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "riverbendclinic.com",
+      "checked_urls": ["https://riverbendclinic.com/"],
+      "text": "Riverbend Clinic. Walk-in urgent care.",
+      "Reachable": true,
+      "NoIndex": true
+    }
+  },
+  {
+    "name": "X-Robots-Tag noindex header",
+    "note": "Same barrier as the meta tag, delivered as a header; the source of the denial does not change the verdict.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "riverbendclinic.com",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "riverbendclinic.com",
+      "checked_urls": ["https://riverbendclinic.com/"],
+      "text": "Riverbend Clinic. Walk-in urgent care.",
+      "Reachable": true,
+      "NoIndex": true
+    }
+  },
+  {
+    "name": "login wall on the whole site",
+    "note": "Authentication is a confirmed access barrier, not an inspection failure: the answer is known.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "members.northgatedental.com",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "members.northgatedental.com",
+      "checked_urls": ["https://members.northgatedental.com/login"],
+      "AuthBarrier": true
+    }
+  },
+  {
+    "name": "auth barrier on the root while inner pages were fetched",
+    "note": "A confirmed 401 on the entry point still blocks retrieval even though some content came back.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "northgatedental.com",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "northgatedental.com",
+      "checked_urls": ["https://northgatedental.com/services"],
+      "text": "Northgate Dental services: cleanings, fillings, whitening.",
+      "Reachable": true,
+      "AuthBarrier": true
+    }
+  },
+  {
+    "name": "unreachable with no recorded failure",
+    "note": "Nothing usable came back and nothing says the inspection itself broke, so this is a confirmed barrier.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "oldpracticesite.net",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "oldpracticesite.net",
+      "checked_urls": ["https://oldpracticesite.net/"]
+    }
+  },
+  {
+    "name": "noindex and robots denial together",
+    "note": "Two independent barriers; the verdict is still a single confirmed NOT_MET.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "quietclinic.com",
+    "expect": "NOT_MET",
+    "site": {
+      "payload_version": 1,
+      "host": "quietclinic.com",
+      "checked_urls": ["https://quietclinic.com/", "https://quietclinic.com/robots.txt"],
+      "text": "Quiet Clinic. Private practice.",
+      "Reachable": true,
+      "NoIndex": true,
+      "OAIBlocked": true
+    }
+  },
+  {
+    "name": "DNS lookup failed",
+    "note": "The scan never reached the site, so nothing about indexing is known; asserting a barrier would be a guess.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "brightsmiledental.com",
+    "expect": "UNKNOWN",
+    "site": {
+      "payload_version": 1,
+      "host": "brightsmiledental.com",
+      "failure": "lookup brightsmiledental.com: no such host"
+    }
+  },
+  {
+    "name": "fetch timed out",
+    "note": "A transient network failure is the textbook UNKNOWN: a later run may well succeed.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "cascadedental.org",
+    "expect": "UNKNOWN",
+    "site": {
+      "payload_version": 1,
+      "host": "cascadedental.org",
+      "failure": "Get \"https://cascadedental.org/\": context deadline exceeded"
+    }
+  },
+  {
+    "name": "business website is not configured",
+    "note": "With no site on file nothing was inspected. UNKNOWN, not NOT_APPLICABLE: the practice still applies, we simply cannot answer it.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "",
+    "expect": "UNKNOWN",
+    "site": {
+      "payload_version": 1,
+      "failure": "business website is not configured"
+    }
+  },
+  {
+    "name": "website URL is unparseable",
+    "note": "A malformed URL on the profile is a data problem, not evidence that OpenAI search is blocked.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "",
+    "expect": "UNKNOWN",
+    "site": {
+      "payload_version": 1,
+      "failure": "invalid website URL"
+    }
+  },
+  {
+    "name": "robots allows OAI-SearchBot while the wildcard group denies",
+    "note": "The named group wins for this agent, so the site is open to the crawler this practice is about.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "selectiveclinic.com",
+    "expect": "MET",
+    "site": {
+      "payload_version": 1,
+      "host": "selectiveclinic.com",
+      "checked_urls": ["https://selectiveclinic.com/", "https://selectiveclinic.com/robots.txt"],
+      "text": "Selective Clinic. Dermatology and cosmetic care.",
+      "Reachable": true
+    }
+  },
+  {
+    "name": "robots disallows only /admin",
+    "note": "Blocking a private path is normal hygiene and does not deny the public pages.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "brightsmiledental.com",
+    "expect": "MET",
+    "site": {
+      "payload_version": 1,
+      "host": "brightsmiledental.com",
+      "checked_urls": ["https://brightsmiledental.com/", "https://brightsmiledental.com/robots.txt"],
+      "text": "Bright Smile Dental. Book online. Meet the team.",
+      "Reachable": true
+    }
+  },
+  {
+    "name": "thin but fully accessible content",
+    "note": "The practice deliberately excludes content quality and generic SEO judgement; a one-page site that can be retrieved passes.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "tinypractice.com",
+    "expect": "MET",
+    "site": {
+      "payload_version": 1,
+      "host": "tinypractice.com",
+      "checked_urls": ["https://tinypractice.com/"],
+      "text": "Tiny Practice. Call 555-0100.",
+      "Reachable": true
+    }
+  },
+  {
+    "name": "subject is the scanned host verbatim",
+    "note": "A www host is a different subject string from its apex and must be reported as scanned, not normalised behind the user's back.",
+    "practice": "discoverability.openai_search_access",
+    "subject": "www.harbourdental.co.uk",
+    "expect": "MET",
+    "site": {
+      "payload_version": 1,
+      "host": "www.harbourdental.co.uk",
+      "checked_urls": ["https://www.harbourdental.co.uk/"],
+      "text": "Harbour Dental. NHS and private dentistry in Bristol.",
+      "Reachable": true
+    }
+  }
+]

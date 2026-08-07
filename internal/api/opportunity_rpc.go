@@ -28,13 +28,8 @@ func (s *Server) ListOpportunities(ctx context.Context, req *connect.Request[ope
 		return nil, s.rpcError("list opportunities", err)
 	}
 	resp := &opensightv1.ListOpportunitiesResponse{Opportunities: make([]*opensightv1.Opportunity, 0, len(rows))}
-	focus := 0
 	for _, row := range rows {
-		isFocus := (row.UserStatus == store.StatusOpen || row.UserStatus == store.StatusInProgress) && focus < 3
-		if isFocus {
-			focus++
-		}
-		resp.Opportunities = append(resp.Opportunities, opportunityToProto(row, isFocus))
+		resp.Opportunities = append(resp.Opportunities, opportunityToProto(row))
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -52,8 +47,7 @@ func (s *Server) GetOpportunity(ctx context.Context, req *connect.Request[opensi
 	if err != nil {
 		return nil, s.rpcError("get opportunity", err)
 	}
-	focus := (row.UserStatus == store.StatusOpen || row.UserStatus == store.StatusInProgress) && row.Rank <= 3
-	return connect.NewResponse(&opensightv1.GetOpportunityResponse{Opportunity: opportunityToProto(row, focus)}), nil
+	return connect.NewResponse(&opensightv1.GetOpportunityResponse{Opportunity: opportunityToProto(row)}), nil
 }
 
 func (s *Server) SetOpportunityStatus(ctx context.Context, req *connect.Request[opensightv1.SetOpportunityStatusRequest]) (*connect.Response[opensightv1.SetOpportunityStatusResponse], error) {
@@ -84,12 +78,16 @@ func (s *Server) SetOpportunityStatus(ctx context.Context, req *connect.Request[
 		}
 		return nil, s.rpcError("set opportunity status", err)
 	}
-	focus := (row.UserStatus == store.StatusOpen || row.UserStatus == store.StatusInProgress) && row.Rank <= 3
-	return connect.NewResponse(&opensightv1.SetOpportunityStatusResponse{Opportunity: opportunityToProto(row, focus)}), nil
+	return connect.NewResponse(&opensightv1.SetOpportunityStatusResponse{Opportunity: opportunityToProto(row)}), nil
 }
 
-func opportunityToProto(row store.OpportunityRecord, focus bool) *opensightv1.Opportunity {
-	out := &opensightv1.Opportunity{Id: row.ID.String(), PracticeKey: row.PracticeKey, SubjectKey: row.SubjectKey, Title: row.Presentation.Title, Summary: row.Presentation.Summary, Effort: row.Presentation.Effort, Status: opportunityStatusToProto(row.UserStatus), AssessmentStatus: string(row.AssessmentStatus), Confidence: row.Confidence, CheckedSources: row.CheckedSources, AssessedAt: row.AssessedAt.UTC().Format("2006-01-02T15:04:05Z"), Focus: focus}
+// opportunityToProto carries the store's Current/Focus flags through unchanged:
+// they are computed once, in SQL, so every RPC agrees on what a focus item is.
+// DirectBlocker comes from the practice catalog, so the UI never has to know a
+// practice key.
+func opportunityToProto(row store.OpportunityRecord) *opensightv1.Opportunity {
+	practice, _ := visibility.Practice(row.PracticeKey)
+	out := &opensightv1.Opportunity{Id: row.ID.String(), PracticeKey: row.PracticeKey, SubjectKey: row.SubjectKey, Title: row.Presentation.Title, Summary: row.Presentation.Summary, Effort: row.Presentation.Effort, Status: opportunityStatusToProto(row.UserStatus), AssessmentStatus: string(row.AssessmentStatus), CheckedSources: row.CheckedSources, AssessedAt: row.AssessedAt.UTC().Format("2006-01-02T15:04:05Z"), Current: row.Current, Focus: row.Focus, DirectBlocker: practice.DirectBlocker}
 	for _, id := range row.ResultIDs {
 		out.ResultIds = append(out.ResultIds, id.String())
 	}

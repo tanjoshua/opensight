@@ -39,11 +39,9 @@ CREATE TABLE visibility_assessments (
   assessor_version int NOT NULL,
   subject_key text NOT NULL,
   status text NOT NULL CHECK (status IN ('MET','PARTIAL','NOT_MET','UNKNOWN','NOT_APPLICABLE')),
-  rollout_mode text NOT NULL CHECK (rollout_mode IN ('DISABLED','SHADOW','ACTIVE')),
   result_ids uuid[] NOT NULL DEFAULT '{}',
   prompt_ids uuid[] NOT NULL DEFAULT '{}',
   checked_sources text[] NOT NULL DEFAULT '{}',
-  confidence double precision NOT NULL CHECK (confidence BETWEEN 0 AND 1),
   explanation text NOT NULL,
   reach int NOT NULL,
   persistence int NOT NULL,
@@ -65,6 +63,9 @@ CREATE TABLE opportunities (
   practice_key text NOT NULL,
   subject_key text NOT NULL,
   current_assessment_id uuid NOT NULL REFERENCES visibility_assessments(id),
+  -- Non-null means the row was produced by the newest generation: still unmet
+  -- and in the queue. The compiler rebuilds this half of the row wholesale.
+  current_generation_id uuid REFERENCES assessment_generations(id) ON DELETE SET NULL,
   rank int NOT NULL,
   presentation jsonb NOT NULL,
   user_status text NOT NULL DEFAULT 'OPEN' CHECK (user_status IN ('OPEN','IN_PROGRESS','COMPLETED','DISMISSED')),
@@ -76,6 +77,14 @@ CREATE TABLE opportunities (
 );
 CREATE INDEX opportunities_current_idx ON opportunities (business_id, rank)
   WHERE user_status <> 'DISMISSED';
+
+-- The single definition of a focus item: backed by the newest generation,
+-- still actionable, and among the top three by rank. Every read path joins
+-- this view rather than recomputing the rule.
+CREATE VIEW opportunity_focus AS
+SELECT id, row_number() OVER (PARTITION BY business_id ORDER BY rank, practice_key, subject_key) <= 3 AS focus
+FROM opportunities
+WHERE current_generation_id IS NOT NULL AND user_status IN ('OPEN', 'IN_PROGRESS');
 
 CREATE TABLE opportunity_events (
   id uuid PRIMARY KEY,
@@ -90,6 +99,7 @@ CREATE TABLE opportunity_events (
 
 -- +goose Down
 DROP TABLE opportunity_events;
+DROP VIEW opportunity_focus;
 DROP TABLE opportunities;
 DROP TABLE visibility_assessments;
 DROP TABLE evidence_artifacts;

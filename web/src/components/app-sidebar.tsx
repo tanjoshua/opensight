@@ -141,10 +141,10 @@ export function AppSidebar() {
         {hasBusinessNavigation && (
           <>
             <SidebarGroup>
-              <SidebarGroupLabel>Improve</SidebarGroupLabel>
+              <SidebarGroupLabel>Monitor</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {improveSections.map((section) => (
+                  {businessSections.map((section) => (
                     <SidebarMenuItem key={section.to}>
                       <SidebarMenuButton
                         isActive={pathname.startsWith(
@@ -162,10 +162,10 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
-              <SidebarGroupLabel>Monitor</SidebarGroupLabel>
+              <SidebarGroupLabel>Improve</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {businessSections.map((section) => (
+                  {improveSections.map((section) => (
                     <SidebarMenuItem key={section.to}>
                       <SidebarMenuButton
                         isActive={pathname.startsWith(

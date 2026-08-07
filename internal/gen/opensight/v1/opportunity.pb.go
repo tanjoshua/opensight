@@ -367,15 +367,19 @@ type Opportunity struct {
 	Status           OpportunityStatus      `protobuf:"varint,8,opt,name=status,proto3,enum=opensight.v1.OpportunityStatus" json:"status,omitempty"`
 	DismissalReason  DismissalReason        `protobuf:"varint,9,opt,name=dismissal_reason,json=dismissalReason,proto3,enum=opensight.v1.DismissalReason" json:"dismissal_reason,omitempty"`
 	AssessmentStatus string                 `protobuf:"bytes,10,opt,name=assessment_status,json=assessmentStatus,proto3" json:"assessment_status,omitempty"`
-	Confidence       float64                `protobuf:"fixed64,11,opt,name=confidence,proto3" json:"confidence,omitempty"`
 	ResultIds        []string               `protobuf:"bytes,12,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
 	PromptIds        []string               `protobuf:"bytes,13,rep,name=prompt_ids,json=promptIds,proto3" json:"prompt_ids,omitempty"`
 	CheckedSources   []string               `protobuf:"bytes,14,rep,name=checked_sources,json=checkedSources,proto3" json:"checked_sources,omitempty"`
 	AssessedAt       string                 `protobuf:"bytes,15,opt,name=assessed_at,json=assessedAt,proto3" json:"assessed_at,omitempty"`
 	Focus            bool                   `protobuf:"varint,16,opt,name=focus,proto3" json:"focus,omitempty"`
 	Observations     []*OutcomeObservation  `protobuf:"bytes,17,rep,name=observations,proto3" json:"observations,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// The newest assessment generation still produced this opportunity.
+	Current bool `protobuf:"varint,18,opt,name=current,proto3" json:"current,omitempty"`
+	// The practice is a prerequisite that blocks the others while unmet. Set
+	// from the practice catalog so the UI never has to know a practice key.
+	DirectBlocker bool `protobuf:"varint,19,opt,name=direct_blocker,json=directBlocker,proto3" json:"direct_blocker,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Opportunity) Reset() {
@@ -478,13 +482,6 @@ func (x *Opportunity) GetAssessmentStatus() string {
 	return ""
 }
 
-func (x *Opportunity) GetConfidence() float64 {
-	if x != nil {
-		return x.Confidence
-	}
-	return 0
-}
-
 func (x *Opportunity) GetResultIds() []string {
 	if x != nil {
 		return x.ResultIds
@@ -525,6 +522,20 @@ func (x *Opportunity) GetObservations() []*OutcomeObservation {
 		return x.Observations
 	}
 	return nil
+}
+
+func (x *Opportunity) GetCurrent() bool {
+	if x != nil {
+		return x.Current
+	}
+	return false
+}
+
+func (x *Opportunity) GetDirectBlocker() bool {
+	if x != nil {
+		return x.DirectBlocker
+	}
+	return false
 }
 
 type ListOpportunitiesRequest struct {
@@ -828,7 +839,7 @@ const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\n" +
 	"result_ids\x18\x03 \x03(\tR\tresultIds\x12\x1d\n" +
 	"\n" +
-	"prompt_ids\x18\x04 \x03(\tR\tpromptIds\"\x95\x05\n" +
+	"prompt_ids\x18\x04 \x03(\tR\tpromptIds\"\xc8\x05\n" +
 	"\vOpportunity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fpractice_key\x18\x02 \x01(\tR\vpracticeKey\x12\x1f\n" +
@@ -841,10 +852,7 @@ const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\x06status\x18\b \x01(\x0e2\x1f.opensight.v1.OpportunityStatusR\x06status\x12H\n" +
 	"\x10dismissal_reason\x18\t \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\x12+\n" +
 	"\x11assessment_status\x18\n" +
-	" \x01(\tR\x10assessmentStatus\x12\x1e\n" +
-	"\n" +
-	"confidence\x18\v \x01(\x01R\n" +
-	"confidence\x12\x1d\n" +
+	" \x01(\tR\x10assessmentStatus\x12\x1d\n" +
 	"\n" +
 	"result_ids\x18\f \x03(\tR\tresultIds\x12\x1d\n" +
 	"\n" +
@@ -853,7 +861,10 @@ const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\vassessed_at\x18\x0f \x01(\tR\n" +
 	"assessedAt\x12\x14\n" +
 	"\x05focus\x18\x10 \x01(\bR\x05focus\x12D\n" +
-	"\fobservations\x18\x11 \x03(\v2 .opensight.v1.OutcomeObservationR\fobservations\";\n" +
+	"\fobservations\x18\x11 \x03(\v2 .opensight.v1.OutcomeObservationR\fobservations\x12\x18\n" +
+	"\acurrent\x18\x12 \x01(\bR\acurrent\x12%\n" +
+	"\x0edirect_blocker\x18\x13 \x01(\bR\rdirectBlockerJ\x04\b\v\x10\fR\n" +
+	"confidence\";\n" +
 	"\x18ListOpportunitiesRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
 	"businessId\"\\\n" +

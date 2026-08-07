@@ -18,9 +18,8 @@ import (
 )
 
 type ModulePlanEntry struct {
-	AssessorKey                      string                 `json:"assessor_key"`
-	ModuleVersion                    int                    `json:"module_version"`
-	Mode                             visibility.RolloutMode `json:"mode"`
+	AssessorKey                      string `json:"assessor_key"`
+	ModuleVersion                    int    `json:"module_version"`
 	PracticeKeys, RequiredCollectors []string
 }
 
@@ -79,7 +78,7 @@ func idsFromStrings(values []string) ([]uuid.UUID, error) {
 	return out, nil
 }
 
-func (s *Store) SaveAssessment(ctx context.Context, generationID, accountID, businessID domain.ID, d visibility.AssessmentDraft, mode visibility.RolloutMode) (domain.ID, error) {
+func (s *Store) SaveAssessment(ctx context.Context, generationID, accountID, businessID domain.ID, d visibility.AssessmentDraft) (domain.ID, error) {
 	resultIDs, err := idsFromStrings(d.ResultIDs)
 	if err != nil {
 		return uuid.Nil, err
@@ -92,7 +91,7 @@ func (s *Store) SaveAssessment(ctx context.Context, generationID, accountID, bus
 	if err != nil {
 		return uuid.Nil, err
 	}
-	stored, err := s.q(ctx).UpsertVisibilityAssessment(ctx, storesqlc.UpsertVisibilityAssessmentParams{ID: id, GenerationID: generationID, AccountID: accountID, BusinessID: businessID, PracticeKey: d.PracticeKey, CriteriaVersion: int32(d.CriteriaVersion), AssessorKey: d.AssessorKey, AssessorVersion: int32(d.AssessorVersion), SubjectKey: d.SubjectKey, Status: string(d.Status), RolloutMode: string(mode), ResultIds: resultIDs, PromptIds: promptIDs, CheckedSources: d.CheckedSources, Confidence: d.Confidence, Explanation: d.Explanation, Reach: int32(d.Reach), Persistence: int32(d.Persistence), EvidenceQuality: int32(d.EvidenceQuality), Actionability: int32(d.Actionability), Effort: int32(d.Effort), PayloadVersion: int32(d.PayloadVersion), Payload: d.Payload})
+	stored, err := s.q(ctx).UpsertVisibilityAssessment(ctx, storesqlc.UpsertVisibilityAssessmentParams{ID: id, GenerationID: generationID, AccountID: accountID, BusinessID: businessID, PracticeKey: d.PracticeKey, CriteriaVersion: int32(d.CriteriaVersion), AssessorKey: d.AssessorKey, AssessorVersion: int32(d.AssessorVersion), SubjectKey: d.SubjectKey, Status: string(d.Status), ResultIds: resultIDs, PromptIds: promptIDs, CheckedSources: d.CheckedSources, Explanation: d.Explanation, Reach: int32(d.Reach), Persistence: int32(d.Persistence), EvidenceQuality: int32(d.EvidenceQuality), Actionability: int32(d.Actionability), Effort: int32(d.Effort), PayloadVersion: int32(d.PayloadVersion), Payload: d.Payload})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uuid.Nil, ErrNotFound
 	}
@@ -102,35 +101,46 @@ func (s *Store) SaveAssessment(ctx context.Context, generationID, accountID, bus
 	return stored, nil
 }
 
-func (s *Store) SaveOpportunity(ctx context.Context, accountID, businessID, assessmentID domain.ID, rank int, d visibility.AssessmentDraft, p visibility.Presentation) (domain.ID, error) {
-	raw, err := json.Marshal(p)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	id, err := domain.NewID()
-	if err != nil {
-		return uuid.Nil, err
-	}
-	stored, err := s.q(ctx).UpsertOpportunity(ctx, storesqlc.UpsertOpportunityParams{ID: id, AccountID: accountID, BusinessID: businessID, PracticeKey: d.PracticeKey, SubjectKey: d.SubjectKey, CurrentAssessmentID: assessmentID, Rank: int32(rank), Presentation: raw})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return uuid.Nil, ErrNotFound
-	}
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("save opportunity: %w", err)
-	}
-	return stored, nil
+// CompiledOpportunity is one ranked item the compiler produced for a
+// generation: a compiled assessment plus the id it was persisted under. Rank is
+// its position in the slice passed to RebuildOpportunities.
+type CompiledOpportunity struct {
+	AssessmentID domain.ID
+	visibility.CompiledAssessment
 }
 
-func (s *Store) RefreshExistingOpportunity(ctx context.Context, accountID, businessID, assessmentID domain.ID, d visibility.AssessmentDraft, p visibility.Presentation) error {
-	raw, err := json.Marshal(p)
-	if err != nil {
-		return err
+// RebuildOpportunities replaces the derived half of a business's opportunities
+// — rank, presentation and the current assessment/generation pointers — with
+// the items this generation compiled, and drops every other row out of the
+// current set. The user-owned half (status, dismissal reason, completion
+// baseline, first_seen_at) is never touched, and a row that stops being current
+// keeps its last-known presentation so acted-on history still renders.
+func (s *Store) RebuildOpportunities(ctx context.Context, accountID, businessID, generationID domain.ID, items []CompiledOpportunity) error {
+	prepared := make([]storesqlc.UpsertOpportunityParams, 0, len(items))
+	for i, item := range items {
+		raw, err := json.Marshal(item.Presentation)
+		if err != nil {
+			return err
+		}
+		id, err := domain.NewID()
+		if err != nil {
+			return err
+		}
+		prepared = append(prepared, storesqlc.UpsertOpportunityParams{ID: id, AccountID: accountID, BusinessID: businessID, PracticeKey: item.Draft.PracticeKey, SubjectKey: item.Draft.SubjectKey, CurrentAssessmentID: item.AssessmentID, CurrentGenerationID: generationID, Rank: int32(i + 1), Presentation: raw})
 	}
-	_, err = s.q(ctx).RefreshExistingOpportunity(ctx, storesqlc.RefreshExistingOpportunityParams{CurrentAssessmentID: assessmentID, Presentation: raw, BusinessID: businessID, AccountID: accountID, PracticeKey: d.PracticeKey, SubjectKey: d.SubjectKey})
-	if errors.Is(err, pgx.ErrNoRows) {
+	return s.withTx(ctx, func(q *storesqlc.Queries) error {
+		for _, params := range prepared {
+			if _, err := q.UpsertOpportunity(ctx, params); errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			} else if err != nil {
+				return fmt.Errorf("save opportunity: %w", err)
+			}
+		}
+		if err := q.SweepStaleOpportunities(ctx, storesqlc.SweepStaleOpportunitiesParams{BusinessID: businessID, AccountID: accountID, CurrentGenerationID: generationID}); err != nil {
+			return fmt.Errorf("sweep stale opportunities: %w", err)
+		}
 		return nil
-	}
-	return err
+	})
 }
 
 type CompletedOutcomeCandidate struct {
@@ -227,16 +237,19 @@ const (
 )
 
 type OpportunityRecord struct {
-	ID, BusinessID                     domain.ID
-	PracticeKey, SubjectKey            string
-	Rank                               int
-	Presentation                       visibility.Presentation
-	UserStatus                         OpportunityStatus
-	DismissalReason                    *string
-	CompletionBaseline                 json.RawMessage
+	ID, BusinessID          domain.ID
+	PracticeKey, SubjectKey string
+	Rank                    int
+	Presentation            visibility.Presentation
+	UserStatus              OpportunityStatus
+	DismissalReason         *string
+	CompletionBaseline      json.RawMessage
+	// Current reports whether the newest assessment generation still produced
+	// this opportunity; Focus is the single definition of a focus slot —
+	// current, actionable, and among the top three by rank.
+	Current, Focus                     bool
 	FirstSeenAt, UpdatedAt, AssessedAt time.Time
 	AssessmentStatus                   visibility.AssessmentStatus
-	Confidence                         float64
 	ResultIDs, PromptIDs               []domain.ID
 	CheckedSources                     []string
 	Explanation                        string
@@ -270,7 +283,7 @@ func (s *Store) loadOpportunityObservations(ctx context.Context, accountID, oppo
 	return out, nil
 }
 
-func opportunityFromFields(id, businessID domain.ID, practice, subject string, rank int32, presentation json.RawMessage, userStatus string, dismissal *string, baseline *json.RawMessage, first, updated time.Time, assessment string, confidence float64, resultIDs, promptIDs []uuid.UUID, sources []string, explanation string, assessed time.Time) (OpportunityRecord, error) {
+func opportunityFromFields(id, businessID domain.ID, practice, subject string, rank int32, presentation json.RawMessage, userStatus string, dismissal *string, baseline *json.RawMessage, current, focus bool, first, updated time.Time, assessment string, resultIDs, promptIDs []uuid.UUID, sources []string, explanation string, assessed time.Time) (OpportunityRecord, error) {
 	var p visibility.Presentation
 	if err := json.Unmarshal(presentation, &p); err != nil {
 		return OpportunityRecord{}, err
@@ -279,7 +292,7 @@ func opportunityFromFields(id, businessID domain.ID, practice, subject string, r
 	if baseline != nil {
 		b = *baseline
 	}
-	return OpportunityRecord{ID: id, BusinessID: businessID, PracticeKey: practice, SubjectKey: subject, Rank: int(rank), Presentation: p, UserStatus: OpportunityStatus(userStatus), DismissalReason: dismissal, CompletionBaseline: b, FirstSeenAt: first, UpdatedAt: updated, AssessmentStatus: visibility.AssessmentStatus(assessment), Confidence: confidence, ResultIDs: resultIDs, PromptIDs: promptIDs, CheckedSources: sources, Explanation: explanation, AssessedAt: assessed}, nil
+	return OpportunityRecord{ID: id, BusinessID: businessID, PracticeKey: practice, SubjectKey: subject, Rank: int(rank), Presentation: p, UserStatus: OpportunityStatus(userStatus), DismissalReason: dismissal, CompletionBaseline: b, Current: current, Focus: focus, FirstSeenAt: first, UpdatedAt: updated, AssessmentStatus: visibility.AssessmentStatus(assessment), ResultIDs: resultIDs, PromptIDs: promptIDs, CheckedSources: sources, Explanation: explanation, AssessedAt: assessed}, nil
 }
 
 func (s *Store) ListOpportunities(ctx context.Context, accountID, businessID domain.ID) ([]OpportunityRecord, error) {
@@ -292,7 +305,7 @@ func (s *Store) ListOpportunities(ctx context.Context, accountID, businessID dom
 	}
 	out := make([]OpportunityRecord, 0, len(rows))
 	for _, r := range rows {
-		o, e := opportunityFromFields(r.ID, businessID, r.PracticeKey, r.SubjectKey, r.Rank, r.Presentation, r.UserStatus, r.DismissalReason, r.CompletionBaseline, r.FirstSeenAt, r.UpdatedAt, r.AssessmentStatus, r.Confidence, r.ResultIds, r.PromptIds, r.CheckedSources, r.Explanation, r.AssessedAt)
+		o, e := opportunityFromFields(r.ID, businessID, r.PracticeKey, r.SubjectKey, r.Rank, r.Presentation, r.UserStatus, r.DismissalReason, r.CompletionBaseline, r.Current, r.Focus, r.FirstSeenAt, r.UpdatedAt, r.AssessmentStatus, r.ResultIds, r.PromptIds, r.CheckedSources, r.Explanation, r.AssessedAt)
 		if e != nil {
 			return nil, e
 		}
@@ -313,7 +326,7 @@ func (s *Store) GetOpportunity(ctx context.Context, accountID, id domain.ID) (Op
 	if err != nil {
 		return OpportunityRecord{}, err
 	}
-	o, err := opportunityFromFields(r.ID, r.BusinessID, r.PracticeKey, r.SubjectKey, r.Rank, r.Presentation, r.UserStatus, r.DismissalReason, r.CompletionBaseline, r.FirstSeenAt, r.UpdatedAt, r.AssessmentStatus, r.Confidence, r.ResultIds, r.PromptIds, r.CheckedSources, r.Explanation, r.AssessedAt)
+	o, err := opportunityFromFields(r.ID, r.BusinessID, r.PracticeKey, r.SubjectKey, r.Rank, r.Presentation, r.UserStatus, r.DismissalReason, r.CompletionBaseline, r.Current, r.Focus, r.FirstSeenAt, r.UpdatedAt, r.AssessmentStatus, r.ResultIds, r.PromptIds, r.CheckedSources, r.Explanation, r.AssessedAt)
 	if err != nil {
 		return OpportunityRecord{}, err
 	}

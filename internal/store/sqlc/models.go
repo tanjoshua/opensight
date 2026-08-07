@@ -140,6 +140,7 @@ type Opportunity struct {
 	PracticeKey         string
 	SubjectKey          string
 	CurrentAssessmentID uuid.UUID
+	CurrentGenerationID *uuid.UUID
 	Rank                int32
 	Presentation        json.RawMessage
 	UserStatus          string
@@ -157,6 +158,11 @@ type OpportunityEvent struct {
 	EventType     string
 	Payload       json.RawMessage
 	CreatedAt     time.Time
+}
+
+type OpportunityFocu struct {
+	ID    uuid.UUID
+	Focus bool
 }
 
 type ProfileProposal struct {
@@ -241,11 +247,9 @@ type VisibilityAssessment struct {
 	AssessorVersion int32
 	SubjectKey      string
 	Status          string
-	RolloutMode     string
 	ResultIds       []uuid.UUID
 	PromptIds       []uuid.UUID
 	CheckedSources  []string
-	Confidence      float64
 	Explanation     string
 	Reach           int32
 	Persistence     int32

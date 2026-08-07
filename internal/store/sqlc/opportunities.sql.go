@@ -37,9 +37,11 @@ func (q *Queries) FinishAssessmentGeneration(ctx context.Context, arg FinishAsse
 
 const getCurrentOpportunity = `-- name: GetCurrentOpportunity :one
 SELECT o.id,o.business_id,o.practice_key,o.subject_key,o.rank,o.presentation,o.user_status,o.dismissal_reason,
- o.completion_baseline,o.first_seen_at,o.updated_at,a.status AS assessment_status,a.confidence,
+ o.completion_baseline,o.first_seen_at,o.updated_at,(o.current_generation_id IS NOT NULL)::bool AS current,
+ COALESCE(f.focus,false)::bool AS focus,a.status AS assessment_status,
  a.result_ids,a.prompt_ids,a.checked_sources,a.explanation,a.assessed_at
 FROM opportunities o JOIN visibility_assessments a ON a.id=o.current_assessment_id
+ LEFT JOIN opportunity_focus f ON f.id=o.id
 WHERE o.id = $1 AND o.account_id = $2
 `
 
@@ -60,8 +62,9 @@ type GetCurrentOpportunityRow struct {
 	CompletionBaseline *json.RawMessage
 	FirstSeenAt        time.Time
 	UpdatedAt          time.Time
+	Current            bool
+	Focus              bool
 	AssessmentStatus   string
-	Confidence         float64
 	ResultIds          []uuid.UUID
 	PromptIds          []uuid.UUID
 	CheckedSources     []string
@@ -84,8 +87,9 @@ func (q *Queries) GetCurrentOpportunity(ctx context.Context, arg GetCurrentOppor
 		&i.CompletionBaseline,
 		&i.FirstSeenAt,
 		&i.UpdatedAt,
+		&i.Current,
+		&i.Focus,
 		&i.AssessmentStatus,
-		&i.Confidence,
 		&i.ResultIds,
 		&i.PromptIds,
 		&i.CheckedSources,
@@ -125,7 +129,8 @@ func (q *Queries) InsertOpportunityEvent(ctx context.Context, arg InsertOpportun
 
 const listCompletedGenerationOpportunities = `-- name: ListCompletedGenerationOpportunities :many
 SELECT o.id,o.practice_key,o.subject_key,a.status AS assessment_status,a.result_ids,a.prompt_ids
-FROM opportunities o JOIN visibility_assessments a ON a.id=o.current_assessment_id
+FROM opportunities o JOIN visibility_assessments a
+ ON a.business_id=o.business_id AND a.practice_key=o.practice_key AND a.subject_key=o.subject_key
 WHERE o.account_id = $1 AND o.business_id = $2 AND o.user_status='COMPLETED'
  AND a.generation_id = $3 ORDER BY o.id
 `
@@ -145,6 +150,9 @@ type ListCompletedGenerationOpportunitiesRow struct {
 	PromptIds        []uuid.UUID
 }
 
+// Outcome observations match this generation's assessment by practice identity,
+// not by the opportunity's current assessment pointer, so a completed item that
+// has since turned MET still receives its later observation.
 func (q *Queries) ListCompletedGenerationOpportunities(ctx context.Context, arg ListCompletedGenerationOpportunitiesParams) ([]ListCompletedGenerationOpportunitiesRow, error) {
 	rows, err := q.db.Query(ctx, listCompletedGenerationOpportunities, arg.AccountID, arg.BusinessID, arg.GenerationID)
 	if err != nil {
@@ -174,11 +182,14 @@ func (q *Queries) ListCompletedGenerationOpportunities(ctx context.Context, arg 
 
 const listCurrentOpportunities = `-- name: ListCurrentOpportunities :many
 SELECT o.id,o.practice_key,o.subject_key,o.rank,o.presentation,o.user_status,o.dismissal_reason,
- o.completion_baseline,o.first_seen_at,o.updated_at,a.status AS assessment_status,a.confidence,
+ o.completion_baseline,o.first_seen_at,o.updated_at,(o.current_generation_id IS NOT NULL)::bool AS current,
+ COALESCE(f.focus,false)::bool AS focus,a.status AS assessment_status,
  a.result_ids,a.prompt_ids,a.checked_sources,a.explanation,a.assessed_at
 FROM opportunities o JOIN visibility_assessments a ON a.id=o.current_assessment_id
+ LEFT JOIN opportunity_focus f ON f.id=o.id
 WHERE o.business_id = $1 AND o.account_id = $2
-ORDER BY CASE WHEN o.user_status='DISMISSED' THEN 1 ELSE 0 END,o.rank,o.practice_key,o.subject_key
+ AND (o.current_generation_id IS NOT NULL OR o.user_status <> 'OPEN')
+ORDER BY o.rank,o.practice_key,o.subject_key
 `
 
 type ListCurrentOpportunitiesParams struct {
@@ -197,8 +208,9 @@ type ListCurrentOpportunitiesRow struct {
 	CompletionBaseline *json.RawMessage
 	FirstSeenAt        time.Time
 	UpdatedAt          time.Time
+	Current            bool
+	Focus              bool
 	AssessmentStatus   string
-	Confidence         float64
 	ResultIds          []uuid.UUID
 	PromptIds          []uuid.UUID
 	CheckedSources     []string
@@ -206,6 +218,8 @@ type ListCurrentOpportunitiesRow struct {
 	AssessedAt         time.Time
 }
 
+// A row that stopped being current and that the user never acted on is not
+// history — it simply disappears.
 func (q *Queries) ListCurrentOpportunities(ctx context.Context, arg ListCurrentOpportunitiesParams) ([]ListCurrentOpportunitiesRow, error) {
 	rows, err := q.db.Query(ctx, listCurrentOpportunities, arg.BusinessID, arg.AccountID)
 	if err != nil {
@@ -226,8 +240,9 @@ func (q *Queries) ListCurrentOpportunities(ctx context.Context, arg ListCurrentO
 			&i.CompletionBaseline,
 			&i.FirstSeenAt,
 			&i.UpdatedAt,
+			&i.Current,
+			&i.Focus,
 			&i.AssessmentStatus,
-			&i.Confidence,
 			&i.ResultIds,
 			&i.PromptIds,
 			&i.CheckedSources,
@@ -340,35 +355,6 @@ func (q *Queries) LoadMonitoringEvidence(ctx context.Context, arg LoadMonitoring
 	return items, nil
 }
 
-const refreshExistingOpportunity = `-- name: RefreshExistingOpportunity :one
-UPDATE opportunities SET current_assessment_id = $1, presentation = $2, updated_at = now()
-WHERE business_id = $3 AND account_id = $4 AND practice_key = $5 AND subject_key = $6
-RETURNING id
-`
-
-type RefreshExistingOpportunityParams struct {
-	CurrentAssessmentID uuid.UUID
-	Presentation        json.RawMessage
-	BusinessID          uuid.UUID
-	AccountID           uuid.UUID
-	PracticeKey         string
-	SubjectKey          string
-}
-
-func (q *Queries) RefreshExistingOpportunity(ctx context.Context, arg RefreshExistingOpportunityParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, refreshExistingOpportunity,
-		arg.CurrentAssessmentID,
-		arg.Presentation,
-		arg.BusinessID,
-		arg.AccountID,
-		arg.PracticeKey,
-		arg.SubjectKey,
-	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
-}
-
 const setOpportunityStatus = `-- name: SetOpportunityStatus :one
 UPDATE opportunities SET user_status = $1, dismissal_reason = $2,
  completion_baseline = CASE WHEN $1 = 'COMPLETED' THEN COALESCE(completion_baseline, $3) ELSE completion_baseline END,
@@ -401,6 +387,25 @@ func (q *Queries) SetOpportunityStatus(ctx context.Context, arg SetOpportunitySt
 	var i SetOpportunityStatusRow
 	err := row.Scan(&i.BusinessID, &i.PracticeKey, &i.SubjectKey)
 	return i, err
+}
+
+const sweepStaleOpportunities = `-- name: SweepStaleOpportunities :exec
+UPDATE opportunities SET current_generation_id = NULL, updated_at = now()
+WHERE business_id = $1 AND account_id = $2
+ AND current_generation_id IS NOT NULL AND current_generation_id <> $3::uuid
+`
+
+type SweepStaleOpportunitiesParams struct {
+	BusinessID          uuid.UUID
+	AccountID           uuid.UUID
+	CurrentGenerationID uuid.UUID
+}
+
+// Everything the compiler did not produce this generation stops being current.
+// The last-known presentation stays on the row so acted-on history still renders.
+func (q *Queries) SweepStaleOpportunities(ctx context.Context, arg SweepStaleOpportunitiesParams) error {
+	_, err := q.db.Exec(ctx, sweepStaleOpportunities, arg.BusinessID, arg.AccountID, arg.CurrentGenerationID)
+	return err
 }
 
 const upsertAssessmentGeneration = `-- name: UpsertAssessmentGeneration :one
@@ -480,11 +485,11 @@ func (q *Queries) UpsertEvidenceArtifact(ctx context.Context, arg UpsertEvidence
 }
 
 const upsertOpportunity = `-- name: UpsertOpportunity :one
-INSERT INTO opportunities (id,account_id,business_id,practice_key,subject_key,current_assessment_id,rank,presentation)
-SELECT $1,$2,$3,$4,$5,$6,$7,$8
+INSERT INTO opportunities (id,account_id,business_id,practice_key,subject_key,current_assessment_id,current_generation_id,rank,presentation)
+SELECT $1,$2,$3,$4,$5,$6,$7::uuid,$8,$9
 WHERE EXISTS (SELECT 1 FROM visibility_assessments WHERE id = $6 AND account_id = $2 AND business_id = $3)
 ON CONFLICT (business_id,practice_key,subject_key) DO UPDATE SET current_assessment_id=EXCLUDED.current_assessment_id,
- rank=EXCLUDED.rank,presentation=EXCLUDED.presentation,updated_at=now()
+ current_generation_id=EXCLUDED.current_generation_id,rank=EXCLUDED.rank,presentation=EXCLUDED.presentation,updated_at=now()
 RETURNING id
 `
 
@@ -495,6 +500,7 @@ type UpsertOpportunityParams struct {
 	PracticeKey         string
 	SubjectKey          string
 	CurrentAssessmentID uuid.UUID
+	CurrentGenerationID uuid.UUID
 	Rank                int32
 	Presentation        json.RawMessage
 }
@@ -507,6 +513,7 @@ func (q *Queries) UpsertOpportunity(ctx context.Context, arg UpsertOpportunityPa
 		arg.PracticeKey,
 		arg.SubjectKey,
 		arg.CurrentAssessmentID,
+		arg.CurrentGenerationID,
 		arg.Rank,
 		arg.Presentation,
 	)
@@ -517,15 +524,15 @@ func (q *Queries) UpsertOpportunity(ctx context.Context, arg UpsertOpportunityPa
 
 const upsertVisibilityAssessment = `-- name: UpsertVisibilityAssessment :one
 INSERT INTO visibility_assessments (id,generation_id,account_id,business_id,practice_key,criteria_version,
- assessor_key,assessor_version,subject_key,status,rollout_mode,result_ids,prompt_ids,checked_sources,
- confidence,explanation,reach,persistence,evidence_quality,actionability,effort,payload_version,payload)
+ assessor_key,assessor_version,subject_key,status,result_ids,prompt_ids,checked_sources,
+ explanation,reach,persistence,evidence_quality,actionability,effort,payload_version,payload)
 SELECT $1,$2,$3,$4,$5,$6,$7,
- $8,$9,$10,$11,$12,$13,$14,
- $15,$16,$17,$18,$19,$20,$21,$22,$23
+ $8,$9,$10,$11,$12,$13,
+ $14,$15,$16,$17,$18,$19,$20,$21
 WHERE EXISTS (SELECT 1 FROM assessment_generations WHERE id = $2 AND account_id = $3 AND business_id = $4)
 ON CONFLICT (generation_id,practice_key,subject_key) DO UPDATE SET status=EXCLUDED.status,
  result_ids=EXCLUDED.result_ids,prompt_ids=EXCLUDED.prompt_ids,checked_sources=EXCLUDED.checked_sources,
- confidence=EXCLUDED.confidence,explanation=EXCLUDED.explanation,reach=EXCLUDED.reach,
+ explanation=EXCLUDED.explanation,reach=EXCLUDED.reach,
  persistence=EXCLUDED.persistence,evidence_quality=EXCLUDED.evidence_quality,actionability=EXCLUDED.actionability,
  effort=EXCLUDED.effort,payload=EXCLUDED.payload
 RETURNING id
@@ -542,11 +549,9 @@ type UpsertVisibilityAssessmentParams struct {
 	AssessorVersion int32
 	SubjectKey      string
 	Status          string
-	RolloutMode     string
 	ResultIds       []uuid.UUID
 	PromptIds       []uuid.UUID
 	CheckedSources  []string
-	Confidence      float64
 	Explanation     string
 	Reach           int32
 	Persistence     int32
@@ -569,11 +574,9 @@ func (q *Queries) UpsertVisibilityAssessment(ctx context.Context, arg UpsertVisi
 		arg.AssessorVersion,
 		arg.SubjectKey,
 		arg.Status,
-		arg.RolloutMode,
 		arg.ResultIds,
 		arg.PromptIds,
 		arg.CheckedSources,
-		arg.Confidence,
 		arg.Explanation,
 		arg.Reach,
 		arg.Persistence,

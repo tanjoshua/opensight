@@ -111,7 +111,7 @@ Users can track, dismiss, or manually add competitors.
 
 Show at most three evidence-backed focus items derived from currently assessed visibility practices. A confirmed site-access blocker appears first. Each item shows the supporting responses or checked sources, affected questions, effort, suggested steps, and verification limits.
 
-Users can start, complete, dismiss, and restore an opportunity. Completion records the affected questions and latest analyzed baseline. Later monitoring adds observations without claiming that the action caused a visibility change.
+Users can start, complete, dismiss, and restore an opportunity. Completion records the affected questions and their latest analyzed baseline. Later monitoring reports whether those questions mention the business now compared with that baseline, as a dated observation that never claims the action caused the change.
 
 ## 7. Product Structure
 
