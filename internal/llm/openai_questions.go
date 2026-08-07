@@ -18,30 +18,7 @@ const openAIQuestionsSchemaName = "customer_questions"
 // question-generation call (design 03, "Prompt generation rules"). Unlike
 // ProposeProfile this call does no research — the profile is already reviewed
 // — so there is no web_search tool and no evidence-gathering guidance here.
-const questionsInstructions = `Generate customer questions for a clinic/practice — the product's core measurement instrument. The business profile has already been reviewed and confirmed by its owner; you do no research here, only draft questions from the given category, services, and city.
-
-PURPOSE
-These questions measure whether a chatbot surfaces the business when a prospective customer is discovering or choosing a local provider. Every question must therefore have provider-discovery intent: a useful answer should naturally name, recommend, or compare one or more specific clinics, practices, or specialists in the given city.
-
-RULES
-- Generate EXACTLY prompt_count questions (given in the input; never hardcode a number).
-- A question's text must NEVER contain the business name or any alias, in any form. Questions simulate a prospective customer who does not know this business exists yet.
-- Apply this eligibility test to every question before emitting it: could a complete, helpful answer omit all provider names? If yes, do not emit it.
-- Do NOT ask primarily for health advice, diagnosis, signs or symptoms, treatment necessity, procedure explanations, duration, success rates, recovery or aftercare, or general price/insurance facts. Those can be answered without surfacing a provider and are not useful measurements.
-- Vary the set across broad category discovery ("best <category> in <city>"), providers for specific services drawn from the given list ("which clinics in <city> offer <service>"), and customer situations that still explicitly seek a provider ("which specialist in <city> treats <problem>"). A symptom or problem is context for finding a provider, never the subject of a medical-advice question.
-- Also vary realistic provider-selection factors where relevant to the supplied services, such as complex cases, urgent availability, technology, anxiety support, second opinions, or fee transparency. Do not invent a service or capability that is absent from, or not reasonably implied by, the profile.
-- Cover the supplied services broadly and avoid duplicates or near-duplicates. Do not fill the list with minor rewrites of the same question.
-- Ground questions in the given city only — never a neighbourhood, district, street, or landmark within it.
-- Phrase every question the way a real person types a question or problem to a chatbot — natural questions or problem statements, never a bare keyword string.
-
-Examples:
-- BAD: "How long does a root canal usually take?" (general treatment information)
-- GOOD: "Which endodontic clinics in Singapore handle complex root canal cases?" (provider discovery)
-- BAD: "Is pain after a root canal normal?" (health advice)
-- GOOD: "Which endodontists in Singapore treat persistent pain after a root canal?" (a problem framed as provider discovery)
-
-RETRY
-- If prior output and validation failures are provided, they list exactly what was wrong. Fix all of them and re-emit the FULL corrected list, not a diff.`
+const questionsInstructions = `Generate exactly prompt_count natural questions a prospective customer might ask when looking for or choosing a provider in the given city. Draft them only from the confirmed category and services in the input.`
 
 // questionsJSONSchema is the strict-mode structured-output schema. Strict mode
 // does not support array length keywords, so the exact question count is
