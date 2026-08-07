@@ -10,6 +10,7 @@ sequenceDiagram
     participant API as Go API
     participant T as Temporal
     participant W as Worker
+    U->>U: Enter business name, then website (or explicitly continue without one)
     U->>API: BusinessService.CreateBusiness {name, website}
     API->>API: insert businesses (status=draft)
     API->>T: start GenerateProfileWorkflow
@@ -27,6 +28,8 @@ sequenceDiagram
 ```
 
 Generation is LLM work with agentic web browsing plus a possible validation retry, so end-to-end runtime is on the order of a minute, occasionally more. GenerateProfileWorkflow runs to completion with no fixed deadline; the UI polls proposal status and, while generating, shows a stage-driven step list (reading the website → researching and drafting) rather than assuming a fixed budget.
+
+The entry screen asks for the business name and website in two short steps. Enter on the name advances to the website rather than starting generation; the website step labels the field optional but recommended and makes proceeding without one an explicit action. The submitted research website remains visible during generation and review. Adding, changing, or clearing it updates the draft, terminates any in-flight generation, discards the pending proposal, and regenerates from the corrected input, so recovery is available before activation rather than only later in Settings.
 
 Customer questions are deliberately generated in a second, separate step rather than alongside profile research: they must reflect the service list the user actually approves (editing Services after an upfront generation would otherwise leave stale questions), and unlike profile research they need no web browsing — a cheap non-reasoning model is enough. Splitting them out means every `GenerateQuestions` call is small, fast, and inexpensive, unlike the reasoning-model `ProposeProfile` call.
 
@@ -78,14 +81,14 @@ The call is a single structured-output OpenAI Responses call with **no** `web_se
 
 The `plan.prompt_limit` questions are the product's measurement instrument, so generation is opinionated:
 
-- **Questions never contain the business name.** They simulate a prospective patient who doesn't know the business exists — that is what "visibility" means. (Users can still add branded questions manually if they insist.)
-- Vary the set across broad category searches ("best orthopaedic clinic in Singapore"), specific services ("where to get ACL reconstruction in Singapore"), and symptoms or problems ("knee pain won't go away who should I see in Singapore"). Grounded in the business's city only — never a neighbourhood, district, street, or landmark within it (`address`/`area` are kept on the profile but not used for question generation).
-- Phrased the way real people ask chatbots — questions and problem statements, not keyword strings.
+- The generation instruction is deliberately minimal: generate natural questions a prospective customer might ask when looking for or choosing a provider in the given city, using only the confirmed category and services.
+- Questions never contain the business name. They simulate a prospective patient who doesn't know the business exists — that is what "visibility" means. `ValidateQuestions` enforces this after generation. (Users can still add branded questions manually if they insist.)
+- Geography comes from the business's city only — never its neighbourhood, district, street, or landmark (`address`/`area` are not sent for question generation).
 - Count comes from `plan.prompt_limit`, not a hardcoded 20.
 
 ## Review and apply
 
-- The review screen is a three-step, in-memory draft: **Business → Services → Customer questions**. Back/next navigation retains edits, and each step must be valid before advancing. Business contains identity, aliases, location, and a collapsed read-only list of research sources; a global low-confidence warning remains visible throughout. Services owns the editable service list. Customer questions shows an exact `current of prompt_limit` count and requires that exact count before approval.
+- The review screen is a three-step, in-memory draft: **Business → Services → Customer questions**. Back/next navigation retains edits, and each step must be valid before advancing. The research website is shown above the steps with an add/change action; changing it regenerates the proposal and, when the user has local edits, first confirms that those edits will be replaced. Business contains identity, aliases, location, and a collapsed read-only list of research sources; a global low-confidence warning remains visible throughout. Services owns the editable service list. Customer questions shows an exact `current of prompt_limit` count and requires that exact count before approval.
 - Leaving Services is where questions actually get generated: the review screen calls `GenerateQuestions` with the in-memory profile at that point (not the original proposal), so the questions are always grounded in what the user has just confirmed. A client-side fingerprint of `category`/`city`/`services` is cached against the generated set so a plain Back/Next round trip reuses it instead of re-calling the RPC; the fingerprint changing (a service edited, or the category changed back on the Business step) triggers a fresh call, with a confirmation first if the user had manually edited the question list. If generation fails, the user can retry or skip straight to Customer questions and add questions by hand — manual entry is always available, exactly as before this split.
 - Nothing is committed while moving through the review steps. The client sends back the **final edited payload** only when the user selects **Approve setup and start monitoring** — the server does not merge, it takes the submitted values verbatim (they've been reviewed by definition). The approval copy states that the first check starts after approval and monitoring then runs weekly; it does not imply that step navigation saves the draft to the server.
 - `AccountService.GetAccountContext` exposes the account's `Plan` message (`code`, `prompt_limit`, `run_interval`, `platforms`), not a bare `prompt_limit` int — the SPA's plan projection reads `plan.prompt_limit`. Per-step validation covers required profile fields, country code, non-empty list entries, prompt text, and exact plan prompt count. Validation gates navigation and submission but does not normalize or rewrite the payload: the accepted payload is still sent verbatim.
@@ -97,7 +100,7 @@ The `plan.prompt_limit` questions are the product's measurement instrument, so g
 ```
 BusinessService.CreateBusiness       → create draft, start workflow
 BusinessService.GetProposal          → status + payload when ready
-BusinessService.RegenerateProposal   → discard + regenerate (draft only)
+BusinessService.RegenerateProposal   → optionally replace research website, stop current generation, discard + regenerate (draft only)
 BusinessService.GenerateQuestions    → on-demand customer questions from the reviewed profile (draft only)
 BusinessService.ApplyProposal        → apply final payload, activate, schedule
 ```

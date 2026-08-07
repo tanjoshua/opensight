@@ -8,6 +8,8 @@ import {
   Settings,
   Users,
   Lightbulb,
+  ClipboardCheck,
+  Activity,
 } from "lucide-react"
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
@@ -52,7 +54,13 @@ const businessSettings = [
 ]
 
 const improveSections = [
-  { title: "Opportunities", to: "/opportunities", icon: Lightbulb },
+  { title: "Next actions", to: "/improve/actions", icon: Lightbulb },
+  {
+    title: "Visibility checklist",
+    to: "/improve/checklist",
+    icon: ClipboardCheck,
+  },
+  { title: "Activity history", to: "/improve/activity", icon: Activity },
 ]
 
 const workspaceSections = [{ title: "Members", to: "/team", icon: Users }]
@@ -141,10 +149,10 @@ export function AppSidebar() {
         {hasBusinessNavigation && (
           <>
             <SidebarGroup>
-              <SidebarGroupLabel>Improve</SidebarGroupLabel>
+              <SidebarGroupLabel>Monitor</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {improveSections.map((section) => (
+                  {businessSections.map((section) => (
                     <SidebarMenuItem key={section.to}>
                       <SidebarMenuButton
                         isActive={pathname.startsWith(
@@ -162,10 +170,10 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
-              <SidebarGroupLabel>Monitor</SidebarGroupLabel>
+              <SidebarGroupLabel>Improve</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {businessSections.map((section) => (
+                  {improveSections.map((section) => (
                     <SidebarMenuItem key={section.to}>
                       <SidebarMenuButton
                         isActive={pathname.startsWith(

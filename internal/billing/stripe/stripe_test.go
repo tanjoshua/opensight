@@ -109,8 +109,8 @@ func TestProviderCreateCustomer(t *testing.T) {
 // (design 08, required by BILL-4): payment_method_types must never appear in
 // the checkout session request body, so eligible methods stay entirely
 // dashboard-configured. It also covers the other checkout fields design 08
-// pins down: mode=subscription, client_reference_id, and
-// subscription_data.metadata.account_id.
+// pins down: mode=subscription, client_reference_id,
+// subscription_data.metadata.account_id, and allow_promotion_codes.
 func TestProviderCreateCheckoutSession(t *testing.T) {
 	p, captured := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(t, w, `{"id":"cs_1","url":"https://checkout.stripe.com/x","status":"open","client_reference_id":"account-1","customer":"cus_1","subscription":"sub_1"}`)
@@ -158,6 +158,9 @@ func TestProviderCreateCheckoutSession(t *testing.T) {
 	}
 	if got := captured.values.Get("integration_identifier"); got != "opensight-signup-abcdefgh" {
 		t.Fatalf("integration_identifier = %q, want opensight-signup-abcdefgh", got)
+	}
+	if got := captured.values.Get("allow_promotion_codes"); got != "true" {
+		t.Fatalf("allow_promotion_codes = %q, want true", got)
 	}
 }
 

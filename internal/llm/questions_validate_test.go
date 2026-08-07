@@ -23,9 +23,9 @@ func validQuestionsInput() QuestionsInput {
 func validQuestions() []ProposedPrompt {
 	return []ProposedPrompt{
 		{Text: "best orthopaedic clinic in Singapore"},
-		{Text: "where can I get ACL reconstruction in Singapore"},
-		{Text: "knee pain that won't go away, who should I see"},
-		{Text: "orthopaedic specialist near Novena MRT"},
+		{Text: "which orthopaedic clinics in Singapore offer ACL reconstruction"},
+		{Text: "which specialist in Singapore treats knee pain that won't go away"},
+		{Text: "where can I get an orthopaedic second opinion in Singapore"},
 	}
 }
 
@@ -53,8 +53,10 @@ func TestValidateQuestions(t *testing.T) {
 			wantErr: "contains the business name/alias",
 		},
 		{
-			name:    "name leaks into prompt",
-			mutate:  func(_ *QuestionsInput, prompts *[]ProposedPrompt) { (*prompts)[2].Text = "reviews of novena orthopaedic clinic" },
+			name: "name leaks into prompt",
+			mutate: func(_ *QuestionsInput, prompts *[]ProposedPrompt) {
+				(*prompts)[2].Text = "reviews of novena orthopaedic clinic"
+			},
 			wantErr: "contains the business name/alias",
 		},
 	}

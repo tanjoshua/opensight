@@ -49,6 +49,7 @@ type billingProvider interface {
 // Temporal server.
 type temporalClient interface {
 	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
+	TerminateWorkflow(ctx context.Context, workflowID, runID, reason string, details ...interface{}) error
 	DescribeWorkflowExecution(ctx context.Context, workflowID, runID string) (*workflowservice.DescribeWorkflowExecutionResponse, error)
 	QueryWorkflow(ctx context.Context, workflowID, runID, queryType string, args ...interface{}) (converter.EncodedValue, error)
 	ScheduleClient() client.ScheduleClient

@@ -58,13 +58,19 @@ func (p *webhookProvider) setStatus(customerID, status string) {
 
 type fakeTemporalClient struct {
 	client.Client
-	schedule *fakeScheduleClient
-	started  []client.StartWorkflowOptions
+	schedule   *fakeScheduleClient
+	started    []client.StartWorkflowOptions
+	terminated []string
 }
 
 func (f *fakeTemporalClient) ExecuteWorkflow(_ context.Context, opts client.StartWorkflowOptions, _ interface{}, _ ...interface{}) (client.WorkflowRun, error) {
 	f.started = append(f.started, opts)
 	return nil, nil
+}
+
+func (f *fakeTemporalClient) TerminateWorkflow(_ context.Context, workflowID, _ string, _ string, _ ...interface{}) error {
+	f.terminated = append(f.terminated, workflowID)
+	return nil
 }
 
 func (f *fakeTemporalClient) ScheduleClient() client.ScheduleClient {

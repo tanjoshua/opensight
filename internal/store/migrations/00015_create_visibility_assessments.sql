@@ -14,6 +14,16 @@ CREATE TABLE assessment_generations (
   UNIQUE (monitoring_run_id)
 );
 
+CREATE TABLE assessment_module_outcomes (
+  generation_id uuid NOT NULL REFERENCES assessment_generations(id) ON DELETE CASCADE,
+  account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  assessor_key text NOT NULL,
+  status text NOT NULL CHECK (status IN ('SUCCEEDED','FAILED','SKIPPED')),
+  error text,
+  completed_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (generation_id, assessor_key)
+);
+
 CREATE TABLE evidence_artifacts (
   id uuid PRIMARY KEY,
   generation_id uuid NOT NULL REFERENCES assessment_generations(id) ON DELETE CASCADE,
@@ -39,11 +49,9 @@ CREATE TABLE visibility_assessments (
   assessor_version int NOT NULL,
   subject_key text NOT NULL,
   status text NOT NULL CHECK (status IN ('MET','PARTIAL','NOT_MET','UNKNOWN','NOT_APPLICABLE')),
-  rollout_mode text NOT NULL CHECK (rollout_mode IN ('DISABLED','SHADOW','ACTIVE')),
   result_ids uuid[] NOT NULL DEFAULT '{}',
   prompt_ids uuid[] NOT NULL DEFAULT '{}',
   checked_sources text[] NOT NULL DEFAULT '{}',
-  confidence double precision NOT NULL CHECK (confidence BETWEEN 0 AND 1),
   explanation text NOT NULL,
   reach int NOT NULL,
   persistence int NOT NULL,
@@ -52,45 +60,52 @@ CREATE TABLE visibility_assessments (
   effort int NOT NULL,
   payload_version int NOT NULL,
   payload jsonb NOT NULL,
+  published boolean NOT NULL DEFAULT false,
   assessed_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (generation_id, practice_key, subject_key)
 );
-CREATE INDEX visibility_assessments_current_idx ON visibility_assessments
-  (business_id, practice_key, criteria_version, assessed_at DESC);
+CREATE UNIQUE INDEX visibility_assessments_current_subject
+  ON visibility_assessments (business_id, practice_key, subject_key) WHERE published;
 
-CREATE TABLE opportunities (
+CREATE TABLE improvement_actions (
   id uuid PRIMARY KEY,
   account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   practice_key text NOT NULL,
   subject_key text NOT NULL,
-  current_assessment_id uuid NOT NULL REFERENCES visibility_assessments(id),
+  cycle int NOT NULL CHECK (cycle > 0),
+  recommendation_key text NOT NULL,
+  current_assessment_id uuid REFERENCES visibility_assessments(id),
   rank int NOT NULL,
   presentation jsonb NOT NULL,
-  user_status text NOT NULL DEFAULT 'OPEN' CHECK (user_status IN ('OPEN','IN_PROGRESS','COMPLETED','DISMISSED')),
+  status text NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','IN_PROGRESS','COMPLETED','DISMISSED','RETIRED','SUPERSEDED')),
   dismissal_reason text CHECK (dismissal_reason IS NULL OR dismissal_reason IN ('NOT_RELEVANT','ALREADY_DONE','NOT_ACTIONABLE','TOO_MUCH_EFFORT','OTHER')),
   completion_baseline jsonb,
+  started_at timestamptz,
+  completed_at timestamptz,
   first_seen_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (business_id, practice_key, subject_key)
+  UNIQUE (business_id, practice_key, subject_key, cycle)
 );
-CREATE INDEX opportunities_current_idx ON opportunities (business_id, rank)
-  WHERE user_status <> 'DISMISSED';
+CREATE UNIQUE INDEX improvement_actions_active_cycle
+  ON improvement_actions (business_id, practice_key, subject_key)
+  WHERE status IN ('OPEN','IN_PROGRESS');
 
-CREATE TABLE opportunity_events (
+CREATE TABLE improvement_action_events (
   id uuid PRIMARY KEY,
-  opportunity_id uuid NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE,
+  action_id uuid NOT NULL REFERENCES improvement_actions(id) ON DELETE CASCADE,
   account_id uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   event_key text NOT NULL,
-  event_type text NOT NULL CHECK (event_type IN ('STARTED','DISMISSED','RESTORED','COMPLETED','OUTCOME_OBSERVED')),
+  event_type text NOT NULL CHECK (event_type IN ('CREATED','STARTED','COMPLETED','DISMISSED','RESTORED','RETIRED','SUPERSEDED','RECURRED')),
   payload jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (opportunity_id, event_key)
+  UNIQUE (action_id, event_key)
 );
 
 -- +goose Down
-DROP TABLE opportunity_events;
-DROP TABLE opportunities;
+DROP TABLE improvement_action_events;
+DROP TABLE improvement_actions;
 DROP TABLE visibility_assessments;
 DROP TABLE evidence_artifacts;
+DROP TABLE assessment_module_outcomes;
 DROP TABLE assessment_generations;

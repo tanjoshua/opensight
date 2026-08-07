@@ -525,6 +525,32 @@ func TestSiteFetcherCapsResponseBody(t *testing.T) {
 	}
 }
 
+func TestExtractHTMLContentReadsNoIndexDirective(t *testing.T) {
+	tests := []struct {
+		name, body string
+		noIndex    bool
+	}{
+		{name: "robots noindex", body: `<html><head><meta content='noindex,follow' name='robots'></head><body>text</body></html>`, noIndex: true},
+		{name: "oai-searchbot noindex", body: `<html><head><meta content='noindex' name='OAI-SearchBot'></head><body>text</body></html>`, noIndex: true},
+		{name: "indexable", body: `<html><head><meta content='index,follow' name='robots'></head><body>text</body></html>`},
+		{name: "unrelated meta", body: `<html><head><meta content='noindex' name='generator'></head><body>text</body></html>`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content, err := extractHTMLContent([]byte(tt.body))
+			if err != nil {
+				t.Fatalf("extractHTMLContent: %v", err)
+			}
+			if content.NoIndex != tt.noIndex {
+				t.Fatalf("NoIndex = %v, want %v", content.NoIndex, tt.noIndex)
+			}
+			if content.Text != "text" {
+				t.Fatalf("Text = %q, want %q", content.Text, "text")
+			}
+		})
+	}
+}
+
 func containsString(values []string, want string) bool {
 	for _, value := range values {
 		if value == want {

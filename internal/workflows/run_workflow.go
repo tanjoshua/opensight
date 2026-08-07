@@ -176,7 +176,7 @@ func RunWorkflow(ctx workflow.Context, input RunWorkflowInput) (RunResult, error
 		if err := workflow.ExecuteChildWorkflow(assessmentCtx, AssessmentWorkflow, AssessmentWorkflowInput{
 			AccountID: spec.AccountID, BusinessID: spec.BusinessID, RunID: spec.RunID,
 		}).Get(ctx, nil); err != nil {
-			workflow.GetLogger(ctx).Error("assessment generation failed; latest successful opportunities preserved",
+			workflow.GetLogger(ctx).Error("assessment generation failed; latest successful improvement state preserved",
 				"run_id", spec.RunID.String(), "error", err.Error())
 		}
 	}

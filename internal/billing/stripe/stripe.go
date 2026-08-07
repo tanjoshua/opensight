@@ -76,6 +76,9 @@ func (p *Provider) CreateCustomer(ctx context.Context, params billing.CreateCust
 // CreateCheckoutSession creates a `mode: subscription` Checkout Session
 // (design 08 "Checkout Session"). It never sets PaymentMethodTypes:
 // eligible methods come from dashboard configuration, not this code.
+// AllowPromotionCodes surfaces a promo code field on the hosted page;
+// discounts still require a Coupon/Promotion Code created in the Stripe
+// dashboard, so this alone has no effect on price.
 func (p *Provider) CreateCheckoutSession(ctx context.Context, params billing.CreateCheckoutSessionParams) (billing.CheckoutSession, error) {
 	session, err := p.client.V1CheckoutSessions.Create(ctx, &stripesdk.CheckoutSessionCreateParams{
 		Mode:                  stripesdk.String(string(stripesdk.CheckoutSessionModeSubscription)),
@@ -84,6 +87,7 @@ func (p *Provider) CreateCheckoutSession(ctx context.Context, params billing.Cre
 		IntegrationIdentifier: stripesdk.String(params.IntegrationIdentifier),
 		SuccessURL:            stripesdk.String(params.SuccessURL),
 		CancelURL:             stripesdk.String(params.CancelURL),
+		AllowPromotionCodes:   stripesdk.Bool(true),
 		LineItems: []*stripesdk.CheckoutSessionCreateLineItemParams{
 			{
 				Price:    stripesdk.String(params.PriceID),

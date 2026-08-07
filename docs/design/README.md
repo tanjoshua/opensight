@@ -12,7 +12,7 @@ Technical design for the [Starter MVP PRD](../prd.md), split into focused docs t
 | 06 | [API + frontend](06-api-frontend.md) | Endpoints, five sections, response-drawer traceability, shadcn preset |
 | 07 | [Cross-cutting](07-cross-cutting.md) | Auth, secrets, deploys, backups, observability, spend guardrails |
 | 08 | [Billing](08-billing.md) | Self-serve signup, Stripe Checkout/Portal/webhooks, entitlement catalog, lapse behaviour |
-| 09 | [Opportunities](09-opportunities.md) | Visibility-practice catalog, modular assessments, opportunity compilation, lifecycle and rollout |
+| 09 | [Improve](09-opportunities.md) | Visibility checklist, modular assessments, repeatable actions, and lifecycle activity |
 
 Stack: React (Vite, shadcn preset `bLTjNXma`) · Go monolith · PostgreSQL · Temporal (self-hosted) · OpenAI Responses API · Stripe Billing · single Hetzner VPS.
 
@@ -24,4 +24,4 @@ The docs above are the target design; the build is phased so a pilot clinic can 
 2. **Analysis** — AnalyzeRun, mentions/citations/metrics, Overview + Prompts + Competitors sections.
 3. **Self-serve polish** — onboarding automation (03), competitor triage + alias approval UX, methodology page.
 4. **Commercial launch** — self-serve signup, payment before first run, subscription lifecycle (08).
-5. **Visibility improvement** — assessment persistence and collectors, active site-access proof module, shadow source/topic modules, Opportunities lifecycle and outcome observations (09).
+5. **Visibility improvement** — assessment persistence and collectors, registered site-access module, source/topic modules held behind the fixture quality gate, Opportunities lifecycle and outcome observations (09).

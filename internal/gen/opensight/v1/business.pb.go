@@ -930,8 +930,11 @@ func (x *GetProposalResponse) GetState() *ProposalState {
 // side-effect-free — this RPC must never be declared safe for a GET-style
 // retry.
 type RegenerateProposalRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BusinessId    string                 `protobuf:"bytes,1,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	BusinessId string                 `protobuf:"bytes,1,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty"`
+	// When present, replaces the draft's research website before regenerating.
+	// An explicit empty value clears the website; omission keeps it unchanged.
+	Website       *string `protobuf:"bytes,2,opt,name=website,proto3,oneof" json:"website,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -969,6 +972,13 @@ func (*RegenerateProposalRequest) Descriptor() ([]byte, []int) {
 func (x *RegenerateProposalRequest) GetBusinessId() string {
 	if x != nil {
 		return x.BusinessId
+	}
+	return ""
+}
+
+func (x *RegenerateProposalRequest) GetWebsite() string {
+	if x != nil && x.Website != nil {
+		return *x.Website
 	}
 	return ""
 }
@@ -1291,10 +1301,13 @@ const file_opensight_v1_business_proto_rawDesc = "" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
 	"businessId\"H\n" +
 	"\x13GetProposalResponse\x121\n" +
-	"\x05state\x18\x01 \x01(\v2\x1b.opensight.v1.ProposalStateR\x05state\"<\n" +
+	"\x05state\x18\x01 \x01(\v2\x1b.opensight.v1.ProposalStateR\x05state\"g\n" +
 	"\x19RegenerateProposalRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"O\n" +
+	"businessId\x12\x1d\n" +
+	"\awebsite\x18\x02 \x01(\tH\x00R\awebsite\x88\x01\x01B\n" +
+	"\n" +
+	"\b_website\"O\n" +
 	"\x1aRegenerateProposalResponse\x121\n" +
 	"\x05state\x18\x01 \x01(\v2\x1b.opensight.v1.ProposalStateR\x05state\"p\n" +
 	"\x14ApplyProposalRequest\x12\x1f\n" +
@@ -1411,6 +1424,7 @@ func file_opensight_v1_business_proto_init() {
 	file_opensight_v1_common_proto_init()
 	file_opensight_v1_business_proto_msgTypes[1].OneofWrappers = []any{}
 	file_opensight_v1_business_proto_msgTypes[11].OneofWrappers = []any{}
+	file_opensight_v1_business_proto_msgTypes[15].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

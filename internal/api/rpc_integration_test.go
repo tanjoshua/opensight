@@ -246,6 +246,21 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 		t.Fatalf("stored business = %+v, err=%v", got, err)
 	}
 
+	website := "https://atlas.example"
+	if _, err := srv.RegenerateProposal(session, connect.NewRequest(&opensightv1.RegenerateProposalRequest{
+		BusinessId: businessID.String(),
+		Website:    &website,
+	})); err != nil {
+		t.Fatalf("RegenerateProposal with website: %v", err)
+	}
+	got, err = repository.GetBusiness(ctx, accountID, businessID)
+	if err != nil || got.Website == nil || *got.Website != website {
+		t.Fatalf("business after website correction = %+v, err=%v", got, err)
+	}
+	if len(temporal.terminated) != 1 || len(temporal.started) != 2 {
+		t.Fatalf("generation replacements: terminated=%v started=%d, want one termination and two total starts", temporal.terminated, len(temporal.started))
+	}
+
 	otherSession := withSessionUser(ctx, store.SessionUser{AccountID: otherAccountID, PlanCode: billing.Starter.Code})
 	_, err = srv.GetBusiness(otherSession, connect.NewRequest(&opensightv1.GetBusinessRequest{BusinessId: businessID.String()}))
 	if connect.CodeOf(err) != connect.CodeNotFound {

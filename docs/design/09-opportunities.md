@@ -1,75 +1,65 @@
-# Design 09 — Visibility Assessments and Opportunities
+# Design 09 — Improve, visibility assessments, and actions
 
 Depends on: [02 Data model](02-data-model.md), [04 Monitoring](04-monitoring.md), [05 Analysis](05-analysis.md), [06 API + frontend](06-api-frontend.md)
 
 ## Product model
 
-The pipeline is:
+The durable concept is a catalog practice. Each practice declares a stable key, ordered section, criteria version, mode (`CHECK`, `CONTINUOUS`, or `TRACKED`), subject scope (`BUSINESS` or dynamic), evidence tier, assessor, explanation, references, action steps, and whether it may recommend an action. Business-scoped practices always use subject key `business`; changing or omitting the website does not change identity.
 
-`practice catalog → evidence collectors → assessments → opportunity compiler → outcome evaluators`
+Assessments describe what OpenSight knows. Improvement actions are repeatable work cycles derived from actionable assessments. Action state never changes an assessment standing, and action history never claims that work caused a later visibility change.
 
-A visibility practice is the durable product concept. An opportunity is an optional action derived only from an active `PARTIAL` or `NOT_MET` assessment. Opportunities provide a small prioritized queue; persisted assessments provide the complete coverage model for a future checklist. The checklist API and page are deferred.
+Checklist standings are `GOOD`, `IMPROVABLE`, `NEEDS_ATTENTION`, `TRACKING`, `COULD_NOT_VERIFY`, `NOT_ASSESSED`, `NOT_APPLICABLE`, and `NO_LONGER_TRACKED`. Checks present `GOOD` as “In place,” continuous practices as “In good standing” or “Room to improve,” and tracked practices as “Being tracked.” A tracked practice produces no action unless its catalog entry explicitly opts in.
 
-The compiled Go catalog gives every practice a stable key, criteria version, section, user-facing explanation, evidence tier, references, applicability, and optional assessor/presenter/evaluator keys. A practice without an automatic assessor remains `UNKNOWN`. Criteria versions change when meaning or pass criteria change; assessor module versions change for implementation-only updates.
+## Evidence and assessors
 
-## Module contracts and safety
+Collectors emit compact versioned artifacts. `monitoring-snapshot` contains the latest four analyzed runs and their prompts, results, mentions, competitors, and citations. `owned-site-scan` contains the inspected host, checked URLs, extracted text, access/indexing signals, and failure detail. A missing website is a successful artifact describing an unverifiable check, so search access produces `COULD_NOT_VERIFY` rather than an invalid or absent assessment.
 
-Collectors emit compact, versioned JSON artifacts validated by collector-owned types:
+Assessors declare their owned practices, dependencies, module version, and hard runtime/research/output budgets. URL inspection uses the SSRF-safe bounded researcher. Unknown payload versions, ownership mismatches, and invalid drafts fail closed. Each planned assessor records `SUCCEEDED`, `FAILED`, or `SKIPPED` for every generation. The latest successful run of a dynamic assessor defines its current subject set.
 
-- `monitoring-snapshot`: confirmed business identity plus the latest four analyzed runs, prompt/result references, mentions, competitors, and citations.
-- `owned-site-scan`: checked URLs, bounded text summaries, hashes, access/indexing signals, and verification time.
+Search access is a business-scoped `CHECK` and the only registered assessor. Influential-source presence and tracked-topic coverage are dynamic `CONTINUOUS` practices whose implementations remain unregistered until they clear the 90% hand-labelled fixture gate. Catalog entries without registered assessors still appear as `NOT_ASSESSED` in the checklist.
 
-Assessors declare owned practices, required collectors, module version, rollout mode, presenter/evaluator keys, and hard budgets for runtime, research and output count. Targeted URL inspection is available only through the bounded researcher, which reuses the onboarding fetcher's SSRF-safe HTTP client and accepts only HTTP(S) URLs. Unknown evidence versions and ownership mismatches fail closed.
+## Atomic publication and persistence
 
-Presentation is limited to standard typed blocks: text, metric with result IDs, validated link, question list, evidence list, and notice. Modules cannot return HTML or Markdown. The compiler rejects invalid blocks and only compiles active unmet assessments. Product copy must not promise rankings, fabricate reviews, encourage spam, make unsupported claims, or denigrate competitors. Regulated businesses must review claims before publishing.
+`assessment_generations` and `evidence_artifacts` retain provenance. `assessment_module_outcomes` records every planned assessor outcome. `visibility_assessments` retains every generation result and marks only the currently published result for each practice subject.
 
-## Initial practices
+Publication is one transaction:
 
-### `discoverability.openai_search_access`
+1. Record module outcomes.
+2. Replace published assessments only for successfully evaluated practice scopes.
+3. Retire missing dynamic subjects only when their assessor succeeded.
+4. Reconcile actions only for those successful scopes.
+5. Mark the generation `READY` or `PARTIAL`.
 
-Subject: the business website host. `MET` requires reachable, indexable public pages without an `OAI-SearchBot` robots denial. Confirmed robots denial, authentication, `noindex`, or unusable response is `NOT_MET`; transient inspection failure is `UNKNOWN`. `NOT_MET` is an active direct blocker and ranks first.
+Failed or skipped scopes retain their prior published standings and actions and are reported stale. Compilation failure marks the generation `FAILED` without changing published state. Reads consider only `READY` and `PARTIAL` generations, never `RUNNING` or `FAILED`.
 
-This practice deliberately excludes schema, sitemap, page-length and generic SEO checks.
+`improvement_actions` stores immutable numbered cycles with a stable `recommendation_key`. The active `OPEN` or `IN_PROGRESS` cycle is updated while the recommendation remains materially the same. Completion and dismissal are history: completion freezes a future-compatible baseline, and dismissal suppresses the same recommendation key. A completed practice recurs only after a verified good-to-actionable regression or a materially different recommendation key; a dismissed one recurs only when that key changes. Automatic retirement and supersession are append-only activity events. `improvement_action_events` records creation, recurrence, start, completion, dismissal, restoration, retirement, and supersession.
 
-### `authority.influential_source_presence`
+Completion baselines contain completion time and per-question prompt/result identity when question evidence exists. A site-wide practice can instead freeze business-wide mentioned/analyzed totals. No comparison is displayed until a genuine scheduled outcome evaluator exists.
 
-Subject: each influential source domain. The source must appear in at least two affected questions within four analyzed runs, or recur for one question across two runs. Inspected presence is `MET`; verified competitor presence with business absence is `NOT_MET`; unreliable inspection is `UNKNOWN`. It deploys in `SHADOW` until fixture quality, cost, safety and manual review gates pass.
+The checklist is derived from the catalog, published assessments, module freshness, and action history. There is no checklist table.
 
-### `owned_site.tracked_topic_coverage`
+## Ranking and Improve APIs
 
-Subject: a deterministic service/location/customer-need topic derived from tracked questions. Clear accessible coverage is `MET`, incomplete coverage is `PARTIAL`, no clear coverage is `NOT_MET`, and unreliable access is `UNKNOWN`. An actionable result requires business absence from at least two current related responses or recurrence across runs. It deploys in `SHADOW` under the same promotion gates.
+The independently versioned ranker orders direct blockers first, then reach, persistence, evidence quality, actionability, lower effort, and stable practice/subject identity. Every active action is returned; the first three are focus actions and the rest are additional recommendations.
 
-## Persistence and identity
+`ImproveService` exposes:
 
-- `assessment_generations` is unique per monitoring run and records status, compiler/ranker versions, the resolved module plan and timestamps.
-- `evidence_artifacts` records collector provenance, payload version, checked time, status and compact payload.
-- `visibility_assessments` records practice/assessor provenance, subject, five-state result, rollout mode, evidence references, ranking features and versioned payload. Successful `MET` and shadow results are retained.
-- `opportunities` has durable `(business_id, practice_key, subject_key)` identity. New assessments refresh evidence and presentation without replacing user status.
-- `opportunity_events` is append-only and idempotent for lifecycle and outcome observations.
+- `ListActions(business_id)` — focus actions, additional active actions, freshness, and an empty reason that distinguishes healthy standings, incomplete checks, and insufficient capability.
+- `GetAction(action_id)` — action detail, evidence, checklist identity, and all cycles.
+- `SetActionStatus(action_id, status, dismissal_reason)` — validated start, completion, dismissal, and restoration transitions.
+- `GetChecklist(business_id)` — clickable standing counts, freshness, ordered catalog sections, subject entries, evidence, current action, and compact local history.
+- `ListActivity(business_id, limit, offset)` — newest-first paginated lifecycle events.
 
-All deep reads and writes are account scoped. A criteria-version change makes the prior assessment historical; the new practice is unknown until evaluated. Failed generations preserve the previous successful opportunity set.
+Reads require subscriber access and the viewer role. Lifecycle mutations require member role. Every query is account scoped.
 
-## Temporal orchestration
+## Frontend
 
-After `AnalyzeRun` succeeds, `RunWorkflow` starts one idempotent `AssessmentWorkflow` child. A Temporal version marker preserves replay compatibility with histories created before this stage existed.
+Improve contains only `/improve/actions`, `/improve/checklist`, and `/improve/activity`; `/improve` navigates to actions. There is no opportunities route or compatibility endpoint.
 
-1. `ResolveAssessmentPlan` validates deployment modes against the compiled registry, persists the generation, and records the sorted module plan in workflow history.
-2. Each required collector runs once; collector failures do not suppress independent modules.
-3. Generic `RunPracticeAssessor` activities run when their dependencies succeeded and persist active and shadow results.
-4. The compiler refreshes existing opportunity evidence, ranks active unmet assessments, and stores at most five opportunities.
-5. Completed opportunities receive idempotent later outcome observations from their evaluator.
-6. The generation finishes `READY`, `PARTIAL`, or `FAILED`.
+Next actions displays only active work. The checklist renders every catalog practice, including unregistered ones, and keeps acted-on historical dynamic subjects as “No longer tracked.” Expanded rows explain what is checked, why it matters, evidence and limitations, last successful check, sources/responses, current action, and local cycle history. Standing-count buttons filter rows with keyboard-accessible native controls. A healthy empty state says “All practices OpenSight can currently verify are in good standing,” never that the user has done everything, and the product calculates no score or grade.
 
-Workflow code sorts collector/module keys and performs no I/O. Network, database, current-time and registry/config resolution stay in activities.
+Activity states only what happened and when, links to the action and checklist practice, and makes no attribution to subsequent visibility.
 
-## Ranking and lifecycle
+## Deferred work
 
-Ranking is versioned independently and orders by direct prerequisite blocker, affected-question reach, persistence, evidence quality, actionability, lower effort, then stable practice and subject keys. The API exposes list, detail and status mutation. The UI shows at most three non-dismissed focus items and keeps completed/dismissed history available.
-
-States are `OPEN`, `IN_PROGRESS`, `COMPLETED`, and `DISMISSED`. Dismissal requires `NOT_RELEVANT`, `ALREADY_DONE`, `NOT_ACTIONABLE`, `TOO_MUCH_EFFORT`, or `OTHER`. Completion freezes result/prompt IDs and time. A later assessment may verify `MET`, but the UI reports it as an observation rather than causal proof.
-
-Deployment configuration uses `VISIBILITY_ASSESSOR_MODES` with explicit `assessor=DISABLED|SHADOW|ACTIVE` entries. Defaults are active search access and shadow authority/topic modules. Runtime plugins, database-authored rules and prompt-only modules are out of scope.
-
-## Deferred checklist
-
-The future checklist groups current assessments by catalog section and shows status, confidence, checked date, criteria version, evidence limits, related opportunity and verification history. It says “All currently assessed practices are met,” never “You have done everything.” Unknown, experimental and unassessed practices remain visible.
+Measured outcome comparison is deferred until a scheduled evaluator can compare frozen baselines with later monitored evidence honestly. The former status-only “later observation” evaluator is not an outcome and does not exist. Operator health reporting over generation, collector, and assessor failure distributions also remains deferred; the underlying records are retained for it.

@@ -2,8 +2,6 @@ package workflows
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,37 +18,34 @@ import (
 
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
-	"golang.org/x/net/html"
 )
 
 type AssessmentWorkflowInput struct{ AccountID, BusinessID, RunID domain.ID }
 type AssessmentPlan struct {
 	GenerationID domain.ID
+	Status       string
 	Entries      []store.ModulePlanEntry
 }
 
 func (a *Activities) ResolveAssessmentPlan(ctx context.Context, in AssessmentWorkflowInput) (AssessmentPlan, error) {
-	assessors := visibility.Assessors(a.AssessmentModes)
+	assessors := visibility.Assessors()
 	entries := make([]store.ModulePlanEntry, 0, len(assessors))
 	for _, assessor := range assessors {
 		m := assessor.Manifest()
-		if m.Mode == visibility.RolloutDisabled {
-			continue
-		}
 		for _, key := range m.PracticeKeys {
 			p, ok := visibility.Practice(key)
 			if !ok || p.AssessorKey != m.Key {
 				return AssessmentPlan{}, temporal.NewNonRetryableApplicationError("invalid visibility registry", "BadVisibilityRegistry", nil)
 			}
 		}
-		entries = append(entries, store.ModulePlanEntry{AssessorKey: m.Key, ModuleVersion: m.ModuleVersion, Mode: m.Mode, PracticeKeys: m.PracticeKeys, RequiredCollectors: m.RequiredCollectors})
+		entries = append(entries, store.ModulePlanEntry{AssessorKey: m.Key, ModuleVersion: m.ModuleVersion, PracticeKeys: m.PracticeKeys, RequiredCollectors: m.RequiredCollectors})
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].AssessorKey < entries[j].AssessorKey })
 	generation, err := a.Store.StartAssessmentGeneration(ctx, in.AccountID, in.BusinessID, in.RunID, entries)
 	if err != nil {
 		return AssessmentPlan{}, err
 	}
-	return AssessmentPlan{GenerationID: generation.ID, Entries: entries}, nil
+	return AssessmentPlan{GenerationID: generation.ID, Status: generation.Status, Entries: entries}, nil
 }
 
 type CollectEvidenceInput struct {
@@ -80,7 +75,9 @@ func (a *Activities) CollectAssessmentEvidence(ctx context.Context, in CollectEv
 		if business.Website == nil {
 			scan.Failure = "business website is not configured"
 		} else {
-			scan = scanOwnedSite(ctx, *business.Website)
+			fetcher := newSiteFetcher()
+			scan = scanOwnedSite(ctx, fetcher, *business.Website)
+			fetcher.closeIdleConnections()
 		}
 		artifact.Payload, err = json.Marshal(scan)
 		collectErr = err
@@ -96,7 +93,10 @@ func (a *Activities) CollectAssessmentEvidence(ctx context.Context, in CollectEv
 	return artifact, nil
 }
 
-func scanOwnedSite(ctx context.Context, website string) visibility.OwnedSiteScan {
+// scanOwnedSite inspects the business site once. The fetcher supplies the page
+// text, the checked URLs and the indexing directives it read while it had the
+// markup in hand, so the only extra request the scan makes is robots.txt.
+func scanOwnedSite(ctx context.Context, fetcher *siteFetcher, website string) visibility.OwnedSiteScan {
 	scan := visibility.OwnedSiteScan{PayloadVersion: 1}
 	u, err := url.Parse(website)
 	if err != nil || u.Hostname() == "" {
@@ -104,90 +104,94 @@ func scanOwnedSite(ctx context.Context, website string) visibility.OwnedSiteScan
 		return scan
 	}
 	scan.Host = strings.ToLower(u.Hostname())
-	client := newSafeFetchHTTPClient()
-	defer client.CloseIdleConnections()
-	fetcher := newSiteFetcher()
-	defer fetcher.closeIdleConnections()
+
 	out, err := fetcher.Fetch(ctx, FetchSiteInput{Website: website})
-	if err != nil {
-		rootReq, requestErr := http.NewRequestWithContext(ctx, http.MethodGet, website, nil)
-		if requestErr != nil {
-			scan.Failure = requestErr.Error()
-			return scan
-		}
-		resp, requestErr := client.Do(rootReq)
-		if requestErr != nil {
-			scan.Failure = err.Error()
-			return scan
-		}
-		scan.CheckedURLs = append(scan.CheckedURLs, resp.Request.URL.String())
-		scan.AuthBarrier = resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden
-		_ = resp.Body.Close()
-		if !scan.AuthBarrier {
-			scan.Failure = err.Error()
-			return scan
-		}
-	} else {
+	switch {
+	case err == nil:
 		scan.Reachable = true
 		scan.Text = out.Text
 		scan.CheckedURLs = out.URLs
-		sum := sha256.Sum256([]byte(out.Text))
-		scan.Hashes = []string{hex.EncodeToString(sum[:])}
-		scan.Summaries = []string{truncateText(out.Text, 500)}
+		// The homepage is the site's most linked and most cited page, so a
+		// barrier there is a barrier for the site even when other pages are
+		// public. Away from it one noindex page (a thank-you or search page) is
+		// incidental, and only a directive on every page the fetcher read
+		// counts.
+		scan.AuthBarrier = out.HomeAuthBarrier
+		scan.NoIndex = out.HomeNoIndex || len(out.NoIndexURLs) > 0 && len(out.NoIndexURLs) == len(out.URLs)
+	case errors.Is(err, errAuthBarrier):
+		// The fetch already saw the 401/403; the barrier is confirmed without
+		// asking the site again.
+		scan.AuthBarrier = true
+		scan.CheckedURLs = []string{website}
+	default:
+		scan.Failure = err.Error()
+		return scan
 	}
-	rootReq, requestErr := http.NewRequestWithContext(ctx, http.MethodGet, website, nil)
-	if requestErr == nil {
-		if resp, e := client.Do(rootReq); e == nil {
-			body, _ := io.ReadAll(io.LimitReader(resp.Body, 256*1024))
-			_ = resp.Body.Close()
-			scan.AuthBarrier = resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden
-			scan.NoIndex = strings.Contains(strings.ToLower(resp.Header.Get("X-Robots-Tag")), "noindex") || htmlNoIndex(body)
-		}
-	}
+
 	robots := *u
 	robots.Path = "/robots.txt"
 	robots.RawQuery = ""
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, robots.String(), nil)
-	if resp, e := client.Do(req); e == nil {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 128*1024))
-		_ = resp.Body.Close()
-		scan.CheckedURLs = append(scan.CheckedURLs, robots.String())
-		scan.OAIBlocked = robotsDeniesOAI(string(body))
+	denied, robotsErr := inspectRobots(ctx, fetcher.client, robots.String(), checkedPaths(scan.CheckedURLs))
+	scan.CheckedURLs = append(scan.CheckedURLs, robots.String())
+	switch {
+	case robotsErr == nil:
+		scan.OAIBlocked = denied
+	case scan.AuthBarrier || scan.NoIndex:
+		// A confirmed barrier already answers the practice; robots.txt cannot
+		// make the verdict any better.
+	default:
+		// Nothing else was confirmed, so the site was not inspected reliably:
+		// report unknown rather than a silent pass.
+		scan.Failure = "robots.txt could not be inspected: " + robotsErr.Error()
 	}
 	return scan
 }
-func htmlNoIndex(body []byte) bool {
-	doc, err := html.Parse(strings.NewReader(string(body)))
+
+// inspectRobots reports whether robots.txt denies OAI-SearchBot any of the
+// checked paths. A 4xx means the site publishes no robots file and therefore
+// disallows nothing; a 5xx or a transport failure is an inspection failure the
+// caller must not read as a pass.
+func inspectRobots(ctx context.Context, client *http.Client, robotsURL string, paths []string) (bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, robotsURL, nil)
 	if err != nil {
-		return false
+		return false, err
 	}
-	var visit func(*html.Node) bool
-	visit = func(n *html.Node) bool {
-		if n.Type == html.ElementNode && n.Data == "meta" {
-			name, content := "", ""
-			for _, attr := range n.Attr {
-				switch strings.ToLower(attr.Key) {
-				case "name":
-					name = strings.ToLower(strings.TrimSpace(attr.Val))
-				case "content":
-					content = strings.ToLower(attr.Val)
-				}
-			}
-			if (name == "robots" || name == "oai-searchbot") && strings.Contains(content, "noindex") {
-				return true
-			}
-		}
-		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			if visit(child) {
-				return true
-			}
-		}
-		return false
+	req.Header.Set("Accept", "text/plain,*/*")
+	req.Header.Set("User-Agent", fetchSiteUserAgent)
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
 	}
-	return visit(doc)
+	defer func() { _ = resp.Body.Close() }()
+	switch {
+	case resp.StatusCode >= 200 && resp.StatusCode < 300:
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 128*1024))
+		if readErr != nil {
+			return false, readErr
+		}
+		return robotsDeniesOAI(string(body), paths), nil
+	case resp.StatusCode >= 400 && resp.StatusCode < 500:
+		return false, nil
+	default:
+		return false, fmt.Errorf("robots.txt returned status %d", resp.StatusCode)
+	}
 }
 
-func robotsDeniesOAI(raw string) bool {
+// checkedPaths returns the paths the robots rules are evaluated against: the
+// site root plus every page the fetcher actually read.
+func checkedPaths(urls []string) []string {
+	paths := []string{"/"}
+	for _, raw := range urls {
+		if parsed, err := url.Parse(raw); err == nil && parsed.Path != "" && parsed.Path != "/" {
+			paths = append(paths, parsed.Path)
+		}
+	}
+	return paths
+}
+
+// robotsDeniesOAI reports whether robots.txt denies OAI-SearchBot any of the
+// given page paths.
+func robotsDeniesOAI(raw string, paths []string) bool {
 	type rule struct {
 		allow bool
 		path  string
@@ -225,22 +229,26 @@ func robotsDeniesOAI(raw string) bool {
 	if len(selected) == 0 {
 		selected = rules["*"]
 	}
-	matched := -1
-	allowed := true
-	for _, candidate := range selected {
-		if strings.HasPrefix("/", candidate.path) && (len(candidate.path) > matched || len(candidate.path) == matched && candidate.allow) {
-			matched = len(candidate.path)
-			allowed = candidate.allow
+	if len(paths) == 0 {
+		paths = []string{"/"}
+	}
+	for _, path := range paths {
+		// The matching subject is the page path and a rule value is a path
+		// prefix, so the page is the HasPrefix argument, not the rule. The
+		// longest matching rule wins and Allow wins an equal-length tie.
+		matched := -1
+		allowed := true
+		for _, candidate := range selected {
+			if strings.HasPrefix(strings.ToLower(path), candidate.path) && (len(candidate.path) > matched || len(candidate.path) == matched && candidate.allow) {
+				matched = len(candidate.path)
+				allowed = candidate.allow
+			}
+		}
+		if matched >= 0 && !allowed {
+			return true
 		}
 	}
-	return matched >= 0 && !allowed
-}
-func truncateText(s string, n int) string {
-	r := []rune(strings.TrimSpace(s))
-	if len(r) <= n {
-		return string(r)
-	}
-	return string(r[:n])
+	return false
 }
 
 type boundedHTTPResearcher struct {
@@ -283,13 +291,14 @@ type RunAssessorInput struct {
 	Artifacts    []visibility.EvidenceArtifact
 }
 type RunAssessorOutput struct {
+	AssessorKey   string
 	Drafts        []visibility.AssessmentDraft
 	AssessmentIDs []domain.ID
 }
 
 func (a *Activities) RunPracticeAssessor(ctx context.Context, in RunAssessorInput) (RunAssessorOutput, error) {
 	var selected visibility.PracticeAssessor
-	for _, candidate := range visibility.Assessors(a.AssessmentModes) {
+	for _, candidate := range visibility.Assessors() {
 		if candidate.Manifest().Key == in.Entry.AssessorKey && candidate.Manifest().ModuleVersion == in.Entry.ModuleVersion {
 			selected = candidate
 			break
@@ -308,12 +317,12 @@ func (a *Activities) RunPracticeAssessor(ctx context.Context, in RunAssessorInpu
 	if len(drafts) > m.MaxOutput {
 		return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("assessor output exceeds limit", "BadAssessorOutput", nil)
 	}
-	out := RunAssessorOutput{Drafts: drafts}
+	out := RunAssessorOutput{AssessorKey: m.Key, Drafts: drafts}
 	for _, d := range drafts {
 		if err := visibility.ValidateDraft(d, m); err != nil {
 			return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("invalid assessment", "BadAssessorOutput", err)
 		}
-		id, err := a.Store.SaveAssessment(ctx, in.GenerationID, in.AccountID, in.BusinessID, d, in.Entry.Mode)
+		id, err := a.Store.SaveAssessment(ctx, in.GenerationID, in.AccountID, in.BusinessID, d)
 		if err != nil {
 			return RunAssessorOutput{}, err
 		}
@@ -322,19 +331,14 @@ func (a *Activities) RunPracticeAssessor(ctx context.Context, in RunAssessorInpu
 	return out, nil
 }
 
-type CompileOpportunitiesInput struct {
+type PublishAssessmentsInput struct {
 	AssessmentWorkflowInput
 	GenerationID domain.ID
 	Outputs      []RunAssessorOutput
-	Entries      []store.ModulePlanEntry
-	HadFailure   bool
+	Outcomes     []store.ModuleOutcome
 }
 
-func (a *Activities) CompileOpportunities(ctx context.Context, in CompileOpportunitiesInput) error {
-	modes := map[string]visibility.RolloutMode{}
-	for _, e := range in.Entries {
-		modes[e.AssessorKey] = e.Mode
-	}
+func (a *Activities) PublishAssessments(ctx context.Context, in PublishAssessmentsInput) error {
 	drafts := []visibility.AssessmentDraft{}
 	ids := map[string]domain.ID{}
 	for _, o := range in.Outputs {
@@ -345,59 +349,16 @@ func (a *Activities) CompileOpportunities(ctx context.Context, in CompileOpportu
 			}
 		}
 	}
-	compiled, err := visibility.Compile(drafts, modes)
+	compiled, err := visibility.Compile(drafts)
 	if err != nil {
-		_ = a.Store.FinishAssessmentGeneration(ctx, in.GenerationID, in.AccountID, "FAILED", err)
+		_ = a.Store.FailAssessmentGeneration(ctx, in.GenerationID, in.AccountID, in.Outcomes, err)
 		return err
 	}
-	presenters := visibility.Presenters()
-	for _, draft := range drafts {
-		if modes[draft.AssessorKey] != visibility.RolloutActive {
-			continue
-		}
-		presenter := presenters[draft.AssessorKey]
-		if presenter == nil {
-			continue
-		}
-		presentation, presentErr := presenter.Present(draft)
-		if presentErr != nil {
-			continue
-		}
-		_ = a.Store.RefreshExistingOpportunity(ctx, in.AccountID, in.BusinessID, ids[draft.PracticeKey+"\x00"+draft.SubjectKey], draft, presentation)
+	items := make([]store.CompiledAction, 0, len(compiled))
+	for _, item := range compiled {
+		items = append(items, store.CompiledAction{AssessmentID: ids[item.Draft.PracticeKey+"\x00"+item.Draft.SubjectKey], CompiledAssessment: item})
 	}
-	for i, item := range compiled {
-		id := ids[item.Draft.PracticeKey+"\x00"+item.Draft.SubjectKey]
-		if _, err := a.Store.SaveOpportunity(ctx, in.AccountID, in.BusinessID, id, i+1, item.Draft, item.Presentation); err != nil {
-			return err
-		}
-	}
-	candidates, err := a.Store.ListCompletedOutcomeCandidates(ctx, in.GenerationID, in.AccountID, in.BusinessID)
-	if err != nil {
-		return err
-	}
-	for _, candidate := range candidates {
-		practice, ok := visibility.Practice(candidate.PracticeKey)
-		if !ok {
-			continue
-		}
-		evaluator := visibility.Evaluators()[practice.EvaluatorKey]
-		if evaluator == nil {
-			continue
-		}
-		observations, evaluateErr := evaluator.Evaluate(ctx, visibility.Opportunity{ID: candidate.ID.String(), PracticeKey: candidate.PracticeKey, SubjectKey: candidate.SubjectKey, Assessment: candidate.Assessment}, visibility.NewEvidenceView(nil))
-		if evaluateErr != nil {
-			continue
-		}
-		for _, observation := range observations {
-			key := fmt.Sprintf("outcome:%s:%s", in.GenerationID, observation.Key)
-			_ = a.Store.AppendOutcomeObservation(ctx, in.AccountID, candidate.ID, key, observation.Payload)
-		}
-	}
-	status := "READY"
-	if in.HadFailure {
-		status = "PARTIAL"
-	}
-	return a.Store.FinishAssessmentGeneration(ctx, in.GenerationID, in.AccountID, status, nil)
+	return a.Store.PublishAssessmentGeneration(ctx, in.AccountID, in.BusinessID, in.GenerationID, in.Outcomes, items)
 }
 
 func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error {
@@ -405,6 +366,9 @@ func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error 
 	var plan AssessmentPlan
 	if err := workflow.ExecuteActivity(activityCtx, acts.ResolveAssessmentPlan, in).Get(ctx, &plan); err != nil {
 		return err
+	}
+	if plan.Status != "RUNNING" {
+		return nil
 	}
 	collectorSet := map[string]bool{}
 	for _, entry := range plan.Entries {
@@ -426,17 +390,16 @@ func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error 
 		pendingCollectors = append(pendingCollectors, pending{key, workflow.ExecuteActivity(activityCtx, acts.CollectAssessmentEvidence, CollectEvidenceInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, CollectorKey: key})})
 	}
 	artifacts := map[string]visibility.EvidenceArtifact{}
-	failed := false
 	for _, p := range pendingCollectors {
 		var artifact visibility.EvidenceArtifact
 		if err := p.future.Get(ctx, &artifact); err != nil {
-			failed = true
 			workflow.GetLogger(ctx).Error("evidence collector failed", "collector", p.key, "error", err.Error())
 			continue
 		}
 		artifacts[p.key] = artifact
 	}
 	outputs := []RunAssessorOutput{}
+	outcomes := []store.ModuleOutcome{}
 	for _, entry := range plan.Entries {
 		available := true
 		deps := make([]visibility.EvidenceArtifact, 0, len(entry.RequiredCollectors))
@@ -449,17 +412,18 @@ func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error 
 			deps = append(deps, artifact)
 		}
 		if !available {
-			failed = true
+			outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "SKIPPED", Error: "required evidence was unavailable"})
 			continue
 		}
 		assessorCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{StartToCloseTimeout: time.Minute, RetryPolicy: &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 2}})
 		var out RunAssessorOutput
 		if err := workflow.ExecuteActivity(assessorCtx, acts.RunPracticeAssessor, RunAssessorInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Entry: entry, Artifacts: deps}).Get(ctx, &out); err != nil {
-			failed = true
+			outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "FAILED", Error: err.Error()})
 			workflow.GetLogger(ctx).Error("practice assessor failed", "assessor", entry.AssessorKey, "error", err.Error())
 			continue
 		}
 		outputs = append(outputs, out)
+		outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "SUCCEEDED"})
 	}
-	return workflow.ExecuteActivity(activityCtx, acts.CompileOpportunities, CompileOpportunitiesInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Outputs: outputs, Entries: plan.Entries, HadFailure: failed}).Get(ctx, nil)
+	return workflow.ExecuteActivity(activityCtx, acts.PublishAssessments, PublishAssessmentsInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Outputs: outputs, Outcomes: outcomes}).Get(ctx, nil)
 }

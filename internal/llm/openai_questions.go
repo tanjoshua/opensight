@@ -18,16 +18,7 @@ const openAIQuestionsSchemaName = "customer_questions"
 // question-generation call (design 03, "Prompt generation rules"). Unlike
 // ProposeProfile this call does no research — the profile is already reviewed
 // — so there is no web_search tool and no evidence-gathering guidance here.
-const questionsInstructions = `Generate customer questions for a clinic/practice — the product's core measurement instrument. The business profile has already been reviewed and confirmed by its owner; you do no research here, only draft questions from the given category, services, and city.
-
-RULES
-- Generate EXACTLY prompt_count questions (given in the input; never hardcode a number).
-- A question's text must NEVER contain the business name or any alias, in any form. Questions simulate a prospective customer who does not know this business exists yet.
-- Vary the set across broad category searches ("best <category> in <city>"), specific services drawn from the given list, and symptom or problem descriptions related to the category. Ground questions in the given city only — never a neighbourhood, district, street, or landmark within it.
-- Phrase every question the way a real person types a question or problem to a chatbot — natural questions or problem statements, never a bare keyword string.
-
-RETRY
-- If prior output and validation failures are provided, they list exactly what was wrong. Fix all of them and re-emit the FULL corrected list, not a diff.`
+const questionsInstructions = `Generate exactly prompt_count natural questions a prospective customer might ask when looking for or choosing a provider in the given city. Draft them only from the confirmed category and services in the input.`
 
 // questionsJSONSchema is the strict-mode structured-output schema. Strict mode
 // does not support array length keywords, so the exact question count is

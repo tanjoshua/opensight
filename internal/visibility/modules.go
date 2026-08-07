@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
+	"time"
 )
 
 const (
@@ -17,58 +19,82 @@ const (
 )
 
 type MonitoringSnapshot struct {
-	PayloadVersion            int `json:"payload_version"`
-	BusinessName, WebsiteHost string
-	Runs                      []SnapshotRun `json:"runs"`
+	PayloadVersion int           `json:"payload_version"`
+	BusinessName   string        `json:"business_name"`
+	WebsiteHost    string        `json:"website_host"`
+	Runs           []SnapshotRun `json:"runs"`
 }
 type SnapshotRun struct {
 	RunID   string           `json:"run_id"`
 	Results []SnapshotResult `json:"results"`
 }
 type SnapshotResult struct {
-	ResultID, PromptID, Prompt, ResponseText   string
-	Mentioned                                  bool
-	Competitors, CitationDomains, CitationURLs []string
+	ResultID string `json:"result_id"`
+	PromptID string `json:"prompt_id"`
+	Prompt   string `json:"prompt"`
+	// ResponseText is the only unrecoverable field in the payload: mentions and
+	// citations are extractions of it, so an assessor that reads answers can
+	// only ever be replayed over history that kept the answers.
+	ResponseText    string   `json:"response_text"`
+	Mentioned       bool     `json:"mentioned"`
+	Competitors     []string `json:"competitors"`
+	CitationDomains []string `json:"citation_domains"`
+	CitationURLs    []string `json:"citation_urls"`
 }
 type OwnedSiteScan struct {
-	PayloadVersion                              int      `json:"payload_version"`
-	Host                                        string   `json:"host"`
-	CheckedURLs                                 []string `json:"checked_urls"`
-	Summaries                                   []string `json:"summaries"`
-	Hashes                                      []string `json:"hashes"`
-	Text                                        string   `json:"text"`
-	Reachable, AuthBarrier, NoIndex, OAIBlocked bool
-	Failure                                     string `json:"failure,omitempty"`
+	PayloadVersion int      `json:"payload_version"`
+	Host           string   `json:"host"`
+	CheckedURLs    []string `json:"checked_urls"`
+	Text           string   `json:"text"`
+	Reachable      bool     `json:"reachable"`
+	AuthBarrier    bool     `json:"auth_barrier"`
+	NoIndex        bool     `json:"noindex"`
+	OAIBlocked     bool     `json:"oai_blocked"`
+	Failure        string   `json:"failure,omitempty"`
 }
 
-type staticAssessor struct{ manifest AssessorManifest }
+type assessFunc func(context.Context, EvidenceView, BoundedResearcher, AssessorManifest) ([]AssessmentDraft, error)
+
+type staticAssessor struct {
+	manifest AssessorManifest
+	assess   assessFunc
+}
 
 func (a staticAssessor) Manifest() AssessorManifest { return a.manifest }
 func (a staticAssessor) Assess(ctx context.Context, evidence EvidenceView, research BoundedResearcher) ([]AssessmentDraft, error) {
-	switch a.manifest.Key {
-	case "search-access":
-		return assessSearchAccess(evidence, a.manifest)
-	case "influential-source":
-		return assessAuthority(ctx, evidence, research, a.manifest)
-	case "tracked-topic":
-		return assessTopics(evidence, a.manifest)
-	default:
-		return nil, fmt.Errorf("unknown assessor %q", a.manifest.Key)
-	}
+	return a.assess(ctx, evidence, research, a.manifest)
 }
 
-func Assessors(modes map[string]RolloutMode) []PracticeAssessor {
-	mode := func(k string) RolloutMode {
-		if m := modes[k]; m != "" {
-			return m
+// assessors lists every implemented assessor, registered or not, next to the
+// function that runs it — so adding one is a single entry here rather than an
+// entry plus an arm in a dispatch switch.
+//
+// The budgets are calibrated and load-bearing — assessAuthority and assessTopics
+// stop emitting at MaxOutput, so a zero there silently returns nothing — which
+// is why an unregistered assessor keeps its manifest instead of losing it along
+// with its registration.
+var assessors = []staticAssessor{
+	{AssessorManifest{Key: "search-access", ModuleVersion: 1, PracticeKeys: []string{PracticeSearchAccess}, RequiredCollectors: []string{CollectorOwnedSite}, MaxURLInspections: 2, MaxRuntime: 30 * time.Second, MaxOutput: 1}, assessSearchAccess},
+	{AssessorManifest{Key: "influential-source", ModuleVersion: 1, PracticeKeys: []string{PracticeAuthority}, RequiredCollectors: []string{CollectorMonitoring}, MaxURLInspections: 5, MaxRuntime: 45 * time.Second, MaxOutput: 10}, assessAuthority},
+	{AssessorManifest{Key: "tracked-topic", ModuleVersion: 1, PracticeKeys: []string{PracticeTopicCoverage}, RequiredCollectors: []string{CollectorMonitoring, CollectorOwnedSite}, MaxRuntime: 10 * time.Second, MaxOutput: 10}, assessTopics},
+}
+
+// registeredAssessors names the assessors that run in production. The other two
+// are implemented and exercised by the fixture quality gate but never assessed,
+// so their catalog entries stay UNKNOWN. Promotion is one entry here: the
+// assessor starts running, and its fixture misses start failing the build.
+var registeredAssessors = []string{"search-access"}
+
+func registered(key string) bool { return slices.Contains(registeredAssessors, key) }
+
+func Assessors() []PracticeAssessor {
+	out := make([]PracticeAssessor, 0, len(registeredAssessors))
+	for _, a := range assessors {
+		if registered(a.manifest.Key) {
+			out = append(out, a)
 		}
-		return RolloutShadow
 	}
-	return []PracticeAssessor{
-		staticAssessor{AssessorManifest{Key: "search-access", ModuleVersion: 1, PracticeKeys: []string{PracticeSearchAccess}, RequiredCollectors: []string{CollectorOwnedSite}, Mode: mode("search-access"), MaxURLInspections: 2, MaxRuntime: 30_000_000_000, MaxOutput: 1, PresenterKey: "search-access", EvaluatorKey: "site-access"}},
-		staticAssessor{AssessorManifest{Key: "influential-source", ModuleVersion: 1, PracticeKeys: []string{PracticeAuthority}, RequiredCollectors: []string{CollectorMonitoring}, Mode: mode("influential-source"), MaxURLInspections: 5, MaxRuntime: 45_000_000_000, MaxOutput: 10, PresenterKey: "influential-source", EvaluatorKey: "question-presence"}},
-		staticAssessor{AssessorManifest{Key: "tracked-topic", ModuleVersion: 1, PracticeKeys: []string{PracticeTopicCoverage}, RequiredCollectors: []string{CollectorMonitoring, CollectorOwnedSite}, Mode: mode("tracked-topic"), MaxOutput: 10, MaxRuntime: 10_000_000_000, PresenterKey: "tracked-topic", EvaluatorKey: "question-presence"}},
-	}
+	return out
 }
 
 func decodeArtifact[T any](v EvidenceView, key string, version int) (T, error) {
@@ -87,16 +113,15 @@ func decodeArtifact[T any](v EvidenceView, key string, version int) (T, error) {
 }
 func payload(v any) json.RawMessage { b, _ := json.Marshal(v); return b }
 
-func assessSearchAccess(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error) {
+func assessSearchAccess(_ context.Context, v EvidenceView, _ BoundedResearcher, m AssessorManifest) ([]AssessmentDraft, error) {
 	s, err := decodeArtifact[OwnedSiteScan](v, CollectorOwnedSite, 1)
 	if err != nil {
 		return nil, err
 	}
-	d := AssessmentDraft{PracticeKey: PracticeSearchAccess, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: s.Host, Confidence: .95, Reach: 100, Persistence: 100, EvidenceQuality: 100, Actionability: 100, Effort: 2, PayloadVersion: 1}
+	d := AssessmentDraft{PracticeKey: PracticeSearchAccess, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: BusinessSubjectKey, Reach: 100, Persistence: 100, EvidenceQuality: 100, Actionability: 100, Effort: 2, PayloadVersion: 1}
 	switch {
 	case s.Failure != "":
 		d.Status = StatusUnknown
-		d.Confidence = .2
 		d.Explanation = "The website could not be inspected reliably: " + s.Failure
 	case s.AuthBarrier || s.NoIndex || s.OAIBlocked || !s.Reachable:
 		d.Status = StatusNotMet
@@ -159,7 +184,7 @@ func assessAuthority(ctx context.Context, v EvidenceView, research BoundedResear
 		if !recurring {
 			continue
 		}
-		d := AssessmentDraft{PracticeKey: PracticeAuthority, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: domain, Status: StatusUnknown, Confidence: .35, Explanation: "This source recurs in affected answers, but business presence could not be verified reliably.", ResultIDs: dedupe(x.results), Reach: len(x.prompts), Persistence: len(x.runs), EvidenceQuality: 2, Actionability: 2, Effort: 2, PayloadVersion: 1}
+		d := AssessmentDraft{PracticeKey: PracticeAuthority, CriteriaVersion: 1, AssessorKey: m.Key, AssessorVersion: m.ModuleVersion, SubjectKey: domain, Status: StatusUnknown, Explanation: "This source recurs in affected answers, but business presence could not be verified reliably.", ResultIDs: dedupe(x.results), Reach: len(x.prompts), Persistence: len(x.runs), EvidenceQuality: 2, Actionability: 2, Effort: 2, PayloadVersion: 1}
 		found := false
 		for _, raw := range dedupe(x.urls) {
 			if research == nil {
@@ -177,11 +202,9 @@ func assessAuthority(ctx context.Context, v EvidenceView, research BoundedResear
 		}
 		if found {
 			d.Status = StatusMet
-			d.Confidence = .8
 			d.Explanation = "The business is present on this recurring influential source."
 		} else if len(d.CheckedSources) > 0 && len(x.competitors) > 0 {
 			d.Status = StatusNotMet
-			d.Confidence = .75
 			d.Explanation = "Competitors appear in affected answers using this recurring source, while the inspected relevant pages do not mention the business."
 		}
 		d.Payload = payload(map[string]any{"domain": domain, "affected_questions": len(x.prompts), "recurring_runs": len(x.runs)})
@@ -193,7 +216,7 @@ func assessAuthority(ctx context.Context, v EvidenceView, research BoundedResear
 	return out, nil
 }
 
-func assessTopics(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error) {
+func assessTopics(_ context.Context, v EvidenceView, _ BoundedResearcher, m AssessorManifest) ([]AssessmentDraft, error) {
 	mon, err := decodeArtifact[MonitoringSnapshot](v, CollectorMonitoring, 1)
 	if err != nil {
 		return nil, err
@@ -242,19 +265,15 @@ func assessTopics(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error)
 		switch {
 		case site.Failure != "":
 			d.Status = StatusUnknown
-			d.Confidence = .2
 			d.Explanation = "Owned content could not be assessed reliably."
 		case topicCovered(site.Text, key):
 			d.Status = StatusMet
-			d.Confidence = .75
 			d.Explanation = "Accessible owned content clearly covers this tracked customer need."
 		case strings.Contains(strings.ToLower(site.Text), strings.Fields(key)[0]):
 			d.Status = StatusPartial
-			d.Confidence = .65
 			d.Explanation = "The topic is mentioned on the site but important details are difficult to find or incomplete."
 		default:
 			d.Status = StatusNotMet
-			d.Confidence = .7
 			d.Explanation = "No clear accessible owned coverage was found for this recurring customer need."
 		}
 		d.CheckedSources = site.CheckedURLs
@@ -317,18 +336,23 @@ func mapKeys(m map[string]bool) []string {
 	return out
 }
 
-type standardPresenter struct{ key string }
+// catalogPresenter renders any practice from its catalog entry, so a new
+// practice needs no presenter code. It is the only Presenter; the interface
+// stays as the seam for a practice that eventually needs bespoke rendering.
+type catalogPresenter struct{}
 
-func (p standardPresenter) Key() string { return p.key }
-func (p standardPresenter) Present(d AssessmentDraft) (Presentation, error) {
-	def, _ := Practice(d.PracticeKey)
+func (catalogPresenter) Present(d AssessmentDraft) (Presentation, error) {
+	def, ok := Practice(d.PracticeKey)
+	if !ok {
+		return Presentation{}, fmt.Errorf("unknown practice %q", d.PracticeKey)
+	}
 	effort := []string{"", "Small", "Small", "Medium", "Large"}[min(4, max(1, d.Effort))]
 	title := def.Title
-	if d.PracticeKey != PracticeSearchAccess {
+	if def.SubjectInTitle {
 		title += ": " + d.SubjectKey
 	}
 	blocks := []PresentationBlock{{Type: BlockText, Title: "Why this is showing", Text: d.Explanation}}
-	blocks = append(blocks, PresentationBlock{Type: BlockQuestionList, Title: "Suggested steps", Items: stepsFor(d.PracticeKey)})
+	blocks = append(blocks, PresentationBlock{Type: BlockQuestionList, Title: "Suggested steps", Items: def.Steps})
 	if len(d.ResultIDs) > 0 {
 		blocks = append(blocks, PresentationBlock{Type: BlockMetric, Title: "Affected responses", Value: fmt.Sprint(len(d.ResultIDs)), ResultIDs: d.ResultIDs})
 	}
@@ -345,79 +369,31 @@ func (p standardPresenter) Present(d AssessmentDraft) (Presentation, error) {
 	return pres, ValidatePresentation(pres)
 }
 
-func stepsFor(practiceKey string) []string {
-	switch practiceKey {
-	case PracticeSearchAccess:
-		return []string{"Remove the confirmed access or indexing barrier.", "Publish the affected pages without authentication.", "Wait for a later monitoring run to verify access again."}
-	case PracticeAuthority:
-		return []string{"Review the checked source and its contribution rules.", "Add a complete, accurate business presence without incentives or fabricated reviews.", "Keep claims factual and avoid competitor comparisons."}
-	case PracticeTopicCoverage:
-		return []string{"Answer the tracked customer need explicitly on an appropriate owned page.", "Include concrete service, location, eligibility, and next-step details that are true.", "Make the page reachable from normal site navigation."}
-	default:
-		return nil
-	}
-}
-func Presenters() map[string]Presenter {
-	return map[string]Presenter{"search-access": standardPresenter{"search-access"}, "influential-source": standardPresenter{"influential-source"}, "tracked-topic": standardPresenter{"tracked-topic"}}
-}
-
-func Compile(drafts []AssessmentDraft, modes map[string]RolloutMode) ([]struct {
+// CompiledAssessment is one eligible assessment paired with the presentation
+// the compiler rendered for it. Its position in Compile's result is its rank.
+type CompiledAssessment struct {
 	Draft        AssessmentDraft
 	Presentation Presentation
-}, error) {
+}
+
+func Compile(drafts []AssessmentDraft) ([]CompiledAssessment, error) {
 	eligible := []AssessmentDraft{}
 	for _, d := range drafts {
-		if Eligible(d, modes[d.AssessorKey]) {
-			if err := ValidateSafety(d); err != nil {
-				continue
-			}
+		if Eligible(d) {
 			eligible = append(eligible, d)
 		}
 	}
 	Rank(eligible)
-	if len(eligible) > 5 {
-		eligible = eligible[:5]
-	}
-	presenters := Presenters()
-	out := make([]struct {
-		Draft        AssessmentDraft
-		Presentation Presentation
-	}, 0, len(eligible))
+	// Practices are described entirely by their catalog entry, so one presenter
+	// serves all of them; the interface stays the compiler's rendering seam.
+	var presenter Presenter = catalogPresenter{}
+	out := make([]CompiledAssessment, 0, len(eligible))
 	for _, d := range eligible {
-		p, ok := presenters[d.AssessorKey]
-		if !ok {
-			return nil, fmt.Errorf("missing presenter")
-		}
-		pres, err := p.Present(d)
+		pres, err := presenter.Present(d)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, struct {
-			Draft        AssessmentDraft
-			Presentation Presentation
-		}{d, pres})
+		out = append(out, CompiledAssessment{Draft: d, Presentation: pres})
 	}
 	return out, nil
-}
-
-type statusEvaluator struct{ key string }
-
-func (e statusEvaluator) Key() string { return e.key }
-func (e statusEvaluator) Evaluate(_ context.Context, opportunity Opportunity, _ EvidenceView) ([]OutcomeObservation, error) {
-	payload, err := json.Marshal(map[string]any{
-		"assessment_status": opportunity.Assessment.Status,
-		"result_ids":        opportunity.Assessment.ResultIDs,
-		"prompt_ids":        opportunity.Assessment.PromptIDs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return []OutcomeObservation{{Key: "assessment", Payload: payload}}, nil
-}
-
-func Evaluators() map[string]OpportunityEvaluator {
-	return map[string]OpportunityEvaluator{
-		"site-access":       statusEvaluator{key: "site-access"},
-		"question-presence": statusEvaluator{key: "question-presence"},
-	}
 }
