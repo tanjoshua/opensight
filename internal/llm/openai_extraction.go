@@ -16,7 +16,7 @@ import (
 // recorded per row as result_analyses.extraction_version so a later pass can
 // target "re-analyze everything below version N" (design 05). Bump it in the
 // same commit as any change to extractionInstructions or extractionJSONSchema.
-const ExtractionPromptVersion = 3
+const ExtractionPromptVersion = 4
 
 const openAIExtractionSchemaName = "result_extraction"
 
@@ -36,7 +36,7 @@ ENTITIES (organizations only)
 
 TARGET
 - Set target to null if the target business is not mentioned at all.
-- Otherwise, sentiment/keywords describe HOW THE RESPONSE CHARACTERISES THE TARGET BUSINESS specifically — not the response's overall tone. keywords are the recurring descriptors or themes applied to the target.
+- Otherwise, sentiment/keywords describe HOW THE RESPONSE CHARACTERISES THE TARGET BUSINESS specifically — not the response's overall tone. keywords are descriptors or themes applied to the target.
 - Every keyword and the sentiment must be supportable by one of the excerpts. Each excerpt must be an exact quote from the response text (only incidental whitespace may differ).
 
 CITATIONS

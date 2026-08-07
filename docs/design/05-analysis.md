@@ -39,7 +39,7 @@ One structured-output LLM call per succeeded result. A small/cheap model (mini-c
   ],
   "target": {             // null if business not mentioned
     "sentiment": "positive|neutral|negative|mixed",
-    "keywords": ["…"],    // recurring descriptors/themes about the business
+    "keywords": ["…"],    // descriptors/themes applied to the business
     "excerpts": ["…"]     // quotes supporting sentiment + keywords
   },
   "citations": [          // aligned to the response's citation annotations

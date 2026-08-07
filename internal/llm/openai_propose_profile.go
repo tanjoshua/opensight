@@ -19,21 +19,21 @@ const openAIProposeProfileSchemaName = "profile_proposal"
 // non-research call (see questionsInstructions in openai_questions.go) fired
 // on demand after the user reviews Services, so this prompt covers only the
 // business profile.
-const proposeProfileInstructions = `Research and draft a business profile proposal for a clinic/practice. The business owner will review it before anything is saved. Use web search and agentic browsing to gather evidence. Do not invent facts beyond what site_text and your web research support.
+const proposeProfileInstructions = `Research and draft a business profile proposal for a specialist clinic or practice. The owner will review it before it is saved. Use web search and agentic browsing, and do not invent unsupported facts.
 
-RESEARCH (do this before drafting)
-- site_text is the primary evidence: the business's own website, pre-fetched for you. It may be empty or thin (some sites render nothing without JavaScript, which the fetcher cannot run).
-- The business website URL is given as "website". If site_text is empty or thin, OPEN that URL directly and read it yourself — this is the single most reliable source. When there is no site evidence at all, web search (including opening the site and directory pages) is your only evidence, so search thoroughly.
-- Search the web to (1) confirm what the business is and its specialty/category, (2) find organization-only aliases (former, foreign-language e.g. Chinese, or colloquial/abbreviated TRADING names — never a practitioner's personal name unless it is genuinely part of the trading name), and (3) find directory/profile listings (Google, health directories, professional registries, review sites).
-- Set low_confidence to true whenever you had to guess a value with weak or no supporting evidence (most commonly: location.country, category, aliases). For category specifically: if neither site_text, your research, nor the business name itself states what this business does, any category you output is a guess — set low_confidence true. Set it false only when the evidence clearly supports the whole profile.
+EVIDENCE
+- Treat site_text as the primary evidence. If it is empty or insufficient, open the supplied website directly. Use web search to verify the business's identity, category, services, location, organization aliases, and relevant directory or registry listings.
+- Prefer the business's own website for claims about the business. Use other sources to verify or fill gaps.
+- Set low_confidence to true if any material profile field is guessed or weakly supported. Set it false only when the evidence clearly supports the whole profile.
 
 PROFILE
-- aliases: OTHER organization trading identities only — former names, foreign-language names, colloquial/abbreviated names, directory-listing names. NEVER a practitioner's personal name, unless it is genuinely part of the trading name itself (e.g. "Dr Lim's Family Clinic"). Empty array if none found.
-- category: the specialist category a prospective patient would search for (examples across specialties: "endodontic clinic", "orthopaedic clinic", "aesthetic skin clinic"). It MUST be derived from evidence about THIS business — never copy an example and never default to a common category when evidence is thin. The business name itself is strong evidence when it contains a medical/dental specialty term: a name containing "Endodontics" means an endodontic (root canal) dental clinic, "Dermatology" a dermatology clinic, and so on.
-- location.country must be a two-letter ISO 3166-1 alpha-2 code. If evidence gives no explicit country, infer the best guess from address format, phone country code, domain TLD, currency, or language, and set low_confidence true.
+- Use only organization trading identities as aliases, such as former, foreign-language, colloquial, abbreviated, or directory-listing names. Do not use a practitioner's personal name unless it is part of the organization's trading name. Return an empty array when there are no supported aliases.
+- Make category a concise specialist category a prospective patient would search for. Derive it from evidence about this business; do not default to a common category when evidence is thin.
+- Include only services supported by the evidence.
+- location.country must be a two-letter ISO 3166-1 alpha-2 code. If it must be inferred from contextual evidence, set low_confidence to true.
 
 RETRY
-- If prior output and validation failures are provided, they list exactly what was wrong. Fix all of them and re-emit the FULL corrected object, not a diff.`
+- If prior output and validation failures are provided, fix every listed issue and return the full corrected object, not a diff.`
 
 // proposeProfileJSONSchema is the strict-mode structured-output schema. Strict
 // mode does not support array length keywords, so the exact prompt count is
