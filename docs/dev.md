@@ -179,7 +179,7 @@ Runtime config is env-driven with development-safe defaults:
 - `OPENAI_RESPONSES_MODEL` defaults to `chat-latest`
 - `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
 - `OPENAI_ONBOARDING_MODEL` defaults to `gpt-5.6-terra` (quality-sensitive business-profile research, design 03)
-- `OPENAI_QUESTIONS_MODEL` defaults to `gpt-5-mini` — a cheap non-reasoning model, since on-demand customer-question generation (design 03) does no research
+- `OPENAI_QUESTIONS_MODEL` defaults to `gpt-5.6-terra` — a one-time, quality-sensitive generation pass whose questions become the ongoing measurement instrument (design 03)
 - `PROMPT_CONCURRENCY` defaults to `2`
 - `APP_BASE_URL` has no default and must be an absolute `http`/`https` URL; local `.env` should set `http://localhost:5173`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PORTAL_CONFIGURATION_ID` have no default and are required by `opensight serve`; other commands validate only the settings they use

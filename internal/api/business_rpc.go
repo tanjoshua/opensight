@@ -395,9 +395,9 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 // GenerateQuestions generates customer questions on demand once the user has
 // confirmed the profile through the Services review step (design 03): unlike
 // ProposeProfile it does no research, drafting purely from the submitted
-// category/services/city on a cheap non-reasoning model. It persists nothing —
-// the generated prompts are returned for the client's in-memory draft, same as
-// every other value on the review screen.
+// category/services/city. It persists nothing — the generated prompts are
+// returned for the client's in-memory draft, same as every other value on the
+// review screen.
 func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[opensightv1.GenerateQuestionsRequest]) (*connect.Response[opensightv1.GenerateQuestionsResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "generate questions")
 	if cerr != nil {

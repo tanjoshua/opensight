@@ -27,11 +27,11 @@ Deps: ONB-1, RUN-1 · Phase 3 · Ref: design 03 (GenerateProfileWorkflow step 2)
 
 ## ONB-7 — GenerateQuestions (on-demand customer questions)
 
-As a clinic user, I want customer questions generated from the services I've actually confirmed, so that they don't go stale the moment I edit the service list — and as the developer, I want that call to be cheap, since it needs no research.
+As a clinic user, I want customer questions generated from the services I've actually confirmed, so that they don't go stale the moment I edit the service list and reliably measure which providers an AI recommends.
 
 - [x] `BusinessService.GenerateQuestions` is a synchronous RPC, not a Temporal activity: the review screen calls it when the user leaves the Services step, passing the in-memory reviewed profile; nothing is persisted by the call itself.
-- [x] Structured-output OpenAI Responses call with **no** `web_search` tool, on a cheap non-reasoning model (`OPENAI_QUESTIONS_MODEL`) — it drafts purely from the given category/services/city.
-- [x] The concise instruction asks for exactly `plan.prompt_limit` varied, natural questions a prospective customer might ask when finding or choosing this type of provider in the given city. Service-specific questions are grounded in the confirmed category and services, while ordinary decision factors are allowed without inventing business facts. Business-name/alias leakage is rejected after generation. Validation failure → one retry with errors appended (`llm.GenerateQuestionsWithRetry`).
+- [x] Structured-output OpenAI Responses call with **no** `web_search` tool, on `OPENAI_QUESTIONS_MODEL` (default `gpt-5.6-terra`) — it drafts purely from the given category/services/city. This one-time call is quality-sensitive because its output becomes the ongoing measurement instrument.
+- [x] The concise instruction asks for exactly `plan.prompt_limit` varied, natural prompts a prospective customer might ask an AI assistant to surface provider recommendations in the given city, each based on the confirmed category and one or more confirmed services. Business-name/alias leakage is rejected after generation. Validation failure → one retry with errors appended (`llm.GenerateQuestionsWithRetry`).
 - [x] The review screen caches the generated set against a fingerprint of category/city/services so an unrelated edit or a plain Back/Next doesn't re-trigger generation; a changed fingerprint does, with a confirmation first if the user had manually edited the question list. Manual entry always remains available if generation fails.
 - [x] `ApplyProposal` revalidates the submitted profile and questions server-side (`llm.ValidateProfile` + `llm.ValidateQuestions`, `PromptLimit` from the plan) — the client's count/content is never trusted.
 

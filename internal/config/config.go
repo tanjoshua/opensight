@@ -32,10 +32,9 @@ const (
 	defaultResponsesModel    = "chat-latest"
 	defaultAnalysisModel     = "gpt-5.6-luna"
 	defaultOnboardingModel   = "gpt-5.6-terra"
-	// defaultQuestionsModel is deliberately a cheap non-reasoning model: customer
-	// question generation does no research (design 03), unlike ProposeProfile's
-	// reasoning model above.
-	defaultQuestionsModel    = "gpt-5-mini"
+	// Customer questions become the business's long-lived measurement instrument,
+	// so generation favors the same balanced model used for profile research.
+	defaultQuestionsModel    = "gpt-5.6-terra"
 	defaultPromptRunnerMode  = PromptRunnerStub
 	defaultPromptConcurrency = 2
 )

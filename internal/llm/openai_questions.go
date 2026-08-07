@@ -18,7 +18,7 @@ const openAIQuestionsSchemaName = "customer_questions"
 // question-generation call (design 03, "Prompt generation rules"). Unlike
 // ProposeProfile this call does no research — the profile is already reviewed
 // — so there is no web_search tool and no evidence-gathering guidance here.
-const questionsInstructions = `Generate exactly prompt_count varied, natural questions a prospective customer might ask when finding or choosing this type of provider in the given city. Ground service-specific questions in the supplied category and services. You may include ordinary decision factors such as suitability, reputation, cost, availability, and comparisons, but do not invent facts about a particular business.`
+const questionsInstructions = `Generate exactly prompt_count varied, natural prompts that a prospective customer might ask an AI assistant to surface provider recommendations in the given city. Base each prompt on the supplied category and one or more supplied services.`
 
 // questionsJSONSchema is the strict-mode structured-output schema. Strict mode
 // does not support array length keywords, so the exact question count is
@@ -47,8 +47,8 @@ var questionsSchema = mustParseJSONSchema(questionsJSONSchema)
 
 // OpenAIQuestionsRunner runs the question-generation call through the OpenAI
 // Responses API. No web_search tool is attached — the model drafts purely from
-// the supplied category/services/city, so this is a cheap non-reasoning model
-// (OPENAI_QUESTIONS_MODEL), unlike the reasoning model ProposeProfile uses.
+// the supplied category/services/city. OPENAI_QUESTIONS_MODEL is configured
+// separately from the research model ProposeProfile uses.
 type OpenAIQuestionsRunner struct {
 	openAIResponsesClient
 }

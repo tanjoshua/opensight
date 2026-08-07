@@ -38,6 +38,9 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.OpenAIAnalysisModel != defaultAnalysisModel {
 		t.Errorf("OpenAIAnalysisModel = %q, want %q", cfg.OpenAIAnalysisModel, defaultAnalysisModel)
 	}
+	if cfg.OpenAIQuestionsModel != defaultQuestionsModel {
+		t.Errorf("OpenAIQuestionsModel = %q, want %q", cfg.OpenAIQuestionsModel, defaultQuestionsModel)
+	}
 	if cfg.PromptRunnerMode != defaultPromptRunnerMode {
 		t.Errorf("PromptRunnerMode = %q, want %q", cfg.PromptRunnerMode, defaultPromptRunnerMode)
 	}
