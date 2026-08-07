@@ -9,6 +9,7 @@ package opensightv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -20,6 +21,67 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// AssessmentStatus is the verdict an assessor reached for one practice. The
+// five states are the whole model: UNKNOWN means the check could not run, and
+// is deliberately distinct from NOT_MET.
+type AssessmentStatus int32
+
+const (
+	AssessmentStatus_ASSESSMENT_STATUS_UNSPECIFIED    AssessmentStatus = 0
+	AssessmentStatus_ASSESSMENT_STATUS_MET            AssessmentStatus = 1
+	AssessmentStatus_ASSESSMENT_STATUS_PARTIAL        AssessmentStatus = 2
+	AssessmentStatus_ASSESSMENT_STATUS_NOT_MET        AssessmentStatus = 3
+	AssessmentStatus_ASSESSMENT_STATUS_UNKNOWN        AssessmentStatus = 4
+	AssessmentStatus_ASSESSMENT_STATUS_NOT_APPLICABLE AssessmentStatus = 5
+)
+
+// Enum value maps for AssessmentStatus.
+var (
+	AssessmentStatus_name = map[int32]string{
+		0: "ASSESSMENT_STATUS_UNSPECIFIED",
+		1: "ASSESSMENT_STATUS_MET",
+		2: "ASSESSMENT_STATUS_PARTIAL",
+		3: "ASSESSMENT_STATUS_NOT_MET",
+		4: "ASSESSMENT_STATUS_UNKNOWN",
+		5: "ASSESSMENT_STATUS_NOT_APPLICABLE",
+	}
+	AssessmentStatus_value = map[string]int32{
+		"ASSESSMENT_STATUS_UNSPECIFIED":    0,
+		"ASSESSMENT_STATUS_MET":            1,
+		"ASSESSMENT_STATUS_PARTIAL":        2,
+		"ASSESSMENT_STATUS_NOT_MET":        3,
+		"ASSESSMENT_STATUS_UNKNOWN":        4,
+		"ASSESSMENT_STATUS_NOT_APPLICABLE": 5,
+	}
+)
+
+func (x AssessmentStatus) Enum() *AssessmentStatus {
+	p := new(AssessmentStatus)
+	*p = x
+	return p
+}
+
+func (x AssessmentStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AssessmentStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_opensight_v1_opportunity_proto_enumTypes[0].Descriptor()
+}
+
+func (AssessmentStatus) Type() protoreflect.EnumType {
+	return &file_opensight_v1_opportunity_proto_enumTypes[0]
+}
+
+func (x AssessmentStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AssessmentStatus.Descriptor instead.
+func (AssessmentStatus) EnumDescriptor() ([]byte, []int) {
+	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{0}
+}
 
 type OpportunityStatus int32
 
@@ -60,11 +122,11 @@ func (x OpportunityStatus) String() string {
 }
 
 func (OpportunityStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_opportunity_proto_enumTypes[0].Descriptor()
+	return file_opensight_v1_opportunity_proto_enumTypes[1].Descriptor()
 }
 
 func (OpportunityStatus) Type() protoreflect.EnumType {
-	return &file_opensight_v1_opportunity_proto_enumTypes[0]
+	return &file_opensight_v1_opportunity_proto_enumTypes[1]
 }
 
 func (x OpportunityStatus) Number() protoreflect.EnumNumber {
@@ -73,7 +135,7 @@ func (x OpportunityStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OpportunityStatus.Descriptor instead.
 func (OpportunityStatus) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{0}
+	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{1}
 }
 
 type DismissalReason int32
@@ -118,11 +180,11 @@ func (x DismissalReason) String() string {
 }
 
 func (DismissalReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_opportunity_proto_enumTypes[1].Descriptor()
+	return file_opensight_v1_opportunity_proto_enumTypes[2].Descriptor()
 }
 
 func (DismissalReason) Type() protoreflect.EnumType {
-	return &file_opensight_v1_opportunity_proto_enumTypes[1]
+	return &file_opensight_v1_opportunity_proto_enumTypes[2]
 }
 
 func (x DismissalReason) Number() protoreflect.EnumNumber {
@@ -131,7 +193,7 @@ func (x DismissalReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DismissalReason.Descriptor instead.
 func (DismissalReason) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{1}
+	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{2}
 }
 
 type OpportunityBlockType int32
@@ -179,11 +241,11 @@ func (x OpportunityBlockType) String() string {
 }
 
 func (OpportunityBlockType) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_opportunity_proto_enumTypes[2].Descriptor()
+	return file_opensight_v1_opportunity_proto_enumTypes[3].Descriptor()
 }
 
 func (OpportunityBlockType) Type() protoreflect.EnumType {
-	return &file_opensight_v1_opportunity_proto_enumTypes[2]
+	return &file_opensight_v1_opportunity_proto_enumTypes[3]
 }
 
 func (x OpportunityBlockType) Number() protoreflect.EnumNumber {
@@ -192,7 +254,7 @@ func (x OpportunityBlockType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OpportunityBlockType.Descriptor instead.
 func (OpportunityBlockType) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{2}
+	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{3}
 }
 
 type OpportunityBlock struct {
@@ -289,8 +351,8 @@ func (x *OpportunityBlock) GetResultIds() []string {
 
 type OutcomeObservation struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	AssessmentStatus string                 `protobuf:"bytes,1,opt,name=assessment_status,json=assessmentStatus,proto3" json:"assessment_status,omitempty"`
-	ObservedAt       string                 `protobuf:"bytes,2,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
+	AssessmentStatus AssessmentStatus       `protobuf:"varint,1,opt,name=assessment_status,json=assessmentStatus,proto3,enum=opensight.v1.AssessmentStatus" json:"assessment_status,omitempty"`
+	ObservedAt       *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
 	ResultIds        []string               `protobuf:"bytes,3,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
 	PromptIds        []string               `protobuf:"bytes,4,rep,name=prompt_ids,json=promptIds,proto3" json:"prompt_ids,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -327,18 +389,18 @@ func (*OutcomeObservation) Descriptor() ([]byte, []int) {
 	return file_opensight_v1_opportunity_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *OutcomeObservation) GetAssessmentStatus() string {
+func (x *OutcomeObservation) GetAssessmentStatus() AssessmentStatus {
 	if x != nil {
 		return x.AssessmentStatus
 	}
-	return ""
+	return AssessmentStatus_ASSESSMENT_STATUS_UNSPECIFIED
 }
 
-func (x *OutcomeObservation) GetObservedAt() string {
+func (x *OutcomeObservation) GetObservedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ObservedAt
 	}
-	return ""
+	return nil
 }
 
 func (x *OutcomeObservation) GetResultIds() []string {
@@ -366,11 +428,11 @@ type Opportunity struct {
 	Blocks           []*OpportunityBlock    `protobuf:"bytes,7,rep,name=blocks,proto3" json:"blocks,omitempty"`
 	Status           OpportunityStatus      `protobuf:"varint,8,opt,name=status,proto3,enum=opensight.v1.OpportunityStatus" json:"status,omitempty"`
 	DismissalReason  DismissalReason        `protobuf:"varint,9,opt,name=dismissal_reason,json=dismissalReason,proto3,enum=opensight.v1.DismissalReason" json:"dismissal_reason,omitempty"`
-	AssessmentStatus string                 `protobuf:"bytes,10,opt,name=assessment_status,json=assessmentStatus,proto3" json:"assessment_status,omitempty"`
+	AssessmentStatus AssessmentStatus       `protobuf:"varint,10,opt,name=assessment_status,json=assessmentStatus,proto3,enum=opensight.v1.AssessmentStatus" json:"assessment_status,omitempty"`
 	ResultIds        []string               `protobuf:"bytes,12,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
 	PromptIds        []string               `protobuf:"bytes,13,rep,name=prompt_ids,json=promptIds,proto3" json:"prompt_ids,omitempty"`
 	CheckedSources   []string               `protobuf:"bytes,14,rep,name=checked_sources,json=checkedSources,proto3" json:"checked_sources,omitempty"`
-	AssessedAt       string                 `protobuf:"bytes,15,opt,name=assessed_at,json=assessedAt,proto3" json:"assessed_at,omitempty"`
+	AssessedAt       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=assessed_at,json=assessedAt,proto3" json:"assessed_at,omitempty"`
 	Focus            bool                   `protobuf:"varint,16,opt,name=focus,proto3" json:"focus,omitempty"`
 	Observations     []*OutcomeObservation  `protobuf:"bytes,17,rep,name=observations,proto3" json:"observations,omitempty"`
 	// The newest assessment generation still produced this opportunity.
@@ -475,11 +537,11 @@ func (x *Opportunity) GetDismissalReason() DismissalReason {
 	return DismissalReason_DISMISSAL_REASON_UNSPECIFIED
 }
 
-func (x *Opportunity) GetAssessmentStatus() string {
+func (x *Opportunity) GetAssessmentStatus() AssessmentStatus {
 	if x != nil {
 		return x.AssessmentStatus
 	}
-	return ""
+	return AssessmentStatus_ASSESSMENT_STATUS_UNSPECIFIED
 }
 
 func (x *Opportunity) GetResultIds() []string {
@@ -503,11 +565,11 @@ func (x *Opportunity) GetCheckedSources() []string {
 	return nil
 }
 
-func (x *Opportunity) GetAssessedAt() string {
+func (x *Opportunity) GetAssessedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.AssessedAt
 	}
-	return ""
+	return nil
 }
 
 func (x *Opportunity) GetFocus() bool {
@@ -822,7 +884,7 @@ var File_opensight_v1_opportunity_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\n" +
-	"\x1eopensight/v1/opportunity.proto\x12\fopensight.v1\"\xd1\x01\n" +
+	"\x1eopensight/v1/opportunity.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd1\x01\n" +
 	"\x10OpportunityBlock\x126\n" +
 	"\x04type\x18\x01 \x01(\x0e2\".opensight.v1.OpportunityBlockTypeR\x04type\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +
@@ -831,15 +893,15 @@ const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\x03url\x18\x05 \x01(\tR\x03url\x12\x14\n" +
 	"\x05items\x18\x06 \x03(\tR\x05items\x12\x1d\n" +
 	"\n" +
-	"result_ids\x18\a \x03(\tR\tresultIds\"\xa0\x01\n" +
-	"\x12OutcomeObservation\x12+\n" +
-	"\x11assessment_status\x18\x01 \x01(\tR\x10assessmentStatus\x12\x1f\n" +
-	"\vobserved_at\x18\x02 \x01(\tR\n" +
+	"result_ids\x18\a \x03(\tR\tresultIds\"\xdc\x01\n" +
+	"\x12OutcomeObservation\x12K\n" +
+	"\x11assessment_status\x18\x01 \x01(\x0e2\x1e.opensight.v1.AssessmentStatusR\x10assessmentStatus\x12;\n" +
+	"\vobserved_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"observedAt\x12\x1d\n" +
 	"\n" +
 	"result_ids\x18\x03 \x03(\tR\tresultIds\x12\x1d\n" +
 	"\n" +
-	"prompt_ids\x18\x04 \x03(\tR\tpromptIds\"\xc8\x05\n" +
+	"prompt_ids\x18\x04 \x03(\tR\tpromptIds\"\x84\x06\n" +
 	"\vOpportunity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fpractice_key\x18\x02 \x01(\tR\vpracticeKey\x12\x1f\n" +
@@ -850,15 +912,15 @@ const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\x06effort\x18\x06 \x01(\tR\x06effort\x126\n" +
 	"\x06blocks\x18\a \x03(\v2\x1e.opensight.v1.OpportunityBlockR\x06blocks\x127\n" +
 	"\x06status\x18\b \x01(\x0e2\x1f.opensight.v1.OpportunityStatusR\x06status\x12H\n" +
-	"\x10dismissal_reason\x18\t \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\x12+\n" +
+	"\x10dismissal_reason\x18\t \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\x12K\n" +
 	"\x11assessment_status\x18\n" +
-	" \x01(\tR\x10assessmentStatus\x12\x1d\n" +
+	" \x01(\x0e2\x1e.opensight.v1.AssessmentStatusR\x10assessmentStatus\x12\x1d\n" +
 	"\n" +
 	"result_ids\x18\f \x03(\tR\tresultIds\x12\x1d\n" +
 	"\n" +
 	"prompt_ids\x18\r \x03(\tR\tpromptIds\x12'\n" +
-	"\x0fchecked_sources\x18\x0e \x03(\tR\x0echeckedSources\x12\x1f\n" +
-	"\vassessed_at\x18\x0f \x01(\tR\n" +
+	"\x0fchecked_sources\x18\x0e \x03(\tR\x0echeckedSources\x12;\n" +
+	"\vassessed_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"assessedAt\x12\x14\n" +
 	"\x05focus\x18\x10 \x01(\bR\x05focus\x12D\n" +
 	"\fobservations\x18\x11 \x03(\v2 .opensight.v1.OutcomeObservationR\fobservations\x12\x18\n" +
@@ -879,7 +941,14 @@ const file_opensight_v1_opportunity_proto_rawDesc = "" +
 	"\x06status\x18\x02 \x01(\x0e2\x1f.opensight.v1.OpportunityStatusR\x06status\x12H\n" +
 	"\x10dismissal_reason\x18\x03 \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\"[\n" +
 	"\x1cSetOpportunityStatusResponse\x12;\n" +
-	"\vopportunity\x18\x01 \x01(\v2\x19.opensight.v1.OpportunityR\vopportunity*\xbc\x01\n" +
+	"\vopportunity\x18\x01 \x01(\v2\x19.opensight.v1.OpportunityR\vopportunity*\xd3\x01\n" +
+	"\x10AssessmentStatus\x12!\n" +
+	"\x1dASSESSMENT_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15ASSESSMENT_STATUS_MET\x10\x01\x12\x1d\n" +
+	"\x19ASSESSMENT_STATUS_PARTIAL\x10\x02\x12\x1d\n" +
+	"\x19ASSESSMENT_STATUS_NOT_MET\x10\x03\x12\x1d\n" +
+	"\x19ASSESSMENT_STATUS_UNKNOWN\x10\x04\x12$\n" +
+	" ASSESSMENT_STATUS_NOT_APPLICABLE\x10\x05*\xbc\x01\n" +
 	"\x11OpportunityStatus\x12\"\n" +
 	"\x1eOPPORTUNITY_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17OPPORTUNITY_STATUS_OPEN\x10\x01\x12\"\n" +
@@ -919,44 +988,50 @@ func file_opensight_v1_opportunity_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_opportunity_proto_rawDescData
 }
 
-var file_opensight_v1_opportunity_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_opensight_v1_opportunity_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_opensight_v1_opportunity_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_opensight_v1_opportunity_proto_goTypes = []any{
-	(OpportunityStatus)(0),               // 0: opensight.v1.OpportunityStatus
-	(DismissalReason)(0),                 // 1: opensight.v1.DismissalReason
-	(OpportunityBlockType)(0),            // 2: opensight.v1.OpportunityBlockType
-	(*OpportunityBlock)(nil),             // 3: opensight.v1.OpportunityBlock
-	(*OutcomeObservation)(nil),           // 4: opensight.v1.OutcomeObservation
-	(*Opportunity)(nil),                  // 5: opensight.v1.Opportunity
-	(*ListOpportunitiesRequest)(nil),     // 6: opensight.v1.ListOpportunitiesRequest
-	(*ListOpportunitiesResponse)(nil),    // 7: opensight.v1.ListOpportunitiesResponse
-	(*GetOpportunityRequest)(nil),        // 8: opensight.v1.GetOpportunityRequest
-	(*GetOpportunityResponse)(nil),       // 9: opensight.v1.GetOpportunityResponse
-	(*SetOpportunityStatusRequest)(nil),  // 10: opensight.v1.SetOpportunityStatusRequest
-	(*SetOpportunityStatusResponse)(nil), // 11: opensight.v1.SetOpportunityStatusResponse
+	(AssessmentStatus)(0),                // 0: opensight.v1.AssessmentStatus
+	(OpportunityStatus)(0),               // 1: opensight.v1.OpportunityStatus
+	(DismissalReason)(0),                 // 2: opensight.v1.DismissalReason
+	(OpportunityBlockType)(0),            // 3: opensight.v1.OpportunityBlockType
+	(*OpportunityBlock)(nil),             // 4: opensight.v1.OpportunityBlock
+	(*OutcomeObservation)(nil),           // 5: opensight.v1.OutcomeObservation
+	(*Opportunity)(nil),                  // 6: opensight.v1.Opportunity
+	(*ListOpportunitiesRequest)(nil),     // 7: opensight.v1.ListOpportunitiesRequest
+	(*ListOpportunitiesResponse)(nil),    // 8: opensight.v1.ListOpportunitiesResponse
+	(*GetOpportunityRequest)(nil),        // 9: opensight.v1.GetOpportunityRequest
+	(*GetOpportunityResponse)(nil),       // 10: opensight.v1.GetOpportunityResponse
+	(*SetOpportunityStatusRequest)(nil),  // 11: opensight.v1.SetOpportunityStatusRequest
+	(*SetOpportunityStatusResponse)(nil), // 12: opensight.v1.SetOpportunityStatusResponse
+	(*timestamppb.Timestamp)(nil),        // 13: google.protobuf.Timestamp
 }
 var file_opensight_v1_opportunity_proto_depIdxs = []int32{
-	2,  // 0: opensight.v1.OpportunityBlock.type:type_name -> opensight.v1.OpportunityBlockType
-	3,  // 1: opensight.v1.Opportunity.blocks:type_name -> opensight.v1.OpportunityBlock
-	0,  // 2: opensight.v1.Opportunity.status:type_name -> opensight.v1.OpportunityStatus
-	1,  // 3: opensight.v1.Opportunity.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	4,  // 4: opensight.v1.Opportunity.observations:type_name -> opensight.v1.OutcomeObservation
-	5,  // 5: opensight.v1.ListOpportunitiesResponse.opportunities:type_name -> opensight.v1.Opportunity
-	5,  // 6: opensight.v1.GetOpportunityResponse.opportunity:type_name -> opensight.v1.Opportunity
-	0,  // 7: opensight.v1.SetOpportunityStatusRequest.status:type_name -> opensight.v1.OpportunityStatus
-	1,  // 8: opensight.v1.SetOpportunityStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	5,  // 9: opensight.v1.SetOpportunityStatusResponse.opportunity:type_name -> opensight.v1.Opportunity
-	6,  // 10: opensight.v1.OpportunityService.ListOpportunities:input_type -> opensight.v1.ListOpportunitiesRequest
-	8,  // 11: opensight.v1.OpportunityService.GetOpportunity:input_type -> opensight.v1.GetOpportunityRequest
-	10, // 12: opensight.v1.OpportunityService.SetOpportunityStatus:input_type -> opensight.v1.SetOpportunityStatusRequest
-	7,  // 13: opensight.v1.OpportunityService.ListOpportunities:output_type -> opensight.v1.ListOpportunitiesResponse
-	9,  // 14: opensight.v1.OpportunityService.GetOpportunity:output_type -> opensight.v1.GetOpportunityResponse
-	11, // 15: opensight.v1.OpportunityService.SetOpportunityStatus:output_type -> opensight.v1.SetOpportunityStatusResponse
-	13, // [13:16] is the sub-list for method output_type
-	10, // [10:13] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	3,  // 0: opensight.v1.OpportunityBlock.type:type_name -> opensight.v1.OpportunityBlockType
+	0,  // 1: opensight.v1.OutcomeObservation.assessment_status:type_name -> opensight.v1.AssessmentStatus
+	13, // 2: opensight.v1.OutcomeObservation.observed_at:type_name -> google.protobuf.Timestamp
+	4,  // 3: opensight.v1.Opportunity.blocks:type_name -> opensight.v1.OpportunityBlock
+	1,  // 4: opensight.v1.Opportunity.status:type_name -> opensight.v1.OpportunityStatus
+	2,  // 5: opensight.v1.Opportunity.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	0,  // 6: opensight.v1.Opportunity.assessment_status:type_name -> opensight.v1.AssessmentStatus
+	13, // 7: opensight.v1.Opportunity.assessed_at:type_name -> google.protobuf.Timestamp
+	5,  // 8: opensight.v1.Opportunity.observations:type_name -> opensight.v1.OutcomeObservation
+	6,  // 9: opensight.v1.ListOpportunitiesResponse.opportunities:type_name -> opensight.v1.Opportunity
+	6,  // 10: opensight.v1.GetOpportunityResponse.opportunity:type_name -> opensight.v1.Opportunity
+	1,  // 11: opensight.v1.SetOpportunityStatusRequest.status:type_name -> opensight.v1.OpportunityStatus
+	2,  // 12: opensight.v1.SetOpportunityStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	6,  // 13: opensight.v1.SetOpportunityStatusResponse.opportunity:type_name -> opensight.v1.Opportunity
+	7,  // 14: opensight.v1.OpportunityService.ListOpportunities:input_type -> opensight.v1.ListOpportunitiesRequest
+	9,  // 15: opensight.v1.OpportunityService.GetOpportunity:input_type -> opensight.v1.GetOpportunityRequest
+	11, // 16: opensight.v1.OpportunityService.SetOpportunityStatus:input_type -> opensight.v1.SetOpportunityStatusRequest
+	8,  // 17: opensight.v1.OpportunityService.ListOpportunities:output_type -> opensight.v1.ListOpportunitiesResponse
+	10, // 18: opensight.v1.OpportunityService.GetOpportunity:output_type -> opensight.v1.GetOpportunityResponse
+	12, // 19: opensight.v1.OpportunityService.SetOpportunityStatus:output_type -> opensight.v1.SetOpportunityStatusResponse
+	17, // [17:20] is the sub-list for method output_type
+	14, // [14:17] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_opportunity_proto_init() }
@@ -969,7 +1044,7 @@ func file_opensight_v1_opportunity_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_opportunity_proto_rawDesc), len(file_opensight_v1_opportunity_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,

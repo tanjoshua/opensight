@@ -271,15 +271,6 @@ func Eligible(d AssessmentDraft) bool {
 	return d.Status == StatusPartial || d.Status == StatusNotMet
 }
 
-func ValidateSafety(d AssessmentDraft) error {
-	text := strings.ToLower(d.Explanation + " " + string(d.Payload))
-	for _, prohibited := range []string{"guaranteed ranking", "guarantee ranking", "fabricated review", "fake review", "spam links", "denigrate competitor"} {
-		if strings.Contains(text, prohibited) {
-			return fmt.Errorf("unsafe assessment content: %s", prohibited)
-		}
-	}
-	return nil
-}
 // Rank orders unmet assessments: active direct blockers first, then reach,
 // persistence, evidence quality, actionability, lower effort, and finally the
 // stable practice and subject keys. Which practices block is catalog data, so

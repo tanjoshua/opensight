@@ -53,8 +53,6 @@ CREATE TABLE visibility_assessments (
   assessed_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (generation_id, practice_key, subject_key)
 );
-CREATE INDEX visibility_assessments_current_idx ON visibility_assessments
-  (business_id, practice_key, criteria_version, assessed_at DESC);
 
 CREATE TABLE opportunities (
   id uuid PRIMARY KEY,
@@ -75,8 +73,6 @@ CREATE TABLE opportunities (
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (business_id, practice_key, subject_key)
 );
-CREATE INDEX opportunities_current_idx ON opportunities (business_id, rank)
-  WHERE user_status <> 'DISMISSED';
 
 -- The single definition of a focus item: backed by the newest generation,
 -- still actionable, and among the top three by rank. Every read path joins

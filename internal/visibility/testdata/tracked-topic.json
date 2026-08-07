@@ -7,18 +7,18 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/emergency"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Emergency Dental Care in Portland. Our on-call dentists hold same-day slots every weekday and until 8pm on Saturdays. Call 555-0100 or use the emergency booking form."
     }
   },
@@ -30,18 +30,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-urgent", "Prompt": "What urgent care services are open on weekends?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-urgent", "Prompt": "What urgent care services are open on weekends?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-urgent", "prompt": "What urgent care services are open on weekends?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-urgent", "prompt": "What urgent care services are open on weekends?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Home About Services Careers Contact. Bright Smile Dental, Portland. We provide general dentistry. For urgent enquiries email us."
     }
   },
@@ -53,18 +53,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-medicaid", "Prompt": "Which dentists in Portland accept Medicaid for children?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-medicaid", "Prompt": "Which dentists in Portland accept Medicaid for children?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-medicaid", "prompt": "Which dentists in Portland accept Medicaid for children?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-medicaid", "prompt": "Which dentists in Portland accept Medicaid for children?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Bright Smile Dental. Our dentists welcome new patients. Visit us at 120 Main Street, Portland, OR 97205."
     }
   },
@@ -76,18 +76,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-straighten", "Prompt": "Where can I get teeth straightening options near me?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-straighten", "Prompt": "Where can I get teeth straightening options near me?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-straighten", "prompt": "Where can I get teeth straightening options near me?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-straighten", "prompt": "Where can I get teeth straightening options near me?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/hygiene"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Teeth cleaning and hygiene appointments. Book a scale and polish."
     }
   },
@@ -99,18 +99,18 @@
     "expect": "PARTIAL",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-walkin", "Prompt": "Which orthodontists accept walk-ins?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-walkin", "Prompt": "Which orthodontists accept walk-ins?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-walkin", "prompt": "Which orthodontists accept walk-ins?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-walkin", "prompt": "Which orthodontists accept walk-ins?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/orthodontics"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Meet our orthodontists. Dr Lee and Dr Osei are board-certified orthodontists treating braces and aligners. Appointments by referral."
     }
   },
@@ -122,18 +122,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-walkin", "Prompt": "Which orthodontists accept walk-ins?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-walkin", "Prompt": "Which orthodontists accept walk-ins?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-walkin", "prompt": "Which orthodontists accept walk-ins?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-walkin", "prompt": "Which orthodontists accept walk-ins?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Family dentistry: cleanings, fillings, crowns and whitening for all ages."
     }
   },
@@ -145,11 +145,11 @@
     "expect": "UNKNOWN",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?"}]}
       ]
     },
     "site": {
@@ -166,11 +166,11 @@
     "expect": "UNKNOWN",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "",
+      "business_name": "Bright Smile Dental",
+      "website_host": "",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?"}]}
       ]
     },
     "site": {"payload_version": 1, "failure": "business website is not configured"}
@@ -183,18 +183,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-ortho", "Prompt": "What is the best orthodontist near me?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-ortho", "Prompt": "What is the best orthodontist near me?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-ortho", "prompt": "What is the best orthodontist near me?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-ortho", "prompt": "What is the best orthodontist near me?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Home Dentistry Orthodontist Contact. Bright Smile Dental provides general dentistry in Portland."
     }
   },
@@ -206,18 +206,18 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-ortho", "Prompt": "What is the best orthodontist near me?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-ortho", "Prompt": "What is the best orthodontist near me?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-ortho", "prompt": "What is the best orthodontist near me?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-ortho", "prompt": "What is the best orthodontist near me?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/team/orthodontist"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Our orthodontist, Dr Amara Osei, treats children and adults. She offers metal braces, ceramic braces and clear aligners, with free initial consultations and payment plans."
     }
   },
@@ -229,18 +229,18 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-pediatric", "Prompt": "What is the best pediatric dentist near me?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-pediatric", "Prompt": "What is the best pediatric dentist near me?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-pediatric", "prompt": "What is the best pediatric dentist near me?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-pediatric", "prompt": "What is the best pediatric dentist near me?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/pediatric"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Pediatric dentistry. Dr Chen is a board-certified pediatric dentist. We see children from their first tooth, with sedation options for anxious kids."
     }
   },
@@ -252,18 +252,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Whitfield Dental",
-      "WebsiteHost": "whitfielddental.com",
+      "business_name": "Whitfield Dental",
+      "website_host": "whitfielddental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-pediatric", "Prompt": "What is the best pediatric dentist near me?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-pediatric", "Prompt": "What is the best pediatric dentist near me?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-pediatric", "prompt": "What is the best pediatric dentist near me?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-pediatric", "prompt": "What is the best pediatric dentist near me?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "whitfielddental.com",
       "checked_urls": ["https://whitfielddental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Our dentist Dr Whitfield treats adults only. From the blog: choosing a pediatric practice for your children."
     }
   },
@@ -275,18 +275,18 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-straighten", "Prompt": "Where can I get teeth straightening options near me?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-straighten", "Prompt": "Where can I get teeth straightening options near me?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-straighten", "prompt": "Where can I get teeth straightening options near me?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-straighten", "prompt": "Where can I get teeth straightening options near me?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/aligners"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Clear aligners and braces. We align smiles with Invisalign, ceramic braces and retainers. Free consultation and 12-month payment plans."
     }
   },
@@ -298,17 +298,17 @@
     "expect": "NONE",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-cost", "Prompt": "What is the cost of Invisalign treatment?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-cost", "prompt": "What is the cost of Invisalign treatment?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Bright Smile Dental. General and cosmetic dentistry."
     }
   },
@@ -320,18 +320,18 @@
     "expect": "NONE",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?", "Mentioned": true}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-emergency", "Prompt": "What are the best emergency dentists in Portland?", "Mentioned": true}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?", "mentioned": true}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-emergency", "prompt": "What are the best emergency dentists in Portland?", "mentioned": true}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/emergency"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Emergency Dental Care in Portland. Same-day emergency appointments with our dentists."
     }
   },
@@ -343,18 +343,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-cost", "Prompt": "What is the cost of Invisalign treatment?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-cost", "Prompt": "What is the cost of Invisalign treatment?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-cost", "prompt": "What is the cost of Invisalign treatment?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-cost", "prompt": "What is the cost of Invisalign treatment?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Bright Smile Dental. General and cosmetic dentistry."
     }
   },
@@ -366,18 +366,18 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
-        {"run_id": "run-1", "results": [{"ResultID": "res-1", "PromptID": "p-medicaid", "Prompt": "Which dentists in Portland accept Medicaid for children?"}]},
-        {"run_id": "run-2", "results": [{"ResultID": "res-2", "PromptID": "p-medicaid", "Prompt": "Which dentists in Portland accept Medicaid for children?"}]}
+        {"run_id": "run-1", "results": [{"result_id": "res-1", "prompt_id": "p-medicaid", "prompt": "Which dentists in Portland accept Medicaid for children?"}]},
+        {"run_id": "run-2", "results": [{"result_id": "res-2", "prompt_id": "p-medicaid", "prompt": "Which dentists in Portland accept Medicaid for children?"}]}
       ]
     },
     "site": {
       "payload_version": 1,
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/blog/medicaid"],
-      "Reachable": true,
+      "reachable": true,
       "text": "Blog: why some dentists in Portland do not accept new Medicaid patients. Posted by our team."
     }
   }

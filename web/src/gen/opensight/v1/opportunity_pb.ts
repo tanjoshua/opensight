@@ -4,13 +4,15 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message, UnknownEnum } from "@bufbuild/protobuf";
 
 /**
  * Describes the file opensight/v1/opportunity.proto.
  */
 export const file_opensight_v1_opportunity: GenFile = /*@__PURE__*/
-  fileDesc("Ch5vcGVuc2lnaHQvdjEvb3Bwb3J0dW5pdHkucHJvdG8SDG9wZW5zaWdodC52MSKgAQoQT3Bwb3J0dW5pdHlCbG9jaxIwCgR0eXBlGAEgASgOMiIub3BlbnNpZ2h0LnYxLk9wcG9ydHVuaXR5QmxvY2tUeXBlEg0KBXRpdGxlGAIgASgJEgwKBHRleHQYAyABKAkSDQoFdmFsdWUYBCABKAkSCwoDdXJsGAUgASgJEg0KBWl0ZW1zGAYgAygJEhIKCnJlc3VsdF9pZHMYByADKAkibAoST3V0Y29tZU9ic2VydmF0aW9uEhkKEWFzc2Vzc21lbnRfc3RhdHVzGAEgASgJEhMKC29ic2VydmVkX2F0GAIgASgJEhIKCnJlc3VsdF9pZHMYAyADKAkSEgoKcHJvbXB0X2lkcxgEIAMoCSKBBAoLT3Bwb3J0dW5pdHkSCgoCaWQYASABKAkSFAoMcHJhY3RpY2Vfa2V5GAIgASgJEhMKC3N1YmplY3Rfa2V5GAMgASgJEg0KBXRpdGxlGAQgASgJEg8KB3N1bW1hcnkYBSABKAkSDgoGZWZmb3J0GAYgASgJEi4KBmJsb2NrcxgHIAMoCzIeLm9wZW5zaWdodC52MS5PcHBvcnR1bml0eUJsb2NrEi8KBnN0YXR1cxgIIAEoDjIfLm9wZW5zaWdodC52MS5PcHBvcnR1bml0eVN0YXR1cxI3ChBkaXNtaXNzYWxfcmVhc29uGAkgASgOMh0ub3BlbnNpZ2h0LnYxLkRpc21pc3NhbFJlYXNvbhIZChFhc3Nlc3NtZW50X3N0YXR1cxgKIAEoCRISCgpyZXN1bHRfaWRzGAwgAygJEhIKCnByb21wdF9pZHMYDSADKAkSFwoPY2hlY2tlZF9zb3VyY2VzGA4gAygJEhMKC2Fzc2Vzc2VkX2F0GA8gASgJEg0KBWZvY3VzGBAgASgIEjYKDG9ic2VydmF0aW9ucxgRIAMoCzIgLm9wZW5zaWdodC52MS5PdXRjb21lT2JzZXJ2YXRpb24SDwoHY3VycmVudBgSIAEoCBIWCg5kaXJlY3RfYmxvY2tlchgTIAEoCEoECAsQDFIKY29uZmlkZW5jZSIvChhMaXN0T3Bwb3J0dW5pdGllc1JlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkiTQoZTGlzdE9wcG9ydHVuaXRpZXNSZXNwb25zZRIwCg1vcHBvcnR1bml0aWVzGAEgAygLMhkub3BlbnNpZ2h0LnYxLk9wcG9ydHVuaXR5Ii8KFUdldE9wcG9ydHVuaXR5UmVxdWVzdBIWCg5vcHBvcnR1bml0eV9pZBgBIAEoCSJIChZHZXRPcHBvcnR1bml0eVJlc3BvbnNlEi4KC29wcG9ydHVuaXR5GAEgASgLMhkub3BlbnNpZ2h0LnYxLk9wcG9ydHVuaXR5Ip8BChtTZXRPcHBvcnR1bml0eVN0YXR1c1JlcXVlc3QSFgoOb3Bwb3J0dW5pdHlfaWQYASABKAkSLwoGc3RhdHVzGAIgASgOMh8ub3BlbnNpZ2h0LnYxLk9wcG9ydHVuaXR5U3RhdHVzEjcKEGRpc21pc3NhbF9yZWFzb24YAyABKA4yHS5vcGVuc2lnaHQudjEuRGlzbWlzc2FsUmVhc29uIk4KHFNldE9wcG9ydHVuaXR5U3RhdHVzUmVzcG9uc2USLgoLb3Bwb3J0dW5pdHkYASABKAsyGS5vcGVuc2lnaHQudjEuT3Bwb3J0dW5pdHkqvAEKEU9wcG9ydHVuaXR5U3RhdHVzEiIKHk9QUE9SVFVOSVRZX1NUQVRVU19VTlNQRUNJRklFRBAAEhsKF09QUE9SVFVOSVRZX1NUQVRVU19PUEVOEAESIgoeT1BQT1JUVU5JVFlfU1RBVFVTX0lOX1BST0dSRVNTEAISIAocT1BQT1JUVU5JVFlfU1RBVFVTX0NPTVBMRVRFRBADEiAKHE9QUE9SVFVOSVRZX1NUQVRVU19ESVNNSVNTRUQQBCrgAQoPRGlzbWlzc2FsUmVhc29uEiAKHERJU01JU1NBTF9SRUFTT05fVU5TUEVDSUZJRUQQABIhCh1ESVNNSVNTQUxfUkVBU09OX05PVF9SRUxFVkFOVBABEiEKHURJU01JU1NBTF9SRUFTT05fQUxSRUFEWV9ET05FEAISIwofRElTTUlTU0FMX1JFQVNPTl9OT1RfQUNUSU9OQUJMRRADEiQKIERJU01JU1NBTF9SRUFTT05fVE9PX01VQ0hfRUZGT1JUEAQSGgoWRElTTUlTU0FMX1JFQVNPTl9PVEhFUhAFKpoCChRPcHBvcnR1bml0eUJsb2NrVHlwZRImCiJPUFBPUlRVTklUWV9CTE9DS19UWVBFX1VOU1BFQ0lGSUVEEAASHwobT1BQT1JUVU5JVFlfQkxPQ0tfVFlQRV9URVhUEAESIQodT1BQT1JUVU5JVFlfQkxPQ0tfVFlQRV9NRVRSSUMQAhIfChtPUFBPUlRVTklUWV9CTE9DS19UWVBFX0xJTksQAxIoCiRPUFBPUlRVTklUWV9CTE9DS19UWVBFX1FVRVNUSU9OX0xJU1QQBBIoCiRPUFBPUlRVTklUWV9CTE9DS19UWVBFX0VWSURFTkNFX0xJU1QQBRIhCh1PUFBPUlRVTklUWV9CTE9DS19UWVBFX05PVElDRRAGMsYCChJPcHBvcnR1bml0eVNlcnZpY2USZAoRTGlzdE9wcG9ydHVuaXRpZXMSJi5vcGVuc2lnaHQudjEuTGlzdE9wcG9ydHVuaXRpZXNSZXF1ZXN0Gicub3BlbnNpZ2h0LnYxLkxpc3RPcHBvcnR1bml0aWVzUmVzcG9uc2USWwoOR2V0T3Bwb3J0dW5pdHkSIy5vcGVuc2lnaHQudjEuR2V0T3Bwb3J0dW5pdHlSZXF1ZXN0GiQub3BlbnNpZ2h0LnYxLkdldE9wcG9ydHVuaXR5UmVzcG9uc2USbQoUU2V0T3Bwb3J0dW5pdHlTdGF0dXMSKS5vcGVuc2lnaHQudjEuU2V0T3Bwb3J0dW5pdHlTdGF0dXNSZXF1ZXN0Gioub3BlbnNpZ2h0LnYxLlNldE9wcG9ydHVuaXR5U3RhdHVzUmVzcG9uc2VCpgEKEGNvbS5vcGVuc2lnaHQudjFCEE9wcG9ydHVuaXR5UHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM");
+  fileDesc("Ch5vcGVuc2lnaHQvdjEvb3Bwb3J0dW5pdHkucHJvdG8SDG9wZW5zaWdodC52MSKgAQoQT3Bwb3J0dW5pdHlCbG9jaxIwCgR0eXBlGAEgASgOMiIub3BlbnNpZ2h0LnYxLk9wcG9ydHVuaXR5QmxvY2tUeXBlEg0KBXRpdGxlGAIgASgJEgwKBHRleHQYAyABKAkSDQoFdmFsdWUYBCABKAkSCwoDdXJsGAUgASgJEg0KBWl0ZW1zGAYgAygJEhIKCnJlc3VsdF9pZHMYByADKAkiqAEKEk91dGNvbWVPYnNlcnZhdGlvbhI5ChFhc3Nlc3NtZW50X3N0YXR1cxgBIAEoDjIeLm9wZW5zaWdodC52MS5Bc3Nlc3NtZW50U3RhdHVzEi8KC29ic2VydmVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpyZXN1bHRfaWRzGAMgAygJEhIKCnByb21wdF9pZHMYBCADKAkivQQKC09wcG9ydHVuaXR5EgoKAmlkGAEgASgJEhQKDHByYWN0aWNlX2tleRgCIAEoCRITCgtzdWJqZWN0X2tleRgDIAEoCRINCgV0aXRsZRgEIAEoCRIPCgdzdW1tYXJ5GAUgASgJEg4KBmVmZm9ydBgGIAEoCRIuCgZibG9ja3MYByADKAsyHi5vcGVuc2lnaHQudjEuT3Bwb3J0dW5pdHlCbG9jaxIvCgZzdGF0dXMYCCABKA4yHy5vcGVuc2lnaHQudjEuT3Bwb3J0dW5pdHlTdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgJIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24SOQoRYXNzZXNzbWVudF9zdGF0dXMYCiABKA4yHi5vcGVuc2lnaHQudjEuQXNzZXNzbWVudFN0YXR1cxISCgpyZXN1bHRfaWRzGAwgAygJEhIKCnByb21wdF9pZHMYDSADKAkSFwoPY2hlY2tlZF9zb3VyY2VzGA4gAygJEi8KC2Fzc2Vzc2VkX2F0GA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgVmb2N1cxgQIAEoCBI2CgxvYnNlcnZhdGlvbnMYESADKAsyIC5vcGVuc2lnaHQudjEuT3V0Y29tZU9ic2VydmF0aW9uEg8KB2N1cnJlbnQYEiABKAgSFgoOZGlyZWN0X2Jsb2NrZXIYEyABKAhKBAgLEAxSCmNvbmZpZGVuY2UiLwoYTGlzdE9wcG9ydHVuaXRpZXNSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIk0KGUxpc3RPcHBvcnR1bml0aWVzUmVzcG9uc2USMAoNb3Bwb3J0dW5pdGllcxgBIAMoCzIZLm9wZW5zaWdodC52MS5PcHBvcnR1bml0eSIvChVHZXRPcHBvcnR1bml0eVJlcXVlc3QSFgoOb3Bwb3J0dW5pdHlfaWQYASABKAkiSAoWR2V0T3Bwb3J0dW5pdHlSZXNwb25zZRIuCgtvcHBvcnR1bml0eRgBIAEoCzIZLm9wZW5zaWdodC52MS5PcHBvcnR1bml0eSKfAQobU2V0T3Bwb3J0dW5pdHlTdGF0dXNSZXF1ZXN0EhYKDm9wcG9ydHVuaXR5X2lkGAEgASgJEi8KBnN0YXR1cxgCIAEoDjIfLm9wZW5zaWdodC52MS5PcHBvcnR1bml0eVN0YXR1cxI3ChBkaXNtaXNzYWxfcmVhc29uGAMgASgOMh0ub3BlbnNpZ2h0LnYxLkRpc21pc3NhbFJlYXNvbiJOChxTZXRPcHBvcnR1bml0eVN0YXR1c1Jlc3BvbnNlEi4KC29wcG9ydHVuaXR5GAEgASgLMhkub3BlbnNpZ2h0LnYxLk9wcG9ydHVuaXR5KtMBChBBc3Nlc3NtZW50U3RhdHVzEiEKHUFTU0VTU01FTlRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGQoVQVNTRVNTTUVOVF9TVEFUVVNfTUVUEAESHQoZQVNTRVNTTUVOVF9TVEFUVVNfUEFSVElBTBACEh0KGUFTU0VTU01FTlRfU1RBVFVTX05PVF9NRVQQAxIdChlBU1NFU1NNRU5UX1NUQVRVU19VTktOT1dOEAQSJAogQVNTRVNTTUVOVF9TVEFUVVNfTk9UX0FQUExJQ0FCTEUQBSq8AQoRT3Bwb3J0dW5pdHlTdGF0dXMSIgoeT1BQT1JUVU5JVFlfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXT1BQT1JUVU5JVFlfU1RBVFVTX09QRU4QARIiCh5PUFBPUlRVTklUWV9TVEFUVVNfSU5fUFJPR1JFU1MQAhIgChxPUFBPUlRVTklUWV9TVEFUVVNfQ09NUExFVEVEEAMSIAocT1BQT1JUVU5JVFlfU1RBVFVTX0RJU01JU1NFRBAEKuABCg9EaXNtaXNzYWxSZWFzb24SIAocRElTTUlTU0FMX1JFQVNPTl9VTlNQRUNJRklFRBAAEiEKHURJU01JU1NBTF9SRUFTT05fTk9UX1JFTEVWQU5UEAESIQodRElTTUlTU0FMX1JFQVNPTl9BTFJFQURZX0RPTkUQAhIjCh9ESVNNSVNTQUxfUkVBU09OX05PVF9BQ1RJT05BQkxFEAMSJAogRElTTUlTU0FMX1JFQVNPTl9UT09fTVVDSF9FRkZPUlQQBBIaChZESVNNSVNTQUxfUkVBU09OX09USEVSEAUqmgIKFE9wcG9ydHVuaXR5QmxvY2tUeXBlEiYKIk9QUE9SVFVOSVRZX0JMT0NLX1RZUEVfVU5TUEVDSUZJRUQQABIfChtPUFBPUlRVTklUWV9CTE9DS19UWVBFX1RFWFQQARIhCh1PUFBPUlRVTklUWV9CTE9DS19UWVBFX01FVFJJQxACEh8KG09QUE9SVFVOSVRZX0JMT0NLX1RZUEVfTElOSxADEigKJE9QUE9SVFVOSVRZX0JMT0NLX1RZUEVfUVVFU1RJT05fTElTVBAEEigKJE9QUE9SVFVOSVRZX0JMT0NLX1RZUEVfRVZJREVOQ0VfTElTVBAFEiEKHU9QUE9SVFVOSVRZX0JMT0NLX1RZUEVfTk9USUNFEAYyxgIKEk9wcG9ydHVuaXR5U2VydmljZRJkChFMaXN0T3Bwb3J0dW5pdGllcxImLm9wZW5zaWdodC52MS5MaXN0T3Bwb3J0dW5pdGllc1JlcXVlc3QaJy5vcGVuc2lnaHQudjEuTGlzdE9wcG9ydHVuaXRpZXNSZXNwb25zZRJbCg5HZXRPcHBvcnR1bml0eRIjLm9wZW5zaWdodC52MS5HZXRPcHBvcnR1bml0eVJlcXVlc3QaJC5vcGVuc2lnaHQudjEuR2V0T3Bwb3J0dW5pdHlSZXNwb25zZRJtChRTZXRPcHBvcnR1bml0eVN0YXR1cxIpLm9wZW5zaWdodC52MS5TZXRPcHBvcnR1bml0eVN0YXR1c1JlcXVlc3QaKi5vcGVuc2lnaHQudjEuU2V0T3Bwb3J0dW5pdHlTdGF0dXNSZXNwb25zZUKmAQoQY29tLm9wZW5zaWdodC52MUIQT3Bwb3J0dW5pdHlQcm90b1ABWi9vcGVuc2lnaHQvaW50ZXJuYWwvZ2VuL29wZW5zaWdodC92MTtvcGVuc2lnaHR2MaICA09YWKoCDE9wZW5zaWdodC5WMcoCDE9wZW5zaWdodFxWMeICGE9wZW5zaWdodFxWMVxHUEJNZXRhZGF0YeoCDU9wZW5zaWdodDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message opensight.v1.OpportunityBlock
@@ -64,14 +66,14 @@ export const OpportunityBlockSchema: GenMessage<OpportunityBlock> = /*@__PURE__*
  */
 export type OutcomeObservation = Message<"opensight.v1.OutcomeObservation"> & {
   /**
-   * @generated from field: string assessment_status = 1;
+   * @generated from field: opensight.v1.AssessmentStatus assessment_status = 1;
    */
-  assessmentStatus: string;
+  assessmentStatus: AssessmentStatus;
 
   /**
-   * @generated from field: string observed_at = 2;
+   * @generated from field: google.protobuf.Timestamp observed_at = 2;
    */
-  observedAt: string;
+  observedAt?: Timestamp | undefined;
 
   /**
    * @generated from field: repeated string result_ids = 3;
@@ -141,9 +143,9 @@ export type Opportunity = Message<"opensight.v1.Opportunity"> & {
   dismissalReason: DismissalReason;
 
   /**
-   * @generated from field: string assessment_status = 10;
+   * @generated from field: opensight.v1.AssessmentStatus assessment_status = 10;
    */
-  assessmentStatus: string;
+  assessmentStatus: AssessmentStatus;
 
   /**
    * @generated from field: repeated string result_ids = 12;
@@ -161,9 +163,9 @@ export type Opportunity = Message<"opensight.v1.Opportunity"> & {
   checkedSources: string[];
 
   /**
-   * @generated from field: string assessed_at = 15;
+   * @generated from field: google.protobuf.Timestamp assessed_at = 15;
    */
-  assessedAt: string;
+  assessedAt?: Timestamp | undefined;
 
   /**
    * @generated from field: bool focus = 16;
@@ -311,6 +313,60 @@ export const SetOpportunityStatusResponseSchema: GenMessage<SetOpportunityStatus
   messageDesc(file_opensight_v1_opportunity, 8);
 
 /**
+ * AssessmentStatus is the verdict an assessor reached for one practice. The
+ * five states are the whole model: UNKNOWN means the check could not run, and
+ * is deliberately distinct from NOT_MET.
+ *
+ * @generated from enum opensight.v1.AssessmentStatus
+ */
+export const AssessmentStatus = {
+  /**
+   * @generated from enum value: ASSESSMENT_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED: 0,
+
+  /**
+   * @generated from enum value: ASSESSMENT_STATUS_MET = 1;
+   */
+  MET: 1,
+
+  /**
+   * @generated from enum value: ASSESSMENT_STATUS_PARTIAL = 2;
+   */
+  PARTIAL: 2,
+
+  /**
+   * @generated from enum value: ASSESSMENT_STATUS_NOT_MET = 3;
+   */
+  NOT_MET: 3,
+
+  /**
+   * @generated from enum value: ASSESSMENT_STATUS_UNKNOWN = 4;
+   */
+  UNKNOWN: 4,
+
+  /**
+   * @generated from enum value: ASSESSMENT_STATUS_NOT_APPLICABLE = 5;
+   */
+  NOT_APPLICABLE: 5,
+} as const;
+
+/**
+ * AssessmentStatus is the verdict an assessor reached for one practice. The
+ * five states are the whole model: UNKNOWN means the check could not run, and
+ * is deliberately distinct from NOT_MET.
+ *
+ * @generated from enum opensight.v1.AssessmentStatus
+ */
+export type AssessmentStatus = (typeof AssessmentStatus)[keyof typeof AssessmentStatus] | UnknownEnum;
+
+/**
+ * Describes the enum opensight.v1.AssessmentStatus.
+ */
+export const AssessmentStatusSchema: GenEnum<AssessmentStatus> = /*@__PURE__*/
+  enumDesc(file_opensight_v1_opportunity, 0);
+
+/**
  * @generated from enum opensight.v1.OpportunityStatus
  */
 export const OpportunityStatus = {
@@ -349,7 +405,7 @@ export type OpportunityStatus = (typeof OpportunityStatus)[keyof typeof Opportun
  * Describes the enum opensight.v1.OpportunityStatus.
  */
 export const OpportunityStatusSchema: GenEnum<OpportunityStatus> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_opportunity, 0);
+  enumDesc(file_opensight_v1_opportunity, 1);
 
 /**
  * @generated from enum opensight.v1.DismissalReason
@@ -395,7 +451,7 @@ export type DismissalReason = (typeof DismissalReason)[keyof typeof DismissalRea
  * Describes the enum opensight.v1.DismissalReason.
  */
 export const DismissalReasonSchema: GenEnum<DismissalReason> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_opportunity, 1);
+  enumDesc(file_opensight_v1_opportunity, 2);
 
 /**
  * @generated from enum opensight.v1.OpportunityBlockType
@@ -446,7 +502,7 @@ export type OpportunityBlockType = (typeof OpportunityBlockType)[keyof typeof Op
  * Describes the enum opensight.v1.OpportunityBlockType.
  */
 export const OpportunityBlockTypeSchema: GenEnum<OpportunityBlockType> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_opportunity, 2);
+  enumDesc(file_opensight_v1_opportunity, 3);
 
 /**
  * @generated from service opensight.v1.OpportunityService

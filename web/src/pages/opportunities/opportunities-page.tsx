@@ -35,8 +35,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { timestampDate } from "@bufbuild/protobuf/wkt"
+
 import type { Opportunity } from "@/gen/opensight/v1/opportunity_pb"
 import {
+  AssessmentStatus,
   DismissalReason,
   OpportunityBlockType,
   OpportunityStatus,
@@ -181,6 +184,19 @@ function sectionOf(item: Opportunity): SectionKey {
   return item.focus ? "focus" : "more"
 }
 
+const assessmentStatusLabels: Record<AssessmentStatus, string> = {
+  [AssessmentStatus.UNSPECIFIED]: "not recorded",
+  [AssessmentStatus.MET]: "met",
+  [AssessmentStatus.PARTIAL]: "partly met",
+  [AssessmentStatus.NOT_MET]: "not met",
+  [AssessmentStatus.UNKNOWN]: "could not be checked",
+  [AssessmentStatus.NOT_APPLICABLE]: "not applicable",
+}
+
+function assessmentStatusLabel(status: AssessmentStatus) {
+  return assessmentStatusLabels[status] ?? "not recorded"
+}
+
 function groupIntoSections(items: Opportunity[]) {
   const buckets = Object.fromEntries(
     sections.map(({ key }) => [key, [] as Opportunity[]])
@@ -264,18 +280,15 @@ function OpportunityCard({
         {item.observations.length > 0 && (
           <div className="flex flex-col gap-2">
             <h3 className="font-medium">Later observations</h3>
-            {item.observations.map((observation) => (
-              <p
-                key={`${observation.observedAt}-${observation.assessmentStatus}`}
-                className="text-sm text-muted-foreground"
-              >
-                {new Date(observation.observedAt).toLocaleDateString()}: the
-                practice was assessed as{" "}
-                {observation.assessmentStatus
-                  .toLowerCase()
-                  .replaceAll("_", " ")}
-                . This is an observation, not proof that the completed action
-                caused a change.
+            {item.observations.map((observation, index) => (
+              <p key={index} className="text-sm text-muted-foreground">
+                {observation.observedAt
+                  ? timestampDate(observation.observedAt).toLocaleDateString()
+                  : "Date unknown"}
+                : the practice was assessed as{" "}
+                {assessmentStatusLabel(observation.assessmentStatus)}. This is
+                an observation, not proof that the completed action caused a
+                change.
               </p>
             ))}
           </div>

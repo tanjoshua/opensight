@@ -83,7 +83,7 @@ WHERE o.id = sqlc.arg('id') AND o.account_id = sqlc.arg('account_id');
 UPDATE opportunities SET user_status = sqlc.arg('user_status'), dismissal_reason = sqlc.narg('dismissal_reason'),
  completion_baseline = CASE WHEN sqlc.arg('user_status') = 'COMPLETED' THEN COALESCE(completion_baseline, sqlc.narg('completion_baseline')) ELSE completion_baseline END,
  updated_at = now() WHERE id = sqlc.arg('id') AND account_id = sqlc.arg('account_id')
-RETURNING business_id,practice_key,subject_key;
+RETURNING business_id,practice_key,subject_key,updated_at;
 
 -- name: InsertOpportunityEvent :exec
 INSERT INTO opportunity_events (id,opportunity_id,account_id,event_key,event_type,payload)
@@ -95,6 +95,14 @@ ON CONFLICT (opportunity_id,event_key) DO NOTHING;
 SELECT payload,created_at FROM opportunity_events
 WHERE opportunity_id = sqlc.arg('opportunity_id') AND account_id = sqlc.arg('account_id') AND event_type='OUTCOME_OBSERVED'
 ORDER BY created_at,event_key;
+
+-- The list read loads every opportunity's observations in one query rather than
+-- one query per card.
+-- name: ListBusinessOutcomeEvents :many
+SELECT e.opportunity_id,e.payload,e.created_at FROM opportunity_events e
+JOIN opportunities o ON o.id=e.opportunity_id
+WHERE o.business_id = sqlc.arg('business_id') AND e.account_id = sqlc.arg('account_id') AND e.event_type='OUTCOME_OBSERVED'
+ORDER BY e.opportunity_id,e.created_at,e.event_key;
 
 -- name: LoadMonitoringEvidence :many
 SELECT r.id AS run_id,pr.id AS result_id,pr.prompt_id,p.text AS prompt,pr.response_text,

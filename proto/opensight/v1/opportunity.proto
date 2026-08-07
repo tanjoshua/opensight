@@ -2,6 +2,20 @@ syntax = "proto3";
 
 package opensight.v1;
 
+import "google/protobuf/timestamp.proto";
+
+// AssessmentStatus is the verdict an assessor reached for one practice. The
+// five states are the whole model: UNKNOWN means the check could not run, and
+// is deliberately distinct from NOT_MET.
+enum AssessmentStatus {
+  ASSESSMENT_STATUS_UNSPECIFIED = 0;
+  ASSESSMENT_STATUS_MET = 1;
+  ASSESSMENT_STATUS_PARTIAL = 2;
+  ASSESSMENT_STATUS_NOT_MET = 3;
+  ASSESSMENT_STATUS_UNKNOWN = 4;
+  ASSESSMENT_STATUS_NOT_APPLICABLE = 5;
+}
+
 enum OpportunityStatus {
   OPPORTUNITY_STATUS_UNSPECIFIED = 0;
   OPPORTUNITY_STATUS_OPEN = 1;
@@ -40,8 +54,8 @@ message OpportunityBlock {
 }
 
 message OutcomeObservation {
-  string assessment_status = 1;
-  string observed_at = 2;
+  AssessmentStatus assessment_status = 1;
+  google.protobuf.Timestamp observed_at = 2;
   repeated string result_ids = 3;
   repeated string prompt_ids = 4;
 }
@@ -56,13 +70,13 @@ message Opportunity {
   repeated OpportunityBlock blocks = 7;
   OpportunityStatus status = 8;
   DismissalReason dismissal_reason = 9;
-  string assessment_status = 10;
+  AssessmentStatus assessment_status = 10;
   reserved 11;
   reserved "confidence";
   repeated string result_ids = 12;
   repeated string prompt_ids = 13;
   repeated string checked_sources = 14;
-  string assessed_at = 15;
+  google.protobuf.Timestamp assessed_at = 15;
   bool focus = 16;
   repeated OutcomeObservation observations = 17;
   // The newest assessment generation still produced this opportunity.

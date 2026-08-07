@@ -127,6 +127,46 @@ func (q *Queries) InsertOpportunityEvent(ctx context.Context, arg InsertOpportun
 	return err
 }
 
+const listBusinessOutcomeEvents = `-- name: ListBusinessOutcomeEvents :many
+SELECT e.opportunity_id,e.payload,e.created_at FROM opportunity_events e
+JOIN opportunities o ON o.id=e.opportunity_id
+WHERE o.business_id = $1 AND e.account_id = $2 AND e.event_type='OUTCOME_OBSERVED'
+ORDER BY e.opportunity_id,e.created_at,e.event_key
+`
+
+type ListBusinessOutcomeEventsParams struct {
+	BusinessID uuid.UUID
+	AccountID  uuid.UUID
+}
+
+type ListBusinessOutcomeEventsRow struct {
+	OpportunityID uuid.UUID
+	Payload       json.RawMessage
+	CreatedAt     time.Time
+}
+
+// The list read loads every opportunity's observations in one query rather than
+// one query per card.
+func (q *Queries) ListBusinessOutcomeEvents(ctx context.Context, arg ListBusinessOutcomeEventsParams) ([]ListBusinessOutcomeEventsRow, error) {
+	rows, err := q.db.Query(ctx, listBusinessOutcomeEvents, arg.BusinessID, arg.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBusinessOutcomeEventsRow
+	for rows.Next() {
+		var i ListBusinessOutcomeEventsRow
+		if err := rows.Scan(&i.OpportunityID, &i.Payload, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCompletedGenerationOpportunities = `-- name: ListCompletedGenerationOpportunities :many
 SELECT o.id,o.practice_key,o.subject_key,a.status AS assessment_status,a.result_ids,a.prompt_ids
 FROM opportunities o JOIN visibility_assessments a
@@ -359,7 +399,7 @@ const setOpportunityStatus = `-- name: SetOpportunityStatus :one
 UPDATE opportunities SET user_status = $1, dismissal_reason = $2,
  completion_baseline = CASE WHEN $1 = 'COMPLETED' THEN COALESCE(completion_baseline, $3) ELSE completion_baseline END,
  updated_at = now() WHERE id = $4 AND account_id = $5
-RETURNING business_id,practice_key,subject_key
+RETURNING business_id,practice_key,subject_key,updated_at
 `
 
 type SetOpportunityStatusParams struct {
@@ -374,6 +414,7 @@ type SetOpportunityStatusRow struct {
 	BusinessID  uuid.UUID
 	PracticeKey string
 	SubjectKey  string
+	UpdatedAt   time.Time
 }
 
 func (q *Queries) SetOpportunityStatus(ctx context.Context, arg SetOpportunityStatusParams) (SetOpportunityStatusRow, error) {
@@ -385,7 +426,12 @@ func (q *Queries) SetOpportunityStatus(ctx context.Context, arg SetOpportunitySt
 		arg.AccountID,
 	)
 	var i SetOpportunityStatusRow
-	err := row.Scan(&i.BusinessID, &i.PracticeKey, &i.SubjectKey)
+	err := row.Scan(
+		&i.BusinessID,
+		&i.PracticeKey,
+		&i.SubjectKey,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 

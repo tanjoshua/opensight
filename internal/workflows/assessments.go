@@ -2,8 +2,6 @@ package workflows
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -112,9 +110,6 @@ func scanOwnedSite(ctx context.Context, fetcher *siteFetcher, website string) vi
 		scan.Reachable = true
 		scan.Text = out.Text
 		scan.CheckedURLs = out.URLs
-		sum := sha256.Sum256([]byte(out.Text))
-		scan.Hashes = []string{hex.EncodeToString(sum[:])}
-		scan.Summaries = []string{truncateText(out.Text, 500)}
 		// The homepage is the site's most linked and most cited page, so a
 		// barrier there is a barrier for the site even when other pages are
 		// public. Away from it one noindex page (a thank-you or search page) is
@@ -253,13 +248,6 @@ func robotsDeniesOAI(raw string, paths []string) bool {
 		}
 	}
 	return false
-}
-func truncateText(s string, n int) string {
-	r := []rune(strings.TrimSpace(s))
-	if len(r) <= n {
-		return string(r)
-	}
-	return string(r[:n])
 }
 
 type boundedHTTPResearcher struct {

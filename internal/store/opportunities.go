@@ -263,6 +263,18 @@ type OpportunityObservation struct {
 	PromptIDs        []string
 }
 
+func decodeObservation(raw json.RawMessage, observedAt time.Time) (OpportunityObservation, error) {
+	var payload struct {
+		AssessmentStatus visibility.AssessmentStatus `json:"assessment_status"`
+		ResultIDs        []string                    `json:"result_ids"`
+		PromptIDs        []string                    `json:"prompt_ids"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return OpportunityObservation{}, fmt.Errorf("decode outcome observation: %w", err)
+	}
+	return OpportunityObservation{AssessmentStatus: payload.AssessmentStatus, ObservedAt: observedAt, ResultIDs: payload.ResultIDs, PromptIDs: payload.PromptIDs}, nil
+}
+
 func (s *Store) loadOpportunityObservations(ctx context.Context, accountID, opportunityID domain.ID) ([]OpportunityObservation, error) {
 	rows, err := s.q(ctx).ListOpportunityOutcomeEvents(ctx, storesqlc.ListOpportunityOutcomeEventsParams{OpportunityID: opportunityID, AccountID: accountID})
 	if err != nil {
@@ -270,15 +282,29 @@ func (s *Store) loadOpportunityObservations(ctx context.Context, accountID, oppo
 	}
 	out := make([]OpportunityObservation, 0, len(rows))
 	for _, row := range rows {
-		var payload struct {
-			AssessmentStatus visibility.AssessmentStatus `json:"assessment_status"`
-			ResultIDs        []string                    `json:"result_ids"`
-			PromptIDs        []string                    `json:"prompt_ids"`
+		observation, err := decodeObservation(row.Payload, row.CreatedAt)
+		if err != nil {
+			return nil, err
 		}
-		if err := json.Unmarshal(row.Payload, &payload); err != nil {
-			return nil, fmt.Errorf("decode outcome observation: %w", err)
+		out = append(out, observation)
+	}
+	return out, nil
+}
+
+// loadBusinessObservations fetches every card's observations in one query, so a
+// business with N opportunities costs two queries rather than N+1.
+func (s *Store) loadBusinessObservations(ctx context.Context, accountID, businessID domain.ID) (map[domain.ID][]OpportunityObservation, error) {
+	rows, err := s.q(ctx).ListBusinessOutcomeEvents(ctx, storesqlc.ListBusinessOutcomeEventsParams{BusinessID: businessID, AccountID: accountID})
+	if err != nil {
+		return nil, err
+	}
+	out := map[domain.ID][]OpportunityObservation{}
+	for _, row := range rows {
+		observation, err := decodeObservation(row.Payload, row.CreatedAt)
+		if err != nil {
+			return nil, err
 		}
-		out = append(out, OpportunityObservation{AssessmentStatus: payload.AssessmentStatus, ObservedAt: row.CreatedAt, ResultIDs: payload.ResultIDs, PromptIDs: payload.PromptIDs})
+		out[row.OpportunityID] = append(out[row.OpportunityID], observation)
 	}
 	return out, nil
 }
@@ -303,16 +329,17 @@ func (s *Store) ListOpportunities(ctx context.Context, accountID, businessID dom
 	if err != nil {
 		return nil, err
 	}
+	observations, err := s.loadBusinessObservations(ctx, accountID, businessID)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]OpportunityRecord, 0, len(rows))
 	for _, r := range rows {
 		o, e := opportunityFromFields(r.ID, businessID, r.PracticeKey, r.SubjectKey, r.Rank, r.Presentation, r.UserStatus, r.DismissalReason, r.CompletionBaseline, r.Current, r.Focus, r.FirstSeenAt, r.UpdatedAt, r.AssessmentStatus, r.ResultIds, r.PromptIds, r.CheckedSources, r.Explanation, r.AssessedAt)
 		if e != nil {
 			return nil, e
 		}
-		o.Observations, e = s.loadOpportunityObservations(ctx, accountID, o.ID)
-		if e != nil {
-			return nil, e
-		}
+		o.Observations = observations[o.ID]
 		out = append(out, o)
 	}
 	return out, nil
@@ -361,21 +388,30 @@ func (s *Store) SetOpportunityStatus(ctx context.Context, accountID, id domain.I
 		raw := json.RawMessage(encoded)
 		baseline = &raw
 	}
-	_, err = s.q(ctx).SetOpportunityStatus(ctx, storesqlc.SetOpportunityStatusParams{ID: id, AccountID: accountID, UserStatus: string(status), DismissalReason: reason, CompletionBaseline: baseline})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return OpportunityRecord{}, ErrNotFound
-	}
-	if err != nil {
-		return OpportunityRecord{}, err
-	}
-	eventType := map[OpportunityStatus]string{StatusInProgress: "STARTED", StatusCompleted: "COMPLETED", StatusDismissed: "DISMISSED", StatusOpen: "RESTORED"}[status]
 	eventID, err := domain.NewID()
 	if err != nil {
 		return OpportunityRecord{}, err
 	}
+	eventType := map[OpportunityStatus]string{StatusInProgress: "STARTED", StatusCompleted: "COMPLETED", StatusDismissed: "DISMISSED", StatusOpen: "RESTORED"}[status]
 	eventPayload, _ := json.Marshal(map[string]any{"reason": reason})
-	eventKey := fmt.Sprintf("status:%s:%d", status, time.Now().UTC().UnixNano())
-	if err := s.q(ctx).InsertOpportunityEvent(ctx, storesqlc.InsertOpportunityEventParams{ID: eventID, OpportunityID: id, AccountID: accountID, EventKey: eventKey, EventType: eventType, Payload: eventPayload}); err != nil {
+
+	// The status change and the event that records it go in one transaction, so
+	// history can never be missing a transition that happened. The event key is
+	// the row's new updated_at, which the same UPDATE set: a replayed insert
+	// carries the same key and is absorbed by ON CONFLICT DO NOTHING, while a
+	// genuine later transition gets a later timestamp and its own row.
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
+		row, err := q.SetOpportunityStatus(ctx, storesqlc.SetOpportunityStatusParams{ID: id, AccountID: accountID, UserStatus: string(status), DismissalReason: reason, CompletionBaseline: baseline})
+		if err != nil {
+			return err
+		}
+		eventKey := fmt.Sprintf("status:%s:%s", status, row.UpdatedAt.UTC().Format(time.RFC3339Nano))
+		return q.InsertOpportunityEvent(ctx, storesqlc.InsertOpportunityEventParams{ID: eventID, OpportunityID: id, AccountID: accountID, EventKey: eventKey, EventType: eventType, Payload: eventPayload})
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return OpportunityRecord{}, ErrNotFound
+	}
+	if err != nil {
 		return OpportunityRecord{}, err
 	}
 	return s.GetOpportunity(ctx, accountID, id)

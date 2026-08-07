@@ -77,7 +77,8 @@ func (r *fixtureResearcher) Inspect(_ context.Context, in ResearchRequest) (Rese
 // accuracy. Run with `go test -v ./internal/visibility/ -run Quality` to read
 // the per-assessor scores and the individual misses.
 func TestAssessorQualityAgainstFixtures(t *testing.T) {
-	for _, manifest := range assessorManifests {
+	for _, assessor := range assessors {
+		manifest := assessor.manifest
 		t.Run(manifest.Key, func(t *testing.T) {
 			cases := loadFixtures(t, manifest.Key)
 			if len(cases) < minFixtureCases {
@@ -85,7 +86,7 @@ func TestAssessorQualityAgainstFixtures(t *testing.T) {
 			}
 			hits := 0
 			for _, c := range cases {
-				got := replayFixture(t, manifest, c)
+				got := replayFixture(t, assessor, c)
 				if got == c.Expect {
 					hits++
 					continue
@@ -110,8 +111,9 @@ func TestAssessorQualityAgainstFixtures(t *testing.T) {
 // replayFixture runs one assessor over one fixture's stored payloads and
 // returns the status it produced for the labelled subject, or statusNone when
 // it produced no assessment for that subject.
-func replayFixture(t *testing.T, manifest AssessorManifest, c fixtureCase) string {
+func replayFixture(t *testing.T, assessor staticAssessor, c fixtureCase) string {
 	t.Helper()
+	manifest := assessor.manifest
 	artifacts := []EvidenceArtifact{}
 	if len(c.Monitoring) > 0 {
 		artifacts = append(artifacts, EvidenceArtifact{CollectorKey: CollectorMonitoring, CollectorVersion: 1, PayloadVersion: 1, Payload: c.Monitoring})
@@ -120,7 +122,7 @@ func replayFixture(t *testing.T, manifest AssessorManifest, c fixtureCase) strin
 		artifacts = append(artifacts, EvidenceArtifact{CollectorKey: CollectorOwnedSite, CollectorVersion: 1, PayloadVersion: 1, Payload: c.Site})
 	}
 	research := &fixtureResearcher{pages: c.Pages, remaining: manifest.MaxURLInspections}
-	drafts, err := staticAssessor{manifest}.Assess(context.Background(), NewEvidenceView(artifacts), research)
+	drafts, err := assessor.Assess(context.Background(), NewEvidenceView(artifacts), research)
 	if err != nil {
 		return "error: " + err.Error()
 	}
@@ -160,6 +162,25 @@ func loadFixtures(t *testing.T, assessorKey string) []fixtureCase {
 			t.Fatalf("%s has two fixtures named %q", assessorKey, c.Name)
 		}
 		seen[c.Name] = true
+		// Assessors decode payloads leniently, so a mistyped key would read as a
+		// zero value and silently change a fixture's verdict rather than fail.
+		// Fixtures are checked strictly instead: a key the payload struct does
+		// not name is a broken fixture, not a false one.
+		strictDecode[MonitoringSnapshot](t, assessorKey, c.Name, CollectorMonitoring, c.Monitoring)
+		strictDecode[OwnedSiteScan](t, assessorKey, c.Name, CollectorOwnedSite, c.Site)
 	}
 	return cases
+}
+
+func strictDecode[T any](t *testing.T, assessorKey, name, collector string, raw json.RawMessage) {
+	t.Helper()
+	if len(raw) == 0 {
+		return
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	var out T
+	if err := decoder.Decode(&out); err != nil {
+		t.Fatalf("%s fixture %q has an invalid %s payload: %v", assessorKey, name, collector, err)
+	}
 }

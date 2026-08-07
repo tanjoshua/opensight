@@ -10,7 +10,24 @@ import (
 	"opensight/internal/visibility"
 
 	connect "connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func assessmentStatusToProto(v visibility.AssessmentStatus) opensightv1.AssessmentStatus {
+	switch v {
+	case visibility.StatusMet:
+		return opensightv1.AssessmentStatus_ASSESSMENT_STATUS_MET
+	case visibility.StatusPartial:
+		return opensightv1.AssessmentStatus_ASSESSMENT_STATUS_PARTIAL
+	case visibility.StatusNotMet:
+		return opensightv1.AssessmentStatus_ASSESSMENT_STATUS_NOT_MET
+	case visibility.StatusUnknown:
+		return opensightv1.AssessmentStatus_ASSESSMENT_STATUS_UNKNOWN
+	case visibility.StatusNotApplicable:
+		return opensightv1.AssessmentStatus_ASSESSMENT_STATUS_NOT_APPLICABLE
+	}
+	return opensightv1.AssessmentStatus_ASSESSMENT_STATUS_UNSPECIFIED
+}
 
 var _ opensightv1connect.OpportunityServiceHandler = (*Server)(nil)
 
@@ -87,7 +104,7 @@ func (s *Server) SetOpportunityStatus(ctx context.Context, req *connect.Request[
 // practice key.
 func opportunityToProto(row store.OpportunityRecord) *opensightv1.Opportunity {
 	practice, _ := visibility.Practice(row.PracticeKey)
-	out := &opensightv1.Opportunity{Id: row.ID.String(), PracticeKey: row.PracticeKey, SubjectKey: row.SubjectKey, Title: row.Presentation.Title, Summary: row.Presentation.Summary, Effort: row.Presentation.Effort, Status: opportunityStatusToProto(row.UserStatus), AssessmentStatus: string(row.AssessmentStatus), CheckedSources: row.CheckedSources, AssessedAt: row.AssessedAt.UTC().Format("2006-01-02T15:04:05Z"), Current: row.Current, Focus: row.Focus, DirectBlocker: practice.DirectBlocker}
+	out := &opensightv1.Opportunity{Id: row.ID.String(), PracticeKey: row.PracticeKey, SubjectKey: row.SubjectKey, Title: row.Presentation.Title, Summary: row.Presentation.Summary, Effort: row.Presentation.Effort, Status: opportunityStatusToProto(row.UserStatus), AssessmentStatus: assessmentStatusToProto(row.AssessmentStatus), CheckedSources: row.CheckedSources, AssessedAt: timestamppb.New(row.AssessedAt), Current: row.Current, Focus: row.Focus, DirectBlocker: practice.DirectBlocker}
 	for _, id := range row.ResultIDs {
 		out.ResultIds = append(out.ResultIds, id.String())
 	}
@@ -101,7 +118,7 @@ func opportunityToProto(row store.OpportunityRecord) *opensightv1.Opportunity {
 		out.Blocks = append(out.Blocks, &opensightv1.OpportunityBlock{Type: blockTypeToProto(block.Type), Title: block.Title, Text: block.Text, Value: block.Value, Url: block.URL, Items: block.Items, ResultIds: block.ResultIDs})
 	}
 	for _, observation := range row.Observations {
-		out.Observations = append(out.Observations, &opensightv1.OutcomeObservation{AssessmentStatus: string(observation.AssessmentStatus), ObservedAt: observation.ObservedAt.UTC().Format("2006-01-02T15:04:05Z"), ResultIds: observation.ResultIDs, PromptIds: observation.PromptIDs})
+		out.Observations = append(out.Observations, &opensightv1.OutcomeObservation{AssessmentStatus: assessmentStatusToProto(observation.AssessmentStatus), ObservedAt: timestamppb.New(observation.ObservedAt), ResultIds: observation.ResultIDs, PromptIds: observation.PromptIDs})
 	}
 	return out
 }

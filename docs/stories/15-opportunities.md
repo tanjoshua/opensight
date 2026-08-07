@@ -24,7 +24,7 @@ Acceptance: deterministic search-access practice as the only registered assessor
 
 As a user, I need a small consistent action queue rather than arbitrary generated advice.
 
-Acceptance: shared eligibility/safety validation; independently versioned ranker; blocker-first order; the derived half of every opportunity rebuilt wholesale per generation in one transaction, capped at five current items and three focus items, with user status/dismissal/baseline/first-seen untouched; typed standard blocks only; evidence and verification limitations included.
+Acceptance: shared eligibility validation with the copy standard enforced at review time on catalog-authored strings; independently versioned ranker; blocker-first order; the derived half of every opportunity rebuilt wholesale per generation in one transaction, capped at five current items and three focus items, with user status/dismissal/baseline/first-seen untouched; typed standard blocks only; evidence and verification limitations included.
 
 ## OPP-5 — Lifecycle and outcomes
 

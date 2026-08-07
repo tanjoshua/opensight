@@ -7,11 +7,11 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/bright-smile-dental"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/bright-smile-dental"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/bright-smile-dental"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/bright-smile-dental"]}
       ]}]
     },
     "pages": {
@@ -26,11 +26,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/dentists/portland"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Northgate Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/dentists/portland"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/dentists/portland"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Northgate Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/dentists/portland"]}
       ]}]
     },
     "pages": {
@@ -45,11 +45,11 @@
     "expect": "UNKNOWN",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/cascade-dental"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/cascade-dental"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/cascade-dental"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/cascade-dental"]}
       ]}]
     },
     "pages": {}
@@ -62,11 +62,11 @@
     "expect": "UNKNOWN",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "CitationDomains": ["portlandliving.com"], "CitationURLs": ["https://portlandliving.com/guides/health"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "CitationDomains": ["portlandliving.com"], "CitationURLs": ["https://portlandliving.com/guides/health"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "citation_domains": ["portlandliving.com"], "citation_urls": ["https://portlandliving.com/guides/health"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "citation_domains": ["portlandliving.com"], "citation_urls": ["https://portlandliving.com/guides/health"]}
       ]}]
     },
     "pages": {
@@ -81,11 +81,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/search?q=bright+smile+dental"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/search?q=bright+smile+dental"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/search?q=bright+smile+dental"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/search?q=bright+smile+dental"]}
       ]}]
     },
     "pages": {
@@ -100,11 +100,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Summit Dental",
-      "WebsiteHost": "summitdentalpdx.com",
+      "business_name": "Summit Dental",
+      "website_host": "summitdentalpdx.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Summit Dental Arts"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Summit Dental Arts"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Summit Dental Arts"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Summit Dental Arts"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]}
       ]}]
     },
     "pages": {
@@ -119,11 +119,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Ace Dental",
-      "WebsiteHost": "acedentalpdx.com",
+      "business_name": "Ace Dental",
+      "website_host": "acedentalpdx.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Palace Dental Group"], "CitationDomains": ["bestdentists.com"], "CitationURLs": ["https://bestdentists.com/portland"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Palace Dental Group"], "CitationDomains": ["bestdentists.com"], "CitationURLs": ["https://bestdentists.com/portland"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Palace Dental Group"], "citation_domains": ["bestdentists.com"], "citation_urls": ["https://bestdentists.com/portland"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Palace Dental Group"], "citation_domains": ["bestdentists.com"], "citation_urls": ["https://bestdentists.com/portland"]}
       ]}]
     },
     "pages": {
@@ -138,11 +138,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/dentist/cascade-dental"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/dentist/cascade-dental"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/dentist/cascade-dental"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/dentist/cascade-dental"]}
       ]}]
     },
     "pages": {
@@ -157,11 +157,11 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental Studio",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental Studio",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/bright-smile-dental-portland"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/bright-smile-dental-portland"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/bright-smile-dental-portland"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/bright-smile-dental-portland"]}
       ]}]
     },
     "pages": {
@@ -176,11 +176,11 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "St. Anne's Dental",
-      "WebsiteHost": "stannesdental.co.uk",
+      "business_name": "St. Anne's Dental",
+      "website_host": "stannesdental.co.uk",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Harbour Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/practice/st-annes-dental"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Harbour Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/practice/st-annes-dental"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Harbour Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/practice/st-annes-dental"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Harbour Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/practice/st-annes-dental"]}
       ]}]
     },
     "pages": {
@@ -195,14 +195,14 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
         {"run_id": "run-1", "results": [
-          {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]}
+          {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]}
         ]},
         {"run_id": "run-2", "results": [
-          {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["www.yelp.com"], "CitationURLs": ["https://www.yelp.com/c/portland/dentists"]}
+          {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["www.yelp.com"], "citation_urls": ["https://www.yelp.com/c/portland/dentists"]}
         ]}
       ]
     },
@@ -219,11 +219,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["www.yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["www.yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["www.yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["www.yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]}
       ]}]
     },
     "pages": {
@@ -238,11 +238,11 @@
     "expect": "NONE",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["www.brightsmiledental.com"], "CitationURLs": ["https://www.brightsmiledental.com/"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["www.brightsmiledental.com"], "CitationURLs": ["https://www.brightsmiledental.com/"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["www.brightsmiledental.com"], "citation_urls": ["https://www.brightsmiledental.com/"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["www.brightsmiledental.com"], "citation_urls": ["https://www.brightsmiledental.com/"]}
       ]}]
     },
     "pages": {
@@ -257,15 +257,15 @@
     "expect": "NONE",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
         {"run_id": "run-1", "results": [
-          {"ResultID": "res-1", "PromptID": "p-a", "Mentioned": true, "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]},
-          {"ResultID": "res-2", "PromptID": "p-b", "Mentioned": true, "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]}
+          {"result_id": "res-1", "prompt_id": "p-a", "mentioned": true, "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]},
+          {"result_id": "res-2", "prompt_id": "p-b", "mentioned": true, "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]}
         ]},
         {"run_id": "run-2", "results": [
-          {"ResultID": "res-3", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/c/portland/dentists"]}
+          {"result_id": "res-3", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/c/portland/dentists"]}
         ]}
       ]
     },
@@ -281,10 +281,10 @@
     "expect": "NONE",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["portlandliving.com"], "CitationURLs": ["https://portlandliving.com/guides/health"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["portlandliving.com"], "citation_urls": ["https://portlandliving.com/guides/health"]}
       ]}]
     },
     "pages": {
@@ -299,14 +299,14 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [
         {"run_id": "run-1", "results": [
-          {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/dentists/portland"]}
+          {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/dentists/portland"]}
         ]},
         {"run_id": "run-2", "results": [
-          {"ResultID": "res-2", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": ["https://healthgrades.com/dentists/portland"]}
+          {"result_id": "res-2", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": ["https://healthgrades.com/dentists/portland"]}
         ]}
       ]
     },
@@ -322,13 +322,13 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": [
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": [
           "https://healthgrades.com/biz/a", "https://healthgrades.com/biz/b", "https://healthgrades.com/biz/c"
         ]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["healthgrades.com"], "CitationURLs": [
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["healthgrades.com"], "citation_urls": [
           "https://healthgrades.com/biz/d", "https://healthgrades.com/biz/e", "https://healthgrades.com/biz/z-bright-smile"
         ]}
       ]}]
@@ -350,13 +350,13 @@
     "expect": "MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": [
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": [
           "https://yelp.com/biz/a-bright-smile", "https://yelp.com/biz/m-cascade"
         ]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Cascade Dental"], "CitationDomains": ["yelp.com"], "CitationURLs": ["https://yelp.com/biz/z-northgate"]}
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Cascade Dental"], "citation_domains": ["yelp.com"], "citation_urls": ["https://yelp.com/biz/z-northgate"]}
       ]}]
     },
     "pages": {
@@ -373,11 +373,11 @@
     "expect": "NOT_MET",
     "monitoring": {
       "payload_version": 1,
-      "BusinessName": "Bright Smile Dental",
-      "WebsiteHost": "brightsmiledental.com",
+      "business_name": "Bright Smile Dental",
+      "website_host": "brightsmiledental.com",
       "runs": [{"run_id": "run-1", "results": [
-        {"ResultID": "res-1", "PromptID": "p-a", "Competitors": ["Cascade Dental", "Northgate Dental"], "CitationDomains": ["bestdentists.com"], "CitationURLs": ["https://bestdentists.com/portland/top-8"]},
-        {"ResultID": "res-2", "PromptID": "p-b", "Competitors": ["Palace Dental Group"], "CitationDomains": ["bestdentists.com"], "CitationURLs": ["https://bestdentists.com/portland/top-8"]}
+        {"result_id": "res-1", "prompt_id": "p-a", "competitors": ["Cascade Dental", "Northgate Dental"], "citation_domains": ["bestdentists.com"], "citation_urls": ["https://bestdentists.com/portland/top-8"]},
+        {"result_id": "res-2", "prompt_id": "p-b", "competitors": ["Palace Dental Group"], "citation_domains": ["bestdentists.com"], "citation_urls": ["https://bestdentists.com/portland/top-8"]}
       ]}]
     },
     "pages": {

@@ -19,55 +19,64 @@ const (
 )
 
 type MonitoringSnapshot struct {
-	PayloadVersion            int `json:"payload_version"`
-	BusinessName, WebsiteHost string
-	Runs                      []SnapshotRun `json:"runs"`
+	PayloadVersion int           `json:"payload_version"`
+	BusinessName   string        `json:"business_name"`
+	WebsiteHost    string        `json:"website_host"`
+	Runs           []SnapshotRun `json:"runs"`
 }
 type SnapshotRun struct {
 	RunID   string           `json:"run_id"`
 	Results []SnapshotResult `json:"results"`
 }
 type SnapshotResult struct {
-	ResultID, PromptID, Prompt, ResponseText   string
-	Mentioned                                  bool
-	Competitors, CitationDomains, CitationURLs []string
+	ResultID string `json:"result_id"`
+	PromptID string `json:"prompt_id"`
+	Prompt   string `json:"prompt"`
+	// ResponseText is the only unrecoverable field in the payload: mentions and
+	// citations are extractions of it, so an assessor that reads answers can
+	// only ever be replayed over history that kept the answers.
+	ResponseText    string   `json:"response_text"`
+	Mentioned       bool     `json:"mentioned"`
+	Competitors     []string `json:"competitors"`
+	CitationDomains []string `json:"citation_domains"`
+	CitationURLs    []string `json:"citation_urls"`
 }
 type OwnedSiteScan struct {
-	PayloadVersion                              int      `json:"payload_version"`
-	Host                                        string   `json:"host"`
-	CheckedURLs                                 []string `json:"checked_urls"`
-	Summaries                                   []string `json:"summaries"`
-	Hashes                                      []string `json:"hashes"`
-	Text                                        string   `json:"text"`
-	Reachable, AuthBarrier, NoIndex, OAIBlocked bool
-	Failure                                     string `json:"failure,omitempty"`
+	PayloadVersion int      `json:"payload_version"`
+	Host           string   `json:"host"`
+	CheckedURLs    []string `json:"checked_urls"`
+	Text           string   `json:"text"`
+	Reachable      bool     `json:"reachable"`
+	AuthBarrier    bool     `json:"auth_barrier"`
+	NoIndex        bool     `json:"noindex"`
+	OAIBlocked     bool     `json:"oai_blocked"`
+	Failure        string   `json:"failure,omitempty"`
 }
 
-type staticAssessor struct{ manifest AssessorManifest }
+type assessFunc func(context.Context, EvidenceView, BoundedResearcher, AssessorManifest) ([]AssessmentDraft, error)
+
+type staticAssessor struct {
+	manifest AssessorManifest
+	assess   assessFunc
+}
 
 func (a staticAssessor) Manifest() AssessorManifest { return a.manifest }
 func (a staticAssessor) Assess(ctx context.Context, evidence EvidenceView, research BoundedResearcher) ([]AssessmentDraft, error) {
-	switch a.manifest.Key {
-	case "search-access":
-		return assessSearchAccess(evidence, a.manifest)
-	case "influential-source":
-		return assessAuthority(ctx, evidence, research, a.manifest)
-	case "tracked-topic":
-		return assessTopics(evidence, a.manifest)
-	default:
-		return nil, fmt.Errorf("unknown assessor %q", a.manifest.Key)
-	}
+	return a.assess(ctx, evidence, research, a.manifest)
 }
 
-// assessorManifests describes every implemented assessor, registered or not.
+// assessors lists every implemented assessor, registered or not, next to the
+// function that runs it — so adding one is a single entry here rather than an
+// entry plus an arm in a dispatch switch.
+//
 // The budgets are calibrated and load-bearing — assessAuthority and assessTopics
 // stop emitting at MaxOutput, so a zero there silently returns nothing — which
 // is why an unregistered assessor keeps its manifest instead of losing it along
 // with its registration.
-var assessorManifests = []AssessorManifest{
-	{Key: "search-access", ModuleVersion: 1, PracticeKeys: []string{PracticeSearchAccess}, RequiredCollectors: []string{CollectorOwnedSite}, MaxURLInspections: 2, MaxRuntime: 30 * time.Second, MaxOutput: 1},
-	{Key: "influential-source", ModuleVersion: 1, PracticeKeys: []string{PracticeAuthority}, RequiredCollectors: []string{CollectorMonitoring}, MaxURLInspections: 5, MaxRuntime: 45 * time.Second, MaxOutput: 10},
-	{Key: "tracked-topic", ModuleVersion: 1, PracticeKeys: []string{PracticeTopicCoverage}, RequiredCollectors: []string{CollectorMonitoring, CollectorOwnedSite}, MaxRuntime: 10 * time.Second, MaxOutput: 10},
+var assessors = []staticAssessor{
+	{AssessorManifest{Key: "search-access", ModuleVersion: 1, PracticeKeys: []string{PracticeSearchAccess}, RequiredCollectors: []string{CollectorOwnedSite}, MaxURLInspections: 2, MaxRuntime: 30 * time.Second, MaxOutput: 1}, assessSearchAccess},
+	{AssessorManifest{Key: "influential-source", ModuleVersion: 1, PracticeKeys: []string{PracticeAuthority}, RequiredCollectors: []string{CollectorMonitoring}, MaxURLInspections: 5, MaxRuntime: 45 * time.Second, MaxOutput: 10}, assessAuthority},
+	{AssessorManifest{Key: "tracked-topic", ModuleVersion: 1, PracticeKeys: []string{PracticeTopicCoverage}, RequiredCollectors: []string{CollectorMonitoring, CollectorOwnedSite}, MaxRuntime: 10 * time.Second, MaxOutput: 10}, assessTopics},
 }
 
 // registeredAssessors names the assessors that run in production. The other two
@@ -80,9 +89,9 @@ func registered(key string) bool { return slices.Contains(registeredAssessors, k
 
 func Assessors() []PracticeAssessor {
 	out := make([]PracticeAssessor, 0, len(registeredAssessors))
-	for _, m := range assessorManifests {
-		if registered(m.Key) {
-			out = append(out, staticAssessor{m})
+	for _, a := range assessors {
+		if registered(a.manifest.Key) {
+			out = append(out, a)
 		}
 	}
 	return out
@@ -104,7 +113,7 @@ func decodeArtifact[T any](v EvidenceView, key string, version int) (T, error) {
 }
 func payload(v any) json.RawMessage { b, _ := json.Marshal(v); return b }
 
-func assessSearchAccess(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error) {
+func assessSearchAccess(_ context.Context, v EvidenceView, _ BoundedResearcher, m AssessorManifest) ([]AssessmentDraft, error) {
 	s, err := decodeArtifact[OwnedSiteScan](v, CollectorOwnedSite, 1)
 	if err != nil {
 		return nil, err
@@ -207,7 +216,7 @@ func assessAuthority(ctx context.Context, v EvidenceView, research BoundedResear
 	return out, nil
 }
 
-func assessTopics(v EvidenceView, m AssessorManifest) ([]AssessmentDraft, error) {
+func assessTopics(_ context.Context, v EvidenceView, _ BoundedResearcher, m AssessorManifest) ([]AssessmentDraft, error) {
 	mon, err := decodeArtifact[MonitoringSnapshot](v, CollectorMonitoring, 1)
 	if err != nil {
 		return nil, err
@@ -371,9 +380,6 @@ func Compile(drafts []AssessmentDraft) ([]CompiledAssessment, error) {
 	eligible := []AssessmentDraft{}
 	for _, d := range drafts {
 		if Eligible(d) {
-			if err := ValidateSafety(d); err != nil {
-				continue
-			}
 			eligible = append(eligible, d)
 		}
 	}

@@ -10,7 +10,7 @@
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/", "https://brightsmiledental.com/robots.txt"],
       "text": "Bright Smile Dental. Family and cosmetic dentistry in Portland. Book an appointment online.",
-      "Reachable": true
+      "reachable": true
     }
   },
   {
@@ -24,8 +24,8 @@
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/", "https://brightsmiledental.com/robots.txt"],
       "text": "Bright Smile Dental. Family and cosmetic dentistry in Portland.",
-      "Reachable": true,
-      "OAIBlocked": true
+      "reachable": true,
+      "oai_blocked": true
     }
   },
   {
@@ -39,8 +39,8 @@
       "host": "cascadedental.org",
       "checked_urls": ["https://cascadedental.org/", "https://cascadedental.org/robots.txt"],
       "text": "Cascade Dental Group. Implants, crowns, and whitening.",
-      "Reachable": true,
-      "OAIBlocked": true
+      "reachable": true,
+      "oai_blocked": true
     }
   },
   {
@@ -54,8 +54,8 @@
       "host": "riverbendclinic.com",
       "checked_urls": ["https://riverbendclinic.com/"],
       "text": "Riverbend Clinic. Walk-in urgent care.",
-      "Reachable": true,
-      "NoIndex": true
+      "reachable": true,
+      "noindex": true
     }
   },
   {
@@ -69,8 +69,8 @@
       "host": "riverbendclinic.com",
       "checked_urls": ["https://riverbendclinic.com/"],
       "text": "Riverbend Clinic. Walk-in urgent care.",
-      "Reachable": true,
-      "NoIndex": true
+      "reachable": true,
+      "noindex": true
     }
   },
   {
@@ -83,7 +83,7 @@
       "payload_version": 1,
       "host": "members.northgatedental.com",
       "checked_urls": ["https://members.northgatedental.com/login"],
-      "AuthBarrier": true
+      "auth_barrier": true
     }
   },
   {
@@ -97,8 +97,8 @@
       "host": "northgatedental.com",
       "checked_urls": ["https://northgatedental.com/services"],
       "text": "Northgate Dental services: cleanings, fillings, whitening.",
-      "Reachable": true,
-      "AuthBarrier": true
+      "reachable": true,
+      "auth_barrier": true
     }
   },
   {
@@ -124,9 +124,9 @@
       "host": "quietclinic.com",
       "checked_urls": ["https://quietclinic.com/", "https://quietclinic.com/robots.txt"],
       "text": "Quiet Clinic. Private practice.",
-      "Reachable": true,
-      "NoIndex": true,
-      "OAIBlocked": true
+      "reachable": true,
+      "noindex": true,
+      "oai_blocked": true
     }
   },
   {
@@ -186,7 +186,7 @@
       "host": "selectiveclinic.com",
       "checked_urls": ["https://selectiveclinic.com/", "https://selectiveclinic.com/robots.txt"],
       "text": "Selective Clinic. Dermatology and cosmetic care.",
-      "Reachable": true
+      "reachable": true
     }
   },
   {
@@ -200,7 +200,7 @@
       "host": "brightsmiledental.com",
       "checked_urls": ["https://brightsmiledental.com/", "https://brightsmiledental.com/robots.txt"],
       "text": "Bright Smile Dental. Book online. Meet the team.",
-      "Reachable": true
+      "reachable": true
     }
   },
   {
@@ -214,7 +214,7 @@
       "host": "tinypractice.com",
       "checked_urls": ["https://tinypractice.com/"],
       "text": "Tiny Practice. Call 555-0100.",
-      "Reachable": true
+      "reachable": true
     }
   },
   {
@@ -228,7 +228,7 @@
       "host": "www.harbourdental.co.uk",
       "checked_urls": ["https://www.harbourdental.co.uk/"],
       "text": "Harbour Dental. NHS and private dentistry in Bristol.",
-      "Reachable": true
+      "reachable": true
     }
   }
 ]

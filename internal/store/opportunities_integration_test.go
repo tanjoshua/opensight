@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"opensight/internal/domain"
 	"opensight/internal/visibility"
@@ -134,6 +135,77 @@ func TestRebuildOpportunitiesReplacesDerivedStateAndPreservesUserState(t *testin
 	}
 	if detail.Focus != beta.Focus || detail.Current != beta.Current {
 		t.Fatalf("detail focus=%v current=%v, want %v/%v", detail.Focus, detail.Current, beta.Focus, beta.Current)
+	}
+}
+
+// TestSetOpportunityStatusRecordsOneEventPerTransition pins two things: one
+// event per genuine transition and none for a no-op repeat, and an event key
+// derived from the row's updated_at rather than from a clock read at insert
+// time. The key derivation is what makes the (opportunity_id, event_key)
+// constraint reachable at all; a key built from time.Now() can never collide,
+// so the ON CONFLICT clause guarding it would be dead code.
+func TestSetOpportunityStatusRecordsOneEventPerTransition(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(db.Close)
+	s := New(db)
+
+	accountID, businessID, runID := mustNewID(t), mustNewID(t), mustNewID(t)
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM opportunities WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM assessment_generations WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM monitoring_runs WHERE business_id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", accountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
+	})
+	insertAccount(t, db, ctx, accountID, "Opportunity Event Account")
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Event Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', $3, now(), now())`,
+		runID, businessID, "event-workflow-"+runID.String())
+
+	mustCompile(ctx, t, s, accountID, businessID, runID, "e1", "alpha")
+	id := listByPractice(ctx, t, s, accountID, businessID)["alpha"].ID
+
+	for _, status := range []OpportunityStatus{StatusInProgress, StatusCompleted, StatusOpen} {
+		if _, err := s.SetOpportunityStatus(ctx, accountID, id, status, nil); err != nil {
+			t.Fatalf("set %s: %v", status, err)
+		}
+		// The same transition again is a no-op and must not add a second row.
+		if _, err := s.SetOpportunityStatus(ctx, accountID, id, status, nil); err != nil {
+			t.Fatalf("repeat %s: %v", status, err)
+		}
+	}
+
+	var events int
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM opportunity_events WHERE opportunity_id = $1", id).Scan(&events); err != nil {
+		t.Fatalf("count events: %v", err)
+	}
+	if events != 3 {
+		t.Fatalf("recorded %d events, want one per genuine transition (3)", events)
+	}
+
+	// The final RESTORED event's key must be reconstructible from the row it
+	// describes, which a clock-derived key never is.
+	final := listByPractice(ctx, t, s, accountID, businessID)["alpha"]
+	wantKey := "status:OPEN:" + final.UpdatedAt.UTC().Format(time.RFC3339Nano)
+	var exists bool
+	if err := db.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM opportunity_events WHERE opportunity_id = $1 AND event_key = $2)", id, wantKey).Scan(&exists); err != nil {
+		t.Fatalf("look up event key: %v", err)
+	}
+	if !exists {
+		t.Fatalf("no event keyed %q; the key is not derived from the row's updated_at", wantKey)
 	}
 }
 
