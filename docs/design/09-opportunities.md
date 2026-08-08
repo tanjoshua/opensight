@@ -1,65 +1,94 @@
-# Design 09 — Improve, visibility assessments, and actions
+# Design 09 — Improve: site audit and evidence-derived findings
 
 Depends on: [02 Data model](02-data-model.md), [04 Monitoring](04-monitoring.md), [05 Analysis](05-analysis.md), [06 API + frontend](06-api-frontend.md)
 
 ## Product model
 
-The durable concept is a catalog practice. Each practice declares a stable key, ordered section, criteria version, mode (`CHECK`, `CONTINUOUS`, or `TRACKED`), subject scope (`BUSINESS` or dynamic), evidence tier, assessor, explanation, references, action steps, and whether it may recommend an action. Business-scoped practices always use subject key `business`; changing or omitting the website does not change identity.
+Improve has two deliberately separate pipelines. The site audit is a closed, stable list of deterministic checks against the customer's own website. Findings are an open set of evidence-derived work items produced from the audit and monitoring corpus. The checklist presents the former; Next actions presents the latter.
 
-Assessments describe what OpenSight knows. Improvement actions are repeatable work cycles derived from actionable assessments. Action state never changes an assessment standing, and action history never claims that work caused a later visibility change.
+This separation keeps the checklist comprehensive and identical between visits without forcing changing citation domains or future advice types into a catalog-practice lifecycle.
 
-Checklist standings are `GOOD`, `IMPROVABLE`, `NEEDS_ATTENTION`, `TRACKING`, `COULD_NOT_VERIFY`, `NOT_ASSESSED`, `NOT_APPLICABLE`, and `NO_LONGER_TRACKED`. Checks present `GOOD` as “In place,” continuous practices as “In good standing” or “Room to improve,” and tracked practices as “Being tracked.” A tracked practice produces no action unless its catalog entry explicitly opts in.
+## Site audit
 
-## Evidence and assessors
+The audit catalog is a flat ordered list of checks. Each check declares a stable key, presentational group (`Access`, `Structure`, or `Identity`), assertion title, methodology, whether it is informational or blocking, optional fix steps, and priority from 1 to 3. Groups carry explanatory copy and references but no status of their own.
 
-Collectors emit compact versioned artifacts. `monitoring-snapshot` contains the latest four analyzed runs and their prompts, results, mentions, competitors, and citations. `owned-site-scan` contains the inspected host, checked URLs, extracted text, access/indexing signals, and failure detail. A missing website is a successful artifact describing an unverifiable check, so search access produces `COULD_NOT_VERIFY` rather than an invalid or absent assessment.
+An audit emits exactly one result per catalog check with `PASS`, `FAIL`, `COULD_NOT_VERIFY`, or `NOT_APPLICABLE`, plus evidence detail and optional sources. Informational checks, such as GPTBot access, report legitimate choices and do not contribute to passed or failed counts. A failed check produces a finding only when it is non-informational and declares fix steps.
 
-Assessors declare their owned practices, dependencies, module version, and hard runtime/research/output budgets. URL inspection uses the SSRF-safe bounded researcher. Unknown payload versions, ownership mismatches, and invalid drafts fail closed. Each planned assessor records `SUCCEEDED`, `FAILED`, or `SKIPPED` for every generation. The latest successful run of a dynamic assessor defines its current subject set.
+The 17 checks cover:
 
-Search access is a business-scoped `CHECK` and the only registered assessor. Influential-source presence and tracked-topic coverage are dynamic `CONTINUOUS` practices whose implementations remain unregistered until they clear the 90% hand-labelled fixture gate. Catalog entries without registered assessors still appear as `NOT_ASSESSED` in the checklist.
+- access: reachability, authentication barriers, page indexing, OAI-SearchBot, ChatGPT-User, and informational GPTBot access;
+- structure: sitemap publication, robots sitemap declaration, canonical URL, unique titles, business name in the homepage title, and meta description;
+- identity: structured-data presence and business type, telephone, address, and opening hours.
 
-## Atomic publication and persistence
+The site scan requests each page once and follows redirects through the same SSRF-safe URL validation as direct requests. If a bare-domain homepage is unusable instead of redirecting, the scan tries the conventional `www` alias once; any successful alias becomes the origin for the rest of that scan. Title, first heading, meta description, canonical URL, telephone links, bounded JSON-LD, indexing directives, and text are collected during that parse. `robots.txt` is read once and yields the three crawler verdicts and sitemap directives. Page and robots failures remain distinct: an unreadable robots file makes only robots-derived checks unverifiable.
 
-`assessment_generations` and `evidence_artifacts` retain provenance. `assessment_module_outcomes` records every planned assessor outcome. `visibility_assessments` retains every generation result and marks only the currently published result for each practice subject.
+A crawl failure is still a publishable audit. It records the failure and emits every check as unverifiable. This is evidence about the website, not an activity failure.
 
-Publication is one transaction:
+## Findings
 
-1. Record module outcomes.
-2. Replace published assessments only for successfully evaluated practice scopes.
-3. Retire missing dynamic subjects only when their assessor succeeded.
-4. Reconcile actions only for those successful scopes.
-5. Mark the generation `READY` or `PARTIAL`.
+A finder receives the current audit and a monitoring snapshot containing the latest four analyzed runs. It returns self-describing findings with a readable deterministic key, source, category, title, explanation, steps, evidence identifiers and URLs, blocking flag, reach, and priority.
 
-Failed or skipped scopes retain their prior published standings and actions and are reported stale. Compilation failure marks the generation `FAILED` without changing published state. Reads consider only `READY` and `PARTIAL` generations, never `RUNNING` or `FAILED`.
+Category is the kind of change a finding asks for, and the only axis Next actions filters on: getting listed on someone else's directory is a different afternoon's work from editing your own site. It reuses the checklist rather than introducing a second taxonomy — a site-audit finding takes the failed check's group as its category, so the categories are `access` ("Website access"), `structure` ("Site structure"), `identity` ("Business details"), plus `listings` ("Listings & directories") for work on a third party's site. Source stays internal provenance; category is what the user acts on. A later finder introduces a category by adding one catalog entry, and the group-to-category mapping is drift-guarded by test.
 
-`improvement_actions` stores immutable numbered cycles with a stable `recommendation_key`. The active `OPEN` or `IN_PROGRESS` cycle is updated while the recommendation remains materially the same. Completion and dismissal are history: completion freezes a future-compatible baseline, and dismissal suppresses the same recommendation key. A completed practice recurs only after a verified good-to-actionable regression or a materially different recommendation key; a dismissed one recurs only when that key changes. Automatic retirement and supersession are append-only activity events. `improvement_action_events` records creation, recurrence, start, completion, dismissal, restoration, retirement, and supersession.
+The finder set:
 
-Completion baselines contain completion time and per-question prompt/result identity when question evidence exists. A site-wide practice can instead freeze business-wide mentioned/analyzed totals. No comparison is displayed until a genuine scheduled outcome evaluator exists.
+- `site-audit` turns each failed actionable check into a finding such as `site-audit:pages_allow_indexing`; its detail is the check evidence and its steps come from the check catalog.
+- `citation-gap` groups cited external domains across answers where the business was absent, keeps sources recurring across questions or runs, and ranks candidates by competitor lift: the distinct businesses each source was **cited for**, read from `mentions.citation_id` (05's attribution). The businesses an answer happens to name are a far larger set and are never evidence about a source — a source cited for a market-wide claim rather than for any business has no lift and earns no recommendation. It inspects cited pages through the SSRF-safe bounded researcher, capped at two inspected URLs per candidate so one domain cannot spend the whole run budget, and recommends only a source it could read and on which the business is genuinely absent. An unreadable source, exhausted research budget, source with no competitor lift, or existing business listing produces no finding.
+- `selection-criteria` reads the sources the previous finder drops for zero lift. A citation attached to a criterion sentence rather than to any business still reveals what the answer selects on — a licensing register, a specialty accreditation, a piece of equipment — so the finder extracts that criterion and asks the customer to make it visible and machine-readable on their own site. It keeps a criterion only when its source recurs across questions or runs, and it never recommends getting listed on the cited source: an accreditation body or regulator is evidence about how the answer chooses, not a directory to join. Its category is therefore `identity` or `structure`, never `listings`.
 
-The checklist is derived from the catalog, published assessments, module freshness, and action history. There is no checklist table.
+Findings sort by blocking first, then category order, then affected-question reach descending, priority ascending, and stable key. Category order is the catalog sequence, which runs easiest-to-act-on first and puts listings last: a change to the customer's own site is entirely within their control, while a listing depends on a third party accepting the entry. That tier deliberately outranks reach — a listing can affect more answers than any single site change and still be the work a business is least able to finish — and reach then orders listings against each other, where the comparison is fair.
 
-## Ranking and Improve APIs
+The ordering is applied by the query that the page reads, which takes the category sequence as a parameter rather than repeating it as a SQL literal, so the visibility catalog stays its only source. An unknown category sorts last, so a finder added without a catalog entry cannot silently take the top of the queue.
 
-The independently versioned ranker orders direct blockers first, then reach, persistence, evidence quality, actionability, lower effort, and stable practice/subject identity. Every active action is returned; the first three are focus actions and the rest are additional recommendations.
+## Persistence and lifecycle
+
+The rebuild migration replaces the six assessment/action tables with `site_audits` and `findings`. This is intentionally destructive because assessments are derived data and the next monitoring run regenerates them.
+
+`site_audits` stores the monitoring run, timestamp, pages read, optional crawl failure, complete check-result JSON, and whether the audit is current. There is one audit per monitoring run and exactly one published audit per business.
+
+`findings` stores one row per `(business_id, key)`. Status is only `OPEN`, `DONE`, or `DISMISSED`:
+
+- a finding is active when it is open and its `last_seen_at` belongs to the current published audit;
+- reproducing an open finding refreshes its evidence;
+- reproducing a done finding reopens it;
+- a dismissed finding remains suppressed when reproduced;
+- the first later run that does not reproduce a done finding stamps `verified_at`.
+
+Verification means only that the later check no longer found the issue. It never claims that the work caused a visibility change. Findings that stop appearing simply leave the active queue; there are no retired or superseded states, numbered cycles, event history, completion baselines, or tombstones.
+
+Publication is one transaction: insert the new audit, make it current, upsert every reproduced finding, and verify completed findings not reproduced. The unique monitoring-run constraint makes a retry a no-op. An invalid run/business/account combination also publishes nothing.
+
+## Workflow and failure posture
+
+`AssessmentWorkflow` retains its name and stable `assess-{runID}` child-workflow identity, but runs only three activities:
+
+1. `RunSiteAudit` scans the configured website and evaluates every check.
+2. `RunFinders` loads monitoring evidence and executes both finders against one shared, run-wide research budget of 20 third-party page fetches — a worst-case bound on serial fetches and SSRF surface, not the ordinary constraint on how much listings work gets recommended, which the per-candidate cap of two URLs keeps well under it.
+3. `PublishImproveRun` atomically publishes the audit and findings.
+
+Any failure other than the represented crawl failure fails the workflow and leaves the prior published state untouched. There is no partial-generation state or stale-scope matrix. Because the internal activity sequence changed, deploy when no monitoring run is in flight.
+
+## API and frontend
 
 `ImproveService` exposes:
 
-- `ListActions(business_id)` — focus actions, additional active actions, freshness, and an empty reason that distinguishes healthy standings, incomplete checks, and insufficient capability.
-- `GetAction(action_id)` — action detail, evidence, checklist identity, and all cycles.
-- `SetActionStatus(action_id, status, dismissal_reason)` — validated start, completion, dismissal, and restoration transitions.
-- `GetChecklist(business_id)` — clickable standing counts, freshness, ordered catalog sections, subject entries, evidence, current action, and compact local history.
-- `ListActivity(business_id, limit, offset)` — newest-first paginated lifecycle events.
+- `ListActions(business_id)` — the active actions in rank order, resolved actions for direct lookup, the latest check time, an empty reason distinguishing no evidence from not assessed yet, and the categories that currently have active work, each with its label and count, in catalog order;
+- `GetAction(action_id)` — one finding translated to the user-facing Action shape;
+- `SetActionStatus(action_id, status, dismissal_reason)` — complete, dismiss, or explicitly reopen;
+- `GetChecklist(business_id)` — ordered groups, all checks, fixed-order outcome counts, check time, pages read, and crawl failure.
 
-Reads require subscriber access and the viewer role. Lifecycle mutations require member role. Every query is account scoped.
+Reads require subscriber access and viewer role. Status changes require member role. Every read and write is account scoped.
 
-## Frontend
+The UI has only `/improve/actions` and `/improve/checklist`; `/improve` navigates to actions. Next actions renders concrete finding fields and opens supporting responses in the shared evidence drawer. Active findings remain the page's primary queue; completed and dismissed findings live in one collapsed section so verification and explicit reopening remain reachable without restoring an event timeline. Its empty state says no findings were present in the latest evidence, never that the site is healthy. A completed action may show “confirmed on …” once a later run no longer reproduces it.
 
-Improve contains only `/improve/actions`, `/improve/checklist`, and `/improve/activity`; `/improve` navigates to actions. There is no opportunities route or compatibility endpoint.
+Active actions are one ranked list under no heading of its own, since the page header already names the queue. There is no lead section: a fixed cutoff claimed a priority boundary the ranking does not have, and could push a blocker under a heading that reads as optional.
 
-Next actions displays only active work. The checklist renders every catalog practice, including unregistered ones, and keeps acted-on historical dynamic subjects as “No longer tracked.” Expanded rows explain what is checked, why it matters, evidence and limitations, last successful check, sources/responses, current action, and local cycle history. Standing-count buttons filter rows with keyboard-accessible native controls. A healthy empty state says “All practices OpenSight can currently verify are in good standing,” never that the user has done everything, and the product calculates no score or grade.
+Each action card carries its category as its lead badge, and a toggle above the queue filters to one category, held in the URL as `?category=`. The filter appears only when the business has active work in more than one category, offers only categories with active work, applies to the resolved section too, and preserves the ranking. A filtered list takes the category name as its heading. A category in the URL that the business does not currently have is ignored rather than shown as an empty queue, so a stale or shared link still opens.
 
-Activity states only what happened and when, links to the action and checklist practice, and makes no attribution to subsequent visibility.
+The checklist always renders all 17 checks in the three stable groups. Group and check titles use everyday language; technical terms appear only where they are needed to make a fix precise. Each row shows an outcome icon, assertion, and label by default. A native per-check disclosure explains what the check means and shows the exact evidence from the latest audit. Counts are absolute, with passed-of-total summaries and no filter, percentage, score, or grade.
 
-## Deferred work
+## Quality gate and deferred work
 
-Measured outcome comparison is deferred until a scheduled evaluator can compare frozen baselines with later monitored evidence honestly. The former status-only “later observation” evaluator is not an outcome and does not exist. Operator health reporting over generation, collector, and assessor failure distributions also remains deferred; the underlying records are retained for it.
+Every registered producer must score 100% against at least 15 hand-labelled fixture cases. Fixtures exercise the production functions rather than a parallel scoring implementation.
+
+Deferred finders include curated domain-to-listing instructions, competitor delta, and description accuracy. They extend the finder seam without changing the stable audit catalog.

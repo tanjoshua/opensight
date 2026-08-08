@@ -70,6 +70,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	runID := mustID(t)
 	resultID := mustID(t)
 	bravoID := mustID(t)
+	atlasCiteID, dirCiteID := mustID(t), mustID(t)
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM mentions WHERE prompt_result_id = $1", resultID)
@@ -95,6 +96,13 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
 		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb, 'text')`, resultID, runID, promptID)
+	// Two citations for the result, as phase 1 would have written them, so the
+	// mentions phase 2 writes can resolve their source by cite_order.
+	mustExec(t, db, ctx, `
+		INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject, text_start, text_end)
+		VALUES ($1, $3, 'https://atlas.example/a', 'atlas.example', NULL, 0, 'business', 0, 20),
+		       ($2, $3, 'https://dir.example/b', 'dir.example', NULL, 1, 'competitor', 20, 40)`,
+		atlasCiteID, dirCiteID, resultID)
 	// An existing competitor for the exact + LLM passes to match against.
 	mustExec(t, db, ctx, `
 		INSERT INTO competitors (id, business_id, name, aliases, source, status)
@@ -110,11 +118,14 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		RunID:      runID,
 		Results: []ResultEntities{{
 			ResultID: resultID,
-			Entities: []llm.ExtractedEntity{
-				{VerbatimName: "Atlas Dental", IsTarget: true, Excerpt: "Atlas Dental is great."},
-				{VerbatimName: "Bravo Clinic", Excerpt: "Bravo Clinic is nearby."},
-				{VerbatimName: "Bravo Klinik", Excerpt: "Bravo Klinik also listed."},
-				{VerbatimName: "Charlie Medical", Excerpt: "Charlie Medical rounds it out."},
+			// Cite orders cover every case the link has: the business's own source,
+			// two businesses sharing one directory citation, and a business the
+			// answer named without citing anything for it.
+			Entities: []llm.AttributedEntity{
+				{Entity: llm.ExtractedEntity{VerbatimName: "Atlas Dental", IsTarget: true, Excerpt: "Atlas Dental is great."}, CiteOrder: 0},
+				{Entity: llm.ExtractedEntity{VerbatimName: "Bravo Clinic", Excerpt: "Bravo Clinic is nearby."}, CiteOrder: 1},
+				{Entity: llm.ExtractedEntity{VerbatimName: "Bravo Klinik", Excerpt: "Bravo Klinik also listed."}, CiteOrder: llm.NoCitation},
+				{Entity: llm.ExtractedEntity{VerbatimName: "Charlie Medical", Excerpt: "Charlie Medical rounds it out."}, CiteOrder: 1},
 			},
 		}},
 	}
@@ -132,6 +143,30 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	assertMention(t, db, ctx, resultID, "competitor", 1, "exact", "Bravo Clinic")    // exact
 	assertMention(t, db, ctx, resultID, "competitor", 2, "llm", "Bravo Klinik")      // llm
 	assertMention(t, db, ctx, resultID, "competitor", 3, "exact", "Charlie Medical") // discovered, own alias exact
+
+	// Each mention points at the source the answer cited for that business, and
+	// the one no citation backed stays unattributed rather than borrowing a
+	// neighbour's source.
+	for _, want := range []struct {
+		verbatim string
+		citation *domain.ID
+	}{
+		{"Atlas Dental", &atlasCiteID},
+		{"Bravo Clinic", &dirCiteID},
+		{"Bravo Klinik", nil},
+		{"Charlie Medical", &dirCiteID},
+	} {
+		var got *domain.ID
+		if err := db.QueryRow(ctx, "SELECT citation_id FROM mentions WHERE prompt_result_id = $1 AND verbatim_name = $2", resultID, want.verbatim).Scan(&got); err != nil {
+			t.Fatalf("read mention citation (%s): %v", want.verbatim, err)
+		}
+		switch {
+		case want.citation == nil && got != nil:
+			t.Errorf("%s citation_id = %v, want null (no citation backs it)", want.verbatim, got)
+		case want.citation != nil && (got == nil || *got != *want.citation):
+			t.Errorf("%s citation_id = %v, want %v", want.verbatim, got, *want.citation)
+		}
+	}
 
 	// The discovered competitor exists with the verbatim name as its sole alias.
 	var charlieStatus, charlieSource string

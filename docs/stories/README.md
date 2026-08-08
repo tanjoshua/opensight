@@ -23,12 +23,13 @@ There are **no users until the full MVP is complete** — phase milestones are i
 | 12 | [Protobuf/Connect RPC migration](12-rpc-migration.md) | RPC | 9 | 3 |
 | 13 | [Runs UI](13-runs-ui.md) | RUNS | 6 | 3 |
 | 14 | [Self-serve signup & billing](14-billing.md) | BILL | 12 | 4 |
-| 15 | [Improve & visibility assessments](15-opportunities.md) | IMP | 7 | 5 |
+| 15 | [Improve findings & lifecycle](15-opportunities.md) | IMP | 5 | 5 |
+| 16 | [Stable site-audit checklist](16-checklist-checks.md) | CHK | 6 | 5 |
 
-**93 stories: Phase 1 = 30, Phase 2 = 16, Phase 3 = 27, Phase 4 = 12, Phase 5 = 8.**
+**96 stories: Phase 1 = 30, Phase 2 = 16, Phase 3 = 27, Phase 4 = 12, Phase 5 = 11.**
 
-- **Phase 5 — Visibility improvement (epic 15).**
-  🎯 Milestone: every analyzed run accumulates versioned assessments; active unmet practices compile into a safe three-item focus queue with durable lifecycle state and later observations.
+- **Phase 5 — Visibility improvement (epics 15–16).**
+  🎯 Milestone: every monitoring run publishes a complete site audit and evidence-derived findings; active findings form a safe three-item focus queue, and the checklist always shows the same complete set of site checks.
 
 ## Phases and milestones
 

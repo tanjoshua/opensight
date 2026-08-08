@@ -106,8 +106,8 @@ func TestGatingRules(t *testing.T) {
 	// citations: a1 -> example.com, a2 -> other.com, b1 -> excluded.com (run gate).
 	citation := func(id, resultID domain.ID, domainName string) {
 		mustExec(t, db, ctx, `
-			INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order)
-			VALUES ($1, $2, 'https://x', $3, 'other', 0)`, mustNewID(t), resultID, domainName)
+			INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order, text_start, text_end)
+			VALUES ($1, $2, 'https://x', $3, 'other', 0, 0, 10)`, mustNewID(t), resultID, domainName)
 	}
 	citation(mustNewID(t), a1, "example.com")
 	citation(mustNewID(t), a2, "other.com")

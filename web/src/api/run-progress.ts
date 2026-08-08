@@ -167,6 +167,13 @@ function buildStages(
       detail: stillAnalyzing ? "Still analyzing" : analyzingDetail(counts),
       state: stillAnalyzing ? "active" : "done",
     },
-    { id: "done", label: STAGE_LABELS.done, detail: "", state: "done" },
+    // Not done until analysis lands — a checked Done above a spinning
+    // Analyzing reads as the pipeline contradicting itself.
+    {
+      id: "done",
+      label: STAGE_LABELS.done,
+      detail: "",
+      state: stillAnalyzing ? "pending" : "done",
+    },
   ]
 }

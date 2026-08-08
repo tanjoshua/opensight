@@ -86,8 +86,8 @@ func (q *Queries) DeleteRunMentions(ctx context.Context, arg DeleteRunMentionsPa
 }
 
 const insertCitation = `-- name: InsertCitation :exec
-INSERT INTO citations (id,prompt_result_id,url,domain,title,cite_order,subject)
-VALUES ($1,$2,$3,$4,$5,$6,$7)
+INSERT INTO citations (id,prompt_result_id,url,domain,title,cite_order,subject,text_start,text_end)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 `
 
 type InsertCitationParams struct {
@@ -98,6 +98,8 @@ type InsertCitationParams struct {
 	Title          *string
 	CiteOrder      int32
 	Subject        string
+	TextStart      int32
+	TextEnd        int32
 }
 
 func (q *Queries) InsertCitation(ctx context.Context, arg InsertCitationParams) error {
@@ -109,6 +111,8 @@ func (q *Queries) InsertCitation(ctx context.Context, arg InsertCitationParams) 
 		arg.Title,
 		arg.CiteOrder,
 		arg.Subject,
+		arg.TextStart,
+		arg.TextEnd,
 	)
 	return err
 }
@@ -130,8 +134,9 @@ func (q *Queries) InsertDiscoveredCompetitor(ctx context.Context, arg InsertDisc
 }
 
 const insertMention = `-- name: InsertMention :exec
-INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt,citation_id)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,
+ (SELECT c.id FROM citations c WHERE c.prompt_result_id=$2 AND c.cite_order=$9))
 `
 
 type InsertMentionParams struct {
@@ -143,8 +148,12 @@ type InsertMentionParams struct {
 	MentionOrder   int32
 	VerbatimName   *string
 	Excerpt        string
+	CiteOrder      *int32
 }
 
+// citation_id resolves in the statement: the citations for this result are
+// already written by phase 1, and cite_order is unique per result, so the
+// subselect is single-row. A null cite_order leaves the mention unattributed.
 func (q *Queries) InsertMention(ctx context.Context, arg InsertMentionParams) error {
 	_, err := q.db.Exec(ctx, insertMention,
 		arg.ID,
@@ -155,6 +164,7 @@ func (q *Queries) InsertMention(ctx context.Context, arg InsertMentionParams) er
 		arg.MentionOrder,
 		arg.VerbatimName,
 		arg.Excerpt,
+		arg.CiteOrder,
 	)
 	return err
 }

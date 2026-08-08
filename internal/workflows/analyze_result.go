@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
 	"opensight/internal/domain"
@@ -25,11 +24,12 @@ type AnalyzeResultInput struct {
 // AnalyzeResultOutput is the extraction outcome. Analyzed is false when the
 // result failed validation after MaxExtractionAttempts: no result_analyses row
 // is written and the result is excluded from metrics (design 02/05). Entities
-// is the ordered entity list for phase 2 (empty when !Analyzed).
+// is the ordered entity list for phase 2, each already attributed to the
+// citation backing the text that names it (empty when !Analyzed).
 type AnalyzeResultOutput struct {
 	ResultID domain.ID
 	Analyzed bool
-	Entities []llm.ExtractedEntity
+	Entities []llm.AttributedEntity
 }
 
 // AnalyzeResult runs one structured-output extraction call per succeeded result
@@ -111,7 +111,10 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	output := result.Output
 	model := result.Model
 
-	citations, err := buildCitationWrites(output.Citations, annotations)
+	// One attribution pass serves both writes: the spans order the citation rows
+	// and place each entity against the source the answer cited for it.
+	spans := llm.AttributeCitations(responseText, annotations)
+	citations, err := buildCitationWrites(output.Citations, spans)
 	if err != nil {
 		return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
 			"build citations", "BadResult", err)
@@ -146,7 +149,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	return AnalyzeResultOutput{
 		ResultID: in.ResultID,
 		Analyzed: true,
-		Entities: output.Entities,
+		Entities: llm.AttributeEntities(responseText, output.Entities, spans),
 	}, nil
 }
 
@@ -165,25 +168,21 @@ func locationSummary(raw json.RawMessage) string {
 	return loc.Country
 }
 
-// buildCitationWrites turns the response's citation annotations into ordered,
-// normalized citation rows. First-appearance order comes from the annotations'
-// StartIndex (objective), never from the model's output array order. Each
-// annotation's subject is looked up from the model output by URL — the URL sets
-// are guaranteed to match by ValidateExtraction before this runs.
-func buildCitationWrites(outCitations []llm.ExtractedCitation, annotations []llm.CitationAnnotation) ([]store.CitationWrite, error) {
+// buildCitationWrites turns the response's attributed citations into normalized
+// citation rows. First-appearance order comes from the spans, which are ordered
+// by the annotations' StartIndex (objective), never from the model's output
+// array order. Each annotation's subject is looked up from the model output by
+// URL — the URL sets are guaranteed to match by ValidateExtraction before this
+// runs.
+func buildCitationWrites(outCitations []llm.ExtractedCitation, spans []llm.CitationSpan) ([]store.CitationWrite, error) {
 	subjectByURL := make(map[string]string, len(outCitations))
 	for _, c := range outCitations {
 		subjectByURL[c.URL] = c.Subject
 	}
 
-	sorted := make([]llm.CitationAnnotation, len(annotations))
-	copy(sorted, annotations)
-	sort.SliceStable(sorted, func(i, j int) bool {
-		return sorted[i].StartIndex < sorted[j].StartIndex
-	})
-
-	writes := make([]store.CitationWrite, 0, len(sorted))
-	for i, a := range sorted {
+	writes := make([]store.CitationWrite, 0, len(spans))
+	for _, span := range spans {
+		a := span.Annotation
 		cleanURL, domain, err := llm.NormalizeCitationURL(a.URL)
 		if err != nil {
 			return nil, err
@@ -196,8 +195,10 @@ func buildCitationWrites(outCitations []llm.ExtractedCitation, annotations []llm
 			URL:       cleanURL,
 			Domain:    domain,
 			Title:     title,
-			CiteOrder: i,
+			CiteOrder: span.CiteOrder,
 			Subject:   subjectByURL[a.URL],
+			TextStart: span.Start,
+			TextEnd:   span.End,
 		})
 	}
 	return writes, nil

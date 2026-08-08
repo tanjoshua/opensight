@@ -64,7 +64,7 @@ Kept deliberately minimal for MVP:
 - **Errors**: Sentry free tier for Go + React (or self-hosted GlitchTip later if cost/data-locality demands; free tier is within budget policy).
 - **Logs**: structured `slog` JSON to stdout → `docker logs` with rotation. No Loki/ELK; grep is fine at this scale.
 - **Workflow debugging**: Temporal UI (that's what it's in the stack for). Stuck or silently failing weekly runs surface here and in `monitoring_runs.status` — checked manually; no external uptime/dead-man's-switch service in MVP.
-- **Assessment health**: `opensight assess health` prints generation outcomes, per-collector failure rates and per-assessor status distribution over a window (09). It joins the same manual weekly check — no dashboard, no alerting.
+- **Improve health**: the current `site_audits` row records crawl failure and pages read, while Temporal exposes finder or publication failures. These join the same manual weekly check — no separate dashboard or alerting.
 - **Spend guardrail**: the OpenAI dashboard monthly budget cap on the project-scoped key is the hard backstop — no in-app circuit breaker. The per-account cost query (04) still exists for unit economics, run ad hoc.
 
 ## Data protection (light-touch, noted not lawyered)

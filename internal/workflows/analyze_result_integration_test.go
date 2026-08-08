@@ -27,12 +27,16 @@ func (f *fakeExtractor) RunExtraction(context.Context, llm.ExtractionInput) (llm
 	return llm.ExtractionRunResult{RawJSON: f.rawJSON, Model: "fake-mini"}, nil
 }
 
+// The response text carries the inline citation marker a real web-search answer
+// writes, and the annotation indexes that marker — so the fixture exercises the
+// attribution the model's own output shape produces.
 const (
-	analyzeResponseText = "Atlas Dental is a great clinic for braces."
-	analyzeRawResponse  = `{"output":[{"type":"message","content":[{"type":"output_text",` +
-		`"text":"Atlas Dental is a great clinic for braces.",` +
+	analyzeResponseText = "Atlas Dental is a great clinic for braces. " +
+		"([atlas.example.com](https://ATLAS.example.com/team?utm_source=openai))"
+	analyzeRawResponse = `{"output":[{"type":"message","content":[{"type":"output_text",` +
+		`"text":"Atlas Dental is a great clinic for braces. ([atlas.example.com](https://ATLAS.example.com/team?utm_source=openai))",` +
 		`"annotations":[{"type":"url_citation","url":"https://ATLAS.example.com/team?utm_source=openai",` +
-		`"title":"Atlas team","start_index":0,"end_index":12}]}]}]}`
+		`"title":"Atlas team","start_index":43,"end_index":114}]}]}]}`
 	validExtraction = `{"entities":[{"verbatim_name":"Atlas Dental","is_target":true,` +
 		`"excerpt":"Atlas Dental is a great clinic for braces."}],` +
 		`"target":{"sentiment":"positive","keywords":["braces"],` +
@@ -97,8 +101,13 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		if !out.Analyzed {
 			t.Fatal("Analyzed = false, want true")
 		}
-		if len(out.Entities) != 1 || out.Entities[0].VerbatimName != "Atlas Dental" {
+		if len(out.Entities) != 1 || out.Entities[0].Entity.VerbatimName != "Atlas Dental" {
 			t.Fatalf("entities = %+v, want the single Atlas Dental entity", out.Entities)
+		}
+		// The entity sits in the text the marker backs, so it carries that source
+		// into phase 2.
+		if out.Entities[0].CiteOrder != 0 {
+			t.Errorf("Atlas Dental cite order = %d, want 0", out.Entities[0].CiteOrder)
 		}
 
 		var sentiment string
@@ -113,9 +122,13 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		}
 
 		var citeURL, citeDomain, citeSubject string
-		var citeOrder int
-		if err := db.QueryRow(ctx, "SELECT url, domain, subject, cite_order FROM citations WHERE prompt_result_id = $1", resultID).Scan(&citeURL, &citeDomain, &citeSubject, &citeOrder); err != nil {
+		var citeOrder, textStart, textEnd int
+		if err := db.QueryRow(ctx, "SELECT url, domain, subject, cite_order, text_start, text_end FROM citations WHERE prompt_result_id = $1", resultID).Scan(&citeURL, &citeDomain, &citeSubject, &citeOrder, &textStart, &textEnd); err != nil {
 			t.Fatalf("read citations: %v", err)
+		}
+		// The stored range is the prose the marker backs, not the marker itself.
+		if got := analyzeResponseText[textStart:textEnd]; got != "Atlas Dental is a great clinic for braces. " {
+			t.Errorf("citation backs %q, want the sentence before its marker", got)
 		}
 		// utm stripped, host lowercased, domain grouped.
 		if citeURL != "https://atlas.example.com/team" {

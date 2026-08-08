@@ -4,33 +4,23 @@ package opensight.v1;
 
 import "google/protobuf/timestamp.proto";
 
-enum PracticeMode {
-  PRACTICE_MODE_UNSPECIFIED = 0;
-  PRACTICE_MODE_CHECK = 1;
-  PRACTICE_MODE_CONTINUOUS = 2;
-  PRACTICE_MODE_TRACKED = 3;
+// CheckOutcome is the verdict on one site-audit check.
+enum CheckOutcome {
+  CHECK_OUTCOME_UNSPECIFIED = 0;
+  CHECK_OUTCOME_PASS = 1;
+  CHECK_OUTCOME_FAIL = 2;
+  CHECK_OUTCOME_COULD_NOT_VERIFY = 3;
+  CHECK_OUTCOME_NOT_APPLICABLE = 4;
+  CHECK_OUTCOME_NOT_ASSESSED = 5;
 }
 
-enum ChecklistStanding {
-  CHECKLIST_STANDING_UNSPECIFIED = 0;
-  CHECKLIST_STANDING_GOOD = 1;
-  CHECKLIST_STANDING_IMPROVABLE = 2;
-  CHECKLIST_STANDING_NEEDS_ATTENTION = 3;
-  CHECKLIST_STANDING_TRACKING = 4;
-  CHECKLIST_STANDING_COULD_NOT_VERIFY = 5;
-  CHECKLIST_STANDING_NOT_ASSESSED = 6;
-  CHECKLIST_STANDING_NOT_APPLICABLE = 7;
-  CHECKLIST_STANDING_NO_LONGER_TRACKED = 8;
-}
-
+// ActionStatus is the whole lifecycle of a piece of work. An action stops being
+// shown when the evidence stops producing it, so there is no retired state.
 enum ActionStatus {
   ACTION_STATUS_UNSPECIFIED = 0;
   ACTION_STATUS_OPEN = 1;
-  ACTION_STATUS_IN_PROGRESS = 2;
-  ACTION_STATUS_COMPLETED = 3;
-  ACTION_STATUS_DISMISSED = 4;
-  ACTION_STATUS_RETIRED = 5;
-  ACTION_STATUS_SUPERSEDED = 6;
+  ACTION_STATUS_DONE = 2;
+  ACTION_STATUS_DISMISSED = 3;
 }
 
 enum DismissalReason {
@@ -42,166 +32,135 @@ enum DismissalReason {
   DISMISSAL_REASON_OTHER = 5;
 }
 
-enum ActionBlockType {
-  ACTION_BLOCK_TYPE_UNSPECIFIED = 0;
-  ACTION_BLOCK_TYPE_TEXT = 1;
-  ACTION_BLOCK_TYPE_METRIC = 2;
-  ACTION_BLOCK_TYPE_LINK = 3;
-  ACTION_BLOCK_TYPE_QUESTION_LIST = 4;
-  ACTION_BLOCK_TYPE_EVIDENCE_LIST = 5;
-  ACTION_BLOCK_TYPE_NOTICE = 6;
-}
-
+// ActionsEmptyReason distinguishes the three ways the work queue can be empty.
+// They are not interchangeable: NO_FINDINGS is the absence of evidence, while
+// NOT_ASSESSED_YET means nothing has been checked at all.
 enum ActionsEmptyReason {
   ACTIONS_EMPTY_REASON_UNSPECIFIED = 0;
-  ACTIONS_EMPTY_REASON_HEALTHY = 1;
-  ACTIONS_EMPTY_REASON_INCOMPLETE_CHECKS = 2;
-  ACTIONS_EMPTY_REASON_INSUFFICIENT_CAPABILITY = 3;
+  ACTIONS_EMPTY_REASON_NO_FINDINGS = 1;
+  ACTIONS_EMPTY_REASON_NOT_ASSESSED_YET = 2;
 }
 
-message AssessmentFreshness {
-  bool available = 1;
-  bool partial = 2;
-  bool stale = 3;
-  google.protobuf.Timestamp assessed_at = 4;
-}
-
-message ActionBlock {
-  ActionBlockType type = 1;
-  string title = 2;
-  string text = 3;
-  string value = 4;
-  string url = 5;
-  repeated string items = 6;
-  repeated string result_ids = 7;
-}
-
-message ActionCycle {
-  string id = 1;
-  int32 cycle = 2;
-  ActionStatus status = 3;
-  google.protobuf.Timestamp first_seen_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
-  google.protobuf.Timestamp completed_at = 6;
-}
-
-message ImprovementAction {
-  string id = 1;
-  string practice_key = 2;
-  string subject_key = 3;
-  int32 cycle = 4;
-  string recommendation_key = 5;
-  string title = 6;
-  string summary = 7;
-  string effort = 8;
-  repeated ActionBlock blocks = 9;
-  ActionStatus status = 10;
-  DismissalReason dismissal_reason = 11;
-  ChecklistStanding standing = 12;
-  repeated string result_ids = 13;
-  repeated string prompt_ids = 14;
-  repeated string checked_sources = 15;
-  google.protobuf.Timestamp assessed_at = 16;
-  bool fresh = 17;
-  repeated ActionCycle cycles = 18;
-}
-
-message ChecklistActionHistory {
-  string action_id = 1;
-  int32 cycle = 2;
-  ActionStatus status = 3;
-  google.protobuf.Timestamp updated_at = 4;
-}
-
-message ChecklistSubject {
-  string subject_key = 1;
-  string label = 2;
-  ChecklistStanding standing = 3;
-  string standing_label = 4;
-  string explanation = 5;
-  repeated string result_ids = 6;
-  repeated string prompt_ids = 7;
-  repeated string checked_sources = 8;
-  google.protobuf.Timestamp last_successful_check = 9;
-  bool stale = 10;
-  ImprovementAction current_action = 11;
-  repeated ChecklistActionHistory action_history = 12;
-}
-
-message ChecklistPractice {
+// Check is one assertion, joined from the catalog definition (title, what) and
+// the audit result (outcome, detail).
+message Check {
   string key = 1;
   string title = 2;
-  string description = 3;
-  string why = 4;
-  PracticeMode mode = 5;
-  repeated string references = 6;
-  repeated ChecklistSubject subjects = 7;
-  ChecklistStanding standing = 8;
-  string standing_label = 9;
+  string what = 3;
+  CheckOutcome outcome = 4;
+  string outcome_label = 5;
+  string detail = 6;
+  // informational checks report a fact the user may legitimately have chosen.
+  // They never count towards passed or failed.
+  bool informational = 7;
 }
 
-message ChecklistSection {
-  string title = 1;
-  repeated ChecklistPractice practices = 2;
-}
-
-message StandingCount {
-  ChecklistStanding standing = 1;
+message CheckCount {
+  CheckOutcome outcome = 1;
   int32 count = 2;
 }
 
-message ActivityEvent {
+// CheckGroup orders the checklist and carries the "why this matters" copy. It
+// has no standing of its own — only counts.
+message CheckGroup {
+  string key = 1;
+  string title = 2;
+  string description = 3;
+  repeated string references = 4;
+  repeated Check checks = 5;
+  int32 checks_passed = 6;
+  int32 checks_total = 7;
+}
+
+// ImprovementAction is one finding as the UI presents it. Go calls it a
+// Finding; the user-facing word is an action.
+message ImprovementAction {
   string id = 1;
-  string action_id = 2;
-  string practice_key = 3;
-  string subject_key = 4;
-  string title = 5;
-  int32 cycle = 6;
-  string event_type = 7;
-  google.protobuf.Timestamp created_at = 8;
+  string key = 2;
+  string source = 3;
+  string title = 4;
+  string body = 5;
+  repeated string steps = 6;
+  string detail = 7;
+  repeated string result_ids = 8;
+  repeated string prompt_ids = 9;
+  repeated string sources = 10;
+  bool blocking = 11;
+  int32 reach = 12;
+  ActionStatus status = 13;
+  DismissalReason dismissal_reason = 14;
+  google.protobuf.Timestamp first_seen_at = 15;
+  google.protobuf.Timestamp completed_at = 16;
+  // verified_at is set when a later run did not reproduce a completed action.
+  // It confirms the fix landed and claims nothing about visibility.
+  google.protobuf.Timestamp verified_at = 17;
+  // category is the kind of change the action asks for, and the axis the work
+  // queue filters on. Its key matches the checklist group for work on the
+  // customer's own site; category_label is the word the user reads.
+  string category = 18;
+  string category_label = 19;
+}
+
+// ActionCategory is one entry of the work queue's filter: a kind of change and
+// how much active work currently asks for it. Only categories with active work
+// appear, in catalog order, so the filter never offers an empty bucket and
+// never reshuffles between visits.
+message ActionCategory {
+  string key = 1;
+  string label = 2;
+  int32 count = 3;
 }
 
 message ListActionsRequest {
   string business_id = 1;
 }
+
 message ListActionsResponse {
-  repeated ImprovementAction focus_actions = 1;
-  repeated ImprovementAction additional_actions = 2;
-  AssessmentFreshness freshness = 3;
+  reserved 2;
+  reserved "additional_actions";
+  // actions is the whole active queue in rank order. There is no lead section:
+  // a fixed cutoff claimed a priority boundary the ranking does not have, and
+  // could push a blocker under a heading that reads as optional.
+  repeated ImprovementAction actions = 1;
+  repeated ImprovementAction resolved_actions = 3;
   ActionsEmptyReason empty_reason = 4;
+  google.protobuf.Timestamp checked_at = 5;
+  repeated ActionCategory categories = 6;
 }
+
 message GetActionRequest {
   string action_id = 1;
 }
+
 message GetActionResponse {
   ImprovementAction action = 1;
 }
+
 message SetActionStatusRequest {
   string action_id = 1;
   ActionStatus status = 2;
   DismissalReason dismissal_reason = 3;
 }
+
 message SetActionStatusResponse {
   ImprovementAction action = 1;
 }
+
 message GetChecklistRequest {
   string business_id = 1;
 }
+
 message GetChecklistResponse {
-  repeated StandingCount counts = 1;
-  AssessmentFreshness freshness = 2;
-  repeated ChecklistSection sections = 3;
-}
-message ListActivityRequest {
-  string business_id = 1;
-  int32 limit = 2;
-  int32 offset = 3;
-}
-message ListActivityResponse {
-  repeated ActivityEvent events = 1;
-  int32 total = 2;
-  int32 limit = 3;
-  int32 offset = 4;
+  reserved 1, 2, 3;
+  reserved "counts", "freshness", "sections";
+  repeated CheckCount check_counts = 4;
+  repeated CheckGroup groups = 5;
+  google.protobuf.Timestamp checked_at = 6;
+  int32 pages_read = 7;
+  // failure is set when the site could not be crawled at all, in which case
+  // every check reports as could-not-verify rather than as a shortfall.
+  string failure = 8;
+  bool assessed = 9;
 }
 
 service ImproveService {
@@ -209,5 +168,4 @@ service ImproveService {
   rpc GetAction(GetActionRequest) returns (GetActionResponse);
   rpc SetActionStatus(SetActionStatusRequest) returns (SetActionStatusResponse);
   rpc GetChecklist(GetChecklistRequest) returns (GetChecklistResponse);
-  rpc ListActivity(ListActivityRequest) returns (ListActivityResponse);
 }

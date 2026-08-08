@@ -18,6 +18,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"opensight/internal/visibility"
+
 	"go.temporal.io/sdk/temporal"
 	"golang.org/x/net/html"
 )
@@ -121,6 +123,13 @@ type FetchSiteOutput struct {
 	// page, so a barrier there is never incidental.
 	HomeNoIndex     bool `json:"home_noindex,omitempty"`
 	HomeAuthBarrier bool `json:"home_auth_barrier,omitempty"`
+	// Pages carries the structured facts read from each page in URLs order, so
+	// the owned-site scan needs no second parse. Onboarding ignores it.
+	Pages []visibility.PageFacts `json:"pages,omitempty"`
+	// SitemapFound reports that /sitemap.xml answered with usable XML. It is
+	// false when the crawl finished before the sitemap was needed, so only the
+	// scan — which always reaches for it — should read it.
+	SitemapFound bool `json:"sitemap_found,omitempty"`
 }
 
 type siteFetcher struct {
@@ -135,7 +144,7 @@ type fetchedPage struct {
 	URL      *url.URL
 	Text     string
 	NavHrefs []string
-	NoIndex  bool
+	Facts    visibility.PageFacts
 }
 
 // fetchedBody is one retrieved response: the capped body plus the metadata the
@@ -297,6 +306,7 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 	requests := 0
 	acc := textAccumulator{limit: f.textLimit}
 	var urls, noIndexURLs []string
+	var pages []visibility.PageFacts
 	seen := make(map[string]bool)
 	queued := make(map[string]bool)
 	var firstTransientErr error
@@ -306,12 +316,31 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 			return
 		}
 		urls = append(urls, page.URL.String())
-		if page.NoIndex {
+		pages = append(pages, page.Facts)
+		if page.Facts.NoIndex {
 			noIndexURLs = append(noIndexURLs, page.URL.String())
 		}
 	}
 
 	home, err := f.fetchHTMLPage(ctx, startURL, &requests)
+	// Some sites publish their real homepage on www but leave the apex host
+	// answering 200 with an empty body instead of redirecting. Treat www as the
+	// one conventional host alias we can discover without crawling arbitrary
+	// subdomains. The alternate still passes the same DNS/IP and redirect SSRF
+	// checks as every other request.
+	if errors.Is(err, errUnusablePage) && !errors.Is(err, errAuthBarrier) {
+		if alternate := wwwFetchURL(startURL); alternate != nil {
+			alternateHome, alternateErr := f.fetchHTMLPage(ctx, alternate, &requests)
+			switch {
+			case alternateErr == nil:
+				startURL, home, err = alternate, alternateHome, nil
+			case errors.Is(alternateErr, errUnsafeFetchURL):
+				return FetchSiteOutput{}, alternateErr
+			case !errors.Is(alternateErr, errUnusablePage):
+				firstTransientErr = alternateErr
+			}
+		}
+	}
 	origin := originFor(startURL)
 	homeAuthBarrier := errors.Is(err, errAuthBarrier)
 	if err == nil {
@@ -380,6 +409,7 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 		return FetchSiteOutput{}, err
 	}
 
+	sitemapFound := false
 	if acc.hasRoom() && requests < f.maxRequests {
 		sitemapURL := originWithPath(origin, "/sitemap.xml")
 		sitemapCandidates, err := f.fetchSitemap(ctx, origin, sitemapURL, &requests, 0, &firstTransientErr)
@@ -390,6 +420,7 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 			firstTransientErr = err
 		}
 		if err == nil {
+			sitemapFound = true
 			candidates = candidates[:0]
 			for _, candidate := range sitemapCandidates {
 				enqueue(candidate)
@@ -410,11 +441,27 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 		}
 		return FetchSiteOutput{}, errNoUsableContent
 	}
-	out := FetchSiteOutput{Text: text, URLs: urls, NoIndexURLs: noIndexURLs, HomeAuthBarrier: homeAuthBarrier}
+	out := FetchSiteOutput{Text: text, URLs: urls, NoIndexURLs: noIndexURLs, Pages: pages, SitemapFound: sitemapFound, HomeAuthBarrier: homeAuthBarrier}
 	if home != nil {
-		out.HomeNoIndex = home.NoIndex
+		out.HomeNoIndex = home.Facts.NoIndex
 	}
 	return out, nil
+}
+
+func wwwFetchURL(source *url.URL) *url.URL {
+	if source == nil {
+		return nil
+	}
+	hostname := strings.ToLower(source.Hostname())
+	if hostname == "" || strings.HasPrefix(hostname, "www.") || net.ParseIP(hostname) != nil {
+		return nil
+	}
+	alternate := *source
+	alternate.Host = "www." + hostname
+	if port := source.Port(); port != "" {
+		alternate.Host = net.JoinHostPort("www."+hostname, port)
+	}
+	return &alternate
 }
 
 func (f *siteFetcher) withDefaults() *siteFetcher {
@@ -453,12 +500,32 @@ func (f *siteFetcher) fetchHTMLPage(ctx context.Context, target *url.URL, reques
 	if strings.TrimSpace(content.Text) == "" {
 		return nil, errUnusablePage
 	}
+	facts := content.PageFacts
+	facts.URL = res.FinalURL.String()
+	facts.NoIndex = facts.NoIndex || headerDeniesIndexing(res.Header)
+	facts.JSONLD = boundJSONLD(facts.JSONLD)
 	return &fetchedPage{
 		URL:      res.FinalURL,
 		Text:     content.Text,
 		NavHrefs: content.NavHrefs,
-		NoIndex:  content.NoIndex || headerDeniesIndexing(res.Header),
+		Facts:    facts,
 	}, nil
+}
+
+// boundJSONLD caps the structured data kept per page. The checks only read the
+// declared types and a handful of top-level fields, so an unbounded product
+// catalogue would cost artifact size for nothing.
+func boundJSONLD(blocks []string) []string {
+	const maxBlocks, maxBlockBytes = 5, 16 * 1024
+	if len(blocks) > maxBlocks {
+		blocks = blocks[:maxBlocks]
+	}
+	for i, block := range blocks {
+		if len(block) > maxBlockBytes {
+			blocks[i] = validUTF8Prefix(block, maxBlockBytes)
+		}
+	}
+	return blocks
 }
 
 // headerDeniesIndexing reports an X-Robots-Tag response header denying
@@ -828,12 +895,13 @@ func isXMLLikeContentType(contentType string) bool {
 }
 
 // htmlContent is everything one parse of a page yields: its stripped text, its
-// navigation links, and whether it denies indexing. The noindex meta tag is
-// read here so no caller has to fetch the markup a second time.
+// navigation links, and the page facts later checks are derived from. Every
+// field is read in the single walk below so no caller has to fetch the markup a
+// second time.
 type htmlContent struct {
 	Text     string
 	NavHrefs []string
-	NoIndex  bool
+	visibility.PageFacts
 }
 
 func extractHTMLContent(body []byte) (htmlContent, error) {
@@ -843,24 +911,52 @@ func extractHTMLContent(body []byte) (htmlContent, error) {
 	}
 
 	var text strings.Builder
+	var title, h1 strings.Builder
 	out := htmlContent{}
 	var walk func(*html.Node, bool, bool)
 	walk = func(n *html.Node, skip, inNav bool) {
 		if n.Type == html.ElementNode {
 			tag := strings.ToLower(n.Data)
+			// The JSON-LD payload is the content of a script element, so it has to
+			// be taken before skipHTMLTag stops the walk descending into it.
+			if tag == "script" && isJSONLDType(attrValue(n, "type")) {
+				if raw := nodeText(n); strings.TrimSpace(raw) != "" {
+					out.JSONLD = append(out.JSONLD, raw)
+				}
+			}
 			if skipHTMLTag(tag) {
 				skip = true
 			}
 			if tag == "nav" || navigationRole(n) {
 				inNav = true
 			}
-			if inNav && tag == "a" {
-				if href := attrValue(n, "href"); href != "" {
+			if tag == "a" {
+				href := attrValue(n, "href")
+				if inNav && href != "" {
 					out.NavHrefs = append(out.NavHrefs, href)
 				}
+				if strings.HasPrefix(strings.ToLower(strings.TrimSpace(href)), "tel:") {
+					out.HasTelLink = true
+				}
 			}
-			if tag == "meta" && metaDeniesIndexing(n) {
-				out.NoIndex = true
+			switch tag {
+			case "title":
+				appendNormalizedText(&title, nodeText(n))
+			case "h1":
+				if h1.Len() == 0 {
+					appendNormalizedText(&h1, nodeText(n))
+				}
+			case "meta":
+				if metaDeniesIndexing(n) {
+					out.NoIndex = true
+				}
+				if strings.EqualFold(strings.TrimSpace(attrValue(n, "name")), "description") {
+					out.MetaDescription = strings.TrimSpace(attrValue(n, "content"))
+				}
+			case "link":
+				if hasLinkRel(n, "canonical") {
+					out.Canonical = strings.TrimSpace(attrValue(n, "href"))
+				}
 			}
 		}
 		if n.Type == html.TextNode && !skip {
@@ -872,7 +968,43 @@ func extractHTMLContent(body []byte) (htmlContent, error) {
 	}
 	walk(doc, false, false)
 	out.Text = strings.TrimSpace(text.String())
+	out.Title = strings.TrimSpace(title.String())
+	out.H1 = strings.TrimSpace(h1.String())
 	return out, nil
+}
+
+// nodeText concatenates the text directly under a node. Titles, headings and
+// JSON-LD blocks are all shallow, so this needs no depth budget.
+func nodeText(n *html.Node) string {
+	var b strings.Builder
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		switch child.Type {
+		case html.TextNode:
+			b.WriteString(child.Data)
+		case html.ElementNode:
+			b.WriteString(nodeText(child))
+		}
+	}
+	return b.String()
+}
+
+func isJSONLDType(value string) bool {
+	mediaType, _, err := mime.ParseMediaType(strings.TrimSpace(value))
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(mediaType, "application/ld+json")
+}
+
+// hasLinkRel reports a rel attribute containing the token, since rel is a
+// space-separated list.
+func hasLinkRel(n *html.Node, token string) bool {
+	for _, field := range strings.Fields(strings.ToLower(attrValue(n, "rel"))) {
+		if field == token {
+			return true
+		}
+	}
+	return false
 }
 
 // metaDeniesIndexing reports a robots or OAI-SearchBot meta tag carrying a

@@ -181,14 +181,16 @@ mentions (
   matched_by text,             -- 'exact' | 'llm' — how the name matched (see 05)
   mention_order int,
   verbatim_name text,          -- exact organization text extracted from the response
-  excerpt text
+  excerpt text,
+  citation_id uuid FK NULL     -- the source cited for THIS business; null = none was
 )
 
 citations (
   id UUID PK, prompt_result_id FK,
   url text, domain text, title text NULL,
-  cite_order int,
-  subject text                 -- 'business' | 'competitor' | 'other' | 'unknown' (best-effort)
+  cite_order int,              -- unique per result; how a mention resolves its citation
+  subject text,                -- 'business' | 'competitor' | 'other' | 'unknown' (best-effort)
+  text_start int, text_end int -- the part of response_text this citation backs (05)
 )
 ```
 
@@ -196,6 +198,7 @@ citations (
 - Discovery inserts `competitors` with status `discovered`; the extraction pipeline (design 05) matches names against `competitors.aliases` before creating new rows.
 - Editing `competitors.aliases` changes matching keys for future reconcile passes only. It does not rewrite `suggested_aliases`, prior mentions, or any historical metric.
 - `citations.subject` is best-effort inference from the response context, not from fetching cited pages; `unknown` is an honest value. Fetching cited pages to verify is a possible later enhancement, noted in design 05.
+- `mentions.citation_id` is the deterministic attribution from design 05: the source the response cited *for that business*, not merely a source cited somewhere in the same answer. It is null whenever no citation backs the text naming the business, and `ON DELETE SET NULL` so re-analysis rewriting a result's citations can never delete a mention. Anything asking "which businesses does this source name" must read this link — the answer-level set is every business the response mentioned, which is a different and much larger question.
 
 ## How the PRD's metrics map to queries
 

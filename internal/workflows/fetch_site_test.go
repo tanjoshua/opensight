@@ -160,6 +160,38 @@ func TestSiteFetcherDiscoversHighValuePages(t *testing.T) {
 	}
 }
 
+func TestSiteFetcherFallsBackToWWWWhenApexHasNoContent(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			visited = append(visited, req.URL.String())
+			switch req.URL.String() {
+			case "https://example.com/":
+				return testFetchResponse(req, http.StatusOK, "text/html", "\n"), nil
+			case "https://www.example.com/":
+				return testFetchResponse(req, http.StatusOK, "text/html", "<main>Example Clinic on www</main>"), nil
+			default:
+				return testFetchResponse(req, http.StatusNotFound, "text/html", "missing"), nil
+			}
+		})),
+		textLimit:        fetchSiteTextLimit,
+		pageBodyLimit:    fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit,
+		maxRequests:      fetchSiteMaxRequests,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "https://example.com"})
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(out.URLs) == 0 || out.URLs[0] != "https://www.example.com/" {
+		t.Fatalf("URLs = %#v, want www homepage", out.URLs)
+	}
+	if len(visited) < 2 || visited[0] != "https://example.com/" || visited[1] != "https://www.example.com/" {
+		t.Fatalf("visited = %#v, want apex then www", visited)
+	}
+}
+
 func TestFetchSiteRefusesPrivateAddresses(t *testing.T) {
 	literals := []string{
 		"http://127.0.0.1/",

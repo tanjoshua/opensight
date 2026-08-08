@@ -2,13 +2,11 @@ package workflows
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -21,86 +19,127 @@ import (
 )
 
 type AssessmentWorkflowInput struct{ AccountID, BusinessID, RunID domain.ID }
-type AssessmentPlan struct {
-	GenerationID domain.ID
-	Status       string
-	Entries      []store.ModulePlanEntry
+
+// SiteAuditResult is what one crawl of the business site yields. It carries the
+// check outcomes rather than the scan itself, so the 50KB of page text the
+// fetcher gathered never crosses an activity boundary it has no use on.
+type SiteAuditResult struct {
+	Checks    []visibility.CheckResult
+	PagesRead int
+	Failure   string
 }
 
-func (a *Activities) ResolveAssessmentPlan(ctx context.Context, in AssessmentWorkflowInput) (AssessmentPlan, error) {
-	assessors := visibility.Assessors()
-	entries := make([]store.ModulePlanEntry, 0, len(assessors))
-	for _, assessor := range assessors {
-		m := assessor.Manifest()
-		for _, key := range m.PracticeKeys {
-			p, ok := visibility.Practice(key)
-			if !ok || p.AssessorKey != m.Key {
-				return AssessmentPlan{}, temporal.NewNonRetryableApplicationError("invalid visibility registry", "BadVisibilityRegistry", nil)
-			}
-		}
-		entries = append(entries, store.ModulePlanEntry{AssessorKey: m.Key, ModuleVersion: m.ModuleVersion, PracticeKeys: m.PracticeKeys, RequiredCollectors: m.RequiredCollectors})
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].AssessorKey < entries[j].AssessorKey })
-	generation, err := a.Store.StartAssessmentGeneration(ctx, in.AccountID, in.BusinessID, in.RunID, entries)
+// RunSiteAudit crawls the site once and evaluates the whole check catalog. A
+// crawl that fails is a successful activity with every check unverifiable — a
+// site we could not read is a fact about the site, not an error in the run.
+func (a *Activities) RunSiteAudit(ctx context.Context, in AssessmentWorkflowInput) (SiteAuditResult, error) {
+	business, err := a.Store.GetBusiness(ctx, in.AccountID, in.BusinessID)
 	if err != nil {
-		return AssessmentPlan{}, err
+		return SiteAuditResult{}, err
 	}
-	return AssessmentPlan{GenerationID: generation.ID, Status: generation.Status, Entries: entries}, nil
+	scan := visibility.OwnedSiteScan{PayloadVersion: visibility.OwnedSiteScanPayloadVersion, FetchFailure: "business website is not configured"}
+	if business.Website != nil {
+		fetcher := newSiteFetcher()
+		scan = scanOwnedSite(ctx, fetcher, *business.Website)
+		fetcher.closeIdleConnections()
+	}
+	scan.BusinessName = business.Name
+	return SiteAuditResult{Checks: visibility.Audit(scan), PagesRead: len(scan.Pages), Failure: scan.FetchFailure}, nil
 }
 
-type CollectEvidenceInput struct {
+type FindImprovementsInput struct {
 	AssessmentWorkflowInput
-	GenerationID domain.ID
-	CollectorKey string
+	Audit SiteAuditResult
 }
 
-func (a *Activities) CollectAssessmentEvidence(ctx context.Context, in CollectEvidenceInput) (visibility.EvidenceArtifact, error) {
-	artifact := visibility.EvidenceArtifact{CollectorKey: in.CollectorKey, CollectorVersion: 1, PayloadVersion: 1, CheckedAt: time.Now().UTC()}
-	var collectErr error
-	switch in.CollectorKey {
-	case visibility.CollectorMonitoring:
-		snap, err := a.Store.LoadMonitoringSnapshot(ctx, in.AccountID, in.BusinessID)
-		collectErr = err
-		if err == nil {
-			artifact.Payload, err = json.Marshal(snap)
-			collectErr = err
-		}
-	case visibility.CollectorOwnedSite:
-		business, err := a.Store.GetBusiness(ctx, in.AccountID, in.BusinessID)
+// RunFinders turns the audit and the answer corpus into work. Every finder runs
+// against the same input and shares one SSRF-safe research budget, so no finder
+// can spend the whole run's allowance on its own.
+func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) ([]visibility.Finding, error) {
+	snapshot, err := a.Store.LoadMonitoringSnapshot(ctx, in.AccountID, in.BusinessID)
+	if err != nil {
+		return nil, err
+	}
+	research := &boundedHTTPResearcher{client: newSafeFetchHTTPClient(), remaining: visibility.ResearchURLBudget}
+	defer research.client.CloseIdleConnections()
+
+	input := visibility.FinderInput{Audit: in.Audit.Checks, Snapshot: snapshot}
+	out := []visibility.Finding{}
+	for _, finder := range visibility.Finders() {
+		findings, err := finder.Find(ctx, input, research)
 		if err != nil {
-			collectErr = err
-			break
+			return nil, fmt.Errorf("finder %s: %w", finder.Key(), err)
 		}
-		scan := visibility.OwnedSiteScan{PayloadVersion: 1}
-		if business.Website == nil {
-			scan.Failure = "business website is not configured"
-		} else {
-			fetcher := newSiteFetcher()
-			scan = scanOwnedSite(ctx, fetcher, *business.Website)
-			fetcher.closeIdleConnections()
-		}
-		artifact.Payload, err = json.Marshal(scan)
-		collectErr = err
-	default:
-		collectErr = fmt.Errorf("unknown collector %q", in.CollectorKey)
+		out = append(out, findings...)
 	}
-	if err := a.Store.SaveEvidenceArtifact(ctx, in.GenerationID, in.AccountID, artifact, collectErr); err != nil {
-		return visibility.EvidenceArtifact{}, err
+	visibility.Rank(out)
+	return out, nil
+}
+
+type PublishImproveRunInput struct {
+	AssessmentWorkflowInput
+	Audit    SiteAuditResult
+	Findings []visibility.Finding
+}
+
+func (a *Activities) PublishImproveRun(ctx context.Context, in PublishImproveRunInput) error {
+	return a.Store.PublishImproveRun(ctx, in.AccountID, in.BusinessID, store.ImproveRun{
+		RunID:     in.RunID,
+		PagesRead: in.Audit.PagesRead,
+		Failure:   in.Audit.Failure,
+		Checks:    in.Audit.Checks,
+		Findings:  in.Findings,
+	})
+}
+
+// AssessmentWorkflow audits the site, derives findings from it and the answer
+// corpus, and publishes both as one unit.
+//
+// There is no partial-failure handling by design: an activity that fails fails
+// the run, and the previously published audit and findings stay current. Half of
+// this week's advice mixed with half of last week's would be harder to reason
+// about than simply showing last week's until the next run succeeds.
+func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error {
+	activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: time.Minute,
+		RetryPolicy:         &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 3},
+	})
+
+	var audit SiteAuditResult
+	if err := workflow.ExecuteActivity(activityCtx, acts.RunSiteAudit, in).Get(ctx, &audit); err != nil {
+		return err
 	}
-	if collectErr != nil {
-		return visibility.EvidenceArtifact{}, collectErr
+
+	var findings []visibility.Finding
+	if err := workflow.ExecuteActivity(activityCtx, acts.RunFinders, FindImprovementsInput{
+		AssessmentWorkflowInput: in, Audit: audit,
+	}).Get(ctx, &findings); err != nil {
+		return err
 	}
-	return artifact, nil
+
+	return workflow.ExecuteActivity(activityCtx, acts.PublishImproveRun, PublishImproveRunInput{
+		AssessmentWorkflowInput: in, Audit: audit, Findings: findings,
+	}).Get(ctx, nil)
+}
+
+// robotsReport is one inspection of robots.txt: the verdict for every crawler
+// the checklist reports on, whether a file exists at all, and the sitemaps it
+// declares.
+type robotsReport struct {
+	Found    bool
+	Denied   map[string]bool
+	Sitemaps []string
 }
 
 // scanOwnedSite inspects the business site once. The fetcher supplies the page
-// text, the checked URLs and the indexing directives it read while it had the
-// markup in hand, so the only extra request the scan makes is robots.txt.
+// text, the checked URLs, the page facts and the indexing directives it read
+// while it had the markup in hand, so the only extra request the scan makes is
+// robots.txt.
 func scanOwnedSite(ctx context.Context, fetcher *siteFetcher, website string) visibility.OwnedSiteScan {
-	scan := visibility.OwnedSiteScan{PayloadVersion: 1}
+	scan := visibility.OwnedSiteScan{PayloadVersion: visibility.OwnedSiteScanPayloadVersion}
 	u, err := url.Parse(website)
 	if err != nil || u.Hostname() == "" {
-		scan.Failure = "invalid website URL"
+		scan.FetchFailure = "invalid website URL"
 		return scan
 	}
 	scan.Host = strings.ToLower(u.Hostname())
@@ -111,6 +150,9 @@ func scanOwnedSite(ctx context.Context, fetcher *siteFetcher, website string) vi
 		scan.Reachable = true
 		scan.Text = out.Text
 		scan.CheckedURLs = out.URLs
+		scan.Pages = out.Pages
+		scan.NoIndexURLs = out.NoIndexURLs
+		scan.SitemapFound = out.SitemapFound
 		// The homepage is the site's most linked and most cited page, so a
 		// barrier there is a barrier for the site even when other pages are
 		// public. Away from it one noindex page (a thank-you or search page) is
@@ -124,57 +166,84 @@ func scanOwnedSite(ctx context.Context, fetcher *siteFetcher, website string) vi
 		scan.AuthBarrier = true
 		scan.CheckedURLs = []string{website}
 	default:
-		scan.Failure = err.Error()
+		scan.FetchFailure = err.Error()
 		return scan
 	}
 
 	robots := *u
 	robots.Path = "/robots.txt"
 	robots.RawQuery = ""
-	denied, robotsErr := inspectRobots(ctx, fetcher.client, robots.String(), checkedPaths(scan.CheckedURLs))
+	report, robotsErr := inspectRobots(ctx, fetcher.client, robots.String(), checkedPaths(scan.CheckedURLs))
 	scan.CheckedURLs = append(scan.CheckedURLs, robots.String())
-	switch {
-	case robotsErr == nil:
-		scan.OAIBlocked = denied
-	case scan.AuthBarrier || scan.NoIndex:
-		// A confirmed barrier already answers the practice; robots.txt cannot
-		// make the verdict any better.
-	default:
-		// Nothing else was confirmed, so the site was not inspected reliably:
-		// report unknown rather than a silent pass.
-		scan.Failure = "robots.txt could not be inspected: " + robotsErr.Error()
+	if robotsErr != nil {
+		// Only the robots-derived checks lose their evidence here. Reachability
+		// and the indexing directives were established from the pages
+		// themselves, so they keep their verdicts.
+		scan.RobotsFailure = robotsErr.Error()
+		return scan
 	}
+	scan.RobotsFound = report.Found
+	scan.AgentDenied = report.Denied
+	scan.RobotsSitemaps = report.Sitemaps
 	return scan
 }
 
-// inspectRobots reports whether robots.txt denies OAI-SearchBot any of the
-// checked paths. A 4xx means the site publishes no robots file and therefore
-// disallows nothing; a 5xx or a transport failure is an inspection failure the
-// caller must not read as a pass.
-func inspectRobots(ctx context.Context, client *http.Client, robotsURL string, paths []string) (bool, error) {
+// inspectRobots reads robots.txt once and reports the verdict for every crawler
+// the checklist names. A 4xx means the site publishes no robots file and
+// therefore disallows nothing; a 5xx or a transport failure is an inspection
+// failure the caller must not read as a pass.
+func inspectRobots(ctx context.Context, client *http.Client, robotsURL string, paths []string) (robotsReport, error) {
+	agents := []string{visibility.AgentOAISearchBot, visibility.AgentChatGPTUser, visibility.AgentGPTBot}
+	allowAll := robotsReport{Denied: map[string]bool{}}
+	for _, agent := range agents {
+		allowAll.Denied[agent] = false
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, robotsURL, nil)
 	if err != nil {
-		return false, err
+		return robotsReport{}, err
 	}
 	req.Header.Set("Accept", "text/plain,*/*")
 	req.Header.Set("User-Agent", fetchSiteUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, err
+		return robotsReport{}, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
 		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 128*1024))
 		if readErr != nil {
-			return false, readErr
+			return robotsReport{}, readErr
 		}
-		return robotsDeniesOAI(string(body), paths), nil
+		raw := string(body)
+		report := robotsReport{Found: true, Denied: map[string]bool{}, Sitemaps: robotsSitemaps(raw)}
+		for _, agent := range agents {
+			report.Denied[agent] = robotsDenies(raw, agent, paths)
+		}
+		return report, nil
 	case resp.StatusCode >= 400 && resp.StatusCode < 500:
-		return false, nil
+		return allowAll, nil
 	default:
-		return false, fmt.Errorf("robots.txt returned status %d", resp.StatusCode)
+		return robotsReport{}, fmt.Errorf("robots.txt returned status %d", resp.StatusCode)
 	}
+}
+
+// robotsSitemaps returns the sitemap URLs robots.txt declares. The directive is
+// global, so it is read outside any user-agent group.
+func robotsSitemaps(raw string) []string {
+	var out []string
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
+		key, value, found := strings.Cut(line, ":")
+		if !found || !strings.EqualFold(strings.TrimSpace(key), "sitemap") {
+			continue
+		}
+		if value = strings.TrimSpace(value); value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 // checkedPaths returns the paths the robots rules are evaluated against: the
@@ -189,9 +258,9 @@ func checkedPaths(urls []string) []string {
 	return paths
 }
 
-// robotsDeniesOAI reports whether robots.txt denies OAI-SearchBot any of the
-// given page paths.
-func robotsDeniesOAI(raw string, paths []string) bool {
+// robotsDenies reports whether robots.txt denies the given crawler any of the
+// given page paths. The agent must already be lowercased.
+func robotsDenies(raw, agent string, paths []string) bool {
 	type rule struct {
 		allow bool
 		path  string
@@ -225,7 +294,7 @@ func robotsDeniesOAI(raw string, paths []string) bool {
 			rules[agent] = append(rules[agent], rule{allow: key == "allow", path: value})
 		}
 	}
-	selected := rules["oai-searchbot"]
+	selected := rules[agent]
 	if len(selected) == 0 {
 		selected = rules["*"]
 	}
@@ -258,7 +327,7 @@ type boundedHTTPResearcher struct {
 
 func (r *boundedHTTPResearcher) Inspect(ctx context.Context, in visibility.ResearchRequest) (visibility.ResearchResult, error) {
 	if r.remaining <= 0 {
-		return visibility.ResearchResult{}, errors.New("research URL budget exhausted")
+		return visibility.ResearchResult{}, visibility.ErrResearchBudget
 	}
 	r.remaining--
 	u, err := url.Parse(in.URL)
@@ -282,148 +351,4 @@ func (r *boundedHTTPResearcher) Inspect(ctx context.Context, in visibility.Resea
 		return visibility.ResearchResult{}, err
 	}
 	return visibility.ResearchResult{URL: resp.Request.URL.String(), Text: string(body), CheckedAt: time.Now().UTC()}, nil
-}
-
-type RunAssessorInput struct {
-	AssessmentWorkflowInput
-	GenerationID domain.ID
-	Entry        store.ModulePlanEntry
-	Artifacts    []visibility.EvidenceArtifact
-}
-type RunAssessorOutput struct {
-	AssessorKey   string
-	Drafts        []visibility.AssessmentDraft
-	AssessmentIDs []domain.ID
-}
-
-func (a *Activities) RunPracticeAssessor(ctx context.Context, in RunAssessorInput) (RunAssessorOutput, error) {
-	var selected visibility.PracticeAssessor
-	for _, candidate := range visibility.Assessors() {
-		if candidate.Manifest().Key == in.Entry.AssessorKey && candidate.Manifest().ModuleVersion == in.Entry.ModuleVersion {
-			selected = candidate
-			break
-		}
-	}
-	if selected == nil {
-		return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("assessor not registered", "BadVisibilityRegistry", nil)
-	}
-	m := selected.Manifest()
-	research := &boundedHTTPResearcher{client: newSafeFetchHTTPClient(), remaining: m.MaxURLInspections}
-	defer research.client.CloseIdleConnections()
-	drafts, err := selected.Assess(ctx, visibility.NewEvidenceView(in.Artifacts), research)
-	if err != nil {
-		return RunAssessorOutput{}, err
-	}
-	if len(drafts) > m.MaxOutput {
-		return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("assessor output exceeds limit", "BadAssessorOutput", nil)
-	}
-	out := RunAssessorOutput{AssessorKey: m.Key, Drafts: drafts}
-	for _, d := range drafts {
-		if err := visibility.ValidateDraft(d, m); err != nil {
-			return RunAssessorOutput{}, temporal.NewNonRetryableApplicationError("invalid assessment", "BadAssessorOutput", err)
-		}
-		id, err := a.Store.SaveAssessment(ctx, in.GenerationID, in.AccountID, in.BusinessID, d)
-		if err != nil {
-			return RunAssessorOutput{}, err
-		}
-		out.AssessmentIDs = append(out.AssessmentIDs, id)
-	}
-	return out, nil
-}
-
-type PublishAssessmentsInput struct {
-	AssessmentWorkflowInput
-	GenerationID domain.ID
-	Outputs      []RunAssessorOutput
-	Outcomes     []store.ModuleOutcome
-}
-
-func (a *Activities) PublishAssessments(ctx context.Context, in PublishAssessmentsInput) error {
-	drafts := []visibility.AssessmentDraft{}
-	ids := map[string]domain.ID{}
-	for _, o := range in.Outputs {
-		for i, d := range o.Drafts {
-			drafts = append(drafts, d)
-			if i < len(o.AssessmentIDs) {
-				ids[d.PracticeKey+"\x00"+d.SubjectKey] = o.AssessmentIDs[i]
-			}
-		}
-	}
-	compiled, err := visibility.Compile(drafts)
-	if err != nil {
-		_ = a.Store.FailAssessmentGeneration(ctx, in.GenerationID, in.AccountID, in.Outcomes, err)
-		return err
-	}
-	items := make([]store.CompiledAction, 0, len(compiled))
-	for _, item := range compiled {
-		items = append(items, store.CompiledAction{AssessmentID: ids[item.Draft.PracticeKey+"\x00"+item.Draft.SubjectKey], CompiledAssessment: item})
-	}
-	return a.Store.PublishAssessmentGeneration(ctx, in.AccountID, in.BusinessID, in.GenerationID, in.Outcomes, items)
-}
-
-func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error {
-	activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{StartToCloseTimeout: time.Minute, RetryPolicy: &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 3}})
-	var plan AssessmentPlan
-	if err := workflow.ExecuteActivity(activityCtx, acts.ResolveAssessmentPlan, in).Get(ctx, &plan); err != nil {
-		return err
-	}
-	if plan.Status != "RUNNING" {
-		return nil
-	}
-	collectorSet := map[string]bool{}
-	for _, entry := range plan.Entries {
-		for _, key := range entry.RequiredCollectors {
-			collectorSet[key] = true
-		}
-	}
-	collectorKeys := make([]string, 0, len(collectorSet))
-	for key := range collectorSet {
-		collectorKeys = append(collectorKeys, key)
-	}
-	sort.Strings(collectorKeys)
-	type pending struct {
-		key    string
-		future workflow.Future
-	}
-	pendingCollectors := []pending{}
-	for _, key := range collectorKeys {
-		pendingCollectors = append(pendingCollectors, pending{key, workflow.ExecuteActivity(activityCtx, acts.CollectAssessmentEvidence, CollectEvidenceInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, CollectorKey: key})})
-	}
-	artifacts := map[string]visibility.EvidenceArtifact{}
-	for _, p := range pendingCollectors {
-		var artifact visibility.EvidenceArtifact
-		if err := p.future.Get(ctx, &artifact); err != nil {
-			workflow.GetLogger(ctx).Error("evidence collector failed", "collector", p.key, "error", err.Error())
-			continue
-		}
-		artifacts[p.key] = artifact
-	}
-	outputs := []RunAssessorOutput{}
-	outcomes := []store.ModuleOutcome{}
-	for _, entry := range plan.Entries {
-		available := true
-		deps := make([]visibility.EvidenceArtifact, 0, len(entry.RequiredCollectors))
-		for _, key := range entry.RequiredCollectors {
-			artifact, ok := artifacts[key]
-			if !ok {
-				available = false
-				break
-			}
-			deps = append(deps, artifact)
-		}
-		if !available {
-			outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "SKIPPED", Error: "required evidence was unavailable"})
-			continue
-		}
-		assessorCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{StartToCloseTimeout: time.Minute, RetryPolicy: &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 2}})
-		var out RunAssessorOutput
-		if err := workflow.ExecuteActivity(assessorCtx, acts.RunPracticeAssessor, RunAssessorInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Entry: entry, Artifacts: deps}).Get(ctx, &out); err != nil {
-			outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "FAILED", Error: err.Error()})
-			workflow.GetLogger(ctx).Error("practice assessor failed", "assessor", entry.AssessorKey, "error", err.Error())
-			continue
-		}
-		outputs = append(outputs, out)
-		outcomes = append(outcomes, store.ModuleOutcome{AssessorKey: entry.AssessorKey, Status: "SUCCEEDED"})
-	}
-	return workflow.ExecuteActivity(activityCtx, acts.PublishAssessments, PublishAssessmentsInput{AssessmentWorkflowInput: in, GenerationID: plan.GenerationID, Outputs: outputs, Outcomes: outcomes}).Get(ctx, nil)
 }

@@ -71,8 +71,8 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
 		VALUES ($1, 'positive', ARRAY['friendly']::text[], '["Analysis Clinic is a good option."]'::jsonb, 'gpt-5-mini', 1)`, resultID)
 	mustExec(t, db, ctx, `
-		INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order)
-		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'business', 0)`, citationID, resultID)
+		INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order, text_start, text_end)
+		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'business', 0, 0, 10)`, citationID, resultID)
 	mustExec(t, db, ctx, `
 		INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
 		VALUES ($1, $2, 'self', 'exact', 0, 'Analysis Clinic ... options.')`, selfMentionID, resultID)

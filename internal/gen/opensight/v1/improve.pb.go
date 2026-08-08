@@ -22,135 +22,74 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PracticeMode int32
+// CheckOutcome is the verdict on one site-audit check.
+type CheckOutcome int32
 
 const (
-	PracticeMode_PRACTICE_MODE_UNSPECIFIED PracticeMode = 0
-	PracticeMode_PRACTICE_MODE_CHECK       PracticeMode = 1
-	PracticeMode_PRACTICE_MODE_CONTINUOUS  PracticeMode = 2
-	PracticeMode_PRACTICE_MODE_TRACKED     PracticeMode = 3
+	CheckOutcome_CHECK_OUTCOME_UNSPECIFIED      CheckOutcome = 0
+	CheckOutcome_CHECK_OUTCOME_PASS             CheckOutcome = 1
+	CheckOutcome_CHECK_OUTCOME_FAIL             CheckOutcome = 2
+	CheckOutcome_CHECK_OUTCOME_COULD_NOT_VERIFY CheckOutcome = 3
+	CheckOutcome_CHECK_OUTCOME_NOT_APPLICABLE   CheckOutcome = 4
+	CheckOutcome_CHECK_OUTCOME_NOT_ASSESSED     CheckOutcome = 5
 )
 
-// Enum value maps for PracticeMode.
+// Enum value maps for CheckOutcome.
 var (
-	PracticeMode_name = map[int32]string{
-		0: "PRACTICE_MODE_UNSPECIFIED",
-		1: "PRACTICE_MODE_CHECK",
-		2: "PRACTICE_MODE_CONTINUOUS",
-		3: "PRACTICE_MODE_TRACKED",
+	CheckOutcome_name = map[int32]string{
+		0: "CHECK_OUTCOME_UNSPECIFIED",
+		1: "CHECK_OUTCOME_PASS",
+		2: "CHECK_OUTCOME_FAIL",
+		3: "CHECK_OUTCOME_COULD_NOT_VERIFY",
+		4: "CHECK_OUTCOME_NOT_APPLICABLE",
+		5: "CHECK_OUTCOME_NOT_ASSESSED",
 	}
-	PracticeMode_value = map[string]int32{
-		"PRACTICE_MODE_UNSPECIFIED": 0,
-		"PRACTICE_MODE_CHECK":       1,
-		"PRACTICE_MODE_CONTINUOUS":  2,
-		"PRACTICE_MODE_TRACKED":     3,
+	CheckOutcome_value = map[string]int32{
+		"CHECK_OUTCOME_UNSPECIFIED":      0,
+		"CHECK_OUTCOME_PASS":             1,
+		"CHECK_OUTCOME_FAIL":             2,
+		"CHECK_OUTCOME_COULD_NOT_VERIFY": 3,
+		"CHECK_OUTCOME_NOT_APPLICABLE":   4,
+		"CHECK_OUTCOME_NOT_ASSESSED":     5,
 	}
 )
 
-func (x PracticeMode) Enum() *PracticeMode {
-	p := new(PracticeMode)
+func (x CheckOutcome) Enum() *CheckOutcome {
+	p := new(CheckOutcome)
 	*p = x
 	return p
 }
 
-func (x PracticeMode) String() string {
+func (x CheckOutcome) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (PracticeMode) Descriptor() protoreflect.EnumDescriptor {
+func (CheckOutcome) Descriptor() protoreflect.EnumDescriptor {
 	return file_opensight_v1_improve_proto_enumTypes[0].Descriptor()
 }
 
-func (PracticeMode) Type() protoreflect.EnumType {
+func (CheckOutcome) Type() protoreflect.EnumType {
 	return &file_opensight_v1_improve_proto_enumTypes[0]
 }
 
-func (x PracticeMode) Number() protoreflect.EnumNumber {
+func (x CheckOutcome) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use PracticeMode.Descriptor instead.
-func (PracticeMode) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use CheckOutcome.Descriptor instead.
+func (CheckOutcome) EnumDescriptor() ([]byte, []int) {
 	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{0}
 }
 
-type ChecklistStanding int32
-
-const (
-	ChecklistStanding_CHECKLIST_STANDING_UNSPECIFIED       ChecklistStanding = 0
-	ChecklistStanding_CHECKLIST_STANDING_GOOD              ChecklistStanding = 1
-	ChecklistStanding_CHECKLIST_STANDING_IMPROVABLE        ChecklistStanding = 2
-	ChecklistStanding_CHECKLIST_STANDING_NEEDS_ATTENTION   ChecklistStanding = 3
-	ChecklistStanding_CHECKLIST_STANDING_TRACKING          ChecklistStanding = 4
-	ChecklistStanding_CHECKLIST_STANDING_COULD_NOT_VERIFY  ChecklistStanding = 5
-	ChecklistStanding_CHECKLIST_STANDING_NOT_ASSESSED      ChecklistStanding = 6
-	ChecklistStanding_CHECKLIST_STANDING_NOT_APPLICABLE    ChecklistStanding = 7
-	ChecklistStanding_CHECKLIST_STANDING_NO_LONGER_TRACKED ChecklistStanding = 8
-)
-
-// Enum value maps for ChecklistStanding.
-var (
-	ChecklistStanding_name = map[int32]string{
-		0: "CHECKLIST_STANDING_UNSPECIFIED",
-		1: "CHECKLIST_STANDING_GOOD",
-		2: "CHECKLIST_STANDING_IMPROVABLE",
-		3: "CHECKLIST_STANDING_NEEDS_ATTENTION",
-		4: "CHECKLIST_STANDING_TRACKING",
-		5: "CHECKLIST_STANDING_COULD_NOT_VERIFY",
-		6: "CHECKLIST_STANDING_NOT_ASSESSED",
-		7: "CHECKLIST_STANDING_NOT_APPLICABLE",
-		8: "CHECKLIST_STANDING_NO_LONGER_TRACKED",
-	}
-	ChecklistStanding_value = map[string]int32{
-		"CHECKLIST_STANDING_UNSPECIFIED":       0,
-		"CHECKLIST_STANDING_GOOD":              1,
-		"CHECKLIST_STANDING_IMPROVABLE":        2,
-		"CHECKLIST_STANDING_NEEDS_ATTENTION":   3,
-		"CHECKLIST_STANDING_TRACKING":          4,
-		"CHECKLIST_STANDING_COULD_NOT_VERIFY":  5,
-		"CHECKLIST_STANDING_NOT_ASSESSED":      6,
-		"CHECKLIST_STANDING_NOT_APPLICABLE":    7,
-		"CHECKLIST_STANDING_NO_LONGER_TRACKED": 8,
-	}
-)
-
-func (x ChecklistStanding) Enum() *ChecklistStanding {
-	p := new(ChecklistStanding)
-	*p = x
-	return p
-}
-
-func (x ChecklistStanding) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ChecklistStanding) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_improve_proto_enumTypes[1].Descriptor()
-}
-
-func (ChecklistStanding) Type() protoreflect.EnumType {
-	return &file_opensight_v1_improve_proto_enumTypes[1]
-}
-
-func (x ChecklistStanding) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ChecklistStanding.Descriptor instead.
-func (ChecklistStanding) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{1}
-}
-
+// ActionStatus is the whole lifecycle of a piece of work. An action stops being
+// shown when the evidence stops producing it, so there is no retired state.
 type ActionStatus int32
 
 const (
 	ActionStatus_ACTION_STATUS_UNSPECIFIED ActionStatus = 0
 	ActionStatus_ACTION_STATUS_OPEN        ActionStatus = 1
-	ActionStatus_ACTION_STATUS_IN_PROGRESS ActionStatus = 2
-	ActionStatus_ACTION_STATUS_COMPLETED   ActionStatus = 3
-	ActionStatus_ACTION_STATUS_DISMISSED   ActionStatus = 4
-	ActionStatus_ACTION_STATUS_RETIRED     ActionStatus = 5
-	ActionStatus_ACTION_STATUS_SUPERSEDED  ActionStatus = 6
+	ActionStatus_ACTION_STATUS_DONE        ActionStatus = 2
+	ActionStatus_ACTION_STATUS_DISMISSED   ActionStatus = 3
 )
 
 // Enum value maps for ActionStatus.
@@ -158,20 +97,14 @@ var (
 	ActionStatus_name = map[int32]string{
 		0: "ACTION_STATUS_UNSPECIFIED",
 		1: "ACTION_STATUS_OPEN",
-		2: "ACTION_STATUS_IN_PROGRESS",
-		3: "ACTION_STATUS_COMPLETED",
-		4: "ACTION_STATUS_DISMISSED",
-		5: "ACTION_STATUS_RETIRED",
-		6: "ACTION_STATUS_SUPERSEDED",
+		2: "ACTION_STATUS_DONE",
+		3: "ACTION_STATUS_DISMISSED",
 	}
 	ActionStatus_value = map[string]int32{
 		"ACTION_STATUS_UNSPECIFIED": 0,
 		"ACTION_STATUS_OPEN":        1,
-		"ACTION_STATUS_IN_PROGRESS": 2,
-		"ACTION_STATUS_COMPLETED":   3,
-		"ACTION_STATUS_DISMISSED":   4,
-		"ACTION_STATUS_RETIRED":     5,
-		"ACTION_STATUS_SUPERSEDED":  6,
+		"ACTION_STATUS_DONE":        2,
+		"ACTION_STATUS_DISMISSED":   3,
 	}
 )
 
@@ -186,11 +119,11 @@ func (x ActionStatus) String() string {
 }
 
 func (ActionStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_improve_proto_enumTypes[2].Descriptor()
+	return file_opensight_v1_improve_proto_enumTypes[1].Descriptor()
 }
 
 func (ActionStatus) Type() protoreflect.EnumType {
-	return &file_opensight_v1_improve_proto_enumTypes[2]
+	return &file_opensight_v1_improve_proto_enumTypes[1]
 }
 
 func (x ActionStatus) Number() protoreflect.EnumNumber {
@@ -199,7 +132,7 @@ func (x ActionStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActionStatus.Descriptor instead.
 func (ActionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{2}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{1}
 }
 
 type DismissalReason int32
@@ -244,11 +177,11 @@ func (x DismissalReason) String() string {
 }
 
 func (DismissalReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_improve_proto_enumTypes[3].Descriptor()
+	return file_opensight_v1_improve_proto_enumTypes[2].Descriptor()
 }
 
 func (DismissalReason) Type() protoreflect.EnumType {
-	return &file_opensight_v1_improve_proto_enumTypes[3]
+	return &file_opensight_v1_improve_proto_enumTypes[2]
 }
 
 func (x DismissalReason) Number() protoreflect.EnumNumber {
@@ -257,92 +190,31 @@ func (x DismissalReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DismissalReason.Descriptor instead.
 func (DismissalReason) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{3}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{2}
 }
 
-type ActionBlockType int32
-
-const (
-	ActionBlockType_ACTION_BLOCK_TYPE_UNSPECIFIED   ActionBlockType = 0
-	ActionBlockType_ACTION_BLOCK_TYPE_TEXT          ActionBlockType = 1
-	ActionBlockType_ACTION_BLOCK_TYPE_METRIC        ActionBlockType = 2
-	ActionBlockType_ACTION_BLOCK_TYPE_LINK          ActionBlockType = 3
-	ActionBlockType_ACTION_BLOCK_TYPE_QUESTION_LIST ActionBlockType = 4
-	ActionBlockType_ACTION_BLOCK_TYPE_EVIDENCE_LIST ActionBlockType = 5
-	ActionBlockType_ACTION_BLOCK_TYPE_NOTICE        ActionBlockType = 6
-)
-
-// Enum value maps for ActionBlockType.
-var (
-	ActionBlockType_name = map[int32]string{
-		0: "ACTION_BLOCK_TYPE_UNSPECIFIED",
-		1: "ACTION_BLOCK_TYPE_TEXT",
-		2: "ACTION_BLOCK_TYPE_METRIC",
-		3: "ACTION_BLOCK_TYPE_LINK",
-		4: "ACTION_BLOCK_TYPE_QUESTION_LIST",
-		5: "ACTION_BLOCK_TYPE_EVIDENCE_LIST",
-		6: "ACTION_BLOCK_TYPE_NOTICE",
-	}
-	ActionBlockType_value = map[string]int32{
-		"ACTION_BLOCK_TYPE_UNSPECIFIED":   0,
-		"ACTION_BLOCK_TYPE_TEXT":          1,
-		"ACTION_BLOCK_TYPE_METRIC":        2,
-		"ACTION_BLOCK_TYPE_LINK":          3,
-		"ACTION_BLOCK_TYPE_QUESTION_LIST": 4,
-		"ACTION_BLOCK_TYPE_EVIDENCE_LIST": 5,
-		"ACTION_BLOCK_TYPE_NOTICE":        6,
-	}
-)
-
-func (x ActionBlockType) Enum() *ActionBlockType {
-	p := new(ActionBlockType)
-	*p = x
-	return p
-}
-
-func (x ActionBlockType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ActionBlockType) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_improve_proto_enumTypes[4].Descriptor()
-}
-
-func (ActionBlockType) Type() protoreflect.EnumType {
-	return &file_opensight_v1_improve_proto_enumTypes[4]
-}
-
-func (x ActionBlockType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ActionBlockType.Descriptor instead.
-func (ActionBlockType) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{4}
-}
-
+// ActionsEmptyReason distinguishes the three ways the work queue can be empty.
+// They are not interchangeable: NO_FINDINGS is the absence of evidence, while
+// NOT_ASSESSED_YET means nothing has been checked at all.
 type ActionsEmptyReason int32
 
 const (
-	ActionsEmptyReason_ACTIONS_EMPTY_REASON_UNSPECIFIED             ActionsEmptyReason = 0
-	ActionsEmptyReason_ACTIONS_EMPTY_REASON_HEALTHY                 ActionsEmptyReason = 1
-	ActionsEmptyReason_ACTIONS_EMPTY_REASON_INCOMPLETE_CHECKS       ActionsEmptyReason = 2
-	ActionsEmptyReason_ACTIONS_EMPTY_REASON_INSUFFICIENT_CAPABILITY ActionsEmptyReason = 3
+	ActionsEmptyReason_ACTIONS_EMPTY_REASON_UNSPECIFIED      ActionsEmptyReason = 0
+	ActionsEmptyReason_ACTIONS_EMPTY_REASON_NO_FINDINGS      ActionsEmptyReason = 1
+	ActionsEmptyReason_ACTIONS_EMPTY_REASON_NOT_ASSESSED_YET ActionsEmptyReason = 2
 )
 
 // Enum value maps for ActionsEmptyReason.
 var (
 	ActionsEmptyReason_name = map[int32]string{
 		0: "ACTIONS_EMPTY_REASON_UNSPECIFIED",
-		1: "ACTIONS_EMPTY_REASON_HEALTHY",
-		2: "ACTIONS_EMPTY_REASON_INCOMPLETE_CHECKS",
-		3: "ACTIONS_EMPTY_REASON_INSUFFICIENT_CAPABILITY",
+		1: "ACTIONS_EMPTY_REASON_NO_FINDINGS",
+		2: "ACTIONS_EMPTY_REASON_NOT_ASSESSED_YET",
 	}
 	ActionsEmptyReason_value = map[string]int32{
-		"ACTIONS_EMPTY_REASON_UNSPECIFIED":             0,
-		"ACTIONS_EMPTY_REASON_HEALTHY":                 1,
-		"ACTIONS_EMPTY_REASON_INCOMPLETE_CHECKS":       2,
-		"ACTIONS_EMPTY_REASON_INSUFFICIENT_CAPABILITY": 3,
+		"ACTIONS_EMPTY_REASON_UNSPECIFIED":      0,
+		"ACTIONS_EMPTY_REASON_NO_FINDINGS":      1,
+		"ACTIONS_EMPTY_REASON_NOT_ASSESSED_YET": 2,
 	}
 )
 
@@ -357,11 +229,11 @@ func (x ActionsEmptyReason) String() string {
 }
 
 func (ActionsEmptyReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_opensight_v1_improve_proto_enumTypes[5].Descriptor()
+	return file_opensight_v1_improve_proto_enumTypes[3].Descriptor()
 }
 
 func (ActionsEmptyReason) Type() protoreflect.EnumType {
-	return &file_opensight_v1_improve_proto_enumTypes[5]
+	return &file_opensight_v1_improve_proto_enumTypes[3]
 }
 
 func (x ActionsEmptyReason) Number() protoreflect.EnumNumber {
@@ -370,33 +242,40 @@ func (x ActionsEmptyReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActionsEmptyReason.Descriptor instead.
 func (ActionsEmptyReason) EnumDescriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{5}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{3}
 }
 
-type AssessmentFreshness struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Available     bool                   `protobuf:"varint,1,opt,name=available,proto3" json:"available,omitempty"`
-	Partial       bool                   `protobuf:"varint,2,opt,name=partial,proto3" json:"partial,omitempty"`
-	Stale         bool                   `protobuf:"varint,3,opt,name=stale,proto3" json:"stale,omitempty"`
-	AssessedAt    *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=assessed_at,json=assessedAt,proto3" json:"assessed_at,omitempty"`
+// Check is one assertion, joined from the catalog definition (title, what) and
+// the audit result (outcome, detail).
+type Check struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Key          string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Title        string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	What         string                 `protobuf:"bytes,3,opt,name=what,proto3" json:"what,omitempty"`
+	Outcome      CheckOutcome           `protobuf:"varint,4,opt,name=outcome,proto3,enum=opensight.v1.CheckOutcome" json:"outcome,omitempty"`
+	OutcomeLabel string                 `protobuf:"bytes,5,opt,name=outcome_label,json=outcomeLabel,proto3" json:"outcome_label,omitempty"`
+	Detail       string                 `protobuf:"bytes,6,opt,name=detail,proto3" json:"detail,omitempty"`
+	// informational checks report a fact the user may legitimately have chosen.
+	// They never count towards passed or failed.
+	Informational bool `protobuf:"varint,7,opt,name=informational,proto3" json:"informational,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AssessmentFreshness) Reset() {
-	*x = AssessmentFreshness{}
+func (x *Check) Reset() {
+	*x = Check{}
 	mi := &file_opensight_v1_improve_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AssessmentFreshness) String() string {
+func (x *Check) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AssessmentFreshness) ProtoMessage() {}
+func (*Check) ProtoMessage() {}
 
-func (x *AssessmentFreshness) ProtoReflect() protoreflect.Message {
+func (x *Check) ProtoReflect() protoreflect.Message {
 	mi := &file_opensight_v1_improve_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -408,157 +287,141 @@ func (x *AssessmentFreshness) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AssessmentFreshness.ProtoReflect.Descriptor instead.
-func (*AssessmentFreshness) Descriptor() ([]byte, []int) {
+// Deprecated: Use Check.ProtoReflect.Descriptor instead.
+func (*Check) Descriptor() ([]byte, []int) {
 	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *AssessmentFreshness) GetAvailable() bool {
+func (x *Check) GetKey() string {
 	if x != nil {
-		return x.Available
+		return x.Key
 	}
-	return false
+	return ""
 }
 
-func (x *AssessmentFreshness) GetPartial() bool {
-	if x != nil {
-		return x.Partial
-	}
-	return false
-}
-
-func (x *AssessmentFreshness) GetStale() bool {
-	if x != nil {
-		return x.Stale
-	}
-	return false
-}
-
-func (x *AssessmentFreshness) GetAssessedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.AssessedAt
-	}
-	return nil
-}
-
-type ActionBlock struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ActionBlockType        `protobuf:"varint,1,opt,name=type,proto3,enum=opensight.v1.ActionBlockType" json:"type,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Text          string                 `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
-	Value         string                 `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
-	Url           string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
-	Items         []string               `protobuf:"bytes,6,rep,name=items,proto3" json:"items,omitempty"`
-	ResultIds     []string               `protobuf:"bytes,7,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ActionBlock) Reset() {
-	*x = ActionBlock{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ActionBlock) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ActionBlock) ProtoMessage() {}
-
-func (x *ActionBlock) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ActionBlock.ProtoReflect.Descriptor instead.
-func (*ActionBlock) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ActionBlock) GetType() ActionBlockType {
-	if x != nil {
-		return x.Type
-	}
-	return ActionBlockType_ACTION_BLOCK_TYPE_UNSPECIFIED
-}
-
-func (x *ActionBlock) GetTitle() string {
+func (x *Check) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *ActionBlock) GetText() string {
+func (x *Check) GetWhat() string {
 	if x != nil {
-		return x.Text
+		return x.What
 	}
 	return ""
 }
 
-func (x *ActionBlock) GetValue() string {
+func (x *Check) GetOutcome() CheckOutcome {
 	if x != nil {
-		return x.Value
+		return x.Outcome
+	}
+	return CheckOutcome_CHECK_OUTCOME_UNSPECIFIED
+}
+
+func (x *Check) GetOutcomeLabel() string {
+	if x != nil {
+		return x.OutcomeLabel
 	}
 	return ""
 }
 
-func (x *ActionBlock) GetUrl() string {
+func (x *Check) GetDetail() string {
 	if x != nil {
-		return x.Url
+		return x.Detail
 	}
 	return ""
 }
 
-func (x *ActionBlock) GetItems() []string {
+func (x *Check) GetInformational() bool {
 	if x != nil {
-		return x.Items
+		return x.Informational
 	}
-	return nil
+	return false
 }
 
-func (x *ActionBlock) GetResultIds() []string {
-	if x != nil {
-		return x.ResultIds
-	}
-	return nil
-}
-
-type ActionCycle struct {
+type CheckCount struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Cycle         int32                  `protobuf:"varint,2,opt,name=cycle,proto3" json:"cycle,omitempty"`
-	Status        ActionStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=opensight.v1.ActionStatus" json:"status,omitempty"`
-	FirstSeenAt   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=first_seen_at,json=firstSeenAt,proto3" json:"first_seen_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	Outcome       CheckOutcome           `protobuf:"varint,1,opt,name=outcome,proto3,enum=opensight.v1.CheckOutcome" json:"outcome,omitempty"`
+	Count         int32                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ActionCycle) Reset() {
-	*x = ActionCycle{}
+func (x *CheckCount) Reset() {
+	*x = CheckCount{}
+	mi := &file_opensight_v1_improve_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckCount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckCount) ProtoMessage() {}
+
+func (x *CheckCount) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_improve_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckCount.ProtoReflect.Descriptor instead.
+func (*CheckCount) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CheckCount) GetOutcome() CheckOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return CheckOutcome_CHECK_OUTCOME_UNSPECIFIED
+}
+
+func (x *CheckCount) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+// CheckGroup orders the checklist and carries the "why this matters" copy. It
+// has no standing of its own — only counts.
+type CheckGroup struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	References    []string               `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
+	Checks        []*Check               `protobuf:"bytes,5,rep,name=checks,proto3" json:"checks,omitempty"`
+	ChecksPassed  int32                  `protobuf:"varint,6,opt,name=checks_passed,json=checksPassed,proto3" json:"checks_passed,omitempty"`
+	ChecksTotal   int32                  `protobuf:"varint,7,opt,name=checks_total,json=checksTotal,proto3" json:"checks_total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckGroup) Reset() {
+	*x = CheckGroup{}
 	mi := &file_opensight_v1_improve_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ActionCycle) String() string {
+func (x *CheckGroup) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ActionCycle) ProtoMessage() {}
+func (*CheckGroup) ProtoMessage() {}
 
-func (x *ActionCycle) ProtoReflect() protoreflect.Message {
+func (x *CheckGroup) ProtoReflect() protoreflect.Message {
 	mi := &file_opensight_v1_improve_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -570,75 +433,90 @@ func (x *ActionCycle) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ActionCycle.ProtoReflect.Descriptor instead.
-func (*ActionCycle) Descriptor() ([]byte, []int) {
+// Deprecated: Use CheckGroup.ProtoReflect.Descriptor instead.
+func (*CheckGroup) Descriptor() ([]byte, []int) {
 	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ActionCycle) GetId() string {
+func (x *CheckGroup) GetKey() string {
 	if x != nil {
-		return x.Id
+		return x.Key
 	}
 	return ""
 }
 
-func (x *ActionCycle) GetCycle() int32 {
+func (x *CheckGroup) GetTitle() string {
 	if x != nil {
-		return x.Cycle
+		return x.Title
+	}
+	return ""
+}
+
+func (x *CheckGroup) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CheckGroup) GetReferences() []string {
+	if x != nil {
+		return x.References
+	}
+	return nil
+}
+
+func (x *CheckGroup) GetChecks() []*Check {
+	if x != nil {
+		return x.Checks
+	}
+	return nil
+}
+
+func (x *CheckGroup) GetChecksPassed() int32 {
+	if x != nil {
+		return x.ChecksPassed
 	}
 	return 0
 }
 
-func (x *ActionCycle) GetStatus() ActionStatus {
+func (x *CheckGroup) GetChecksTotal() int32 {
 	if x != nil {
-		return x.Status
+		return x.ChecksTotal
 	}
-	return ActionStatus_ACTION_STATUS_UNSPECIFIED
+	return 0
 }
 
-func (x *ActionCycle) GetFirstSeenAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.FirstSeenAt
-	}
-	return nil
-}
-
-func (x *ActionCycle) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
-}
-
-func (x *ActionCycle) GetCompletedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CompletedAt
-	}
-	return nil
-}
-
+// ImprovementAction is one finding as the UI presents it. Go calls it a
+// Finding; the user-facing word is an action.
 type ImprovementAction struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PracticeKey       string                 `protobuf:"bytes,2,opt,name=practice_key,json=practiceKey,proto3" json:"practice_key,omitempty"`
-	SubjectKey        string                 `protobuf:"bytes,3,opt,name=subject_key,json=subjectKey,proto3" json:"subject_key,omitempty"`
-	Cycle             int32                  `protobuf:"varint,4,opt,name=cycle,proto3" json:"cycle,omitempty"`
-	RecommendationKey string                 `protobuf:"bytes,5,opt,name=recommendation_key,json=recommendationKey,proto3" json:"recommendation_key,omitempty"`
-	Title             string                 `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
-	Summary           string                 `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
-	Effort            string                 `protobuf:"bytes,8,opt,name=effort,proto3" json:"effort,omitempty"`
-	Blocks            []*ActionBlock         `protobuf:"bytes,9,rep,name=blocks,proto3" json:"blocks,omitempty"`
-	Status            ActionStatus           `protobuf:"varint,10,opt,name=status,proto3,enum=opensight.v1.ActionStatus" json:"status,omitempty"`
-	DismissalReason   DismissalReason        `protobuf:"varint,11,opt,name=dismissal_reason,json=dismissalReason,proto3,enum=opensight.v1.DismissalReason" json:"dismissal_reason,omitempty"`
-	Standing          ChecklistStanding      `protobuf:"varint,12,opt,name=standing,proto3,enum=opensight.v1.ChecklistStanding" json:"standing,omitempty"`
-	ResultIds         []string               `protobuf:"bytes,13,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
-	PromptIds         []string               `protobuf:"bytes,14,rep,name=prompt_ids,json=promptIds,proto3" json:"prompt_ids,omitempty"`
-	CheckedSources    []string               `protobuf:"bytes,15,rep,name=checked_sources,json=checkedSources,proto3" json:"checked_sources,omitempty"`
-	AssessedAt        *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=assessed_at,json=assessedAt,proto3" json:"assessed_at,omitempty"`
-	Fresh             bool                   `protobuf:"varint,17,opt,name=fresh,proto3" json:"fresh,omitempty"`
-	Cycles            []*ActionCycle         `protobuf:"bytes,18,rep,name=cycles,proto3" json:"cycles,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Key             string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Source          string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	Title           string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Body            string                 `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	Steps           []string               `protobuf:"bytes,6,rep,name=steps,proto3" json:"steps,omitempty"`
+	Detail          string                 `protobuf:"bytes,7,opt,name=detail,proto3" json:"detail,omitempty"`
+	ResultIds       []string               `protobuf:"bytes,8,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
+	PromptIds       []string               `protobuf:"bytes,9,rep,name=prompt_ids,json=promptIds,proto3" json:"prompt_ids,omitempty"`
+	Sources         []string               `protobuf:"bytes,10,rep,name=sources,proto3" json:"sources,omitempty"`
+	Blocking        bool                   `protobuf:"varint,11,opt,name=blocking,proto3" json:"blocking,omitempty"`
+	Reach           int32                  `protobuf:"varint,12,opt,name=reach,proto3" json:"reach,omitempty"`
+	Status          ActionStatus           `protobuf:"varint,13,opt,name=status,proto3,enum=opensight.v1.ActionStatus" json:"status,omitempty"`
+	DismissalReason DismissalReason        `protobuf:"varint,14,opt,name=dismissal_reason,json=dismissalReason,proto3,enum=opensight.v1.DismissalReason" json:"dismissal_reason,omitempty"`
+	FirstSeenAt     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=first_seen_at,json=firstSeenAt,proto3" json:"first_seen_at,omitempty"`
+	CompletedAt     *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	// verified_at is set when a later run did not reproduce a completed action.
+	// It confirms the fix landed and claims nothing about visibility.
+	VerifiedAt *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=verified_at,json=verifiedAt,proto3" json:"verified_at,omitempty"`
+	// category is the kind of change the action asks for, and the axis the work
+	// queue filters on. Its key matches the checklist group for work on the
+	// customer's own site; category_label is the word the user reads.
+	Category      string `protobuf:"bytes,18,opt,name=category,proto3" json:"category,omitempty"`
+	CategoryLabel string `protobuf:"bytes,19,opt,name=category_label,json=categoryLabel,proto3" json:"category_label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ImprovementAction) Reset() {
@@ -678,30 +556,16 @@ func (x *ImprovementAction) GetId() string {
 	return ""
 }
 
-func (x *ImprovementAction) GetPracticeKey() string {
+func (x *ImprovementAction) GetKey() string {
 	if x != nil {
-		return x.PracticeKey
+		return x.Key
 	}
 	return ""
 }
 
-func (x *ImprovementAction) GetSubjectKey() string {
+func (x *ImprovementAction) GetSource() string {
 	if x != nil {
-		return x.SubjectKey
-	}
-	return ""
-}
-
-func (x *ImprovementAction) GetCycle() int32 {
-	if x != nil {
-		return x.Cycle
-	}
-	return 0
-}
-
-func (x *ImprovementAction) GetRecommendationKey() string {
-	if x != nil {
-		return x.RecommendationKey
+		return x.Source
 	}
 	return ""
 }
@@ -713,46 +577,25 @@ func (x *ImprovementAction) GetTitle() string {
 	return ""
 }
 
-func (x *ImprovementAction) GetSummary() string {
+func (x *ImprovementAction) GetBody() string {
 	if x != nil {
-		return x.Summary
+		return x.Body
 	}
 	return ""
 }
 
-func (x *ImprovementAction) GetEffort() string {
+func (x *ImprovementAction) GetSteps() []string {
 	if x != nil {
-		return x.Effort
-	}
-	return ""
-}
-
-func (x *ImprovementAction) GetBlocks() []*ActionBlock {
-	if x != nil {
-		return x.Blocks
+		return x.Steps
 	}
 	return nil
 }
 
-func (x *ImprovementAction) GetStatus() ActionStatus {
+func (x *ImprovementAction) GetDetail() string {
 	if x != nil {
-		return x.Status
+		return x.Detail
 	}
-	return ActionStatus_ACTION_STATUS_UNSPECIFIED
-}
-
-func (x *ImprovementAction) GetDismissalReason() DismissalReason {
-	if x != nil {
-		return x.DismissalReason
-	}
-	return DismissalReason_DISMISSAL_REASON_UNSPECIFIED
-}
-
-func (x *ImprovementAction) GetStanding() ChecklistStanding {
-	if x != nil {
-		return x.Standing
-	}
-	return ChecklistStanding_CHECKLIST_STANDING_UNSPECIFIED
+	return ""
 }
 
 func (x *ImprovementAction) GetResultIds() []string {
@@ -769,264 +612,104 @@ func (x *ImprovementAction) GetPromptIds() []string {
 	return nil
 }
 
-func (x *ImprovementAction) GetCheckedSources() []string {
+func (x *ImprovementAction) GetSources() []string {
 	if x != nil {
-		return x.CheckedSources
+		return x.Sources
 	}
 	return nil
 }
 
-func (x *ImprovementAction) GetAssessedAt() *timestamppb.Timestamp {
+func (x *ImprovementAction) GetBlocking() bool {
 	if x != nil {
-		return x.AssessedAt
-	}
-	return nil
-}
-
-func (x *ImprovementAction) GetFresh() bool {
-	if x != nil {
-		return x.Fresh
+		return x.Blocking
 	}
 	return false
 }
 
-func (x *ImprovementAction) GetCycles() []*ActionCycle {
+func (x *ImprovementAction) GetReach() int32 {
 	if x != nil {
-		return x.Cycles
-	}
-	return nil
-}
-
-type ChecklistActionHistory struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ActionId      string                 `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	Cycle         int32                  `protobuf:"varint,2,opt,name=cycle,proto3" json:"cycle,omitempty"`
-	Status        ActionStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=opensight.v1.ActionStatus" json:"status,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChecklistActionHistory) Reset() {
-	*x = ChecklistActionHistory{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChecklistActionHistory) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChecklistActionHistory) ProtoMessage() {}
-
-func (x *ChecklistActionHistory) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChecklistActionHistory.ProtoReflect.Descriptor instead.
-func (*ChecklistActionHistory) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ChecklistActionHistory) GetActionId() string {
-	if x != nil {
-		return x.ActionId
-	}
-	return ""
-}
-
-func (x *ChecklistActionHistory) GetCycle() int32 {
-	if x != nil {
-		return x.Cycle
+		return x.Reach
 	}
 	return 0
 }
 
-func (x *ChecklistActionHistory) GetStatus() ActionStatus {
+func (x *ImprovementAction) GetStatus() ActionStatus {
 	if x != nil {
 		return x.Status
 	}
 	return ActionStatus_ACTION_STATUS_UNSPECIFIED
 }
 
-func (x *ChecklistActionHistory) GetUpdatedAt() *timestamppb.Timestamp {
+func (x *ImprovementAction) GetDismissalReason() DismissalReason {
 	if x != nil {
-		return x.UpdatedAt
+		return x.DismissalReason
+	}
+	return DismissalReason_DISMISSAL_REASON_UNSPECIFIED
+}
+
+func (x *ImprovementAction) GetFirstSeenAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FirstSeenAt
 	}
 	return nil
 }
 
-type ChecklistSubject struct {
-	state               protoimpl.MessageState    `protogen:"open.v1"`
-	SubjectKey          string                    `protobuf:"bytes,1,opt,name=subject_key,json=subjectKey,proto3" json:"subject_key,omitempty"`
-	Label               string                    `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	Standing            ChecklistStanding         `protobuf:"varint,3,opt,name=standing,proto3,enum=opensight.v1.ChecklistStanding" json:"standing,omitempty"`
-	StandingLabel       string                    `protobuf:"bytes,4,opt,name=standing_label,json=standingLabel,proto3" json:"standing_label,omitempty"`
-	Explanation         string                    `protobuf:"bytes,5,opt,name=explanation,proto3" json:"explanation,omitempty"`
-	ResultIds           []string                  `protobuf:"bytes,6,rep,name=result_ids,json=resultIds,proto3" json:"result_ids,omitempty"`
-	PromptIds           []string                  `protobuf:"bytes,7,rep,name=prompt_ids,json=promptIds,proto3" json:"prompt_ids,omitempty"`
-	CheckedSources      []string                  `protobuf:"bytes,8,rep,name=checked_sources,json=checkedSources,proto3" json:"checked_sources,omitempty"`
-	LastSuccessfulCheck *timestamppb.Timestamp    `protobuf:"bytes,9,opt,name=last_successful_check,json=lastSuccessfulCheck,proto3" json:"last_successful_check,omitempty"`
-	Stale               bool                      `protobuf:"varint,10,opt,name=stale,proto3" json:"stale,omitempty"`
-	CurrentAction       *ImprovementAction        `protobuf:"bytes,11,opt,name=current_action,json=currentAction,proto3" json:"current_action,omitempty"`
-	ActionHistory       []*ChecklistActionHistory `protobuf:"bytes,12,rep,name=action_history,json=actionHistory,proto3" json:"action_history,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
-}
-
-func (x *ChecklistSubject) Reset() {
-	*x = ChecklistSubject{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChecklistSubject) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChecklistSubject) ProtoMessage() {}
-
-func (x *ChecklistSubject) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[5]
+func (x *ImprovementAction) GetCompletedAt() *timestamppb.Timestamp {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.CompletedAt
 	}
-	return mi.MessageOf(x)
+	return nil
 }
 
-// Deprecated: Use ChecklistSubject.ProtoReflect.Descriptor instead.
-func (*ChecklistSubject) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *ChecklistSubject) GetSubjectKey() string {
+func (x *ImprovementAction) GetVerifiedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.SubjectKey
+		return x.VerifiedAt
+	}
+	return nil
+}
+
+func (x *ImprovementAction) GetCategory() string {
+	if x != nil {
+		return x.Category
 	}
 	return ""
 }
 
-func (x *ChecklistSubject) GetLabel() string {
+func (x *ImprovementAction) GetCategoryLabel() string {
 	if x != nil {
-		return x.Label
+		return x.CategoryLabel
 	}
 	return ""
 }
 
-func (x *ChecklistSubject) GetStanding() ChecklistStanding {
-	if x != nil {
-		return x.Standing
-	}
-	return ChecklistStanding_CHECKLIST_STANDING_UNSPECIFIED
-}
-
-func (x *ChecklistSubject) GetStandingLabel() string {
-	if x != nil {
-		return x.StandingLabel
-	}
-	return ""
-}
-
-func (x *ChecklistSubject) GetExplanation() string {
-	if x != nil {
-		return x.Explanation
-	}
-	return ""
-}
-
-func (x *ChecklistSubject) GetResultIds() []string {
-	if x != nil {
-		return x.ResultIds
-	}
-	return nil
-}
-
-func (x *ChecklistSubject) GetPromptIds() []string {
-	if x != nil {
-		return x.PromptIds
-	}
-	return nil
-}
-
-func (x *ChecklistSubject) GetCheckedSources() []string {
-	if x != nil {
-		return x.CheckedSources
-	}
-	return nil
-}
-
-func (x *ChecklistSubject) GetLastSuccessfulCheck() *timestamppb.Timestamp {
-	if x != nil {
-		return x.LastSuccessfulCheck
-	}
-	return nil
-}
-
-func (x *ChecklistSubject) GetStale() bool {
-	if x != nil {
-		return x.Stale
-	}
-	return false
-}
-
-func (x *ChecklistSubject) GetCurrentAction() *ImprovementAction {
-	if x != nil {
-		return x.CurrentAction
-	}
-	return nil
-}
-
-func (x *ChecklistSubject) GetActionHistory() []*ChecklistActionHistory {
-	if x != nil {
-		return x.ActionHistory
-	}
-	return nil
-}
-
-type ChecklistPractice struct {
+// ActionCategory is one entry of the work queue's filter: a kind of change and
+// how much active work currently asks for it. Only categories with active work
+// appear, in catalog order, so the filter never offers an empty bucket and
+// never reshuffles between visits.
+type ActionCategory struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Why           string                 `protobuf:"bytes,4,opt,name=why,proto3" json:"why,omitempty"`
-	Mode          PracticeMode           `protobuf:"varint,5,opt,name=mode,proto3,enum=opensight.v1.PracticeMode" json:"mode,omitempty"`
-	References    []string               `protobuf:"bytes,6,rep,name=references,proto3" json:"references,omitempty"`
-	Subjects      []*ChecklistSubject    `protobuf:"bytes,7,rep,name=subjects,proto3" json:"subjects,omitempty"`
-	Standing      ChecklistStanding      `protobuf:"varint,8,opt,name=standing,proto3,enum=opensight.v1.ChecklistStanding" json:"standing,omitempty"`
-	StandingLabel string                 `protobuf:"bytes,9,opt,name=standing_label,json=standingLabel,proto3" json:"standing_label,omitempty"`
+	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ChecklistPractice) Reset() {
-	*x = ChecklistPractice{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[6]
+func (x *ActionCategory) Reset() {
+	*x = ActionCategory{}
+	mi := &file_opensight_v1_improve_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ChecklistPractice) String() string {
+func (x *ActionCategory) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ChecklistPractice) ProtoMessage() {}
+func (*ActionCategory) ProtoMessage() {}
 
-func (x *ChecklistPractice) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[6]
+func (x *ActionCategory) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_improve_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1037,276 +720,30 @@ func (x *ChecklistPractice) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ChecklistPractice.ProtoReflect.Descriptor instead.
-func (*ChecklistPractice) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use ActionCategory.ProtoReflect.Descriptor instead.
+func (*ActionCategory) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *ChecklistPractice) GetKey() string {
+func (x *ActionCategory) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
 	return ""
 }
 
-func (x *ChecklistPractice) GetTitle() string {
+func (x *ActionCategory) GetLabel() string {
 	if x != nil {
-		return x.Title
+		return x.Label
 	}
 	return ""
 }
 
-func (x *ChecklistPractice) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *ChecklistPractice) GetWhy() string {
-	if x != nil {
-		return x.Why
-	}
-	return ""
-}
-
-func (x *ChecklistPractice) GetMode() PracticeMode {
-	if x != nil {
-		return x.Mode
-	}
-	return PracticeMode_PRACTICE_MODE_UNSPECIFIED
-}
-
-func (x *ChecklistPractice) GetReferences() []string {
-	if x != nil {
-		return x.References
-	}
-	return nil
-}
-
-func (x *ChecklistPractice) GetSubjects() []*ChecklistSubject {
-	if x != nil {
-		return x.Subjects
-	}
-	return nil
-}
-
-func (x *ChecklistPractice) GetStanding() ChecklistStanding {
-	if x != nil {
-		return x.Standing
-	}
-	return ChecklistStanding_CHECKLIST_STANDING_UNSPECIFIED
-}
-
-func (x *ChecklistPractice) GetStandingLabel() string {
-	if x != nil {
-		return x.StandingLabel
-	}
-	return ""
-}
-
-type ChecklistSection struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Practices     []*ChecklistPractice   `protobuf:"bytes,2,rep,name=practices,proto3" json:"practices,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChecklistSection) Reset() {
-	*x = ChecklistSection{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChecklistSection) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChecklistSection) ProtoMessage() {}
-
-func (x *ChecklistSection) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChecklistSection.ProtoReflect.Descriptor instead.
-func (*ChecklistSection) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *ChecklistSection) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *ChecklistSection) GetPractices() []*ChecklistPractice {
-	if x != nil {
-		return x.Practices
-	}
-	return nil
-}
-
-type StandingCount struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Standing      ChecklistStanding      `protobuf:"varint,1,opt,name=standing,proto3,enum=opensight.v1.ChecklistStanding" json:"standing,omitempty"`
-	Count         int32                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StandingCount) Reset() {
-	*x = StandingCount{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StandingCount) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StandingCount) ProtoMessage() {}
-
-func (x *StandingCount) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StandingCount.ProtoReflect.Descriptor instead.
-func (*StandingCount) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *StandingCount) GetStanding() ChecklistStanding {
-	if x != nil {
-		return x.Standing
-	}
-	return ChecklistStanding_CHECKLIST_STANDING_UNSPECIFIED
-}
-
-func (x *StandingCount) GetCount() int32 {
+func (x *ActionCategory) GetCount() int32 {
 	if x != nil {
 		return x.Count
 	}
 	return 0
-}
-
-type ActivityEvent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ActionId      string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	PracticeKey   string                 `protobuf:"bytes,3,opt,name=practice_key,json=practiceKey,proto3" json:"practice_key,omitempty"`
-	SubjectKey    string                 `protobuf:"bytes,4,opt,name=subject_key,json=subjectKey,proto3" json:"subject_key,omitempty"`
-	Title         string                 `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
-	Cycle         int32                  `protobuf:"varint,6,opt,name=cycle,proto3" json:"cycle,omitempty"`
-	EventType     string                 `protobuf:"bytes,7,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ActivityEvent) Reset() {
-	*x = ActivityEvent{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ActivityEvent) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ActivityEvent) ProtoMessage() {}
-
-func (x *ActivityEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ActivityEvent.ProtoReflect.Descriptor instead.
-func (*ActivityEvent) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *ActivityEvent) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *ActivityEvent) GetActionId() string {
-	if x != nil {
-		return x.ActionId
-	}
-	return ""
-}
-
-func (x *ActivityEvent) GetPracticeKey() string {
-	if x != nil {
-		return x.PracticeKey
-	}
-	return ""
-}
-
-func (x *ActivityEvent) GetSubjectKey() string {
-	if x != nil {
-		return x.SubjectKey
-	}
-	return ""
-}
-
-func (x *ActivityEvent) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *ActivityEvent) GetCycle() int32 {
-	if x != nil {
-		return x.Cycle
-	}
-	return 0
-}
-
-func (x *ActivityEvent) GetEventType() string {
-	if x != nil {
-		return x.EventType
-	}
-	return ""
-}
-
-func (x *ActivityEvent) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
 }
 
 type ListActionsRequest struct {
@@ -1318,7 +755,7 @@ type ListActionsRequest struct {
 
 func (x *ListActionsRequest) Reset() {
 	*x = ListActionsRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[10]
+	mi := &file_opensight_v1_improve_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1330,7 +767,7 @@ func (x *ListActionsRequest) String() string {
 func (*ListActionsRequest) ProtoMessage() {}
 
 func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[10]
+	mi := &file_opensight_v1_improve_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1343,7 +780,7 @@ func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActionsRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{10}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListActionsRequest) GetBusinessId() string {
@@ -1354,18 +791,22 @@ func (x *ListActionsRequest) GetBusinessId() string {
 }
 
 type ListActionsResponse struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	FocusActions      []*ImprovementAction   `protobuf:"bytes,1,rep,name=focus_actions,json=focusActions,proto3" json:"focus_actions,omitempty"`
-	AdditionalActions []*ImprovementAction   `protobuf:"bytes,2,rep,name=additional_actions,json=additionalActions,proto3" json:"additional_actions,omitempty"`
-	Freshness         *AssessmentFreshness   `protobuf:"bytes,3,opt,name=freshness,proto3" json:"freshness,omitempty"`
-	EmptyReason       ActionsEmptyReason     `protobuf:"varint,4,opt,name=empty_reason,json=emptyReason,proto3,enum=opensight.v1.ActionsEmptyReason" json:"empty_reason,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// actions is the whole active queue in rank order. There is no lead section:
+	// a fixed cutoff claimed a priority boundary the ranking does not have, and
+	// could push a blocker under a heading that reads as optional.
+	Actions         []*ImprovementAction   `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
+	ResolvedActions []*ImprovementAction   `protobuf:"bytes,3,rep,name=resolved_actions,json=resolvedActions,proto3" json:"resolved_actions,omitempty"`
+	EmptyReason     ActionsEmptyReason     `protobuf:"varint,4,opt,name=empty_reason,json=emptyReason,proto3,enum=opensight.v1.ActionsEmptyReason" json:"empty_reason,omitempty"`
+	CheckedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=checked_at,json=checkedAt,proto3" json:"checked_at,omitempty"`
+	Categories      []*ActionCategory      `protobuf:"bytes,6,rep,name=categories,proto3" json:"categories,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ListActionsResponse) Reset() {
 	*x = ListActionsResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[11]
+	mi := &file_opensight_v1_improve_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1377,7 +818,7 @@ func (x *ListActionsResponse) String() string {
 func (*ListActionsResponse) ProtoMessage() {}
 
 func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[11]
+	mi := &file_opensight_v1_improve_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1390,26 +831,19 @@ func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActionsResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{11}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ListActionsResponse) GetFocusActions() []*ImprovementAction {
+func (x *ListActionsResponse) GetActions() []*ImprovementAction {
 	if x != nil {
-		return x.FocusActions
+		return x.Actions
 	}
 	return nil
 }
 
-func (x *ListActionsResponse) GetAdditionalActions() []*ImprovementAction {
+func (x *ListActionsResponse) GetResolvedActions() []*ImprovementAction {
 	if x != nil {
-		return x.AdditionalActions
-	}
-	return nil
-}
-
-func (x *ListActionsResponse) GetFreshness() *AssessmentFreshness {
-	if x != nil {
-		return x.Freshness
+		return x.ResolvedActions
 	}
 	return nil
 }
@@ -1421,6 +855,20 @@ func (x *ListActionsResponse) GetEmptyReason() ActionsEmptyReason {
 	return ActionsEmptyReason_ACTIONS_EMPTY_REASON_UNSPECIFIED
 }
 
+func (x *ListActionsResponse) GetCheckedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CheckedAt
+	}
+	return nil
+}
+
+func (x *ListActionsResponse) GetCategories() []*ActionCategory {
+	if x != nil {
+		return x.Categories
+	}
+	return nil
+}
+
 type GetActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActionId      string                 `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
@@ -1430,7 +878,7 @@ type GetActionRequest struct {
 
 func (x *GetActionRequest) Reset() {
 	*x = GetActionRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[12]
+	mi := &file_opensight_v1_improve_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1442,7 +890,7 @@ func (x *GetActionRequest) String() string {
 func (*GetActionRequest) ProtoMessage() {}
 
 func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[12]
+	mi := &file_opensight_v1_improve_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1455,7 +903,7 @@ func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionRequest.ProtoReflect.Descriptor instead.
 func (*GetActionRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{12}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetActionRequest) GetActionId() string {
@@ -1474,7 +922,7 @@ type GetActionResponse struct {
 
 func (x *GetActionResponse) Reset() {
 	*x = GetActionResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[13]
+	mi := &file_opensight_v1_improve_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1486,7 +934,7 @@ func (x *GetActionResponse) String() string {
 func (*GetActionResponse) ProtoMessage() {}
 
 func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[13]
+	mi := &file_opensight_v1_improve_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1499,7 +947,7 @@ func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionResponse.ProtoReflect.Descriptor instead.
 func (*GetActionResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{13}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetActionResponse) GetAction() *ImprovementAction {
@@ -1520,7 +968,7 @@ type SetActionStatusRequest struct {
 
 func (x *SetActionStatusRequest) Reset() {
 	*x = SetActionStatusRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[14]
+	mi := &file_opensight_v1_improve_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1532,7 +980,7 @@ func (x *SetActionStatusRequest) String() string {
 func (*SetActionStatusRequest) ProtoMessage() {}
 
 func (x *SetActionStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[14]
+	mi := &file_opensight_v1_improve_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1545,7 +993,7 @@ func (x *SetActionStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetActionStatusRequest.ProtoReflect.Descriptor instead.
 func (*SetActionStatusRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{14}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SetActionStatusRequest) GetActionId() string {
@@ -1578,7 +1026,7 @@ type SetActionStatusResponse struct {
 
 func (x *SetActionStatusResponse) Reset() {
 	*x = SetActionStatusResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[15]
+	mi := &file_opensight_v1_improve_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1590,7 +1038,7 @@ func (x *SetActionStatusResponse) String() string {
 func (*SetActionStatusResponse) ProtoMessage() {}
 
 func (x *SetActionStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[15]
+	mi := &file_opensight_v1_improve_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1603,7 +1051,7 @@ func (x *SetActionStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetActionStatusResponse.ProtoReflect.Descriptor instead.
 func (*SetActionStatusResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{15}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SetActionStatusResponse) GetAction() *ImprovementAction {
@@ -1622,7 +1070,7 @@ type GetChecklistRequest struct {
 
 func (x *GetChecklistRequest) Reset() {
 	*x = GetChecklistRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[16]
+	mi := &file_opensight_v1_improve_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1634,7 +1082,7 @@ func (x *GetChecklistRequest) String() string {
 func (*GetChecklistRequest) ProtoMessage() {}
 
 func (x *GetChecklistRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[16]
+	mi := &file_opensight_v1_improve_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1647,7 +1095,7 @@ func (x *GetChecklistRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChecklistRequest.ProtoReflect.Descriptor instead.
 func (*GetChecklistRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{16}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetChecklistRequest) GetBusinessId() string {
@@ -1658,17 +1106,22 @@ func (x *GetChecklistRequest) GetBusinessId() string {
 }
 
 type GetChecklistResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Counts        []*StandingCount       `protobuf:"bytes,1,rep,name=counts,proto3" json:"counts,omitempty"`
-	Freshness     *AssessmentFreshness   `protobuf:"bytes,2,opt,name=freshness,proto3" json:"freshness,omitempty"`
-	Sections      []*ChecklistSection    `protobuf:"bytes,3,rep,name=sections,proto3" json:"sections,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	CheckCounts []*CheckCount          `protobuf:"bytes,4,rep,name=check_counts,json=checkCounts,proto3" json:"check_counts,omitempty"`
+	Groups      []*CheckGroup          `protobuf:"bytes,5,rep,name=groups,proto3" json:"groups,omitempty"`
+	CheckedAt   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=checked_at,json=checkedAt,proto3" json:"checked_at,omitempty"`
+	PagesRead   int32                  `protobuf:"varint,7,opt,name=pages_read,json=pagesRead,proto3" json:"pages_read,omitempty"`
+	// failure is set when the site could not be crawled at all, in which case
+	// every check reports as could-not-verify rather than as a shortfall.
+	Failure       string `protobuf:"bytes,8,opt,name=failure,proto3" json:"failure,omitempty"`
+	Assessed      bool   `protobuf:"varint,9,opt,name=assessed,proto3" json:"assessed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetChecklistResponse) Reset() {
 	*x = GetChecklistResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[17]
+	mi := &file_opensight_v1_improve_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1680,7 +1133,7 @@ func (x *GetChecklistResponse) String() string {
 func (*GetChecklistResponse) ProtoMessage() {}
 
 func (x *GetChecklistResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[17]
+	mi := &file_opensight_v1_improve_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1693,271 +1146,119 @@ func (x *GetChecklistResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChecklistResponse.ProtoReflect.Descriptor instead.
 func (*GetChecklistResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{17}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *GetChecklistResponse) GetCounts() []*StandingCount {
+func (x *GetChecklistResponse) GetCheckCounts() []*CheckCount {
 	if x != nil {
-		return x.Counts
+		return x.CheckCounts
 	}
 	return nil
 }
 
-func (x *GetChecklistResponse) GetFreshness() *AssessmentFreshness {
+func (x *GetChecklistResponse) GetGroups() []*CheckGroup {
 	if x != nil {
-		return x.Freshness
+		return x.Groups
 	}
 	return nil
 }
 
-func (x *GetChecklistResponse) GetSections() []*ChecklistSection {
+func (x *GetChecklistResponse) GetCheckedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Sections
+		return x.CheckedAt
 	}
 	return nil
 }
 
-type ListActivityRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BusinessId    string                 `protobuf:"bytes,1,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty"`
-	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32                  `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListActivityRequest) Reset() {
-	*x = ListActivityRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListActivityRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListActivityRequest) ProtoMessage() {}
-
-func (x *ListActivityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[18]
+func (x *GetChecklistResponse) GetPagesRead() int32 {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.PagesRead
 	}
-	return mi.MessageOf(x)
+	return 0
 }
 
-// Deprecated: Use ListActivityRequest.ProtoReflect.Descriptor instead.
-func (*ListActivityRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *ListActivityRequest) GetBusinessId() string {
+func (x *GetChecklistResponse) GetFailure() string {
 	if x != nil {
-		return x.BusinessId
+		return x.Failure
 	}
 	return ""
 }
 
-func (x *ListActivityRequest) GetLimit() int32 {
+func (x *GetChecklistResponse) GetAssessed() bool {
 	if x != nil {
-		return x.Limit
+		return x.Assessed
 	}
-	return 0
-}
-
-func (x *ListActivityRequest) GetOffset() int32 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
-}
-
-type ListActivityResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Events        []*ActivityEvent       `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
-	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
-	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListActivityResponse) Reset() {
-	*x = ListActivityResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListActivityResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListActivityResponse) ProtoMessage() {}
-
-func (x *ListActivityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListActivityResponse.ProtoReflect.Descriptor instead.
-func (*ListActivityResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{19}
-}
-
-func (x *ListActivityResponse) GetEvents() []*ActivityEvent {
-	if x != nil {
-		return x.Events
-	}
-	return nil
-}
-
-func (x *ListActivityResponse) GetTotal() int32 {
-	if x != nil {
-		return x.Total
-	}
-	return 0
-}
-
-func (x *ListActivityResponse) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListActivityResponse) GetOffset() int32 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
+	return false
 }
 
 var File_opensight_v1_improve_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\n" +
-	"\x1aopensight/v1/improve.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x01\n" +
-	"\x13AssessmentFreshness\x12\x1c\n" +
-	"\tavailable\x18\x01 \x01(\bR\tavailable\x12\x18\n" +
-	"\apartial\x18\x02 \x01(\bR\apartial\x12\x14\n" +
-	"\x05stale\x18\x03 \x01(\bR\x05stale\x12;\n" +
-	"\vassessed_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"assessedAt\"\xc7\x01\n" +
-	"\vActionBlock\x121\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1d.opensight.v1.ActionBlockTypeR\x04type\x12\x14\n" +
+	"\x1aopensight/v1/improve.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdc\x01\n" +
+	"\x05Check\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +
-	"\x04text\x18\x03 \x01(\tR\x04text\x12\x14\n" +
-	"\x05value\x18\x04 \x01(\tR\x05value\x12\x10\n" +
-	"\x03url\x18\x05 \x01(\tR\x03url\x12\x14\n" +
-	"\x05items\x18\x06 \x03(\tR\x05items\x12\x1d\n" +
+	"\x04what\x18\x03 \x01(\tR\x04what\x124\n" +
+	"\aoutcome\x18\x04 \x01(\x0e2\x1a.opensight.v1.CheckOutcomeR\aoutcome\x12#\n" +
+	"\routcome_label\x18\x05 \x01(\tR\foutcomeLabel\x12\x16\n" +
+	"\x06detail\x18\x06 \x01(\tR\x06detail\x12$\n" +
+	"\rinformational\x18\a \x01(\bR\rinformational\"X\n" +
 	"\n" +
-	"result_ids\x18\a \x03(\tR\tresultIds\"\xa1\x02\n" +
-	"\vActionCycle\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05cycle\x18\x02 \x01(\x05R\x05cycle\x122\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1a.opensight.v1.ActionStatusR\x06status\x12>\n" +
-	"\rfirst_seen_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vfirstSeenAt\x129\n" +
+	"CheckCount\x124\n" +
+	"\aoutcome\x18\x01 \x01(\x0e2\x1a.opensight.v1.CheckOutcomeR\aoutcome\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\"\xeb\x01\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12=\n" +
-	"\fcompleted_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xcf\x05\n" +
-	"\x11ImprovementAction\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
-	"\fpractice_key\x18\x02 \x01(\tR\vpracticeKey\x12\x1f\n" +
-	"\vsubject_key\x18\x03 \x01(\tR\n" +
-	"subjectKey\x12\x14\n" +
-	"\x05cycle\x18\x04 \x01(\x05R\x05cycle\x12-\n" +
-	"\x12recommendation_key\x18\x05 \x01(\tR\x11recommendationKey\x12\x14\n" +
-	"\x05title\x18\x06 \x01(\tR\x05title\x12\x18\n" +
-	"\asummary\x18\a \x01(\tR\asummary\x12\x16\n" +
-	"\x06effort\x18\b \x01(\tR\x06effort\x121\n" +
-	"\x06blocks\x18\t \x03(\v2\x19.opensight.v1.ActionBlockR\x06blocks\x122\n" +
-	"\x06status\x18\n" +
-	" \x01(\x0e2\x1a.opensight.v1.ActionStatusR\x06status\x12H\n" +
-	"\x10dismissal_reason\x18\v \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\x12;\n" +
-	"\bstanding\x18\f \x01(\x0e2\x1f.opensight.v1.ChecklistStandingR\bstanding\x12\x1d\n" +
-	"\n" +
-	"result_ids\x18\r \x03(\tR\tresultIds\x12\x1d\n" +
-	"\n" +
-	"prompt_ids\x18\x0e \x03(\tR\tpromptIds\x12'\n" +
-	"\x0fchecked_sources\x18\x0f \x03(\tR\x0echeckedSources\x12;\n" +
-	"\vassessed_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"assessedAt\x12\x14\n" +
-	"\x05fresh\x18\x11 \x01(\bR\x05fresh\x121\n" +
-	"\x06cycles\x18\x12 \x03(\v2\x19.opensight.v1.ActionCycleR\x06cycles\"\xba\x01\n" +
-	"\x16ChecklistActionHistory\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x14\n" +
-	"\x05cycle\x18\x02 \x01(\x05R\x05cycle\x122\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1a.opensight.v1.ActionStatusR\x06status\x129\n" +
-	"\n" +
-	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xb1\x04\n" +
-	"\x10ChecklistSubject\x12\x1f\n" +
-	"\vsubject_key\x18\x01 \x01(\tR\n" +
-	"subjectKey\x12\x14\n" +
-	"\x05label\x18\x02 \x01(\tR\x05label\x12;\n" +
-	"\bstanding\x18\x03 \x01(\x0e2\x1f.opensight.v1.ChecklistStandingR\bstanding\x12%\n" +
-	"\x0estanding_label\x18\x04 \x01(\tR\rstandingLabel\x12 \n" +
-	"\vexplanation\x18\x05 \x01(\tR\vexplanation\x12\x1d\n" +
-	"\n" +
-	"result_ids\x18\x06 \x03(\tR\tresultIds\x12\x1d\n" +
-	"\n" +
-	"prompt_ids\x18\a \x03(\tR\tpromptIds\x12'\n" +
-	"\x0fchecked_sources\x18\b \x03(\tR\x0echeckedSources\x12N\n" +
-	"\x15last_successful_check\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x13lastSuccessfulCheck\x12\x14\n" +
-	"\x05stale\x18\n" +
-	" \x01(\bR\x05stale\x12F\n" +
-	"\x0ecurrent_action\x18\v \x01(\v2\x1f.opensight.v1.ImprovementActionR\rcurrentAction\x12K\n" +
-	"\x0eaction_history\x18\f \x03(\v2$.opensight.v1.ChecklistActionHistoryR\ractionHistory\"\xdf\x02\n" +
-	"\x11ChecklistPractice\x12\x10\n" +
+	"CheckGroup\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x10\n" +
-	"\x03why\x18\x04 \x01(\tR\x03why\x12.\n" +
-	"\x04mode\x18\x05 \x01(\x0e2\x1a.opensight.v1.PracticeModeR\x04mode\x12\x1e\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1e\n" +
 	"\n" +
-	"references\x18\x06 \x03(\tR\n" +
-	"references\x12:\n" +
-	"\bsubjects\x18\a \x03(\v2\x1e.opensight.v1.ChecklistSubjectR\bsubjects\x12;\n" +
-	"\bstanding\x18\b \x01(\x0e2\x1f.opensight.v1.ChecklistStandingR\bstanding\x12%\n" +
-	"\x0estanding_label\x18\t \x01(\tR\rstandingLabel\"g\n" +
-	"\x10ChecklistSection\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12=\n" +
-	"\tpractices\x18\x02 \x03(\v2\x1f.opensight.v1.ChecklistPracticeR\tpractices\"b\n" +
-	"\rStandingCount\x12;\n" +
-	"\bstanding\x18\x01 \x01(\x0e2\x1f.opensight.v1.ChecklistStandingR\bstanding\x12\x14\n" +
-	"\x05count\x18\x02 \x01(\x05R\x05count\"\x86\x02\n" +
-	"\rActivityEvent\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\taction_id\x18\x02 \x01(\tR\bactionId\x12!\n" +
-	"\fpractice_key\x18\x03 \x01(\tR\vpracticeKey\x12\x1f\n" +
-	"\vsubject_key\x18\x04 \x01(\tR\n" +
-	"subjectKey\x12\x14\n" +
-	"\x05title\x18\x05 \x01(\tR\x05title\x12\x14\n" +
-	"\x05cycle\x18\x06 \x01(\x05R\x05cycle\x12\x1d\n" +
+	"references\x18\x04 \x03(\tR\n" +
+	"references\x12+\n" +
+	"\x06checks\x18\x05 \x03(\v2\x13.opensight.v1.CheckR\x06checks\x12#\n" +
+	"\rchecks_passed\x18\x06 \x01(\x05R\fchecksPassed\x12!\n" +
+	"\fchecks_total\x18\a \x01(\x05R\vchecksTotal\"\xac\x05\n" +
+	"\x11ImprovementAction\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x16\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12\x14\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12\x12\n" +
+	"\x04body\x18\x05 \x01(\tR\x04body\x12\x14\n" +
+	"\x05steps\x18\x06 \x03(\tR\x05steps\x12\x16\n" +
+	"\x06detail\x18\a \x01(\tR\x06detail\x12\x1d\n" +
 	"\n" +
-	"event_type\x18\a \x01(\tR\teventType\x129\n" +
+	"result_ids\x18\b \x03(\tR\tresultIds\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"5\n" +
+	"prompt_ids\x18\t \x03(\tR\tpromptIds\x12\x18\n" +
+	"\asources\x18\n" +
+	" \x03(\tR\asources\x12\x1a\n" +
+	"\bblocking\x18\v \x01(\bR\bblocking\x12\x14\n" +
+	"\x05reach\x18\f \x01(\x05R\x05reach\x122\n" +
+	"\x06status\x18\r \x01(\x0e2\x1a.opensight.v1.ActionStatusR\x06status\x12H\n" +
+	"\x10dismissal_reason\x18\x0e \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\x12>\n" +
+	"\rfirst_seen_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vfirstSeenAt\x12=\n" +
+	"\fcompleted_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12;\n" +
+	"\vverified_at\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"verifiedAt\x12\x1a\n" +
+	"\bcategory\x18\x12 \x01(\tR\bcategory\x12%\n" +
+	"\x0ecategory_label\x18\x13 \x01(\tR\rcategoryLabel\"N\n" +
+	"\x0eActionCategory\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12\x14\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\"5\n" +
 	"\x12ListActionsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"\xb1\x02\n" +
-	"\x13ListActionsResponse\x12D\n" +
-	"\rfocus_actions\x18\x01 \x03(\v2\x1f.opensight.v1.ImprovementActionR\ffocusActions\x12N\n" +
-	"\x12additional_actions\x18\x02 \x03(\v2\x1f.opensight.v1.ImprovementActionR\x11additionalActions\x12?\n" +
-	"\tfreshness\x18\x03 \x01(\v2!.opensight.v1.AssessmentFreshnessR\tfreshness\x12C\n" +
-	"\fempty_reason\x18\x04 \x01(\x0e2 .opensight.v1.ActionsEmptyReasonR\vemptyReason\"/\n" +
+	"businessId\"\xf4\x02\n" +
+	"\x13ListActionsResponse\x129\n" +
+	"\aactions\x18\x01 \x03(\v2\x1f.opensight.v1.ImprovementActionR\aactions\x12J\n" +
+	"\x10resolved_actions\x18\x03 \x03(\v2\x1f.opensight.v1.ImprovementActionR\x0fresolvedActions\x12C\n" +
+	"\fempty_reason\x18\x04 \x01(\x0e2 .opensight.v1.ActionsEmptyReasonR\vemptyReason\x129\n" +
+	"\n" +
+	"checked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x12<\n" +
+	"\n" +
+	"categories\x18\x06 \x03(\v2\x1c.opensight.v1.ActionCategoryR\n" +
+	"categoriesJ\x04\b\x02\x10\x03R\x12additional_actions\"/\n" +
 	"\x10GetActionRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"L\n" +
 	"\x11GetActionResponse\x127\n" +
@@ -1970,70 +1271,44 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\x06action\x18\x01 \x01(\v2\x1f.opensight.v1.ImprovementActionR\x06action\"6\n" +
 	"\x13GetChecklistRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"\xc8\x01\n" +
-	"\x14GetChecklistResponse\x123\n" +
-	"\x06counts\x18\x01 \x03(\v2\x1b.opensight.v1.StandingCountR\x06counts\x12?\n" +
-	"\tfreshness\x18\x02 \x01(\v2!.opensight.v1.AssessmentFreshnessR\tfreshness\x12:\n" +
-	"\bsections\x18\x03 \x03(\v2\x1e.opensight.v1.ChecklistSectionR\bsections\"d\n" +
-	"\x13ListActivityRequest\x12\x1f\n" +
-	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x03 \x01(\x05R\x06offset\"\x8f\x01\n" +
-	"\x14ListActivityResponse\x123\n" +
-	"\x06events\x18\x01 \x03(\v2\x1b.opensight.v1.ActivityEventR\x06events\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x04 \x01(\x05R\x06offset*\x7f\n" +
-	"\fPracticeMode\x12\x1d\n" +
-	"\x19PRACTICE_MODE_UNSPECIFIED\x10\x00\x12\x17\n" +
-	"\x13PRACTICE_MODE_CHECK\x10\x01\x12\x1c\n" +
-	"\x18PRACTICE_MODE_CONTINUOUS\x10\x02\x12\x19\n" +
-	"\x15PRACTICE_MODE_TRACKED\x10\x03*\xdf\x02\n" +
-	"\x11ChecklistStanding\x12\"\n" +
-	"\x1eCHECKLIST_STANDING_UNSPECIFIED\x10\x00\x12\x1b\n" +
-	"\x17CHECKLIST_STANDING_GOOD\x10\x01\x12!\n" +
-	"\x1dCHECKLIST_STANDING_IMPROVABLE\x10\x02\x12&\n" +
-	"\"CHECKLIST_STANDING_NEEDS_ATTENTION\x10\x03\x12\x1f\n" +
-	"\x1bCHECKLIST_STANDING_TRACKING\x10\x04\x12'\n" +
-	"#CHECKLIST_STANDING_COULD_NOT_VERIFY\x10\x05\x12#\n" +
-	"\x1fCHECKLIST_STANDING_NOT_ASSESSED\x10\x06\x12%\n" +
-	"!CHECKLIST_STANDING_NOT_APPLICABLE\x10\a\x12(\n" +
-	"$CHECKLIST_STANDING_NO_LONGER_TRACKED\x10\b*\xd7\x01\n" +
+	"businessId\"\xc4\x02\n" +
+	"\x14GetChecklistResponse\x12;\n" +
+	"\fcheck_counts\x18\x04 \x03(\v2\x18.opensight.v1.CheckCountR\vcheckCounts\x120\n" +
+	"\x06groups\x18\x05 \x03(\v2\x18.opensight.v1.CheckGroupR\x06groups\x129\n" +
+	"\n" +
+	"checked_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x12\x1d\n" +
+	"\n" +
+	"pages_read\x18\a \x01(\x05R\tpagesRead\x12\x18\n" +
+	"\afailure\x18\b \x01(\tR\afailure\x12\x1a\n" +
+	"\bassessed\x18\t \x01(\bR\bassessedJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\x06countsR\tfreshnessR\bsections*\xc3\x01\n" +
+	"\fCheckOutcome\x12\x1d\n" +
+	"\x19CHECK_OUTCOME_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12CHECK_OUTCOME_PASS\x10\x01\x12\x16\n" +
+	"\x12CHECK_OUTCOME_FAIL\x10\x02\x12\"\n" +
+	"\x1eCHECK_OUTCOME_COULD_NOT_VERIFY\x10\x03\x12 \n" +
+	"\x1cCHECK_OUTCOME_NOT_APPLICABLE\x10\x04\x12\x1e\n" +
+	"\x1aCHECK_OUTCOME_NOT_ASSESSED\x10\x05*z\n" +
 	"\fActionStatus\x12\x1d\n" +
 	"\x19ACTION_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
-	"\x12ACTION_STATUS_OPEN\x10\x01\x12\x1d\n" +
-	"\x19ACTION_STATUS_IN_PROGRESS\x10\x02\x12\x1b\n" +
-	"\x17ACTION_STATUS_COMPLETED\x10\x03\x12\x1b\n" +
-	"\x17ACTION_STATUS_DISMISSED\x10\x04\x12\x19\n" +
-	"\x15ACTION_STATUS_RETIRED\x10\x05\x12\x1c\n" +
-	"\x18ACTION_STATUS_SUPERSEDED\x10\x06*\xe0\x01\n" +
+	"\x12ACTION_STATUS_OPEN\x10\x01\x12\x16\n" +
+	"\x12ACTION_STATUS_DONE\x10\x02\x12\x1b\n" +
+	"\x17ACTION_STATUS_DISMISSED\x10\x03*\xe0\x01\n" +
 	"\x0fDismissalReason\x12 \n" +
 	"\x1cDISMISSAL_REASON_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dDISMISSAL_REASON_NOT_RELEVANT\x10\x01\x12!\n" +
 	"\x1dDISMISSAL_REASON_ALREADY_DONE\x10\x02\x12#\n" +
 	"\x1fDISMISSAL_REASON_NOT_ACTIONABLE\x10\x03\x12$\n" +
 	" DISMISSAL_REASON_TOO_MUCH_EFFORT\x10\x04\x12\x1a\n" +
-	"\x16DISMISSAL_REASON_OTHER\x10\x05*\xf2\x01\n" +
-	"\x0fActionBlockType\x12!\n" +
-	"\x1dACTION_BLOCK_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16ACTION_BLOCK_TYPE_TEXT\x10\x01\x12\x1c\n" +
-	"\x18ACTION_BLOCK_TYPE_METRIC\x10\x02\x12\x1a\n" +
-	"\x16ACTION_BLOCK_TYPE_LINK\x10\x03\x12#\n" +
-	"\x1fACTION_BLOCK_TYPE_QUESTION_LIST\x10\x04\x12#\n" +
-	"\x1fACTION_BLOCK_TYPE_EVIDENCE_LIST\x10\x05\x12\x1c\n" +
-	"\x18ACTION_BLOCK_TYPE_NOTICE\x10\x06*\xba\x01\n" +
+	"\x16DISMISSAL_REASON_OTHER\x10\x05*\x8b\x01\n" +
 	"\x12ActionsEmptyReason\x12$\n" +
-	" ACTIONS_EMPTY_REASON_UNSPECIFIED\x10\x00\x12 \n" +
-	"\x1cACTIONS_EMPTY_REASON_HEALTHY\x10\x01\x12*\n" +
-	"&ACTIONS_EMPTY_REASON_INCOMPLETE_CHECKS\x10\x02\x120\n" +
-	",ACTIONS_EMPTY_REASON_INSUFFICIENT_CAPABILITY\x10\x032\xc0\x03\n" +
+	" ACTIONS_EMPTY_REASON_UNSPECIFIED\x10\x00\x12$\n" +
+	" ACTIONS_EMPTY_REASON_NO_FINDINGS\x10\x01\x12)\n" +
+	"%ACTIONS_EMPTY_REASON_NOT_ASSESSED_YET\x10\x022\xe9\x02\n" +
 	"\x0eImproveService\x12R\n" +
 	"\vListActions\x12 .opensight.v1.ListActionsRequest\x1a!.opensight.v1.ListActionsResponse\x12L\n" +
 	"\tGetAction\x12\x1e.opensight.v1.GetActionRequest\x1a\x1f.opensight.v1.GetActionResponse\x12^\n" +
 	"\x0fSetActionStatus\x12$.opensight.v1.SetActionStatusRequest\x1a%.opensight.v1.SetActionStatusResponse\x12U\n" +
-	"\fGetChecklist\x12!.opensight.v1.GetChecklistRequest\x1a\".opensight.v1.GetChecklistResponse\x12U\n" +
-	"\fListActivity\x12!.opensight.v1.ListActivityRequest\x1a\".opensight.v1.ListActivityResponseB\xa2\x01\n" +
+	"\fGetChecklist\x12!.opensight.v1.GetChecklistRequest\x1a\".opensight.v1.GetChecklistResponseB\xa2\x01\n" +
 	"\x10com.opensight.v1B\fImproveProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
 
 var (
@@ -2048,89 +1323,62 @@ func file_opensight_v1_improve_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_improve_proto_rawDescData
 }
 
-var file_opensight_v1_improve_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_opensight_v1_improve_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_opensight_v1_improve_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_opensight_v1_improve_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_opensight_v1_improve_proto_goTypes = []any{
-	(PracticeMode)(0),               // 0: opensight.v1.PracticeMode
-	(ChecklistStanding)(0),          // 1: opensight.v1.ChecklistStanding
-	(ActionStatus)(0),               // 2: opensight.v1.ActionStatus
-	(DismissalReason)(0),            // 3: opensight.v1.DismissalReason
-	(ActionBlockType)(0),            // 4: opensight.v1.ActionBlockType
-	(ActionsEmptyReason)(0),         // 5: opensight.v1.ActionsEmptyReason
-	(*AssessmentFreshness)(nil),     // 6: opensight.v1.AssessmentFreshness
-	(*ActionBlock)(nil),             // 7: opensight.v1.ActionBlock
-	(*ActionCycle)(nil),             // 8: opensight.v1.ActionCycle
-	(*ImprovementAction)(nil),       // 9: opensight.v1.ImprovementAction
-	(*ChecklistActionHistory)(nil),  // 10: opensight.v1.ChecklistActionHistory
-	(*ChecklistSubject)(nil),        // 11: opensight.v1.ChecklistSubject
-	(*ChecklistPractice)(nil),       // 12: opensight.v1.ChecklistPractice
-	(*ChecklistSection)(nil),        // 13: opensight.v1.ChecklistSection
-	(*StandingCount)(nil),           // 14: opensight.v1.StandingCount
-	(*ActivityEvent)(nil),           // 15: opensight.v1.ActivityEvent
-	(*ListActionsRequest)(nil),      // 16: opensight.v1.ListActionsRequest
-	(*ListActionsResponse)(nil),     // 17: opensight.v1.ListActionsResponse
-	(*GetActionRequest)(nil),        // 18: opensight.v1.GetActionRequest
-	(*GetActionResponse)(nil),       // 19: opensight.v1.GetActionResponse
-	(*SetActionStatusRequest)(nil),  // 20: opensight.v1.SetActionStatusRequest
-	(*SetActionStatusResponse)(nil), // 21: opensight.v1.SetActionStatusResponse
-	(*GetChecklistRequest)(nil),     // 22: opensight.v1.GetChecklistRequest
-	(*GetChecklistResponse)(nil),    // 23: opensight.v1.GetChecklistResponse
-	(*ListActivityRequest)(nil),     // 24: opensight.v1.ListActivityRequest
-	(*ListActivityResponse)(nil),    // 25: opensight.v1.ListActivityResponse
-	(*timestamppb.Timestamp)(nil),   // 26: google.protobuf.Timestamp
+	(CheckOutcome)(0),               // 0: opensight.v1.CheckOutcome
+	(ActionStatus)(0),               // 1: opensight.v1.ActionStatus
+	(DismissalReason)(0),            // 2: opensight.v1.DismissalReason
+	(ActionsEmptyReason)(0),         // 3: opensight.v1.ActionsEmptyReason
+	(*Check)(nil),                   // 4: opensight.v1.Check
+	(*CheckCount)(nil),              // 5: opensight.v1.CheckCount
+	(*CheckGroup)(nil),              // 6: opensight.v1.CheckGroup
+	(*ImprovementAction)(nil),       // 7: opensight.v1.ImprovementAction
+	(*ActionCategory)(nil),          // 8: opensight.v1.ActionCategory
+	(*ListActionsRequest)(nil),      // 9: opensight.v1.ListActionsRequest
+	(*ListActionsResponse)(nil),     // 10: opensight.v1.ListActionsResponse
+	(*GetActionRequest)(nil),        // 11: opensight.v1.GetActionRequest
+	(*GetActionResponse)(nil),       // 12: opensight.v1.GetActionResponse
+	(*SetActionStatusRequest)(nil),  // 13: opensight.v1.SetActionStatusRequest
+	(*SetActionStatusResponse)(nil), // 14: opensight.v1.SetActionStatusResponse
+	(*GetChecklistRequest)(nil),     // 15: opensight.v1.GetChecklistRequest
+	(*GetChecklistResponse)(nil),    // 16: opensight.v1.GetChecklistResponse
+	(*timestamppb.Timestamp)(nil),   // 17: google.protobuf.Timestamp
 }
 var file_opensight_v1_improve_proto_depIdxs = []int32{
-	26, // 0: opensight.v1.AssessmentFreshness.assessed_at:type_name -> google.protobuf.Timestamp
-	4,  // 1: opensight.v1.ActionBlock.type:type_name -> opensight.v1.ActionBlockType
-	2,  // 2: opensight.v1.ActionCycle.status:type_name -> opensight.v1.ActionStatus
-	26, // 3: opensight.v1.ActionCycle.first_seen_at:type_name -> google.protobuf.Timestamp
-	26, // 4: opensight.v1.ActionCycle.updated_at:type_name -> google.protobuf.Timestamp
-	26, // 5: opensight.v1.ActionCycle.completed_at:type_name -> google.protobuf.Timestamp
-	7,  // 6: opensight.v1.ImprovementAction.blocks:type_name -> opensight.v1.ActionBlock
-	2,  // 7: opensight.v1.ImprovementAction.status:type_name -> opensight.v1.ActionStatus
-	3,  // 8: opensight.v1.ImprovementAction.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	1,  // 9: opensight.v1.ImprovementAction.standing:type_name -> opensight.v1.ChecklistStanding
-	26, // 10: opensight.v1.ImprovementAction.assessed_at:type_name -> google.protobuf.Timestamp
-	8,  // 11: opensight.v1.ImprovementAction.cycles:type_name -> opensight.v1.ActionCycle
-	2,  // 12: opensight.v1.ChecklistActionHistory.status:type_name -> opensight.v1.ActionStatus
-	26, // 13: opensight.v1.ChecklistActionHistory.updated_at:type_name -> google.protobuf.Timestamp
-	1,  // 14: opensight.v1.ChecklistSubject.standing:type_name -> opensight.v1.ChecklistStanding
-	26, // 15: opensight.v1.ChecklistSubject.last_successful_check:type_name -> google.protobuf.Timestamp
-	9,  // 16: opensight.v1.ChecklistSubject.current_action:type_name -> opensight.v1.ImprovementAction
-	10, // 17: opensight.v1.ChecklistSubject.action_history:type_name -> opensight.v1.ChecklistActionHistory
-	0,  // 18: opensight.v1.ChecklistPractice.mode:type_name -> opensight.v1.PracticeMode
-	11, // 19: opensight.v1.ChecklistPractice.subjects:type_name -> opensight.v1.ChecklistSubject
-	1,  // 20: opensight.v1.ChecklistPractice.standing:type_name -> opensight.v1.ChecklistStanding
-	12, // 21: opensight.v1.ChecklistSection.practices:type_name -> opensight.v1.ChecklistPractice
-	1,  // 22: opensight.v1.StandingCount.standing:type_name -> opensight.v1.ChecklistStanding
-	26, // 23: opensight.v1.ActivityEvent.created_at:type_name -> google.protobuf.Timestamp
-	9,  // 24: opensight.v1.ListActionsResponse.focus_actions:type_name -> opensight.v1.ImprovementAction
-	9,  // 25: opensight.v1.ListActionsResponse.additional_actions:type_name -> opensight.v1.ImprovementAction
-	6,  // 26: opensight.v1.ListActionsResponse.freshness:type_name -> opensight.v1.AssessmentFreshness
-	5,  // 27: opensight.v1.ListActionsResponse.empty_reason:type_name -> opensight.v1.ActionsEmptyReason
-	9,  // 28: opensight.v1.GetActionResponse.action:type_name -> opensight.v1.ImprovementAction
-	2,  // 29: opensight.v1.SetActionStatusRequest.status:type_name -> opensight.v1.ActionStatus
-	3,  // 30: opensight.v1.SetActionStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	9,  // 31: opensight.v1.SetActionStatusResponse.action:type_name -> opensight.v1.ImprovementAction
-	14, // 32: opensight.v1.GetChecklistResponse.counts:type_name -> opensight.v1.StandingCount
-	6,  // 33: opensight.v1.GetChecklistResponse.freshness:type_name -> opensight.v1.AssessmentFreshness
-	13, // 34: opensight.v1.GetChecklistResponse.sections:type_name -> opensight.v1.ChecklistSection
-	15, // 35: opensight.v1.ListActivityResponse.events:type_name -> opensight.v1.ActivityEvent
-	16, // 36: opensight.v1.ImproveService.ListActions:input_type -> opensight.v1.ListActionsRequest
-	18, // 37: opensight.v1.ImproveService.GetAction:input_type -> opensight.v1.GetActionRequest
-	20, // 38: opensight.v1.ImproveService.SetActionStatus:input_type -> opensight.v1.SetActionStatusRequest
-	22, // 39: opensight.v1.ImproveService.GetChecklist:input_type -> opensight.v1.GetChecklistRequest
-	24, // 40: opensight.v1.ImproveService.ListActivity:input_type -> opensight.v1.ListActivityRequest
-	17, // 41: opensight.v1.ImproveService.ListActions:output_type -> opensight.v1.ListActionsResponse
-	19, // 42: opensight.v1.ImproveService.GetAction:output_type -> opensight.v1.GetActionResponse
-	21, // 43: opensight.v1.ImproveService.SetActionStatus:output_type -> opensight.v1.SetActionStatusResponse
-	23, // 44: opensight.v1.ImproveService.GetChecklist:output_type -> opensight.v1.GetChecklistResponse
-	25, // 45: opensight.v1.ImproveService.ListActivity:output_type -> opensight.v1.ListActivityResponse
-	41, // [41:46] is the sub-list for method output_type
-	36, // [36:41] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	0,  // 0: opensight.v1.Check.outcome:type_name -> opensight.v1.CheckOutcome
+	0,  // 1: opensight.v1.CheckCount.outcome:type_name -> opensight.v1.CheckOutcome
+	4,  // 2: opensight.v1.CheckGroup.checks:type_name -> opensight.v1.Check
+	1,  // 3: opensight.v1.ImprovementAction.status:type_name -> opensight.v1.ActionStatus
+	2,  // 4: opensight.v1.ImprovementAction.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	17, // 5: opensight.v1.ImprovementAction.first_seen_at:type_name -> google.protobuf.Timestamp
+	17, // 6: opensight.v1.ImprovementAction.completed_at:type_name -> google.protobuf.Timestamp
+	17, // 7: opensight.v1.ImprovementAction.verified_at:type_name -> google.protobuf.Timestamp
+	7,  // 8: opensight.v1.ListActionsResponse.actions:type_name -> opensight.v1.ImprovementAction
+	7,  // 9: opensight.v1.ListActionsResponse.resolved_actions:type_name -> opensight.v1.ImprovementAction
+	3,  // 10: opensight.v1.ListActionsResponse.empty_reason:type_name -> opensight.v1.ActionsEmptyReason
+	17, // 11: opensight.v1.ListActionsResponse.checked_at:type_name -> google.protobuf.Timestamp
+	8,  // 12: opensight.v1.ListActionsResponse.categories:type_name -> opensight.v1.ActionCategory
+	7,  // 13: opensight.v1.GetActionResponse.action:type_name -> opensight.v1.ImprovementAction
+	1,  // 14: opensight.v1.SetActionStatusRequest.status:type_name -> opensight.v1.ActionStatus
+	2,  // 15: opensight.v1.SetActionStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	7,  // 16: opensight.v1.SetActionStatusResponse.action:type_name -> opensight.v1.ImprovementAction
+	5,  // 17: opensight.v1.GetChecklistResponse.check_counts:type_name -> opensight.v1.CheckCount
+	6,  // 18: opensight.v1.GetChecklistResponse.groups:type_name -> opensight.v1.CheckGroup
+	17, // 19: opensight.v1.GetChecklistResponse.checked_at:type_name -> google.protobuf.Timestamp
+	9,  // 20: opensight.v1.ImproveService.ListActions:input_type -> opensight.v1.ListActionsRequest
+	11, // 21: opensight.v1.ImproveService.GetAction:input_type -> opensight.v1.GetActionRequest
+	13, // 22: opensight.v1.ImproveService.SetActionStatus:input_type -> opensight.v1.SetActionStatusRequest
+	15, // 23: opensight.v1.ImproveService.GetChecklist:input_type -> opensight.v1.GetChecklistRequest
+	10, // 24: opensight.v1.ImproveService.ListActions:output_type -> opensight.v1.ListActionsResponse
+	12, // 25: opensight.v1.ImproveService.GetAction:output_type -> opensight.v1.GetActionResponse
+	14, // 26: opensight.v1.ImproveService.SetActionStatus:output_type -> opensight.v1.SetActionStatusResponse
+	16, // 27: opensight.v1.ImproveService.GetChecklist:output_type -> opensight.v1.GetChecklistResponse
+	24, // [24:28] is the sub-list for method output_type
+	20, // [20:24] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_improve_proto_init() }
@@ -2143,8 +1391,8 @@ func file_opensight_v1_improve_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_improve_proto_rawDesc), len(file_opensight_v1_improve_proto_rawDesc)),
-			NumEnums:      6,
-			NumMessages:   20,
+			NumEnums:      4,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

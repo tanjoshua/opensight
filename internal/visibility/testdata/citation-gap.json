@@ -1,0 +1,1220 @@
+[
+ {
+  "name": "business is listed on a recurring directory",
+  "note": "The source shapes two affected answers and the business has a real profile on it: nothing to do.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/bright-smile-dental",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/bright-smile-dental",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/biz/bright-smile-dental": "<h1>Bright Smile Dental</h1><p>120 Main St, Portland OR. 4.6 stars, 214 reviews. General and cosmetic dentistry.</p>"
+  }
+ },
+ {
+  "name": "competitors are listed and the business is not",
+  "note": "Inspection succeeded, rivals are named in the affected answers, the business is absent: a verified, actionable gap.",
+  "expect": [
+   "citation-gap:healthgrades.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/dentists/portland",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/dentists/portland",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Northgate Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://healthgrades.com/dentists/portland": "<h1>Dentists in Portland, OR</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li><li>Riverbend Family Dentistry</li></ol>"
+  }
+ },
+ {
+  "name": "the cited page could not be fetched",
+  "note": "Without a successful inspection nothing is verified, so no claim about presence or absence can be made.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/cascade-dental",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/cascade-dental",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {}
+ },
+ {
+  "name": "business absent but no competitor was extracted",
+  "note": "Absence alone is not an action under the stated criteria: the practice requires verified competitor presence too.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://portlandliving.com/guides/health",
+         "domain": "portlandliving.com"
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://portlandliving.com/guides/health",
+         "domain": "portlandliving.com"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://portlandliving.com/guides/health": "<h1>Staying healthy in Portland</h1><p>A guide to clinics, gyms and pharmacies across the city.</p>"
+  }
+ },
+ {
+  "name": "the source echoes the business name back in a no-results message",
+  "note": "The page proves the opposite of presence: the directory searched and found nothing.",
+  "expect": [
+   "citation-gap:healthgrades.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/search?q=bright+smile+dental",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/search?q=bright+smile+dental",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://healthgrades.com/search?q=bright+smile+dental": "<p>No results found for Bright Smile Dental. Try a different search or browse dentists near you.</p>"
+  }
+ },
+ {
+  "name": "a different business whose name starts with ours",
+  "note": "Summit Dental Arts of Beaverton is a separate practice; our business still has no listing here.",
+  "expect": [
+   "citation-gap:yelp.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Summit Dental",
+   "website_host": "summitdentalpdx.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "yelp.com",
+         "competitors": [
+          "Summit Dental Arts"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "yelp.com",
+         "competitors": [
+          "Summit Dental Arts"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/c/portland/dentists": "<h1>Best dentists in Portland</h1><ol><li>Summit Dental Arts of Beaverton</li><li>Cascade Dental</li></ol>"
+  }
+ },
+ {
+  "name": "the business name is a substring of an unrelated name",
+  "note": "'Palace Dental Group' contains the letters of 'Ace Dental' and is a different, competing practice.",
+  "expect": [
+   "citation-gap:bestdentists.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Ace Dental",
+   "website_host": "acedentalpdx.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://bestdentists.com/portland",
+         "domain": "bestdentists.com",
+         "competitors": [
+          "Palace Dental Group"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://bestdentists.com/portland",
+         "domain": "bestdentists.com",
+         "competitors": [
+          "Palace Dental Group"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://bestdentists.com/portland": "<h1>Portland dentists</h1><ul><li>Palace Dental Group</li><li>Riverbend Family Dentistry</li></ul>"
+  }
+ },
+ {
+  "name": "the name appears only inside a rival's comparison advert",
+  "note": "Being named in someone else's ad copy is not a presence on the source; the business has no entry of its own.",
+  "expect": [
+   "citation-gap:healthgrades.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/dentist/cascade-dental",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/dentist/cascade-dental",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://healthgrades.com/dentist/cascade-dental": "<meta property=\"og:description\" content=\"Compare Cascade Dental with Bright Smile Dental and 20 other Portland dentists\"><h1>Cascade Dental</h1><p>4.8 stars, 640 reviews.</p>"
+  }
+ },
+ {
+  "name": "the listing uses a shortened form of the business name",
+  "note": "The profile is unmistakably ours — same street address — it is simply filed without the word 'Studio'.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental Studio",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/bright-smile-dental-portland",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/bright-smile-dental-portland",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/biz/bright-smile-dental-portland": "<h1>Bright Smile Dental</h1><p>120 Main St, Portland OR 97205. Claimed listing. 4.6 stars.</p>"
+  }
+ },
+ {
+  "name": "the listing drops a full stop from the business name",
+  "note": "'St Anne's Dental Practice' at our address is our listing; the missing period is a formatting difference, not an absence.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "St. Anne's Dental",
+   "website_host": "stannesdental.co.uk",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/practice/st-annes-dental",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Harbour Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/practice/st-annes-dental",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Harbour Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://healthgrades.com/practice/st-annes-dental": "<h1>St Anne's Dental Practice</h1><p>14 Church Road, Bristol. NHS and private appointments.</p>"
+  }
+ },
+ {
+  "name": "one source recorded under both its apex and www hosts",
+  "note": "The same directory shapes two affected answers and lists rivals but not us; splitting it across two host spellings does not make it two sources.",
+  "expect": [
+   "citation-gap:yelp.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "run_id": "run-2",
+     "results": [
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://www.yelp.com/c/portland/dentists",
+         "domain": "www.yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/c/portland/dentists": "<h1>Best dentists in Portland</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li></ol>",
+   "https://www.yelp.com/c/portland/dentists": "<h1>Best dentists in Portland</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li></ol>"
+  }
+ },
+ {
+  "name": "cited URLs use the apex host while the domain was recorded with www",
+  "note": "The page that needs checking is right there in the citations; a host-spelling difference is not a reason to give up on it.",
+  "expect": [
+   "citation-gap:www.yelp.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "www.yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "www.yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/c/portland/dentists": "<h1>Best dentists in Portland</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li></ol>"
+  }
+ },
+ {
+  "name": "the business's own site cited under a www host",
+  "note": "This practice is about third-party sources. The business's own website can never be an influential-source action subject, however its host is spelled.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://www.brightsmiledental.com/",
+         "domain": "www.brightsmiledental.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://www.brightsmiledental.com/",
+         "domain": "www.brightsmiledental.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://www.brightsmiledental.com/": "<h1>Bright Smile Dental</h1><p>Family and cosmetic dentistry in Portland.</p>"
+  }
+ },
+ {
+  "name": "the source only recurs in answers that already mention the business",
+  "note": "Where the business already appears there is no gap; one leftover sighting is not a pattern worth acting on.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "mentioned": true,
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "yelp.com"
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "mentioned": true,
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "yelp.com"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "run_id": "run-2",
+     "results": [
+      {
+       "result_id": "res-3",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/c/portland/dentists",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/c/portland/dentists": "<h1>Best dentists in Portland</h1><ol><li>Cascade Dental</li></ol>"
+  }
+ },
+ {
+  "name": "a single citation in a single run",
+  "note": "One appearance is noise. The practice is explicitly about sources that repeatedly shape answers.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://portlandliving.com/guides/health",
+         "domain": "portlandliving.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://portlandliving.com/guides/health": "<h1>Staying healthy in Portland</h1><p>Cascade Dental tops our list.</p>"
+  }
+ },
+ {
+  "name": "the same question pulls the same source across two runs",
+  "note": "Recurrence for one question over two runs is the second half of the stated recurrence rule, and the gap is verified.",
+  "expect": [
+   "citation-gap:healthgrades.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/dentists/portland",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "run_id": "run-2",
+     "results": [
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/dentists/portland",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://healthgrades.com/dentists/portland": "<h1>Dentists in Portland, OR</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li></ol>"
+  }
+ },
+ {
+  "name": "the listing sits past the URL inspection budget",
+  "note": "Ten other candidate domains sort ahead of it and each spend their two-URL-per-candidate cap, exhausting the shared budget of 20 before this source — which does have a profile for the business — is ever reached.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-f01a",
+       "prompt_id": "p-f01a",
+       "citations": [
+        {
+         "url": "https://dentistdir01.com/listing/a",
+         "domain": "dentistdir01.com",
+         "competitors": [
+          "Filler Dental 1"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f01b",
+       "prompt_id": "p-f01b",
+       "citations": [
+        {
+         "url": "https://dentistdir01.com/listing/b",
+         "domain": "dentistdir01.com",
+         "competitors": [
+          "Filler Dental 1"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f02a",
+       "prompt_id": "p-f02a",
+       "citations": [
+        {
+         "url": "https://dentistdir02.com/listing/a",
+         "domain": "dentistdir02.com",
+         "competitors": [
+          "Filler Dental 2"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f02b",
+       "prompt_id": "p-f02b",
+       "citations": [
+        {
+         "url": "https://dentistdir02.com/listing/b",
+         "domain": "dentistdir02.com",
+         "competitors": [
+          "Filler Dental 2"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f03a",
+       "prompt_id": "p-f03a",
+       "citations": [
+        {
+         "url": "https://dentistdir03.com/listing/a",
+         "domain": "dentistdir03.com",
+         "competitors": [
+          "Filler Dental 3"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f03b",
+       "prompt_id": "p-f03b",
+       "citations": [
+        {
+         "url": "https://dentistdir03.com/listing/b",
+         "domain": "dentistdir03.com",
+         "competitors": [
+          "Filler Dental 3"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f04a",
+       "prompt_id": "p-f04a",
+       "citations": [
+        {
+         "url": "https://dentistdir04.com/listing/a",
+         "domain": "dentistdir04.com",
+         "competitors": [
+          "Filler Dental 4"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f04b",
+       "prompt_id": "p-f04b",
+       "citations": [
+        {
+         "url": "https://dentistdir04.com/listing/b",
+         "domain": "dentistdir04.com",
+         "competitors": [
+          "Filler Dental 4"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f05a",
+       "prompt_id": "p-f05a",
+       "citations": [
+        {
+         "url": "https://dentistdir05.com/listing/a",
+         "domain": "dentistdir05.com",
+         "competitors": [
+          "Filler Dental 5"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f05b",
+       "prompt_id": "p-f05b",
+       "citations": [
+        {
+         "url": "https://dentistdir05.com/listing/b",
+         "domain": "dentistdir05.com",
+         "competitors": [
+          "Filler Dental 5"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f06a",
+       "prompt_id": "p-f06a",
+       "citations": [
+        {
+         "url": "https://dentistdir06.com/listing/a",
+         "domain": "dentistdir06.com",
+         "competitors": [
+          "Filler Dental 6"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f06b",
+       "prompt_id": "p-f06b",
+       "citations": [
+        {
+         "url": "https://dentistdir06.com/listing/b",
+         "domain": "dentistdir06.com",
+         "competitors": [
+          "Filler Dental 6"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f07a",
+       "prompt_id": "p-f07a",
+       "citations": [
+        {
+         "url": "https://dentistdir07.com/listing/a",
+         "domain": "dentistdir07.com",
+         "competitors": [
+          "Filler Dental 7"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f07b",
+       "prompt_id": "p-f07b",
+       "citations": [
+        {
+         "url": "https://dentistdir07.com/listing/b",
+         "domain": "dentistdir07.com",
+         "competitors": [
+          "Filler Dental 7"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f08a",
+       "prompt_id": "p-f08a",
+       "citations": [
+        {
+         "url": "https://dentistdir08.com/listing/a",
+         "domain": "dentistdir08.com",
+         "competitors": [
+          "Filler Dental 8"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f08b",
+       "prompt_id": "p-f08b",
+       "citations": [
+        {
+         "url": "https://dentistdir08.com/listing/b",
+         "domain": "dentistdir08.com",
+         "competitors": [
+          "Filler Dental 8"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f09a",
+       "prompt_id": "p-f09a",
+       "citations": [
+        {
+         "url": "https://dentistdir09.com/listing/a",
+         "domain": "dentistdir09.com",
+         "competitors": [
+          "Filler Dental 9"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f09b",
+       "prompt_id": "p-f09b",
+       "citations": [
+        {
+         "url": "https://dentistdir09.com/listing/b",
+         "domain": "dentistdir09.com",
+         "competitors": [
+          "Filler Dental 9"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f10a",
+       "prompt_id": "p-f10a",
+       "citations": [
+        {
+         "url": "https://dentistdir10.com/listing/a",
+         "domain": "dentistdir10.com",
+         "competitors": [
+          "Filler Dental 10"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-f10b",
+       "prompt_id": "p-f10b",
+       "citations": [
+        {
+         "url": "https://dentistdir10.com/listing/b",
+         "domain": "dentistdir10.com",
+         "competitors": [
+          "Filler Dental 10"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-t1",
+       "prompt_id": "p-ta",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/biz/a",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-t2",
+       "prompt_id": "p-tb",
+       "citations": [
+        {
+         "url": "https://healthgrades.com/biz/z-bright-smile",
+         "domain": "healthgrades.com"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://healthgrades.com/biz/a": "<h1>Cascade Dental</h1>",
+   "https://healthgrades.com/biz/z-bright-smile": "<h1>Bright Smile Dental</h1><p>120 Main St, Portland OR.</p>"
+  }
+ },
+ {
+  "name": "the first inspected page already shows the listing",
+  "note": "Presence is confirmed on the first URL, so the remaining budget is correctly left unspent.",
+  "expect": [],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/a-bright-smile",
+         "domain": "yelp.com"
+        },
+        {
+         "url": "https://yelp.com/biz/m-cascade",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://yelp.com/biz/z-northgate",
+         "domain": "yelp.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://yelp.com/biz/a-bright-smile": "<h1>Bright Smile Dental</h1><p>Claimed listing, 4.6 stars.</p>",
+   "https://yelp.com/biz/m-cascade": "<h1>Cascade Dental</h1>",
+   "https://yelp.com/biz/z-northgate": "<h1>Northgate Dental</h1>"
+  }
+ },
+ {
+  "name": "a ranked category page carrying only rivals",
+  "note": "A recurring 'top dentists' page that names eight competitors and not the business is the clearest form of this gap.",
+  "expect": [
+   "citation-gap:bestdentists.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://bestdentists.com/portland/top-8",
+         "domain": "bestdentists.com",
+         "competitors": [
+          "Cascade Dental",
+          "Northgate Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://bestdentists.com/portland/top-8",
+         "domain": "bestdentists.com",
+         "competitors": [
+          "Palace Dental Group"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://bestdentists.com/portland/top-8": "<h1>Portland's top 8 dentists</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li><li>Palace Dental Group</li><li>Harbour Dental</li><li>Riverbend Family Dentistry</li><li>Summit Dental Arts</li><li>Whitfield Dental</li><li>Quiet Clinic Dental</li></ol>"
+  }
+ },
+ {
+  "name": "a source cited for a claim about the market, not for any business",
+  "note": "Both sources shape the same two answers, but the board's FAQ was cited for an accreditation claim rather than for any clinic: it has no competitor lift and must not be recommended, while the directory cited for a rival still is.",
+  "expect": [
+   "citation-gap:healthgrades.com"
+  ],
+  "monitoring": {
+   "payload_version": 1,
+   "business_name": "Bright Smile Dental",
+   "website_host": "brightsmiledental.com",
+   "runs": [
+    {
+     "run_id": "run-1",
+     "results": [
+      {
+       "result_id": "res-1",
+       "prompt_id": "p-a",
+       "citations": [
+        {
+         "url": "https://dentalboard.example/faq",
+         "domain": "dentalboard.example"
+        },
+        {
+         "url": "https://healthgrades.com/dentists/portland",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      },
+      {
+       "result_id": "res-2",
+       "prompt_id": "p-b",
+       "citations": [
+        {
+         "url": "https://dentalboard.example/faq",
+         "domain": "dentalboard.example"
+        },
+        {
+         "url": "https://healthgrades.com/dentists/portland",
+         "domain": "healthgrades.com",
+         "competitors": [
+          "Cascade Dental"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "pages": {
+   "https://dentalboard.example/faq": "<h1>Specialist registration FAQ</h1><p>Registration as a specialist requires accredited training and an application to the board.</p>",
+   "https://healthgrades.com/dentists/portland": "<h1>Dentists in Portland, OR</h1><ol><li>Cascade Dental</li><li>Northgate Dental</li></ol>"
+  }
+ }
+]

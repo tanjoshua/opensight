@@ -4,47 +4,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
+
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 )
 
-// promotionThreshold is the share of hand-labelled fixture cases an assessor
-// must get right before it earns a place in registeredAssessors. It is written
-// down in design 09 so "good enough to register" is a number rather than a
-// judgement call.
-const promotionThreshold = 0.90
-
 // minFixtureCases stops a corpus from quietly shrinking to a size where its
-// score no longer means anything.
+// score no longer means anything. Everything that ships is scored against a
+// hand-labelled corpus, and every wrong answer fails the build — the corpora
+// are deliberately weighted towards cases the logic is known to find hard, so
+// a pass here is a stress result rather than an expected field accuracy.
 const minFixtureCases = 15
 
-// statusNone labels a case where the correct behaviour is to produce no
-// assessment for the subject at all — the recurrence gates, and subjects that
-// were never this practice's business in the first place.
-const statusNone = "NONE"
-
-// fixtureCase pairs collector payloads with the verdict a human judged correct
-// for one practice and subject, plus the reason that verdict is right. The
-// payloads are held raw because they are exactly the bytes evidence_artifacts
-// stores: a fixture is a real collector payload, not a restatement of one.
-type fixtureCase struct {
-	Name       string            `json:"name"`
-	Note       string            `json:"note"`
-	Practice   string            `json:"practice"`
-	Subject    string            `json:"subject"`
-	Expect     string            `json:"expect"`
-	Monitoring json.RawMessage   `json:"monitoring"`
-	Site       json.RawMessage   `json:"site"`
-	Pages      map[string]string `json:"pages"`
-}
-
 // fixtureResearcher serves only the pages a fixture declares, so scoring never
-// touches the network. It honours the manifest's URL budget exactly as the real
-// bounded researcher does, which lets a fixture show what that budget costs.
+// touches the network. It honours a URL budget exactly as the real bounded
+// researcher does, which lets a fixture show what that budget costs.
 type fixtureResearcher struct {
 	pages     map[string]string
 	remaining int
@@ -52,7 +30,7 @@ type fixtureResearcher struct {
 
 func (r *fixtureResearcher) Inspect(_ context.Context, in ResearchRequest) (ResearchResult, error) {
 	if r.remaining <= 0 {
-		return ResearchResult{}, errors.New("research URL budget exhausted")
+		return ResearchResult{}, ErrResearchBudget
 	}
 	r.remaining--
 	text, ok := r.pages[in.URL]
@@ -62,125 +40,144 @@ func (r *fixtureResearcher) Inspect(_ context.Context, in ResearchRequest) (Rese
 	return ResearchResult{URL: in.URL, Text: text, CheckedAt: time.Unix(0, 0).UTC()}, nil
 }
 
-// TestAssessorQualityAgainstFixtures scores every implemented assessor against
-// its hand-labelled corpus and is the gate that decides promotion.
-//
-// A registered assessor ships, so every wrong answer fails the build. An
-// unregistered one is known to be below par: its score is reported and its
-// misses are logged, because the number is the artifact we want and a red build
-// would only invite someone to soften the labels. Adding an assessor to
-// registeredAssessors flips it from reported to enforced — that one edit is the
-// whole promotion.
-//
-// The corpora are deliberately weighted towards cases the heuristics are known
-// to get wrong, so a score here is a stress score, not an expected field
-// accuracy. Run with `go test -v ./internal/visibility/ -run Quality` to read
-// the per-assessor scores and the individual misses.
-func TestAssessorQualityAgainstFixtures(t *testing.T) {
-	for _, assessor := range assessors {
-		manifest := assessor.manifest
-		t.Run(manifest.Key, func(t *testing.T) {
-			cases := loadFixtures(t, manifest.Key)
-			if len(cases) < minFixtureCases {
-				t.Fatalf("%s has %d fixture cases, want at least %d", manifest.Key, len(cases), minFixtureCases)
+// auditCase pairs a real site-scan payload with the outcomes a human judged
+// correct. Expect names only the checks that are not expected to pass, so a
+// case that adds a new failure has to say so; every unnamed check must pass.
+type auditCase struct {
+	Name   string                  `json:"name"`
+	Note   string                  `json:"note"`
+	Expect map[string]CheckOutcome `json:"expect"`
+	Site   json.RawMessage         `json:"site"`
+}
+
+// TestAuditAgainstFixtures scores the site audit against its corpus. The audit
+// is deterministic, so any disagreement is a real behaviour change.
+func TestAuditAgainstFixtures(t *testing.T) {
+	cases := loadCases[auditCase](t, "audit")
+	if len(cases) < minFixtureCases {
+		t.Fatalf("audit has %d fixture cases, want at least %d", len(cases), minFixtureCases)
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var scan OwnedSiteScan
+			strictDecode(t, c.Name, "site", c.Site, &scan)
+			got := map[string]CheckOutcome{}
+			for _, result := range Audit(scan) {
+				got[result.Key] = result.Outcome
 			}
-			hits := 0
-			for _, c := range cases {
-				got := replayFixture(t, assessor, c)
-				if got == c.Expect {
-					hits++
-					continue
+			for _, check := range catalog {
+				want, named := c.Expect[check.Key]
+				if !named {
+					want = CheckPass
 				}
-				miss := fmt.Sprintf("%s: want %s, got %s — %s", c.Name, c.Expect, got, c.Note)
-				if registered(manifest.Key) {
-					t.Error(miss)
-				} else {
-					t.Log(miss)
+				if got[check.Key] != want {
+					t.Errorf("check %s: want %s, got %s — %s", check.Key, want, got[check.Key], c.Note)
 				}
 			}
-			score := float64(hits) / float64(len(cases))
-			t.Logf("assessor=%s registered=%t score=%d/%d (%.0f%%) promotion_threshold=%.0f%%",
-				manifest.Key, registered(manifest.Key), hits, len(cases), score*100, promotionThreshold*100)
-			if !registered(manifest.Key) && score >= promotionThreshold {
-				t.Logf("%s now clears the promotion threshold: add it to registeredAssessors to start assessing and enforcing", manifest.Key)
+			for key := range c.Expect {
+				if _, ok := CheckByKey(key); !ok {
+					t.Errorf("fixture expects unknown check %q", key)
+				}
 			}
 		})
 	}
 }
 
-// replayFixture runs one assessor over one fixture's stored payloads and
-// returns the status it produced for the labelled subject, or statusNone when
-// it produced no assessment for that subject.
-func replayFixture(t *testing.T, assessor staticAssessor, c fixtureCase) string {
-	t.Helper()
-	manifest := assessor.manifest
-	artifacts := []EvidenceArtifact{}
-	if len(c.Monitoring) > 0 {
-		artifacts = append(artifacts, EvidenceArtifact{CollectorKey: CollectorMonitoring, CollectorVersion: 1, PayloadVersion: 1, Payload: c.Monitoring})
-	}
-	if len(c.Site) > 0 {
-		artifacts = append(artifacts, EvidenceArtifact{CollectorKey: CollectorOwnedSite, CollectorVersion: 1, PayloadVersion: 1, Payload: c.Site})
-	}
-	research := &fixtureResearcher{pages: c.Pages, remaining: manifest.MaxURLInspections}
-	drafts, err := assessor.Assess(context.Background(), NewEvidenceView(artifacts), research)
-	if err != nil {
-		return "error: " + err.Error()
-	}
-	for _, d := range drafts {
-		if d.PracticeKey == c.Practice && d.SubjectKey == c.Subject {
-			return string(d.Status)
-		}
-	}
-	return statusNone
+// finderCase pairs collector payloads with the exact set of finding keys a
+// human judged correct. The empty set is a real and common label: most of this
+// corpus is cases where the honest answer is to recommend nothing.
+type finderCase struct {
+	Name       string            `json:"name"`
+	Note       string            `json:"note"`
+	Expect     []string          `json:"expect"`
+	Monitoring json.RawMessage   `json:"monitoring"`
+	Site       json.RawMessage   `json:"site"`
+	Pages      map[string]string `json:"pages"`
 }
 
-func loadFixtures(t *testing.T, assessorKey string) []fixtureCase {
+// TestCitationGapAgainstFixtures scores the citation-gap finder. Its corpus is
+// built around the ways a name match goes wrong — substrings, shortened forms,
+// host variants, a rival's advert — because a false "get listed here" is the
+// failure that costs the product its credibility.
+func TestCitationGapAgainstFixtures(t *testing.T) {
+	cases := loadCases[finderCase](t, "citation-gap")
+	if len(cases) < minFixtureCases {
+		t.Fatalf("citation-gap has %d fixture cases, want at least %d", len(cases), minFixtureCases)
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			in := FinderInput{}
+			strictDecode(t, c.Name, "monitoring", c.Monitoring, &in.Snapshot)
+			var scan OwnedSiteScan
+			strictDecode(t, c.Name, "site", c.Site, &scan)
+			in.Audit = Audit(scan)
+
+			research := &fixtureResearcher{pages: c.Pages, remaining: ResearchURLBudget}
+			findings, err := citationGapFinder{}.Find(context.Background(), in, research)
+			if err != nil {
+				t.Fatalf("find: %v", err)
+			}
+			got := make([]string, 0, len(findings))
+			for _, f := range findings {
+				got = append(got, f.Key)
+				if f.Reach != len(f.ResultIDs) {
+					t.Errorf("finding %s reach = %d, want %d affected answers", f.Key, f.Reach, len(f.ResultIDs))
+				}
+			}
+			sort.Strings(got)
+			want := append([]string(nil), c.Expect...)
+			sort.Strings(want)
+			if fmt.Sprint(got) != fmt.Sprint(want) {
+				t.Errorf("want findings %v, got %v — %s", want, got, c.Note)
+			}
+		})
+	}
+}
+
+func loadCases[T any](t *testing.T, name string) []T {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join("testdata", assessorKey+".json"))
+	raw, err := os.ReadFile(filepath.Join("testdata", name+".json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	var cases []fixtureCase
+	var cases []T
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&cases); err != nil {
-		t.Fatalf("decode %s fixtures: %v", assessorKey, err)
+		t.Fatalf("decode %s fixtures: %v", name, err)
 	}
 	seen := map[string]bool{}
 	for _, c := range cases {
-		if c.Name == "" || c.Note == "" || c.Practice == "" {
-			t.Fatalf("%s fixture %q is missing a name, note or practice", assessorKey, c.Name)
+		named, ok := any(c).(interface{ label() (string, string) })
+		if !ok {
+			continue
 		}
-		switch AssessmentStatus(c.Expect) {
-		case StatusMet, StatusPartial, StatusNotMet, StatusUnknown, StatusNotApplicable:
-		default:
-			if c.Expect != statusNone {
-				t.Fatalf("%s fixture %q expects unknown status %q", assessorKey, c.Name, c.Expect)
-			}
+		caseName, note := named.label()
+		if caseName == "" || note == "" {
+			t.Fatalf("%s has a fixture missing a name or note", name)
 		}
-		if seen[c.Name] {
-			t.Fatalf("%s has two fixtures named %q", assessorKey, c.Name)
+		if seen[caseName] {
+			t.Fatalf("%s has two fixtures named %q", name, caseName)
 		}
-		seen[c.Name] = true
-		// Assessors decode payloads leniently, so a mistyped key would read as a
-		// zero value and silently change a fixture's verdict rather than fail.
-		// Fixtures are checked strictly instead: a key the payload struct does
-		// not name is a broken fixture, not a false one.
-		strictDecode[MonitoringSnapshot](t, assessorKey, c.Name, CollectorMonitoring, c.Monitoring)
-		strictDecode[OwnedSiteScan](t, assessorKey, c.Name, CollectorOwnedSite, c.Site)
+		seen[caseName] = true
 	}
 	return cases
 }
 
-func strictDecode[T any](t *testing.T, assessorKey, name, collector string, raw json.RawMessage) {
+func (c auditCase) label() (string, string)  { return c.Name, c.Note }
+func (c finderCase) label() (string, string) { return c.Name, c.Note }
+
+// strictDecode rejects a key the payload struct does not name. Payloads are
+// decoded leniently in production, so without this a mistyped fixture key would
+// read as a zero value and silently change a case's verdict rather than fail.
+func strictDecode(t *testing.T, name, field string, raw json.RawMessage, out any) {
 	t.Helper()
 	if len(raw) == 0 {
 		return
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
-	var out T
-	if err := decoder.Decode(&out); err != nil {
-		t.Fatalf("%s fixture %q has an invalid %s payload: %v", assessorKey, name, collector, err)
+	if err := decoder.Decode(out); err != nil {
+		t.Fatalf("fixture %q has an invalid %s payload: %v", name, field, err)
 	}
 }

@@ -12,48 +12,19 @@ import type { Message, UnknownEnum } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/improve.proto.
  */
 export const file_opensight_v1_improve: GenFile = /*@__PURE__*/
-  fileDesc("ChpvcGVuc2lnaHQvdjEvaW1wcm92ZS5wcm90bxIMb3BlbnNpZ2h0LnYxInkKE0Fzc2Vzc21lbnRGcmVzaG5lc3MSEQoJYXZhaWxhYmxlGAEgASgIEg8KB3BhcnRpYWwYAiABKAgSDQoFc3RhbGUYAyABKAgSLwoLYXNzZXNzZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpYBCgtBY3Rpb25CbG9jaxIrCgR0eXBlGAEgASgOMh0ub3BlbnNpZ2h0LnYxLkFjdGlvbkJsb2NrVHlwZRINCgV0aXRsZRgCIAEoCRIMCgR0ZXh0GAMgASgJEg0KBXZhbHVlGAQgASgJEgsKA3VybBgFIAEoCRINCgVpdGVtcxgGIAMoCRISCgpyZXN1bHRfaWRzGAcgAygJIukBCgtBY3Rpb25DeWNsZRIKCgJpZBgBIAEoCRINCgVjeWNsZRgCIAEoBRIqCgZzdGF0dXMYAyABKA4yGi5vcGVuc2lnaHQudjEuQWN0aW9uU3RhdHVzEjEKDWZpcnN0X3NlZW5fYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGNvbXBsZXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAilAQKEUltcHJvdmVtZW50QWN0aW9uEgoKAmlkGAEgASgJEhQKDHByYWN0aWNlX2tleRgCIAEoCRITCgtzdWJqZWN0X2tleRgDIAEoCRINCgVjeWNsZRgEIAEoBRIaChJyZWNvbW1lbmRhdGlvbl9rZXkYBSABKAkSDQoFdGl0bGUYBiABKAkSDwoHc3VtbWFyeRgHIAEoCRIOCgZlZmZvcnQYCCABKAkSKQoGYmxvY2tzGAkgAygLMhkub3BlbnNpZ2h0LnYxLkFjdGlvbkJsb2NrEioKBnN0YXR1cxgKIAEoDjIaLm9wZW5zaWdodC52MS5BY3Rpb25TdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgLIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24SMQoIc3RhbmRpbmcYDCABKA4yHy5vcGVuc2lnaHQudjEuQ2hlY2tsaXN0U3RhbmRpbmcSEgoKcmVzdWx0X2lkcxgNIAMoCRISCgpwcm9tcHRfaWRzGA4gAygJEhcKD2NoZWNrZWRfc291cmNlcxgPIAMoCRIvCgthc3Nlc3NlZF9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDQoFZnJlc2gYESABKAgSKQoGY3ljbGVzGBIgAygLMhkub3BlbnNpZ2h0LnYxLkFjdGlvbkN5Y2xlIpYBChZDaGVja2xpc3RBY3Rpb25IaXN0b3J5EhEKCWFjdGlvbl9pZBgBIAEoCRINCgVjeWNsZRgCIAEoBRIqCgZzdGF0dXMYAyABKA4yGi5vcGVuc2lnaHQudjEuQWN0aW9uU3RhdHVzEi4KCnVwZGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpgDChBDaGVja2xpc3RTdWJqZWN0EhMKC3N1YmplY3Rfa2V5GAEgASgJEg0KBWxhYmVsGAIgASgJEjEKCHN0YW5kaW5nGAMgASgOMh8ub3BlbnNpZ2h0LnYxLkNoZWNrbGlzdFN0YW5kaW5nEhYKDnN0YW5kaW5nX2xhYmVsGAQgASgJEhMKC2V4cGxhbmF0aW9uGAUgASgJEhIKCnJlc3VsdF9pZHMYBiADKAkSEgoKcHJvbXB0X2lkcxgHIAMoCRIXCg9jaGVja2VkX3NvdXJjZXMYCCADKAkSOQoVbGFzdF9zdWNjZXNzZnVsX2NoZWNrGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgVzdGFsZRgKIAEoCBI3Cg5jdXJyZW50X2FjdGlvbhgLIAEoCzIfLm9wZW5zaWdodC52MS5JbXByb3ZlbWVudEFjdGlvbhI8Cg5hY3Rpb25faGlzdG9yeRgMIAMoCzIkLm9wZW5zaWdodC52MS5DaGVja2xpc3RBY3Rpb25IaXN0b3J5IowCChFDaGVja2xpc3RQcmFjdGljZRILCgNrZXkYASABKAkSDQoFdGl0bGUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSCwoDd2h5GAQgASgJEigKBG1vZGUYBSABKA4yGi5vcGVuc2lnaHQudjEuUHJhY3RpY2VNb2RlEhIKCnJlZmVyZW5jZXMYBiADKAkSMAoIc3ViamVjdHMYByADKAsyHi5vcGVuc2lnaHQudjEuQ2hlY2tsaXN0U3ViamVjdBIxCghzdGFuZGluZxgIIAEoDjIfLm9wZW5zaWdodC52MS5DaGVja2xpc3RTdGFuZGluZxIWCg5zdGFuZGluZ19sYWJlbBgJIAEoCSJVChBDaGVja2xpc3RTZWN0aW9uEg0KBXRpdGxlGAEgASgJEjIKCXByYWN0aWNlcxgCIAMoCzIfLm9wZW5zaWdodC52MS5DaGVja2xpc3RQcmFjdGljZSJRCg1TdGFuZGluZ0NvdW50EjEKCHN0YW5kaW5nGAEgASgOMh8ub3BlbnNpZ2h0LnYxLkNoZWNrbGlzdFN0YW5kaW5nEg0KBWNvdW50GAIgASgFIrsBCg1BY3Rpdml0eUV2ZW50EgoKAmlkGAEgASgJEhEKCWFjdGlvbl9pZBgCIAEoCRIUCgxwcmFjdGljZV9rZXkYAyABKAkSEwoLc3ViamVjdF9rZXkYBCABKAkSDQoFdGl0bGUYBSABKAkSDQoFY3ljbGUYBiABKAUSEgoKZXZlbnRfdHlwZRgHIAEoCRIuCgpjcmVhdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIpChJMaXN0QWN0aW9uc1JlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAki+AEKE0xpc3RBY3Rpb25zUmVzcG9uc2USNgoNZm9jdXNfYWN0aW9ucxgBIAMoCzIfLm9wZW5zaWdodC52MS5JbXByb3ZlbWVudEFjdGlvbhI7ChJhZGRpdGlvbmFsX2FjdGlvbnMYAiADKAsyHy5vcGVuc2lnaHQudjEuSW1wcm92ZW1lbnRBY3Rpb24SNAoJZnJlc2huZXNzGAMgASgLMiEub3BlbnNpZ2h0LnYxLkFzc2Vzc21lbnRGcmVzaG5lc3MSNgoMZW1wdHlfcmVhc29uGAQgASgOMiAub3BlbnNpZ2h0LnYxLkFjdGlvbnNFbXB0eVJlYXNvbiIlChBHZXRBY3Rpb25SZXF1ZXN0EhEKCWFjdGlvbl9pZBgBIAEoCSJEChFHZXRBY3Rpb25SZXNwb25zZRIvCgZhY3Rpb24YASABKAsyHy5vcGVuc2lnaHQudjEuSW1wcm92ZW1lbnRBY3Rpb24ikAEKFlNldEFjdGlvblN0YXR1c1JlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJEioKBnN0YXR1cxgCIAEoDjIaLm9wZW5zaWdodC52MS5BY3Rpb25TdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgDIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24iSgoXU2V0QWN0aW9uU3RhdHVzUmVzcG9uc2USLwoGYWN0aW9uGAEgASgLMh8ub3BlbnNpZ2h0LnYxLkltcHJvdmVtZW50QWN0aW9uIioKE0dldENoZWNrbGlzdFJlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkiqwEKFEdldENoZWNrbGlzdFJlc3BvbnNlEisKBmNvdW50cxgBIAMoCzIbLm9wZW5zaWdodC52MS5TdGFuZGluZ0NvdW50EjQKCWZyZXNobmVzcxgCIAEoCzIhLm9wZW5zaWdodC52MS5Bc3Nlc3NtZW50RnJlc2huZXNzEjAKCHNlY3Rpb25zGAMgAygLMh4ub3BlbnNpZ2h0LnYxLkNoZWNrbGlzdFNlY3Rpb24iSQoTTGlzdEFjdGl2aXR5UmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCRINCgVsaW1pdBgCIAEoBRIOCgZvZmZzZXQYAyABKAUicQoUTGlzdEFjdGl2aXR5UmVzcG9uc2USKwoGZXZlbnRzGAEgAygLMhsub3BlbnNpZ2h0LnYxLkFjdGl2aXR5RXZlbnQSDQoFdG90YWwYAiABKAUSDQoFbGltaXQYAyABKAUSDgoGb2Zmc2V0GAQgASgFKn8KDFByYWN0aWNlTW9kZRIdChlQUkFDVElDRV9NT0RFX1VOU1BFQ0lGSUVEEAASFwoTUFJBQ1RJQ0VfTU9ERV9DSEVDSxABEhwKGFBSQUNUSUNFX01PREVfQ09OVElOVU9VUxACEhkKFVBSQUNUSUNFX01PREVfVFJBQ0tFRBADKt8CChFDaGVja2xpc3RTdGFuZGluZxIiCh5DSEVDS0xJU1RfU1RBTkRJTkdfVU5TUEVDSUZJRUQQABIbChdDSEVDS0xJU1RfU1RBTkRJTkdfR09PRBABEiEKHUNIRUNLTElTVF9TVEFORElOR19JTVBST1ZBQkxFEAISJgoiQ0hFQ0tMSVNUX1NUQU5ESU5HX05FRURTX0FUVEVOVElPThADEh8KG0NIRUNLTElTVF9TVEFORElOR19UUkFDS0lORxAEEicKI0NIRUNLTElTVF9TVEFORElOR19DT1VMRF9OT1RfVkVSSUZZEAUSIwofQ0hFQ0tMSVNUX1NUQU5ESU5HX05PVF9BU1NFU1NFRBAGEiUKIUNIRUNLTElTVF9TVEFORElOR19OT1RfQVBQTElDQUJMRRAHEigKJENIRUNLTElTVF9TVEFORElOR19OT19MT05HRVJfVFJBQ0tFRBAIKtcBCgxBY3Rpb25TdGF0dXMSHQoZQUNUSU9OX1NUQVRVU19VTlNQRUNJRklFRBAAEhYKEkFDVElPTl9TVEFUVVNfT1BFThABEh0KGUFDVElPTl9TVEFUVVNfSU5fUFJPR1JFU1MQAhIbChdBQ1RJT05fU1RBVFVTX0NPTVBMRVRFRBADEhsKF0FDVElPTl9TVEFUVVNfRElTTUlTU0VEEAQSGQoVQUNUSU9OX1NUQVRVU19SRVRJUkVEEAUSHAoYQUNUSU9OX1NUQVRVU19TVVBFUlNFREVEEAYq4AEKD0Rpc21pc3NhbFJlYXNvbhIgChxESVNNSVNTQUxfUkVBU09OX1VOU1BFQ0lGSUVEEAASIQodRElTTUlTU0FMX1JFQVNPTl9OT1RfUkVMRVZBTlQQARIhCh1ESVNNSVNTQUxfUkVBU09OX0FMUkVBRFlfRE9ORRACEiMKH0RJU01JU1NBTF9SRUFTT05fTk9UX0FDVElPTkFCTEUQAxIkCiBESVNNSVNTQUxfUkVBU09OX1RPT19NVUNIX0VGRk9SVBAEEhoKFkRJU01JU1NBTF9SRUFTT05fT1RIRVIQBSryAQoPQWN0aW9uQmxvY2tUeXBlEiEKHUFDVElPTl9CTE9DS19UWVBFX1VOU1BFQ0lGSUVEEAASGgoWQUNUSU9OX0JMT0NLX1RZUEVfVEVYVBABEhwKGEFDVElPTl9CTE9DS19UWVBFX01FVFJJQxACEhoKFkFDVElPTl9CTE9DS19UWVBFX0xJTksQAxIjCh9BQ1RJT05fQkxPQ0tfVFlQRV9RVUVTVElPTl9MSVNUEAQSIwofQUNUSU9OX0JMT0NLX1RZUEVfRVZJREVOQ0VfTElTVBAFEhwKGEFDVElPTl9CTE9DS19UWVBFX05PVElDRRAGKroBChJBY3Rpb25zRW1wdHlSZWFzb24SJAogQUNUSU9OU19FTVBUWV9SRUFTT05fVU5TUEVDSUZJRUQQABIgChxBQ1RJT05TX0VNUFRZX1JFQVNPTl9IRUFMVEhZEAESKgomQUNUSU9OU19FTVBUWV9SRUFTT05fSU5DT01QTEVURV9DSEVDS1MQAhIwCixBQ1RJT05TX0VNUFRZX1JFQVNPTl9JTlNVRkZJQ0lFTlRfQ0FQQUJJTElUWRADMsADCg5JbXByb3ZlU2VydmljZRJSCgtMaXN0QWN0aW9ucxIgLm9wZW5zaWdodC52MS5MaXN0QWN0aW9uc1JlcXVlc3QaIS5vcGVuc2lnaHQudjEuTGlzdEFjdGlvbnNSZXNwb25zZRJMCglHZXRBY3Rpb24SHi5vcGVuc2lnaHQudjEuR2V0QWN0aW9uUmVxdWVzdBofLm9wZW5zaWdodC52MS5HZXRBY3Rpb25SZXNwb25zZRJeCg9TZXRBY3Rpb25TdGF0dXMSJC5vcGVuc2lnaHQudjEuU2V0QWN0aW9uU3RhdHVzUmVxdWVzdBolLm9wZW5zaWdodC52MS5TZXRBY3Rpb25TdGF0dXNSZXNwb25zZRJVCgxHZXRDaGVja2xpc3QSIS5vcGVuc2lnaHQudjEuR2V0Q2hlY2tsaXN0UmVxdWVzdBoiLm9wZW5zaWdodC52MS5HZXRDaGVja2xpc3RSZXNwb25zZRJVCgxMaXN0QWN0aXZpdHkSIS5vcGVuc2lnaHQudjEuTGlzdEFjdGl2aXR5UmVxdWVzdBoiLm9wZW5zaWdodC52MS5MaXN0QWN0aXZpdHlSZXNwb25zZUKiAQoQY29tLm9wZW5zaWdodC52MUIMSW1wcm92ZVByb3RvUAFaL29wZW5zaWdodC9pbnRlcm5hbC9nZW4vb3BlbnNpZ2h0L3YxO29wZW5zaWdodHYxogIDT1hYqgIMT3BlbnNpZ2h0LlYxygIMT3BlbnNpZ2h0XFYx4gIYT3BlbnNpZ2h0XFYxXEdQQk1ldGFkYXRh6gINT3BlbnNpZ2h0OjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChpvcGVuc2lnaHQvdjEvaW1wcm92ZS5wcm90bxIMb3BlbnNpZ2h0LnYxIpwBCgVDaGVjaxILCgNrZXkYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEd2hhdBgDIAEoCRIrCgdvdXRjb21lGAQgASgOMhoub3BlbnNpZ2h0LnYxLkNoZWNrT3V0Y29tZRIVCg1vdXRjb21lX2xhYmVsGAUgASgJEg4KBmRldGFpbBgGIAEoCRIVCg1pbmZvcm1hdGlvbmFsGAcgASgIIkgKCkNoZWNrQ291bnQSKwoHb3V0Y29tZRgBIAEoDjIaLm9wZW5zaWdodC52MS5DaGVja091dGNvbWUSDQoFY291bnQYAiABKAUiowEKCkNoZWNrR3JvdXASCwoDa2V5GAEgASgJEg0KBXRpdGxlGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEhIKCnJlZmVyZW5jZXMYBCADKAkSIwoGY2hlY2tzGAUgAygLMhMub3BlbnNpZ2h0LnYxLkNoZWNrEhUKDWNoZWNrc19wYXNzZWQYBiABKAUSFAoMY2hlY2tzX3RvdGFsGAcgASgFIvcDChFJbXByb3ZlbWVudEFjdGlvbhIKCgJpZBgBIAEoCRILCgNrZXkYAiABKAkSDgoGc291cmNlGAMgASgJEg0KBXRpdGxlGAQgASgJEgwKBGJvZHkYBSABKAkSDQoFc3RlcHMYBiADKAkSDgoGZGV0YWlsGAcgASgJEhIKCnJlc3VsdF9pZHMYCCADKAkSEgoKcHJvbXB0X2lkcxgJIAMoCRIPCgdzb3VyY2VzGAogAygJEhAKCGJsb2NraW5nGAsgASgIEg0KBXJlYWNoGAwgASgFEioKBnN0YXR1cxgNIAEoDjIaLm9wZW5zaWdodC52MS5BY3Rpb25TdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgOIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24SMQoNZmlyc3Rfc2Vlbl9hdBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMY29tcGxldGVkX2F0GBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgt2ZXJpZmllZF9hdBgRIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEAoIY2F0ZWdvcnkYEiABKAkSFgoOY2F0ZWdvcnlfbGFiZWwYEyABKAkiOwoOQWN0aW9uQ2F0ZWdvcnkSCwoDa2V5GAEgASgJEg0KBWxhYmVsGAIgASgJEg0KBWNvdW50GAMgASgFIikKEkxpc3RBY3Rpb25zUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCSK2AgoTTGlzdEFjdGlvbnNSZXNwb25zZRIwCgdhY3Rpb25zGAEgAygLMh8ub3BlbnNpZ2h0LnYxLkltcHJvdmVtZW50QWN0aW9uEjkKEHJlc29sdmVkX2FjdGlvbnMYAyADKAsyHy5vcGVuc2lnaHQudjEuSW1wcm92ZW1lbnRBY3Rpb24SNgoMZW1wdHlfcmVhc29uGAQgASgOMiAub3BlbnNpZ2h0LnYxLkFjdGlvbnNFbXB0eVJlYXNvbhIuCgpjaGVja2VkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgpjYXRlZ29yaWVzGAYgAygLMhwub3BlbnNpZ2h0LnYxLkFjdGlvbkNhdGVnb3J5SgQIAhADUhJhZGRpdGlvbmFsX2FjdGlvbnMiJQoQR2V0QWN0aW9uUmVxdWVzdBIRCglhY3Rpb25faWQYASABKAkiRAoRR2V0QWN0aW9uUmVzcG9uc2USLwoGYWN0aW9uGAEgASgLMh8ub3BlbnNpZ2h0LnYxLkltcHJvdmVtZW50QWN0aW9uIpABChZTZXRBY3Rpb25TdGF0dXNSZXF1ZXN0EhEKCWFjdGlvbl9pZBgBIAEoCRIqCgZzdGF0dXMYAiABKA4yGi5vcGVuc2lnaHQudjEuQWN0aW9uU3RhdHVzEjcKEGRpc21pc3NhbF9yZWFzb24YAyABKA4yHS5vcGVuc2lnaHQudjEuRGlzbWlzc2FsUmVhc29uIkoKF1NldEFjdGlvblN0YXR1c1Jlc3BvbnNlEi8KBmFjdGlvbhgBIAEoCzIfLm9wZW5zaWdodC52MS5JbXByb3ZlbWVudEFjdGlvbiIqChNHZXRDaGVja2xpc3RSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIoYCChRHZXRDaGVja2xpc3RSZXNwb25zZRIuCgxjaGVja19jb3VudHMYBCADKAsyGC5vcGVuc2lnaHQudjEuQ2hlY2tDb3VudBIoCgZncm91cHMYBSADKAsyGC5vcGVuc2lnaHQudjEuQ2hlY2tHcm91cBIuCgpjaGVja2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpwYWdlc19yZWFkGAcgASgFEg8KB2ZhaWx1cmUYCCABKAkSEAoIYXNzZXNzZWQYCSABKAhKBAgBEAJKBAgCEANKBAgDEARSBmNvdW50c1IJZnJlc2huZXNzUghzZWN0aW9ucyrDAQoMQ2hlY2tPdXRjb21lEh0KGUNIRUNLX09VVENPTUVfVU5TUEVDSUZJRUQQABIWChJDSEVDS19PVVRDT01FX1BBU1MQARIWChJDSEVDS19PVVRDT01FX0ZBSUwQAhIiCh5DSEVDS19PVVRDT01FX0NPVUxEX05PVF9WRVJJRlkQAxIgChxDSEVDS19PVVRDT01FX05PVF9BUFBMSUNBQkxFEAQSHgoaQ0hFQ0tfT1VUQ09NRV9OT1RfQVNTRVNTRUQQBSp6CgxBY3Rpb25TdGF0dXMSHQoZQUNUSU9OX1NUQVRVU19VTlNQRUNJRklFRBAAEhYKEkFDVElPTl9TVEFUVVNfT1BFThABEhYKEkFDVElPTl9TVEFUVVNfRE9ORRACEhsKF0FDVElPTl9TVEFUVVNfRElTTUlTU0VEEAMq4AEKD0Rpc21pc3NhbFJlYXNvbhIgChxESVNNSVNTQUxfUkVBU09OX1VOU1BFQ0lGSUVEEAASIQodRElTTUlTU0FMX1JFQVNPTl9OT1RfUkVMRVZBTlQQARIhCh1ESVNNSVNTQUxfUkVBU09OX0FMUkVBRFlfRE9ORRACEiMKH0RJU01JU1NBTF9SRUFTT05fTk9UX0FDVElPTkFCTEUQAxIkCiBESVNNSVNTQUxfUkVBU09OX1RPT19NVUNIX0VGRk9SVBAEEhoKFkRJU01JU1NBTF9SRUFTT05fT1RIRVIQBSqLAQoSQWN0aW9uc0VtcHR5UmVhc29uEiQKIEFDVElPTlNfRU1QVFlfUkVBU09OX1VOU1BFQ0lGSUVEEAASJAogQUNUSU9OU19FTVBUWV9SRUFTT05fTk9fRklORElOR1MQARIpCiVBQ1RJT05TX0VNUFRZX1JFQVNPTl9OT1RfQVNTRVNTRURfWUVUEAIy6QIKDkltcHJvdmVTZXJ2aWNlElIKC0xpc3RBY3Rpb25zEiAub3BlbnNpZ2h0LnYxLkxpc3RBY3Rpb25zUmVxdWVzdBohLm9wZW5zaWdodC52MS5MaXN0QWN0aW9uc1Jlc3BvbnNlEkwKCUdldEFjdGlvbhIeLm9wZW5zaWdodC52MS5HZXRBY3Rpb25SZXF1ZXN0Gh8ub3BlbnNpZ2h0LnYxLkdldEFjdGlvblJlc3BvbnNlEl4KD1NldEFjdGlvblN0YXR1cxIkLm9wZW5zaWdodC52MS5TZXRBY3Rpb25TdGF0dXNSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLlNldEFjdGlvblN0YXR1c1Jlc3BvbnNlElUKDEdldENoZWNrbGlzdBIhLm9wZW5zaWdodC52MS5HZXRDaGVja2xpc3RSZXF1ZXN0GiIub3BlbnNpZ2h0LnYxLkdldENoZWNrbGlzdFJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxJbXByb3ZlUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
- * @generated from message opensight.v1.AssessmentFreshness
+ * Check is one assertion, joined from the catalog definition (title, what) and
+ * the audit result (outcome, detail).
+ *
+ * @generated from message opensight.v1.Check
  */
-export type AssessmentFreshness = Message<"opensight.v1.AssessmentFreshness"> & {
+export type Check = Message<"opensight.v1.Check"> & {
   /**
-   * @generated from field: bool available = 1;
+   * @generated from field: string key = 1;
    */
-  available: boolean;
-
-  /**
-   * @generated from field: bool partial = 2;
-   */
-  partial: boolean;
-
-  /**
-   * @generated from field: bool stale = 3;
-   */
-  stale: boolean;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp assessed_at = 4;
-   */
-  assessedAt?: Timestamp | undefined;
-};
-
-/**
- * Describes the message opensight.v1.AssessmentFreshness.
- * Use `create(AssessmentFreshnessSchema)` to create a new message.
- */
-export const AssessmentFreshnessSchema: GenMessage<AssessmentFreshness> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 0);
-
-/**
- * @generated from message opensight.v1.ActionBlock
- */
-export type ActionBlock = Message<"opensight.v1.ActionBlock"> & {
-  /**
-   * @generated from field: opensight.v1.ActionBlockType type = 1;
-   */
-  type: ActionBlockType;
+  key: string;
 
   /**
    * @generated from field: string title = 2;
@@ -61,290 +32,70 @@ export type ActionBlock = Message<"opensight.v1.ActionBlock"> & {
   title: string;
 
   /**
-   * @generated from field: string text = 3;
+   * @generated from field: string what = 3;
    */
-  text: string;
+  what: string;
 
   /**
-   * @generated from field: string value = 4;
+   * @generated from field: opensight.v1.CheckOutcome outcome = 4;
    */
-  value: string;
+  outcome: CheckOutcome;
 
   /**
-   * @generated from field: string url = 5;
+   * @generated from field: string outcome_label = 5;
    */
-  url: string;
+  outcomeLabel: string;
 
   /**
-   * @generated from field: repeated string items = 6;
+   * @generated from field: string detail = 6;
    */
-  items: string[];
+  detail: string;
 
   /**
-   * @generated from field: repeated string result_ids = 7;
+   * informational checks report a fact the user may legitimately have chosen.
+   * They never count towards passed or failed.
+   *
+   * @generated from field: bool informational = 7;
    */
-  resultIds: string[];
+  informational: boolean;
 };
 
 /**
- * Describes the message opensight.v1.ActionBlock.
- * Use `create(ActionBlockSchema)` to create a new message.
+ * Describes the message opensight.v1.Check.
+ * Use `create(CheckSchema)` to create a new message.
  */
-export const ActionBlockSchema: GenMessage<ActionBlock> = /*@__PURE__*/
+export const CheckSchema: GenMessage<Check> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_improve, 0);
+
+/**
+ * @generated from message opensight.v1.CheckCount
+ */
+export type CheckCount = Message<"opensight.v1.CheckCount"> & {
+  /**
+   * @generated from field: opensight.v1.CheckOutcome outcome = 1;
+   */
+  outcome: CheckOutcome;
+
+  /**
+   * @generated from field: int32 count = 2;
+   */
+  count: number;
+};
+
+/**
+ * Describes the message opensight.v1.CheckCount.
+ * Use `create(CheckCountSchema)` to create a new message.
+ */
+export const CheckCountSchema: GenMessage<CheckCount> = /*@__PURE__*/
   messageDesc(file_opensight_v1_improve, 1);
 
 /**
- * @generated from message opensight.v1.ActionCycle
+ * CheckGroup orders the checklist and carries the "why this matters" copy. It
+ * has no standing of its own — only counts.
+ *
+ * @generated from message opensight.v1.CheckGroup
  */
-export type ActionCycle = Message<"opensight.v1.ActionCycle"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: int32 cycle = 2;
-   */
-  cycle: number;
-
-  /**
-   * @generated from field: opensight.v1.ActionStatus status = 3;
-   */
-  status: ActionStatus;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp first_seen_at = 4;
-   */
-  firstSeenAt?: Timestamp | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp updated_at = 5;
-   */
-  updatedAt?: Timestamp | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp completed_at = 6;
-   */
-  completedAt?: Timestamp | undefined;
-};
-
-/**
- * Describes the message opensight.v1.ActionCycle.
- * Use `create(ActionCycleSchema)` to create a new message.
- */
-export const ActionCycleSchema: GenMessage<ActionCycle> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 2);
-
-/**
- * @generated from message opensight.v1.ImprovementAction
- */
-export type ImprovementAction = Message<"opensight.v1.ImprovementAction"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: string practice_key = 2;
-   */
-  practiceKey: string;
-
-  /**
-   * @generated from field: string subject_key = 3;
-   */
-  subjectKey: string;
-
-  /**
-   * @generated from field: int32 cycle = 4;
-   */
-  cycle: number;
-
-  /**
-   * @generated from field: string recommendation_key = 5;
-   */
-  recommendationKey: string;
-
-  /**
-   * @generated from field: string title = 6;
-   */
-  title: string;
-
-  /**
-   * @generated from field: string summary = 7;
-   */
-  summary: string;
-
-  /**
-   * @generated from field: string effort = 8;
-   */
-  effort: string;
-
-  /**
-   * @generated from field: repeated opensight.v1.ActionBlock blocks = 9;
-   */
-  blocks: ActionBlock[];
-
-  /**
-   * @generated from field: opensight.v1.ActionStatus status = 10;
-   */
-  status: ActionStatus;
-
-  /**
-   * @generated from field: opensight.v1.DismissalReason dismissal_reason = 11;
-   */
-  dismissalReason: DismissalReason;
-
-  /**
-   * @generated from field: opensight.v1.ChecklistStanding standing = 12;
-   */
-  standing: ChecklistStanding;
-
-  /**
-   * @generated from field: repeated string result_ids = 13;
-   */
-  resultIds: string[];
-
-  /**
-   * @generated from field: repeated string prompt_ids = 14;
-   */
-  promptIds: string[];
-
-  /**
-   * @generated from field: repeated string checked_sources = 15;
-   */
-  checkedSources: string[];
-
-  /**
-   * @generated from field: google.protobuf.Timestamp assessed_at = 16;
-   */
-  assessedAt?: Timestamp | undefined;
-
-  /**
-   * @generated from field: bool fresh = 17;
-   */
-  fresh: boolean;
-
-  /**
-   * @generated from field: repeated opensight.v1.ActionCycle cycles = 18;
-   */
-  cycles: ActionCycle[];
-};
-
-/**
- * Describes the message opensight.v1.ImprovementAction.
- * Use `create(ImprovementActionSchema)` to create a new message.
- */
-export const ImprovementActionSchema: GenMessage<ImprovementAction> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 3);
-
-/**
- * @generated from message opensight.v1.ChecklistActionHistory
- */
-export type ChecklistActionHistory = Message<"opensight.v1.ChecklistActionHistory"> & {
-  /**
-   * @generated from field: string action_id = 1;
-   */
-  actionId: string;
-
-  /**
-   * @generated from field: int32 cycle = 2;
-   */
-  cycle: number;
-
-  /**
-   * @generated from field: opensight.v1.ActionStatus status = 3;
-   */
-  status: ActionStatus;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp updated_at = 4;
-   */
-  updatedAt?: Timestamp | undefined;
-};
-
-/**
- * Describes the message opensight.v1.ChecklistActionHistory.
- * Use `create(ChecklistActionHistorySchema)` to create a new message.
- */
-export const ChecklistActionHistorySchema: GenMessage<ChecklistActionHistory> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 4);
-
-/**
- * @generated from message opensight.v1.ChecklistSubject
- */
-export type ChecklistSubject = Message<"opensight.v1.ChecklistSubject"> & {
-  /**
-   * @generated from field: string subject_key = 1;
-   */
-  subjectKey: string;
-
-  /**
-   * @generated from field: string label = 2;
-   */
-  label: string;
-
-  /**
-   * @generated from field: opensight.v1.ChecklistStanding standing = 3;
-   */
-  standing: ChecklistStanding;
-
-  /**
-   * @generated from field: string standing_label = 4;
-   */
-  standingLabel: string;
-
-  /**
-   * @generated from field: string explanation = 5;
-   */
-  explanation: string;
-
-  /**
-   * @generated from field: repeated string result_ids = 6;
-   */
-  resultIds: string[];
-
-  /**
-   * @generated from field: repeated string prompt_ids = 7;
-   */
-  promptIds: string[];
-
-  /**
-   * @generated from field: repeated string checked_sources = 8;
-   */
-  checkedSources: string[];
-
-  /**
-   * @generated from field: google.protobuf.Timestamp last_successful_check = 9;
-   */
-  lastSuccessfulCheck?: Timestamp | undefined;
-
-  /**
-   * @generated from field: bool stale = 10;
-   */
-  stale: boolean;
-
-  /**
-   * @generated from field: opensight.v1.ImprovementAction current_action = 11;
-   */
-  currentAction?: ImprovementAction | undefined;
-
-  /**
-   * @generated from field: repeated opensight.v1.ChecklistActionHistory action_history = 12;
-   */
-  actionHistory: ChecklistActionHistory[];
-};
-
-/**
- * Describes the message opensight.v1.ChecklistSubject.
- * Use `create(ChecklistSubjectSchema)` to create a new message.
- */
-export const ChecklistSubjectSchema: GenMessage<ChecklistSubject> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 5);
-
-/**
- * @generated from message opensight.v1.ChecklistPractice
- */
-export type ChecklistPractice = Message<"opensight.v1.ChecklistPractice"> & {
+export type CheckGroup = Message<"opensight.v1.CheckGroup"> & {
   /**
    * @generated from field: string key = 1;
    */
@@ -361,138 +112,181 @@ export type ChecklistPractice = Message<"opensight.v1.ChecklistPractice"> & {
   description: string;
 
   /**
-   * @generated from field: string why = 4;
-   */
-  why: string;
-
-  /**
-   * @generated from field: opensight.v1.PracticeMode mode = 5;
-   */
-  mode: PracticeMode;
-
-  /**
-   * @generated from field: repeated string references = 6;
+   * @generated from field: repeated string references = 4;
    */
   references: string[];
 
   /**
-   * @generated from field: repeated opensight.v1.ChecklistSubject subjects = 7;
+   * @generated from field: repeated opensight.v1.Check checks = 5;
    */
-  subjects: ChecklistSubject[];
+  checks: Check[];
 
   /**
-   * @generated from field: opensight.v1.ChecklistStanding standing = 8;
+   * @generated from field: int32 checks_passed = 6;
    */
-  standing: ChecklistStanding;
+  checksPassed: number;
 
   /**
-   * @generated from field: string standing_label = 9;
+   * @generated from field: int32 checks_total = 7;
    */
-  standingLabel: string;
+  checksTotal: number;
 };
 
 /**
- * Describes the message opensight.v1.ChecklistPractice.
- * Use `create(ChecklistPracticeSchema)` to create a new message.
+ * Describes the message opensight.v1.CheckGroup.
+ * Use `create(CheckGroupSchema)` to create a new message.
  */
-export const ChecklistPracticeSchema: GenMessage<ChecklistPractice> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 6);
+export const CheckGroupSchema: GenMessage<CheckGroup> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_improve, 2);
 
 /**
- * @generated from message opensight.v1.ChecklistSection
+ * ImprovementAction is one finding as the UI presents it. Go calls it a
+ * Finding; the user-facing word is an action.
+ *
+ * @generated from message opensight.v1.ImprovementAction
  */
-export type ChecklistSection = Message<"opensight.v1.ChecklistSection"> & {
-  /**
-   * @generated from field: string title = 1;
-   */
-  title: string;
-
-  /**
-   * @generated from field: repeated opensight.v1.ChecklistPractice practices = 2;
-   */
-  practices: ChecklistPractice[];
-};
-
-/**
- * Describes the message opensight.v1.ChecklistSection.
- * Use `create(ChecklistSectionSchema)` to create a new message.
- */
-export const ChecklistSectionSchema: GenMessage<ChecklistSection> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 7);
-
-/**
- * @generated from message opensight.v1.StandingCount
- */
-export type StandingCount = Message<"opensight.v1.StandingCount"> & {
-  /**
-   * @generated from field: opensight.v1.ChecklistStanding standing = 1;
-   */
-  standing: ChecklistStanding;
-
-  /**
-   * @generated from field: int32 count = 2;
-   */
-  count: number;
-};
-
-/**
- * Describes the message opensight.v1.StandingCount.
- * Use `create(StandingCountSchema)` to create a new message.
- */
-export const StandingCountSchema: GenMessage<StandingCount> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 8);
-
-/**
- * @generated from message opensight.v1.ActivityEvent
- */
-export type ActivityEvent = Message<"opensight.v1.ActivityEvent"> & {
+export type ImprovementAction = Message<"opensight.v1.ImprovementAction"> & {
   /**
    * @generated from field: string id = 1;
    */
   id: string;
 
   /**
-   * @generated from field: string action_id = 2;
+   * @generated from field: string key = 2;
    */
-  actionId: string;
+  key: string;
 
   /**
-   * @generated from field: string practice_key = 3;
+   * @generated from field: string source = 3;
    */
-  practiceKey: string;
+  source: string;
 
   /**
-   * @generated from field: string subject_key = 4;
-   */
-  subjectKey: string;
-
-  /**
-   * @generated from field: string title = 5;
+   * @generated from field: string title = 4;
    */
   title: string;
 
   /**
-   * @generated from field: int32 cycle = 6;
+   * @generated from field: string body = 5;
    */
-  cycle: number;
+  body: string;
 
   /**
-   * @generated from field: string event_type = 7;
+   * @generated from field: repeated string steps = 6;
    */
-  eventType: string;
+  steps: string[];
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_at = 8;
+   * @generated from field: string detail = 7;
    */
-  createdAt?: Timestamp | undefined;
+  detail: string;
+
+  /**
+   * @generated from field: repeated string result_ids = 8;
+   */
+  resultIds: string[];
+
+  /**
+   * @generated from field: repeated string prompt_ids = 9;
+   */
+  promptIds: string[];
+
+  /**
+   * @generated from field: repeated string sources = 10;
+   */
+  sources: string[];
+
+  /**
+   * @generated from field: bool blocking = 11;
+   */
+  blocking: boolean;
+
+  /**
+   * @generated from field: int32 reach = 12;
+   */
+  reach: number;
+
+  /**
+   * @generated from field: opensight.v1.ActionStatus status = 13;
+   */
+  status: ActionStatus;
+
+  /**
+   * @generated from field: opensight.v1.DismissalReason dismissal_reason = 14;
+   */
+  dismissalReason: DismissalReason;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp first_seen_at = 15;
+   */
+  firstSeenAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp completed_at = 16;
+   */
+  completedAt?: Timestamp | undefined;
+
+  /**
+   * verified_at is set when a later run did not reproduce a completed action.
+   * It confirms the fix landed and claims nothing about visibility.
+   *
+   * @generated from field: google.protobuf.Timestamp verified_at = 17;
+   */
+  verifiedAt?: Timestamp | undefined;
+
+  /**
+   * category is the kind of change the action asks for, and the axis the work
+   * queue filters on. Its key matches the checklist group for work on the
+   * customer's own site; category_label is the word the user reads.
+   *
+   * @generated from field: string category = 18;
+   */
+  category: string;
+
+  /**
+   * @generated from field: string category_label = 19;
+   */
+  categoryLabel: string;
 };
 
 /**
- * Describes the message opensight.v1.ActivityEvent.
- * Use `create(ActivityEventSchema)` to create a new message.
+ * Describes the message opensight.v1.ImprovementAction.
+ * Use `create(ImprovementActionSchema)` to create a new message.
  */
-export const ActivityEventSchema: GenMessage<ActivityEvent> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 9);
+export const ImprovementActionSchema: GenMessage<ImprovementAction> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_improve, 3);
+
+/**
+ * ActionCategory is one entry of the work queue's filter: a kind of change and
+ * how much active work currently asks for it. Only categories with active work
+ * appear, in catalog order, so the filter never offers an empty bucket and
+ * never reshuffles between visits.
+ *
+ * @generated from message opensight.v1.ActionCategory
+ */
+export type ActionCategory = Message<"opensight.v1.ActionCategory"> & {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * @generated from field: int32 count = 3;
+   */
+  count: number;
+};
+
+/**
+ * Describes the message opensight.v1.ActionCategory.
+ * Use `create(ActionCategorySchema)` to create a new message.
+ */
+export const ActionCategorySchema: GenMessage<ActionCategory> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_improve, 4);
 
 /**
  * @generated from message opensight.v1.ListActionsRequest
@@ -509,31 +303,40 @@ export type ListActionsRequest = Message<"opensight.v1.ListActionsRequest"> & {
  * Use `create(ListActionsRequestSchema)` to create a new message.
  */
 export const ListActionsRequestSchema: GenMessage<ListActionsRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 10);
+  messageDesc(file_opensight_v1_improve, 5);
 
 /**
  * @generated from message opensight.v1.ListActionsResponse
  */
 export type ListActionsResponse = Message<"opensight.v1.ListActionsResponse"> & {
   /**
-   * @generated from field: repeated opensight.v1.ImprovementAction focus_actions = 1;
+   * actions is the whole active queue in rank order. There is no lead section:
+   * a fixed cutoff claimed a priority boundary the ranking does not have, and
+   * could push a blocker under a heading that reads as optional.
+   *
+   * @generated from field: repeated opensight.v1.ImprovementAction actions = 1;
    */
-  focusActions: ImprovementAction[];
+  actions: ImprovementAction[];
 
   /**
-   * @generated from field: repeated opensight.v1.ImprovementAction additional_actions = 2;
+   * @generated from field: repeated opensight.v1.ImprovementAction resolved_actions = 3;
    */
-  additionalActions: ImprovementAction[];
-
-  /**
-   * @generated from field: opensight.v1.AssessmentFreshness freshness = 3;
-   */
-  freshness?: AssessmentFreshness | undefined;
+  resolvedActions: ImprovementAction[];
 
   /**
    * @generated from field: opensight.v1.ActionsEmptyReason empty_reason = 4;
    */
   emptyReason: ActionsEmptyReason;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp checked_at = 5;
+   */
+  checkedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: repeated opensight.v1.ActionCategory categories = 6;
+   */
+  categories: ActionCategory[];
 };
 
 /**
@@ -541,7 +344,7 @@ export type ListActionsResponse = Message<"opensight.v1.ListActionsResponse"> & 
  * Use `create(ListActionsResponseSchema)` to create a new message.
  */
 export const ListActionsResponseSchema: GenMessage<ListActionsResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 11);
+  messageDesc(file_opensight_v1_improve, 6);
 
 /**
  * @generated from message opensight.v1.GetActionRequest
@@ -558,7 +361,7 @@ export type GetActionRequest = Message<"opensight.v1.GetActionRequest"> & {
  * Use `create(GetActionRequestSchema)` to create a new message.
  */
 export const GetActionRequestSchema: GenMessage<GetActionRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 12);
+  messageDesc(file_opensight_v1_improve, 7);
 
 /**
  * @generated from message opensight.v1.GetActionResponse
@@ -575,7 +378,7 @@ export type GetActionResponse = Message<"opensight.v1.GetActionResponse"> & {
  * Use `create(GetActionResponseSchema)` to create a new message.
  */
 export const GetActionResponseSchema: GenMessage<GetActionResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 13);
+  messageDesc(file_opensight_v1_improve, 8);
 
 /**
  * @generated from message opensight.v1.SetActionStatusRequest
@@ -602,7 +405,7 @@ export type SetActionStatusRequest = Message<"opensight.v1.SetActionStatusReques
  * Use `create(SetActionStatusRequestSchema)` to create a new message.
  */
 export const SetActionStatusRequestSchema: GenMessage<SetActionStatusRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 14);
+  messageDesc(file_opensight_v1_improve, 9);
 
 /**
  * @generated from message opensight.v1.SetActionStatusResponse
@@ -619,7 +422,7 @@ export type SetActionStatusResponse = Message<"opensight.v1.SetActionStatusRespo
  * Use `create(SetActionStatusResponseSchema)` to create a new message.
  */
 export const SetActionStatusResponseSchema: GenMessage<SetActionStatusResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 15);
+  messageDesc(file_opensight_v1_improve, 10);
 
 /**
  * @generated from message opensight.v1.GetChecklistRequest
@@ -636,26 +439,44 @@ export type GetChecklistRequest = Message<"opensight.v1.GetChecklistRequest"> & 
  * Use `create(GetChecklistRequestSchema)` to create a new message.
  */
 export const GetChecklistRequestSchema: GenMessage<GetChecklistRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 16);
+  messageDesc(file_opensight_v1_improve, 11);
 
 /**
  * @generated from message opensight.v1.GetChecklistResponse
  */
 export type GetChecklistResponse = Message<"opensight.v1.GetChecklistResponse"> & {
   /**
-   * @generated from field: repeated opensight.v1.StandingCount counts = 1;
+   * @generated from field: repeated opensight.v1.CheckCount check_counts = 4;
    */
-  counts: StandingCount[];
+  checkCounts: CheckCount[];
 
   /**
-   * @generated from field: opensight.v1.AssessmentFreshness freshness = 2;
+   * @generated from field: repeated opensight.v1.CheckGroup groups = 5;
    */
-  freshness?: AssessmentFreshness | undefined;
+  groups: CheckGroup[];
 
   /**
-   * @generated from field: repeated opensight.v1.ChecklistSection sections = 3;
+   * @generated from field: google.protobuf.Timestamp checked_at = 6;
    */
-  sections: ChecklistSection[];
+  checkedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: int32 pages_read = 7;
+   */
+  pagesRead: number;
+
+  /**
+   * failure is set when the site could not be crawled at all, in which case
+   * every check reports as could-not-verify rather than as a shortfall.
+   *
+   * @generated from field: string failure = 8;
+   */
+  failure: string;
+
+  /**
+   * @generated from field: bool assessed = 9;
+   */
+  assessed: boolean;
 };
 
 /**
@@ -663,165 +484,62 @@ export type GetChecklistResponse = Message<"opensight.v1.GetChecklistResponse"> 
  * Use `create(GetChecklistResponseSchema)` to create a new message.
  */
 export const GetChecklistResponseSchema: GenMessage<GetChecklistResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 17);
+  messageDesc(file_opensight_v1_improve, 12);
 
 /**
- * @generated from message opensight.v1.ListActivityRequest
+ * CheckOutcome is the verdict on one site-audit check.
+ *
+ * @generated from enum opensight.v1.CheckOutcome
  */
-export type ListActivityRequest = Message<"opensight.v1.ListActivityRequest"> & {
+export const CheckOutcome = {
   /**
-   * @generated from field: string business_id = 1;
-   */
-  businessId: string;
-
-  /**
-   * @generated from field: int32 limit = 2;
-   */
-  limit: number;
-
-  /**
-   * @generated from field: int32 offset = 3;
-   */
-  offset: number;
-};
-
-/**
- * Describes the message opensight.v1.ListActivityRequest.
- * Use `create(ListActivityRequestSchema)` to create a new message.
- */
-export const ListActivityRequestSchema: GenMessage<ListActivityRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 18);
-
-/**
- * @generated from message opensight.v1.ListActivityResponse
- */
-export type ListActivityResponse = Message<"opensight.v1.ListActivityResponse"> & {
-  /**
-   * @generated from field: repeated opensight.v1.ActivityEvent events = 1;
-   */
-  events: ActivityEvent[];
-
-  /**
-   * @generated from field: int32 total = 2;
-   */
-  total: number;
-
-  /**
-   * @generated from field: int32 limit = 3;
-   */
-  limit: number;
-
-  /**
-   * @generated from field: int32 offset = 4;
-   */
-  offset: number;
-};
-
-/**
- * Describes the message opensight.v1.ListActivityResponse.
- * Use `create(ListActivityResponseSchema)` to create a new message.
- */
-export const ListActivityResponseSchema: GenMessage<ListActivityResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 19);
-
-/**
- * @generated from enum opensight.v1.PracticeMode
- */
-export const PracticeMode = {
-  /**
-   * @generated from enum value: PRACTICE_MODE_UNSPECIFIED = 0;
+   * @generated from enum value: CHECK_OUTCOME_UNSPECIFIED = 0;
    */
   UNSPECIFIED: 0,
 
   /**
-   * @generated from enum value: PRACTICE_MODE_CHECK = 1;
+   * @generated from enum value: CHECK_OUTCOME_PASS = 1;
    */
-  CHECK: 1,
+  PASS: 1,
 
   /**
-   * @generated from enum value: PRACTICE_MODE_CONTINUOUS = 2;
+   * @generated from enum value: CHECK_OUTCOME_FAIL = 2;
    */
-  CONTINUOUS: 2,
+  FAIL: 2,
 
   /**
-   * @generated from enum value: PRACTICE_MODE_TRACKED = 3;
+   * @generated from enum value: CHECK_OUTCOME_COULD_NOT_VERIFY = 3;
    */
-  TRACKED: 3,
+  COULD_NOT_VERIFY: 3,
+
+  /**
+   * @generated from enum value: CHECK_OUTCOME_NOT_APPLICABLE = 4;
+   */
+  NOT_APPLICABLE: 4,
+
+  /**
+   * @generated from enum value: CHECK_OUTCOME_NOT_ASSESSED = 5;
+   */
+  NOT_ASSESSED: 5,
 } as const;
 
 /**
- * @generated from enum opensight.v1.PracticeMode
+ * CheckOutcome is the verdict on one site-audit check.
+ *
+ * @generated from enum opensight.v1.CheckOutcome
  */
-export type PracticeMode = (typeof PracticeMode)[keyof typeof PracticeMode] | UnknownEnum;
+export type CheckOutcome = (typeof CheckOutcome)[keyof typeof CheckOutcome] | UnknownEnum;
 
 /**
- * Describes the enum opensight.v1.PracticeMode.
+ * Describes the enum opensight.v1.CheckOutcome.
  */
-export const PracticeModeSchema: GenEnum<PracticeMode> = /*@__PURE__*/
+export const CheckOutcomeSchema: GenEnum<CheckOutcome> = /*@__PURE__*/
   enumDesc(file_opensight_v1_improve, 0);
 
 /**
- * @generated from enum opensight.v1.ChecklistStanding
- */
-export const ChecklistStanding = {
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED: 0,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_GOOD = 1;
-   */
-  GOOD: 1,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_IMPROVABLE = 2;
-   */
-  IMPROVABLE: 2,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_NEEDS_ATTENTION = 3;
-   */
-  NEEDS_ATTENTION: 3,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_TRACKING = 4;
-   */
-  TRACKING: 4,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_COULD_NOT_VERIFY = 5;
-   */
-  COULD_NOT_VERIFY: 5,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_NOT_ASSESSED = 6;
-   */
-  NOT_ASSESSED: 6,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_NOT_APPLICABLE = 7;
-   */
-  NOT_APPLICABLE: 7,
-
-  /**
-   * @generated from enum value: CHECKLIST_STANDING_NO_LONGER_TRACKED = 8;
-   */
-  NO_LONGER_TRACKED: 8,
-} as const;
-
-/**
- * @generated from enum opensight.v1.ChecklistStanding
- */
-export type ChecklistStanding = (typeof ChecklistStanding)[keyof typeof ChecklistStanding] | UnknownEnum;
-
-/**
- * Describes the enum opensight.v1.ChecklistStanding.
- */
-export const ChecklistStandingSchema: GenEnum<ChecklistStanding> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_improve, 1);
-
-/**
+ * ActionStatus is the whole lifecycle of a piece of work. An action stops being
+ * shown when the evidence stops producing it, so there is no retired state.
+ *
  * @generated from enum opensight.v1.ActionStatus
  */
 export const ActionStatus = {
@@ -836,32 +554,20 @@ export const ActionStatus = {
   OPEN: 1,
 
   /**
-   * @generated from enum value: ACTION_STATUS_IN_PROGRESS = 2;
+   * @generated from enum value: ACTION_STATUS_DONE = 2;
    */
-  IN_PROGRESS: 2,
+  DONE: 2,
 
   /**
-   * @generated from enum value: ACTION_STATUS_COMPLETED = 3;
+   * @generated from enum value: ACTION_STATUS_DISMISSED = 3;
    */
-  COMPLETED: 3,
-
-  /**
-   * @generated from enum value: ACTION_STATUS_DISMISSED = 4;
-   */
-  DISMISSED: 4,
-
-  /**
-   * @generated from enum value: ACTION_STATUS_RETIRED = 5;
-   */
-  RETIRED: 5,
-
-  /**
-   * @generated from enum value: ACTION_STATUS_SUPERSEDED = 6;
-   */
-  SUPERSEDED: 6,
+  DISMISSED: 3,
 } as const;
 
 /**
+ * ActionStatus is the whole lifecycle of a piece of work. An action stops being
+ * shown when the evidence stops producing it, so there is no retired state.
+ *
  * @generated from enum opensight.v1.ActionStatus
  */
 export type ActionStatus = (typeof ActionStatus)[keyof typeof ActionStatus] | UnknownEnum;
@@ -870,7 +576,7 @@ export type ActionStatus = (typeof ActionStatus)[keyof typeof ActionStatus] | Un
  * Describes the enum opensight.v1.ActionStatus.
  */
 export const ActionStatusSchema: GenEnum<ActionStatus> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_improve, 2);
+  enumDesc(file_opensight_v1_improve, 1);
 
 /**
  * @generated from enum opensight.v1.DismissalReason
@@ -916,60 +622,13 @@ export type DismissalReason = (typeof DismissalReason)[keyof typeof DismissalRea
  * Describes the enum opensight.v1.DismissalReason.
  */
 export const DismissalReasonSchema: GenEnum<DismissalReason> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_improve, 3);
+  enumDesc(file_opensight_v1_improve, 2);
 
 /**
- * @generated from enum opensight.v1.ActionBlockType
- */
-export const ActionBlockType = {
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED: 0,
-
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_TEXT = 1;
-   */
-  TEXT: 1,
-
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_METRIC = 2;
-   */
-  METRIC: 2,
-
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_LINK = 3;
-   */
-  LINK: 3,
-
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_QUESTION_LIST = 4;
-   */
-  QUESTION_LIST: 4,
-
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_EVIDENCE_LIST = 5;
-   */
-  EVIDENCE_LIST: 5,
-
-  /**
-   * @generated from enum value: ACTION_BLOCK_TYPE_NOTICE = 6;
-   */
-  NOTICE: 6,
-} as const;
-
-/**
- * @generated from enum opensight.v1.ActionBlockType
- */
-export type ActionBlockType = (typeof ActionBlockType)[keyof typeof ActionBlockType] | UnknownEnum;
-
-/**
- * Describes the enum opensight.v1.ActionBlockType.
- */
-export const ActionBlockTypeSchema: GenEnum<ActionBlockType> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_improve, 4);
-
-/**
+ * ActionsEmptyReason distinguishes the three ways the work queue can be empty.
+ * They are not interchangeable: NO_FINDINGS is the absence of evidence, while
+ * NOT_ASSESSED_YET means nothing has been checked at all.
+ *
  * @generated from enum opensight.v1.ActionsEmptyReason
  */
 export const ActionsEmptyReason = {
@@ -979,22 +638,21 @@ export const ActionsEmptyReason = {
   UNSPECIFIED: 0,
 
   /**
-   * @generated from enum value: ACTIONS_EMPTY_REASON_HEALTHY = 1;
+   * @generated from enum value: ACTIONS_EMPTY_REASON_NO_FINDINGS = 1;
    */
-  HEALTHY: 1,
+  NO_FINDINGS: 1,
 
   /**
-   * @generated from enum value: ACTIONS_EMPTY_REASON_INCOMPLETE_CHECKS = 2;
+   * @generated from enum value: ACTIONS_EMPTY_REASON_NOT_ASSESSED_YET = 2;
    */
-  INCOMPLETE_CHECKS: 2,
-
-  /**
-   * @generated from enum value: ACTIONS_EMPTY_REASON_INSUFFICIENT_CAPABILITY = 3;
-   */
-  INSUFFICIENT_CAPABILITY: 3,
+  NOT_ASSESSED_YET: 2,
 } as const;
 
 /**
+ * ActionsEmptyReason distinguishes the three ways the work queue can be empty.
+ * They are not interchangeable: NO_FINDINGS is the absence of evidence, while
+ * NOT_ASSESSED_YET means nothing has been checked at all.
+ *
  * @generated from enum opensight.v1.ActionsEmptyReason
  */
 export type ActionsEmptyReason = (typeof ActionsEmptyReason)[keyof typeof ActionsEmptyReason] | UnknownEnum;
@@ -1003,7 +661,7 @@ export type ActionsEmptyReason = (typeof ActionsEmptyReason)[keyof typeof Action
  * Describes the enum opensight.v1.ActionsEmptyReason.
  */
 export const ActionsEmptyReasonSchema: GenEnum<ActionsEmptyReason> = /*@__PURE__*/
-  enumDesc(file_opensight_v1_improve, 5);
+  enumDesc(file_opensight_v1_improve, 3);
 
 /**
  * @generated from service opensight.v1.ImproveService
@@ -1041,13 +699,6 @@ export const ImproveService: GenService<{
     input: typeof GetChecklistRequestSchema;
     output: typeof GetChecklistResponseSchema;
   },
-  /**
-   * @generated from rpc opensight.v1.ImproveService.ListActivity
-   */
-  listActivity: {
-    methodKind: "unary";
-    input: typeof ListActivityRequestSchema;
-    output: typeof ListActivityResponseSchema;
-  },
 }> = /*@__PURE__*/
   serviceDesc(file_opensight_v1_improve, 0);
+

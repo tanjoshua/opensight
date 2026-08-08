@@ -99,31 +99,6 @@ go run ./cmd/opensight account member add --account <account_id> --email owner@e
 the person's first sign-in with that email at `/login` links it. No invitation
 email or acceptance step is involved.
 
-Re-derive past assessment verdicts from stored evidence:
-
-```sh
-go run ./cmd/opensight assess replay
-go run ./cmd/opensight assess replay --business <business_id> --since 2026-07-01 --until 2026-08-01 --limit 50
-```
-
-`assess replay` loads each selected generation's `evidence_artifacts`, runs the
-currently registered assessors over them, and prints the stored verdict against
-the freshly derived one per practice and subject, plus a summary of how many
-changed. It answers "would my assessor change alter any verdict, and which
-ones?" against real history instead of waiting weeks for fresh data.
-
-It writes nothing, and there is no `--write`: `assessment_generations` is unique
-per monitoring run, so a replay cannot be recorded as a second generation, and
-upserting into the existing one would overwrite the historical record design 09
-preserves across criteria changes. Every filter is optional; `--since`/`--until`
-take `YYYY-MM-DD` or RFC3339 and match `started_at`. Replay is offline —
-research inspections are refused rather than fetched, so the comparison depends
-on the assessor change rather than on today's network, and the report says how
-often that happened. A generation whose collectors failed at capture time is
-reported as skipped, but an assessor that cannot decode an evidence
-`payload_version` it no longer understands fails that generation and the
-command exits non-zero.
-
 ## Tests
 
 `make test` runs the unit suite; it needs no infrastructure.

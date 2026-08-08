@@ -118,8 +118,8 @@ func TestGetResultAnalysis(t *testing.T) {
 		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, verbatim_name, excerpt)
 		VALUES ($1, $2, 'competitor', $3, 'llm', 1, 'Rival Clinic', 'Rival ... options.')`, competitorMentionID, analyzedID, competitorID)
 	mustExec(t, db, ctx, `
-		INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject)
-		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'Example', 0, 'business')`, citationID, analyzedID)
+		INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject, text_start, text_end)
+		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'Example', 0, 'business', 0, 10)`, citationID, analyzedID)
 
 	store := New(db)
 
