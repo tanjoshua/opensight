@@ -11,3 +11,8 @@
 - Code should be clean, concise. The simplest solution should always be prioritized if it doesn't sacrifice software quality.
 - For testing, it is important not to clutter the codebase with unnecessary tests. Each test case needs to justify itself for why it is a useful test case.
 - It is not necessary to always include test cases especially when the codebase is dynamic. Granular unit tests don't have to be included if they are already tested by an integration test scenario.
+
+### System
+
+- Always prioritize simple, clean and neat system and program design. I prefer starting with simple but correct solutions before adding complexity when it is necessary.
+- When evaluating issues, always understand the root cause of issues rather than treating problem symptoms.

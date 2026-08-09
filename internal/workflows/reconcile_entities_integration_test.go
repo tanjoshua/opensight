@@ -102,7 +102,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	mustExec(t, db, ctx, `
 		INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject, text_start, text_end)
 		VALUES ($1, $3, 'https://atlas.example/a', 'atlas.example', NULL, 0, 'business', 0, 22),
-		       ($2, $3, 'https://dir.example/b', 'dir.example', NULL, 1, 'competitor', 23, 71)`,
+		       ($2, $3, 'https://dir.example/b', 'dir.example', NULL, 1, 'competitor', 23, 72)`,
 		atlasCiteID, dirCiteID, resultID)
 	// An existing competitor for the exact + LLM passes to match against.
 	mustExec(t, db, ctx, `
