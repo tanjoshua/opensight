@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -16,16 +17,13 @@ const (
 	SourceCompetitorOwned = "competitor_owned"
 	SourceThirdParty      = "third_party"
 	SourceUnknown         = "unknown"
-
-	ContentTopicTeam       = "team_expertise"
-	ContentTopicServices   = "services_capabilities"
-	ContentTopicTechnology = "technology_process"
-	ContentTopicExperience = "experience_track_record"
-	ContentTopicCare       = "patient_experience"
-	ContentTopicPricing    = "pricing_payment"
-	ContentTopicAccess     = "location_availability"
-	ContentTopicOther      = "other"
 )
+
+var contentGapKeyPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+
+var reservedContentGapKeys = map[string]bool{
+	"other": true, "content": true, "content-gap": true, "website-content": true, "business-details": true,
+}
 
 type SourcePage struct {
 	URL     string `json:"url"`
@@ -45,9 +43,16 @@ type SourceCandidate struct {
 	Claims []SourceClaim `json:"claims"`
 }
 
+type PriorContentGap struct {
+	Key            string `json:"topic_key"`
+	Title          string `json:"title"`
+	Recommendation string `json:"recommendation"`
+}
+
 type SourceClassificationInput struct {
 	BusinessName          string
 	SiteContent           string
+	PriorContentGaps      []PriorContentGap
 	Candidates            []SourceCandidate
 	PriorOutputJSON       json.RawMessage
 	RetryValidationErrors []string
@@ -65,12 +70,12 @@ type SourceClaimReference struct {
 	ClaimIndex     int `json:"claim_index"`
 }
 
-// ContentGap is one customer-site topic that competitor-owned evidence
+// ContentGap is one model-grouped publishing job that competitor-owned evidence
 // repeatedly made useful in answers, but the customer's readable site does not
-// cover clearly enough. Topics are a closed set so findings remain stable when
-// different competitor sources support the same work next week.
+// cover clearly enough. Key is constrained to a durable semantic slug so the
+// model controls the grouping without making finding identity presentation copy.
 type ContentGap struct {
-	Topic          string                 `json:"topic"`
+	Key            string                 `json:"topic_key"`
 	Title          string                 `json:"title"`
 	Reason         string                 `json:"reason"`
 	Recommendation string                 `json:"recommendation"`
@@ -137,18 +142,18 @@ func validateSourceAnalysis(out SourceAnalysis, in SourceClassificationInput) []
 	for _, classification := range out.Sources {
 		classifications[classification.CandidateIndex] = classification
 	}
-	topics := map[string]bool{}
+	keys := map[string]bool{}
 	for i, gap := range out.Gaps {
-		switch gap.Topic {
-		case ContentTopicTeam, ContentTopicServices, ContentTopicTechnology, ContentTopicExperience,
-			ContentTopicCare, ContentTopicPricing, ContentTopicAccess, ContentTopicOther:
-		default:
-			errs = append(errs, fmt.Sprintf("content_gaps[%d] has invalid topic %q", i, gap.Topic))
+		if !ValidContentGapKey(gap.Key) {
+			errs = append(errs, fmt.Sprintf("content_gaps[%d] has invalid topic_key %q", i, gap.Key))
 		}
-		if topics[gap.Topic] {
-			errs = append(errs, fmt.Sprintf("content gap topic %q is duplicated", gap.Topic))
+		if reservedContentGapKeys[gap.Key] {
+			errs = append(errs, fmt.Sprintf("content_gaps[%d] topic_key %q is too generic", i, gap.Key))
 		}
-		topics[gap.Topic] = true
+		if keys[gap.Key] {
+			errs = append(errs, fmt.Sprintf("content gap topic_key %q is duplicated", gap.Key))
+		}
+		keys[gap.Key] = true
 		if strings.TrimSpace(gap.Title) == "" || strings.TrimSpace(gap.Reason) == "" || strings.TrimSpace(gap.Recommendation) == "" {
 			errs = append(errs, fmt.Sprintf("content_gaps[%d] requires title, reason, and recommendation", i))
 		}
@@ -194,13 +199,36 @@ func validateSourceAnalysis(out SourceAnalysis, in SourceClassificationInput) []
 		copy := strings.ToLower(gap.Title + " " + gap.Reason + " " + gap.Recommendation)
 		for _, candidate := range in.Candidates {
 			for _, claim := range candidate.Claims {
-				if owner := strings.ToLower(strings.TrimSpace(claim.Owner)); owner != "" && strings.Contains(copy, owner) {
+				owner := strings.ToLower(strings.TrimSpace(claim.Owner))
+				if owner != "" && strings.Contains(copy, owner) {
 					errs = append(errs, fmt.Sprintf("content_gaps[%d] user-facing copy names competitor %q", i, claim.Owner))
+				}
+				if ownerKey := contentKey(claim.Owner); ownerKey != "" && strings.Contains(gap.Key, ownerKey) {
+					errs = append(errs, fmt.Sprintf("content_gaps[%d] topic_key names competitor %q", i, claim.Owner))
 				}
 			}
 		}
 	}
 	return errs
+}
+
+func ValidContentGapKey(key string) bool {
+	return len(key) >= 3 && len(key) <= 64 && contentGapKeyPattern.MatchString(key) && !reservedContentGapKeys[key]
+}
+
+func contentKey(value string) string {
+	var b strings.Builder
+	hyphen := true
+	for _, r := range strings.ToLower(value) {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+			b.WriteRune(r)
+			hyphen = false
+		} else if !hyphen {
+			b.WriteByte('-')
+			hyphen = true
+		}
+	}
+	return strings.Trim(b.String(), "-")
 }
 
 func containsInt(values []int, want int) bool {

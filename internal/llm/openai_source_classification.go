@@ -30,9 +30,10 @@ RULES
 - After classifying every source, compare all selected competitor-owned claims with the complete readable customer-site content and emit content_gaps.
 - If site_content is empty, emit no content gaps because absence could not be verified; source classifications and third-party listing decisions still proceed.
 - A content gap is an actionable topic that materially helped competitors appear in answers and is absent or meaningfully underdeveloped on the customer's site. Do not emit a gap merely because a competitor said something; suppress it when the customer already publishes equivalent concrete information anywhere in the supplied site content.
-- Group evidence from every competitor and domain into at most one gap per topic. The action is about improving the customer's content, never about copying or matching one competitor.
-- Use the narrowest topic: team_expertise, services_capabilities, technology_process, experience_track_record, patient_experience, pricing_payment, location_availability, or other.
-- title is a short imperative naming the customer's task. reason concisely explains what readers and answer engines cannot currently establish from the customer's site. recommendation is one specific instruction naming the page and the concrete facts to add. Never name a competitor in these user-facing fields.
+- Decide the content groupings from the evidence itself. Merge claims across every competitor and domain when they support the same coherent publishing job, but keep genuinely different jobs separate even if they would live on the same page.
+- For each gap, invent a durable topic_key of 3-64 lowercase ASCII letters, digits, and single hyphens. It must name the enduring subject of the publishing job, not a competitor, a volatile number, or generic buckets such as "other" or "business-details". Examples of the required specificity are "specialist-credentials", "complex-retreatment-capabilities", and "fees-and-payment-options"; these are examples, not a fixed taxonomy.
+- prior_content_gaps contains model-defined publishing jobs from earlier assessments. Reuse an exact prior topic_key when current evidence supports the same underlying job, even if the wording or supporting competitors changed. Do not retain a prior gap that the current evidence and site comparison no longer support, and create a new key whenever the current job is genuinely different.
+- title is a short imperative naming the customer's task. reason concisely explains what readers and answer engines cannot currently establish from the customer's site. recommendation is one specific instruction naming the page and the concrete facts to add. Generate all three for this exact evidence cluster; never name a competitor in these user-facing fields.
 - Use coverage "absent" with site_evidence [] when the topic is not stated. Use "partial" only when some relevant information exists but important concrete detail is missing, and copy one to three exact supporting passages from site_content into site_evidence.
 - Every evidence reference must point to a claim selected by a competitor_owned classification. Use all and only the claims that support that grouped topic.
 - Phrase unknown customer facts conditionally (for example, "If offered, state whether..."). Never invent credentials, equipment, experience, prices, outcomes, or services. Never recommend copying wording or publishing an outcome claim that cannot be substantiated.
@@ -53,9 +54,9 @@ const sourceClassificationJSONSchema = `{
   }},
     "content_gaps":{"type":"array","maxItems":8,"items":{
       "type":"object","additionalProperties":false,
-      "required":["topic","title","reason","recommendation","coverage","site_evidence","evidence"],
+      "required":["topic_key","title","reason","recommendation","coverage","site_evidence","evidence"],
       "properties":{
-        "topic":{"type":"string","enum":["team_expertise","services_capabilities","technology_process","experience_track_record","patient_experience","pricing_payment","location_availability","other"]},
+        "topic_key":{"type":"string","minLength":3,"maxLength":64,"pattern":"^[a-z0-9]+(?:-[a-z0-9]+)*$"},
         "title":{"type":"string"},
         "reason":{"type":"string"},
         "recommendation":{"type":"string"},
@@ -91,10 +92,11 @@ func (r *OpenAISourceClassifier) ClassifySources(ctx context.Context, in SourceC
 
 func (r *OpenAISourceClassifier) runSourceClassification(ctx context.Context, in SourceClassificationInput) (SourceClassificationRunResult, error) {
 	content, err := json.Marshal(struct {
-		BusinessName string            `json:"business_name"`
-		SiteContent  string            `json:"site_content"`
-		Candidates   []SourceCandidate `json:"candidates"`
-	}{BusinessName: in.BusinessName, SiteContent: in.SiteContent, Candidates: in.Candidates})
+		BusinessName     string            `json:"business_name"`
+		SiteContent      string            `json:"site_content"`
+		PriorContentGaps []PriorContentGap `json:"prior_content_gaps"`
+		Candidates       []SourceCandidate `json:"candidates"`
+	}{BusinessName: in.BusinessName, SiteContent: in.SiteContent, PriorContentGaps: in.PriorContentGaps, Candidates: in.Candidates})
 	if err != nil {
 		return SourceClassificationRunResult{}, fmt.Errorf("marshal source classification input: %w", err)
 	}

@@ -18,7 +18,7 @@ Acceptance: one transaction publishes the audit and findings; one audit per moni
 
 As a user, I receive a listing action only for an independently operated source, while a competitor's own source becomes useful evidence for improving my site.
 
-Acceptance: recurrence and reach count only distinct answers where the business is absent and the citation is linked to a competitor; exact stored citation passages, inspected source pages, and bounded customer-site text feed one validated batched source-and-gap analysis call per assessment; `third_party` and `unknown` remain listing actions; competitor-owned claims already covered by the customer produce no action, while missing or partial claims are grouped across competitors into one stable `competitor-content:<topic>` Business details action with specific, safe publishing guidance; validation failure publishes nothing.
+Acceptance: recurrence and reach count only distinct answers where the business is absent and the citation is linked to a competitor; exact stored citation passages, inspected source pages, bounded customer-site text, and prior model-defined gap identities feed one validated batched source-and-gap analysis call per assessment; `third_party` and `unknown` remain listing actions; competitor-owned claims already covered by the customer produce no action, while the model groups missing or partial claims across competitors into targeted `competitor-content:<topic-slug>` Business details actions and generates specific, safe publishing guidance; topic slugs are unique semantic identities rather than a predefined taxonomy and are reused when current evidence supports the same job; validation failure publishes nothing.
 
 ## IMP-4 — Next actions
 

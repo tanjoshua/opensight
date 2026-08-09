@@ -61,7 +61,7 @@ func TestValidateGroupedContentGaps(t *testing.T) {
 		{CandidateIndex: 1, Kind: SourceThirdParty, ClaimIndices: []int{}},
 	}
 	valid := ContentGap{
-		Topic: ContentTopicTechnology, Title: "Explain the technology used in treatment",
+		Key: "treatment-technology", Title: "Explain the technology used in treatment",
 		Reason:         "The site names specialist training but not the treatment technology.",
 		Recommendation: "On the services page, state which imaging or magnification tools are used, if applicable.",
 		Coverage:       "partial", SiteEvidence: []string{"Our specialist team has postgraduate training."},
@@ -76,7 +76,10 @@ func TestValidateGroupedContentGaps(t *testing.T) {
 		gap  ContentGap
 		want string
 	}{
-		{"duplicate topic", valid, "duplicated"},
+		{"duplicate topic key", valid, "duplicated"},
+		{"invalid topic key", func() ContentGap { g := valid; g.Key = "Technology_Gap"; return g }(), "invalid topic_key"},
+		{"generic topic key", func() ContentGap { g := valid; g.Key = "business-details"; return g }(), "too generic"},
+		{"competitor topic key", func() ContentGap { g := valid; g.Key = "rival-clinic-technology"; return g }(), "topic_key names competitor"},
 		{"non-verbatim site evidence", func() ContentGap { g := valid; g.SiteEvidence = []string{"not on site"}; return g }(), "not verbatim"},
 		{"third-party evidence", func() ContentGap {
 			g := valid
@@ -88,7 +91,7 @@ func TestValidateGroupedContentGaps(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			gaps := []ContentGap{tc.gap}
-			if tc.name == "duplicate topic" {
+			if tc.name == "duplicate topic key" {
 				gaps = append(gaps, valid)
 			}
 			errs := validateSourceAnalysis(SourceAnalysis{Sources: sources, Gaps: gaps}, in)

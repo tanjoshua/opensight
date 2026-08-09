@@ -47,10 +47,11 @@ const (
 )
 
 type FinderInput struct {
-	Audit       []CheckResult
-	Snapshot    MonitoringSnapshot
-	SiteContent string
-	Classifier  llm.SourceClassifier
+	Audit            []CheckResult
+	Snapshot         MonitoringSnapshot
+	SiteContent      string
+	PriorContentGaps []llm.PriorContentGap
+	Classifier       llm.SourceClassifier
 }
 
 // Finder turns evidence into findings. Adding advice is one implementation
@@ -257,9 +258,10 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 		return nil, errors.New("citation source classifier is required")
 	}
 	classificationInput := llm.SourceClassificationInput{
-		BusinessName: snapshot.BusinessName,
-		SiteContent:  in.SiteContent,
-		Candidates:   make([]llm.SourceCandidate, len(inspected)),
+		BusinessName:     snapshot.BusinessName,
+		SiteContent:      in.SiteContent,
+		PriorContentGaps: in.PriorContentGaps,
+		Candidates:       make([]llm.SourceCandidate, len(inspected)),
 	}
 	for i, candidate := range inspected {
 		pages := make([]llm.SourcePage, len(candidate.pages))
@@ -341,7 +343,7 @@ func competitorContentFinding(gap llm.ContentGap, inspected []inspectedDomain, c
 		detail += " Your site touches on the topic, but does not yet make the cited decision factors equally clear."
 	}
 	return Finding{
-		Key: SourceCompetitorContent + ":" + gap.Topic, Source: SourceCompetitorContent,
+		Key: SourceCompetitorContent + ":" + gap.Key, Source: SourceCompetitorContent,
 		Category: GroupIdentity, Title: gap.Title,
 		Body: fmt.Sprintf("In %d %s that omitted you, ChatGPT relied on this kind of information when recommending other businesses. %s", len(results), plural(len(results), "answer", "answers"), gap.Reason),
 		Steps: []string{

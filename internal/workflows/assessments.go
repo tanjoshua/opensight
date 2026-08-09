@@ -63,10 +63,32 @@ func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) (
 	if err != nil {
 		return nil, err
 	}
+	previous, err := a.Store.ListFindings(ctx, in.AccountID, in.BusinessID)
+	if err != nil {
+		return nil, err
+	}
+	priorContentGaps := []llm.PriorContentGap{}
+	for _, finding := range previous {
+		if finding.Source != visibility.SourceCompetitorContent {
+			continue
+		}
+		key, ok := strings.CutPrefix(finding.Key, visibility.SourceCompetitorContent+":")
+		if !ok || !llm.ValidContentGapKey(key) {
+			continue
+		}
+		recommendation := ""
+		if len(finding.Steps) > 0 {
+			recommendation = finding.Steps[0]
+		}
+		priorContentGaps = append(priorContentGaps, llm.PriorContentGap{Key: key, Title: finding.Title, Recommendation: recommendation})
+	}
 	research := &boundedHTTPResearcher{client: newSafeFetchHTTPClient(), remaining: visibility.ResearchURLBudget}
 	defer research.client.CloseIdleConnections()
 
-	input := visibility.FinderInput{Audit: in.Audit.Checks, Snapshot: snapshot, SiteContent: in.Audit.SiteContent, Classifier: a.SourceClassifier}
+	input := visibility.FinderInput{
+		Audit: in.Audit.Checks, Snapshot: snapshot, SiteContent: in.Audit.SiteContent,
+		PriorContentGaps: priorContentGaps, Classifier: a.SourceClassifier,
+	}
 	out := []visibility.Finding{}
 	for _, finder := range visibility.Finders() {
 		findings, err := finder.Find(ctx, input, research)

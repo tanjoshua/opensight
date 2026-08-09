@@ -40,7 +40,7 @@ func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.Source
 	analysis := llm.SourceAnalysis{Sources: out, Gaps: []llm.ContentGap{}}
 	if c.kind == llm.SourceCompetitorOwned && !c.suppressGap {
 		analysis.Gaps = []llm.ContentGap{{
-			Topic: llm.ContentTopicServices, Title: "Explain your complex-case services",
+			Key: "complex-case-services", Title: "Explain your complex-case services",
 			Reason:         "Your site does not clearly describe these capabilities.",
 			Recommendation: "On your services page, state which complex cases you treat, if offered.",
 			Coverage:       "absent", SiteEvidence: []string{}, Evidence: evidence,
@@ -82,7 +82,7 @@ func TestCompetitorContentGroupsDomainsByActionableTopic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(findings) != 1 || findings[0].Key != "competitor-content:services_capabilities" || findings[0].Reach != 4 || len(findings[0].Sources) != 4 {
+	if len(findings) != 1 || findings[0].Key != "competitor-content:complex-case-services" || findings[0].Reach != 4 || len(findings[0].Sources) != 4 {
 		t.Fatalf("competitor domains were not grouped into one topic finding: %+v", findings)
 	}
 }
@@ -129,7 +129,11 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 		"https://www.rival.example/a": "<html><title>Rival Clinic</title><body>Official site</body></html>",
 		"https://www.rival.example/b": "<html><body>Official Rival Clinic content</body></html>",
 	}}
-	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: linkedSnapshot(), SiteContent: "Customer Clinic already describes its team.", Classifier: classifier}, research)
+	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{
+		Snapshot: linkedSnapshot(), SiteContent: "Customer Clinic already describes its team.",
+		PriorContentGaps: []llm.PriorContentGap{{Key: "complex-case-services", Title: "Explain your complex-case services"}},
+		Classifier:       classifier,
+	}, research)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,8 +143,11 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 	if classifier.in.SiteContent != "Customer Clinic already describes its team." || classifier.in.BusinessName != "Customer Clinic" {
 		t.Fatalf("customer-site context was not supplied to analysis: %+v", classifier.in)
 	}
+	if len(classifier.in.PriorContentGaps) != 1 || classifier.in.PriorContentGaps[0].Key != "complex-case-services" {
+		t.Fatalf("prior model-defined gap was not supplied for identity reuse: %+v", classifier.in.PriorContentGaps)
+	}
 	f := findings[0]
-	if f.Key != "competitor-content:services_capabilities" || f.Category != GroupIdentity || strings.Contains(f.Key, "citation-gap") {
+	if f.Key != "competitor-content:complex-case-services" || f.Category != GroupIdentity || strings.Contains(f.Key, "citation-gap") {
 		t.Fatalf("competitor-owned source routed incorrectly: %+v", f)
 	}
 	if strings.Contains(f.Detail, "Rival Clinic offers") || !strings.Contains(f.Detail, "1 competitor-owned source") {
