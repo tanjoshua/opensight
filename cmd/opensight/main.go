@@ -437,6 +437,14 @@ func work(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("build match runner: %w", err)
 	}
 
+	sourceClassifier, err := llm.NewSourceClassifier(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIAnalysisModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build source classifier: %w", err)
+	}
+
 	proposer, err := llm.NewProposeProfileRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
 		APIKey: cfg.OpenAIAPIKey,
 		Model:  cfg.OpenAIOnboardingModel,
@@ -460,11 +468,12 @@ func work(ctx context.Context, cfg config.Config) error {
 	)
 
 	activities := &workflows.Activities{
-		Store:     store.New(db),
-		Runner:    runner,
-		Extractor: extractor,
-		Matcher:   matcher,
-		Proposer:  proposer,
+		Store:            store.New(db),
+		Runner:           runner,
+		Extractor:        extractor,
+		Matcher:          matcher,
+		Proposer:         proposer,
+		SourceClassifier: sourceClassifier,
 	}
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{

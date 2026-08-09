@@ -11,6 +11,8 @@ import (
 	"sort"
 	"testing"
 	"time"
+
+	"opensight/internal/llm"
 )
 
 // minFixtureCases stops a corpus from quietly shrinking to a size where its
@@ -111,6 +113,7 @@ func TestCitationGapAgainstFixtures(t *testing.T) {
 			var scan OwnedSiteScan
 			strictDecode(t, c.Name, "site", c.Site, &scan)
 			in.Audit = Audit(scan)
+			in.Classifier = llm.NewStubSourceClassifier()
 
 			research := &fixtureResearcher{pages: c.Pages, remaining: ResearchURLBudget}
 			findings, err := citationGapFinder{}.Find(context.Background(), in, research)

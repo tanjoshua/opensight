@@ -103,13 +103,16 @@ func ValidateExtraction(out ExtractionOutput, responseText string, annotations [
 			errs = append(errs, fmt.Sprintf("citations[%d].subject %q is not one of business, competitor, other, unknown", i, c.Subject))
 		}
 	}
-	errs = append(errs, validateCitationOccurrences(out.Citations, annotations, len(out.Entities))...)
+	errs = append(errs, validateCitationOccurrences(out, responseText, annotations)...)
 
 	return errs
 }
 
-func validateCitationOccurrences(out []ExtractedCitation, annotations []CitationAnnotation, entityCount int) []string {
+func validateCitationOccurrences(extraction ExtractionOutput, responseText string, annotations []CitationAnnotation) []string {
+	out := extraction.Citations
 	ordered := OrderCitationAnnotations(annotations)
+	spans := AttributeCitations(responseText, annotations)
+	runes := []rune(responseText)
 	var errs []string
 	if len(out) != len(ordered) {
 		errs = append(errs, fmt.Sprintf("citations has %d occurrences; response annotations have %d", len(out), len(ordered)))
@@ -121,17 +124,72 @@ func validateCitationOccurrences(out []ExtractedCitation, annotations []Citation
 		if i < len(ordered) && c.URL != ordered[i].URL {
 			errs = append(errs, fmt.Sprintf("citations[%d].url %q does not match annotation occurrence %d url %q", i, c.URL, i, ordered[i].URL))
 		}
-		seen := make(map[int]bool, len(c.EntityIndices))
-		for j, index := range c.EntityIndices {
-			if index < 0 || index >= entityCount {
-				errs = append(errs, fmt.Sprintf("citations[%d].entity_indices[%d] is %d; must reference an entity index in [0,%d)", i, j, index, entityCount))
+		seen := make(map[int]bool, len(c.Links))
+		for j, link := range c.Links {
+			index := link.EntityIndex
+			if index < 0 || index >= len(extraction.Entities) {
+				errs = append(errs, fmt.Sprintf("citations[%d].links[%d].entity_index is %d; must reference an entity index in [0,%d)", i, j, index, len(extraction.Entities)))
 			} else if seen[index] {
-				errs = append(errs, fmt.Sprintf("citations[%d].entity_indices contains duplicate index %d", i, index))
+				errs = append(errs, fmt.Sprintf("citations[%d].links contains duplicate index %d", i, index))
+			} else if !referenceMatchesEntity(link.Reference, extraction.Entities[index].VerbatimName) {
+				errs = append(errs, fmt.Sprintf("citations[%d].links[%d].reference %q does not match entity[%d] %q", i, j, link.Reference, index, extraction.Entities[index].VerbatimName))
 			}
 			seen[index] = true
+			if !isVerbatimSubstring(link.Reference, normalizeForVerbatimCheck(responseText)) {
+				errs = append(errs, fmt.Sprintf("citations[%d].links[%d].reference %q does not appear verbatim in the response text", i, j, link.Reference))
+			}
+			if !isVerbatimSubstring(link.Passage, normalizeForVerbatimCheck(responseText)) {
+				errs = append(errs, fmt.Sprintf("citations[%d].links[%d].passage %q does not appear verbatim in the response text", i, j, link.Passage))
+			}
+			if i < len(spans) {
+				span := spans[i]
+				passage := ""
+				if span.Start >= 0 && span.Start <= span.End && span.End <= len(runes) {
+					passage = string(runes[span.Start:span.End])
+				}
+				if !isVerbatimSubstring(link.Passage, normalizeForVerbatimCheck(passage)) {
+					errs = append(errs, fmt.Sprintf("citations[%d].links[%d].passage is outside citation occurrence %d evidence span", i, j, i))
+				}
+			}
 		}
 	}
 	return errs
+}
+
+// referenceMatchesEntity accepts the exact extracted name, a multi-token
+// shorthand contained within it, or its acronym. It intentionally rejects a
+// single generic word so a nearby "City" cannot validate a shifted business.
+func referenceMatchesEntity(reference, entity string) bool {
+	ref := strings.Fields(NormalizeEntityName(reference))
+	name := strings.Fields(NormalizeEntityName(entity))
+	if len(ref) == 0 || len(name) == 0 {
+		return false
+	}
+	if strings.Join(ref, " ") == strings.Join(name, " ") {
+		return true
+	}
+	if len(ref) >= 2 {
+		for i := 0; i+len(ref) <= len(name); i++ {
+			if strings.Join(name[i:i+len(ref)], " ") == strings.Join(ref, " ") {
+				return true
+			}
+		}
+	}
+	if len(ref) == 1 {
+		for _, token := range name {
+			if token == ref[0] && reference == strings.ToUpper(reference) && len([]rune(reference)) >= 2 {
+				return true
+			}
+		}
+		var acronym strings.Builder
+		for _, token := range name {
+			if token != "and" && token != "the" {
+				acronym.WriteByte(token[0])
+			}
+		}
+		return len(ref[0]) >= 2 && ref[0] == acronym.String()
+	}
+	return false
 }
 
 // ExtractionAttemptResult is the outcome of ExtractWithRetry.

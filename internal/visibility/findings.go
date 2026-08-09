@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+
+	"opensight/internal/llm"
 )
 
 // Finding is one piece of work, discovered from evidence. Unlike a check, the
@@ -39,13 +41,15 @@ type Finding struct {
 }
 
 const (
-	SourceSiteAudit   = "site-audit"
-	SourceCitationGap = "citation-gap"
+	SourceSiteAudit         = "site-audit"
+	SourceCitationGap       = "citation-gap"
+	SourceCompetitorContent = "competitor-content"
 )
 
 type FinderInput struct {
-	Audit    []CheckResult
-	Snapshot MonitoringSnapshot
+	Audit      []CheckResult
+	Snapshot   MonitoringSnapshot
+	Classifier llm.SourceClassifier
 }
 
 // Finder turns evidence into findings. Adding advice is one implementation
@@ -139,8 +143,9 @@ type domainEvidence struct {
 	prompts     map[string]bool
 	runs        map[string]bool
 	competitors map[string]bool
-	results     []string
+	results     map[string]bool
 	urls        []string
+	claims      []llm.SourceClaim
 }
 
 // domain is the spelling shown to the user: the plainest form the corpus
@@ -167,6 +172,12 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 				continue
 			}
 			for _, citation := range result.Citations {
+				// Recurrence, reach, and inspection are link-specific: an unlinked
+				// citation occurrence is not evidence that this source supported a
+				// competitor and cannot inflate any of those counts.
+				if len(citation.Competitors) == 0 {
+					continue
+				}
 				spelling := strings.ToLower(strings.TrimSpace(citation.Domain))
 				domain := normalizeHost(spelling)
 				if domain == "" || domain == normalizeHost(snapshot.WebsiteHost) {
@@ -174,16 +185,19 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 				}
 				evidence := byDomain[domain]
 				if evidence == nil {
-					evidence = &domainEvidence{spellings: map[string]bool{}, prompts: map[string]bool{}, runs: map[string]bool{}, competitors: map[string]bool{}}
+					evidence = &domainEvidence{spellings: map[string]bool{}, prompts: map[string]bool{}, runs: map[string]bool{}, competitors: map[string]bool{}, results: map[string]bool{}}
 					byDomain[domain] = evidence
 				}
 				evidence.spellings[spelling] = true
 				evidence.prompts[result.PromptID] = true
 				evidence.runs[run.RunID] = true
-				evidence.results = append(evidence.results, result.ResultID)
+				evidence.results[result.ResultID] = true
 				for _, competitor := range citation.Competitors {
 					if trimmed := strings.TrimSpace(competitor); trimmed != "" {
 						evidence.competitors[trimmed] = true
+						if passage := strings.TrimSpace(citation.Passage); passage != "" {
+							evidence.claims = append(evidence.claims, llm.SourceClaim{Owner: trimmed, Passage: passage})
+						}
 					}
 				}
 				if parsed, err := url.Parse(citation.URL); err == nil && normalizeHost(parsed.Hostname()) == domain {
@@ -213,11 +227,12 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 		return candidates[i].domain() < candidates[j].domain()
 	})
 
-	out := []Finding{}
+	type inspectedDomain struct {
+		evidence *domainEvidence
+		pages    []ResearchResult
+	}
+	inspected := []inspectedDomain{}
 	for _, evidence := range candidates {
-		if len(evidence.competitors) == 0 {
-			continue
-		}
 		urls := dedupe(evidence.urls)
 		if len(urls) > maxURLsPerCandidate {
 			urls = urls[:maxURLsPerCandidate]
@@ -229,25 +244,54 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 		if len(checked) == 0 || listed || exhausted {
 			continue
 		}
-		out = append(out, findingForDomain(evidence, checked))
+		inspected = append(inspected, inspectedDomain{evidence: evidence, pages: checked})
+	}
+	if len(inspected) == 0 {
+		return []Finding{}, nil
+	}
+	if in.Classifier == nil {
+		return nil, errors.New("citation source classifier is required")
+	}
+	classificationInput := llm.SourceClassificationInput{Candidates: make([]llm.SourceCandidate, len(inspected))}
+	for i, candidate := range inspected {
+		pages := make([]llm.SourcePage, len(candidate.pages))
+		for j, page := range candidate.pages {
+			pages[j] = llm.SourcePage{URL: page.URL, Content: pageTextForClassification(page.Text)}
+		}
+		classificationInput.Candidates[i] = llm.SourceCandidate{Domain: candidate.evidence.domain(), Pages: pages, Claims: dedupeClaims(candidate.evidence.claims)}
+	}
+	classifications, err := in.Classifier.ClassifySources(ctx, classificationInput)
+	if err != nil {
+		return nil, err
+	}
+	out := []Finding{}
+	for _, classification := range classifications {
+		candidate := inspected[classification.CandidateIndex]
+		checked := make([]string, len(candidate.pages))
+		for i, page := range candidate.pages {
+			checked[i] = page.URL
+		}
+		if classification.Kind == llm.SourceCompetitorOwned {
+			out = append(out, competitorContentFinding(candidate.evidence, checked, classification, classificationInput.Candidates[classification.CandidateIndex].Claims))
+		} else {
+			out = append(out, findingForDomain(candidate.evidence, checked))
+		}
 	}
 	return out, nil
 }
 
 func findingForDomain(evidence *domainEvidence, checked []string) Finding {
 	competitors := mapKeys(evidence.competitors)
-	questions := len(evidence.prompts)
-	results := dedupe(evidence.results)
+	results := mapKeys(evidence.results)
 	return Finding{
 		Key:      SourceCitationGap + ":" + evidence.domain(),
 		Source:   SourceCitationGap,
 		Category: CategoryListings,
 		Title:    "Get listed on " + evidence.domain(),
 		Body: fmt.Sprintf(
-			"ChatGPT cited %s while answering %d of your monitored %s without naming you. It cited that source for %s, and the %d %s we read there %s mention your business.",
+			"In %d answers that omitted you, ChatGPT cited %s to support recommendations of %s. The %d %s we read there %s mention your business.",
+			len(results),
 			evidence.domain(),
-			questions,
-			plural(questions, "question", "questions"),
 			nameList(competitors),
 			len(checked),
 			plural(len(checked), "page", "pages"),
@@ -259,7 +303,7 @@ func findingForDomain(evidence *domainEvidence, checked []string) Finding {
 			"Never offer an incentive for a listing or a review, and make no comparative claims about the businesses already there.",
 			"A later weekly check will confirm once your business appears on the page.",
 		},
-		Detail:    fmt.Sprintf("ChatGPT cited this source for %d of the businesses it recommended instead: %s.", len(competitors), strings.Join(competitors, ", ")),
+		Detail:    fmt.Sprintf("Linked competitor names extracted from those citations: %s.", strings.Join(competitors, ", ")),
 		ResultIDs: results,
 		PromptIDs: mapKeys(evidence.prompts),
 		Sources:   checked,
@@ -268,12 +312,39 @@ func findingForDomain(evidence *domainEvidence, checked []string) Finding {
 	}
 }
 
+func competitorContentFinding(evidence *domainEvidence, checked []string, classification llm.SourceClassification, claims []llm.SourceClaim) Finding {
+	selected := []string{}
+	for _, index := range classification.ClaimIndices {
+		if len(selected) == 3 {
+			break
+		}
+		selected = append(selected, claims[index].Passage)
+	}
+	results := mapKeys(evidence.results)
+	detail := "Exact cited claims:"
+	for _, claim := range selected {
+		detail += "\n• “" + claim + "”"
+	}
+	return Finding{
+		Key: SourceCompetitorContent + ":" + evidence.domain(), Source: SourceCompetitorContent,
+		Category: GroupIdentity, Title: "Publish comparable evidence on your own site",
+		Body: fmt.Sprintf("In %d answers that omitted you, ChatGPT cited %s to support claims about %s. Publish comparable, truthful evidence on your own site so it can understand your business directly.", len(results), evidence.domain(), classification.Owner),
+		Steps: []string{
+			"Review the exact cited claims below and identify the underlying facts customers would need from your business.",
+			"Publish your own specific, truthful evidence on the most relevant service or business-details page.",
+			"Use only facts you can substantiate; do not copy the competitor's wording or imply unsupported outcomes.",
+		},
+		Detail: detail, ResultIDs: results, PromptIDs: mapKeys(evidence.prompts), Sources: checked,
+		Reach: len(results), Priority: 1,
+	}
+}
+
 // confirmAbsent reads the cited pages and reports which were readable, whether
 // any already lists the business, and whether the budget ran out before the
 // candidates did. Spending the budget before recommending work is what keeps
 // the advice trustworthy — and an exhausted budget means the remaining pages
 // were never looked at, which is not evidence of absence.
-func confirmAbsent(ctx context.Context, research BoundedResearcher, urls []string, businessName string) (checked []string, listed, exhausted bool) {
+func confirmAbsent(ctx context.Context, research BoundedResearcher, urls []string, businessName string) (checked []ResearchResult, listed, exhausted bool) {
 	if research == nil || strings.TrimSpace(businessName) == "" {
 		return nil, false, false
 	}
@@ -285,12 +356,25 @@ func confirmAbsent(ctx context.Context, research BoundedResearcher, urls []strin
 		if err != nil {
 			continue
 		}
-		checked = append(checked, result.URL)
+		checked = append(checked, result)
 		if listedOnPage(result.Text, businessName) {
 			return checked, true, false
 		}
 	}
 	return checked, false, false
+}
+
+func dedupeClaims(in []llm.SourceClaim) []llm.SourceClaim {
+	seen := map[string]bool{}
+	out := []llm.SourceClaim{}
+	for _, claim := range in {
+		key := claim.Owner + "\x00" + claim.Passage
+		if !seen[key] {
+			seen[key] = true
+			out = append(out, claim)
+		}
+	}
+	return out
 }
 
 // nameList renders competitor names for a sentence, capped so one finding body

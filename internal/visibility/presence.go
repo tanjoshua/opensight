@@ -84,6 +84,38 @@ func elementText(n *html.Node) string {
 	return strings.Join(strings.Fields(b.String()), " ")
 }
 
+// pageTextForClassification turns inspected markup into bounded visible text.
+// The URL is supplied separately as page identity; scripts/styles and an entire
+// raw 256KB response do not belong in the assessment's one batched model call.
+func pageTextForClassification(pageHTML string) string {
+	doc, err := html.Parse(strings.NewReader(pageHTML))
+	if err != nil {
+		return ""
+	}
+	var b strings.Builder
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node.Type == html.ElementNode && (node.Data == "script" || node.Data == "style" || node.Data == "noscript") {
+			return
+		}
+		if node.Type == html.TextNode {
+			b.WriteString(node.Data)
+			b.WriteByte(' ')
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	walk(doc)
+	text := strings.Join(strings.Fields(b.String()), " ")
+	const maxRunes = 12000
+	runes := []rune(text)
+	if len(runes) > maxRunes {
+		runes = runes[:maxRunes]
+	}
+	return string(runes)
+}
+
 // sameBusiness compares two normalized names. They match when they are equal,
 // or when one extends the other at a token boundary using only generic
 // descriptor words. Comparing tokens rather than characters is what keeps

@@ -44,6 +44,7 @@ type SnapshotResult struct {
 type SnapshotCitation struct {
 	URL         string   `json:"url"`
 	Domain      string   `json:"domain"`
+	Passage     string   `json:"passage"`
 	Competitors []string `json:"competitors"`
 }
 

@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,6 +12,25 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.temporal.io/sdk/testsuite"
 )
+
+func TestAssessmentWorkflowFinderFailureDoesNotPublish(t *testing.T) {
+	env := (&testsuite.WorkflowTestSuite{}).NewTestWorkflowEnvironment()
+	activities := &Activities{}
+	env.RegisterActivity(activities.RunSiteAudit)
+	env.RegisterActivity(activities.RunFinders)
+	env.RegisterActivity(activities.PublishImproveRun)
+
+	env.OnActivity(activities.RunSiteAudit, mock.Anything, mock.Anything).Return(SiteAuditResult{}, nil).Once()
+	env.OnActivity(activities.RunFinders, mock.Anything, mock.Anything).Return(nil, errors.New("source classification failed validation")).Times(3)
+
+	env.ExecuteWorkflow(AssessmentWorkflow, AssessmentWorkflowInput{})
+	if err := env.GetWorkflowError(); err == nil {
+		t.Fatal("workflow succeeded despite source classification failure")
+	}
+	// No PublishImproveRun expectation is registered: any publication would fail
+	// this test. The previously current audit/findings therefore stay untouched.
+	env.AssertExpectations(t)
+}
 
 // TestAssessmentWorkflowPublishesWhatTheFindersProduced pins the shape of the
 // run: audit, then finders over that audit, then one publication carrying both.

@@ -22,7 +22,7 @@ Deps: SCH-3 · Phase 2 · Ref: design 02 (Analysis tables)
 As the developer, I want one structured-output LLM call per succeeded result with deterministic validation, so that extraction is cheap, retryable, and hallucination-checked.
 
 - [x] Mini-class model, configured separately from the execution model; `analysis_model` and `extraction_version` recorded per row.
-- [x] Output schema per design 05: `entities[]` (verbatim_name, is_target, excerpt, in order of first appearance), `target` (sentiment/keywords/excerpts, null if not mentioned), `citations[]` (cite_order, url, subject, entity_indices).
+- [x] Output schema per design 05: `entities[]` (verbatim_name, is_target, excerpt, in order of first appearance), `target` (sentiment/keywords/excerpts, null if not mentioned), `citations[]` (cite_order, url, subject, evidence-bearing entity links).
 - [x] **Deterministic validation**: exact citation occurrence coverage and order/URL agreement, unique in-range entity indexes, and every `verbatim_name` and excerpt present in `response_text` (whitespace-normalized); one retry with validation errors appended; a row failing after retry is flagged, not stored.
 - [x] Extraction-prompt rules encoded: organizations only (never practitioners, directories, review sites, government bodies); practitioner-only recommendations yield **no entity**; sentiment/keywords describe how the response characterizes the target, each supportable by an excerpt; citation `subject` judged from surrounding text only, `unknown` is the honest default.
 - [x] Writes `result_analyses` + `citations`; returns the ordered entity list with direct citation links to the workflow. No mention writes and no positional attribution fallback.

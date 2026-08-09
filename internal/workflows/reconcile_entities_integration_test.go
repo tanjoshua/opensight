@@ -95,13 +95,14 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'reconcile-wf', now())`, runID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb, 'text')`, resultID, runID, promptID)
+		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb,
+		'Atlas Dental is great. Bravo Clinic and Charlie Medical are recommended.')`, resultID, runID, promptID)
 	// Two citations for the result, as phase 1 would have written them, so the
 	// mentions phase 2 writes can resolve their source by cite_order.
 	mustExec(t, db, ctx, `
 		INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject, text_start, text_end)
-		VALUES ($1, $3, 'https://atlas.example/a', 'atlas.example', NULL, 0, 'business', 0, 20),
-		       ($2, $3, 'https://dir.example/b', 'dir.example', NULL, 1, 'competitor', 20, 40)`,
+		VALUES ($1, $3, 'https://atlas.example/a', 'atlas.example', NULL, 0, 'business', 0, 22),
+		       ($2, $3, 'https://dir.example/b', 'dir.example', NULL, 1, 'competitor', 23, 71)`,
 		atlasCiteID, dirCiteID, resultID)
 	// An existing competitor for the exact + LLM passes to match against.
 	mustExec(t, db, ctx, `
@@ -184,6 +185,9 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	}
 	if got := gotCitations[1].Competitors; len(got) != 2 || got[0] != "Bravo Clinic" || got[1] != "Charlie Medical" {
 		t.Errorf("directory citation competitor lift = %v, want linked competitors only", got)
+	}
+	if got := gotCitations[1].Passage; got != "Bravo Clinic and Charlie Medical are recommended." {
+		t.Errorf("directory citation passage = %q, want exact stored citation context", got)
 	}
 
 	// The discovered competitor exists with the verbatim name as its sole alias.

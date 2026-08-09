@@ -110,7 +110,7 @@ func TestExtractionQualityGate(t *testing.T) {
 			}
 			t.Logf("CITATIONS (%d):", len(out.Citations))
 			for _, c := range out.Citations {
-				t.Logf("  - #%d [%s] %s -> entities %v", c.CiteOrder, c.Subject, c.URL, c.EntityIndices)
+				t.Logf("  - #%d [%s] %s -> links %v", c.CiteOrder, c.Subject, c.URL, c.Links)
 			}
 
 			// PASS = analyzed (verbatim-clean, zero validation errors) after at

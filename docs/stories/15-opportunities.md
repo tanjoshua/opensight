@@ -14,6 +14,12 @@ As an operator, I can retry an Improve run without duplicating or partially repl
 
 Acceptance: one transaction publishes the audit and findings; one audit per monitoring run and one current audit per business; a repeated run is a no-op; finder or publication failure leaves prior state current; every query is account scoped.
 
+## IMP-3 — Trustworthy citation opportunities
+
+As a user, I receive a listing action only for an independently operated source, while a competitor's own source becomes useful evidence for improving my site.
+
+Acceptance: recurrence and reach count only distinct answers where the business is absent and the citation is linked to a competitor; exact stored citation passages and inspected pages feed one validated batched ownership-classification call per assessment; `third_party` and `unknown` remain listing actions; `competitor_owned` produces `competitor-content:<domain>` in Business details with at most three exact claims and safe own-site publishing guidance; classification failure publishes nothing.
+
 ## IMP-4 — Next actions
 
 As a user, I can focus on the most relevant work supported by current evidence.

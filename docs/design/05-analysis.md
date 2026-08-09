@@ -47,7 +47,9 @@ One structured-output LLM call per succeeded result. A small/cheap model (mini-c
       "cite_order": 0,
       "url": "…",
       "subject": "business|competitor|other|unknown",
-      "entity_indices": [0, 2]
+      "links": [
+        {"entity_index": 0, "reference": "…", "passage": "…"}
+      ]
     }
   ]
 }
@@ -58,11 +60,11 @@ Rules encoded in the extraction prompt:
 - Entities are **organizations only** (clinics, practices, hospitals) — never individual practitioners or employees, and not directories, review sites, or government bodies (those appear as citation domains instead). A response that recommends only a person ("see Dr Tan Wei Ming") without naming an organization yields **no entity** for that recommendation: practitioner-only mentions are not business mentions and never become competitors. Matching keys are organization trading names exclusively. Extraction test fixtures (replay data, 07) must cover the three canonical cases: practitioner-only, organization-only, and combined.
 - Sentiment and keywords describe **how the response characterizes the target business**, not the response's overall tone. Every keyword and the sentiment must be supportable by an excerpt — excerpts are the user-facing evidence (PRD §6) and our spot-check surface against extraction hallucination.
 - Citation `subject` is judged from the response's own text around the citation, never by fetching the cited page (02 decision). `unknown` is the honest default.
-- Every citation annotation is returned as a separate occurrence in `cite_order`, including repeated URLs. `entity_indices` contains every organization directly supported by that occurrence, multiple indexes when appropriate, and an empty array for general guidance or an unclear relationship.
+- Every citation annotation is returned as a separate occurrence in `cite_order`, including repeated URLs. `links` contains every organization directly supported by that occurrence, with its entity index, exact response reference, and exact supporting response passage; it is empty for general guidance or an unclear relationship.
 
 **Citation evidence and entity links.** A `url_citation` annotation's `start_index`/`end_index` cover the inline marker rather than the supported claim. Annotation spans are therefore retained only to display the surrounding inline evidence: after sorting annotations by `start_index`, each marker stores `[max(previous marker end, start of its line), marker start)` as `text_start`/`text_end`. A URL check with a marker-location fallback keeps these display offsets robust when provider indexes differ.
 
-Entity attribution comes directly from the same extraction call's validated `entity_indices`; there is no positional fallback. Validation requires exact citation occurrence coverage, `cite_order` and URL agreement, and unique in-range entity indexes in addition to the verbatim entity evidence. Invalid output retries once through the normal extraction retry path. An uncertain relationship produces no link.
+Entity attribution comes directly from the same extraction call's evidence-bearing links; there is no positional fallback. Each citation's computed evidence span is supplied to the model. Validation requires exact citation occurrence coverage, `cite_order` and URL agreement, unique in-range entity indexes, verbatim references and passages, a reference matching the selected entity (including genuine response shorthand or acronyms), and a passage contained by that occurrence's citation evidence span. A passage may use a pronoun when the relationship is clear, but its separate reference must still be a real name or shorthand from the response. Invalid output retries once through the normal extraction retry path. An uncertain relationship produces no link.
 
 Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **no mention facts**; those come exclusively from phase 2 into `mentions` (02). If reconcile later demotes the model's `is_target` judgment, the stored sentiment simply never surfaces, since metrics gate on `mentions`. Returns the entity list with its model-supplied citation orders to the workflow for phase 2.
 

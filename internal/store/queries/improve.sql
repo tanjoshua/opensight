@@ -87,6 +87,7 @@ SELECT r.id AS run_id,pr.id AS result_id,pr.prompt_id,p.text AS prompt,pr.respon
  EXISTS(SELECT 1 FROM mentions m WHERE m.prompt_result_id=pr.id AND m.subject='self') AS mentioned,
  COALESCE((SELECT json_agg(json_build_object(
     'url',c.url,'domain',c.domain,
+	'passage',substring(COALESCE(pr.response_text,'') FROM c.text_start + 1 FOR GREATEST(c.text_end-c.text_start,0)),
     'competitors',COALESCE((SELECT array_agg(DISTINCT co.name ORDER BY co.name)
       FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id
       JOIN competitors co ON co.id=m.competitor_id WHERE mc.citation_id=c.id),'{}')

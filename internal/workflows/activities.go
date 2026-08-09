@@ -22,11 +22,12 @@ import (
 // exercising one activity leave the rest at their nil zero value instead of
 // padding a long positional constructor call.
 type Activities struct {
-	Store     *store.Store
-	Runner    llm.PromptRunner
-	Extractor llm.ExtractionRunner
-	Matcher   llm.MatchRunner
-	Proposer  llm.ProposeProfileRunner
+	Store            *store.Store
+	Runner           llm.PromptRunner
+	Extractor        llm.ExtractionRunner
+	Matcher          llm.MatchRunner
+	Proposer         llm.ProposeProfileRunner
+	SourceClassifier llm.SourceClassifier
 }
 
 // PromptSnapshot is one active prompt captured at run start. The workflow

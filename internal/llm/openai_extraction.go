@@ -16,7 +16,7 @@ import (
 // recorded per row as result_analyses.extraction_version so a later pass can
 // target "re-analyze everything below version N" (design 05). Bump it in the
 // same commit as any change to extractionInstructions or extractionJSONSchema.
-const ExtractionPromptVersion = 5
+const ExtractionPromptVersion = 6
 
 const openAIExtractionSchemaName = "result_extraction"
 
@@ -41,7 +41,7 @@ TARGET
 
 CITATIONS
 - Return exactly one item for every supplied citation occurrence, including repeated occurrences of the same URL, in cite_order. Copy its cite_order and URL exactly.
-- entity_indices contains every index in the entities array for an organisation directly supported by that citation. Return multiple indexes when appropriate. Return [] for general guidance or whenever the relationship is unclear; never guess from the cited page.
+- links contains one entry for every organisation directly supported by that citation, and [] for general guidance or whenever the relationship is unclear. entity_index identifies the organisation in entities. reference is an exact name, acronym, or shorthand used for that organisation anywhere in the response; never use a pronoun or generic description as the reference. passage is copied exactly from that citation occurrence's supplied evidence_span. The passage need not contain reference when the response uses a pronoun there, but the relationship must still be clear from the response. Never paraphrase. Return multiple links when one occurrence supports multiple organisations.
 - Judge subject FROM THE RESPONSE'S OWN SURROUNDING TEXT ONLY: "business" if it supports the target business, "competitor" if it supports another organisation, "other" if neither, "unknown" when unclear. "unknown" is the honest default.
 
 RETRY
@@ -83,12 +83,24 @@ const extractionJSONSchema = `{
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["cite_order", "url", "subject", "entity_indices"],
+        "required": ["cite_order", "url", "subject", "links"],
         "properties": {
           "cite_order": {"type": "integer", "minimum": 0},
           "url": {"type": "string"},
           "subject": {"type": "string", "enum": ["business", "competitor", "other", "unknown"]},
-          "entity_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}}
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["entity_index", "reference", "passage"],
+              "properties": {
+                "entity_index": {"type": "integer", "minimum": 0},
+                "reference": {"type": "string"},
+                "passage": {"type": "string"}
+              }
+            }
+          }
         }
       }
     }
@@ -179,15 +191,22 @@ func (r *OpenAIExtractionRunner) requestParams(in ExtractionInput) (responses.Re
 // marshalExtractionUserContent serialises the analysis payload the model reads.
 func marshalExtractionUserContent(in ExtractionInput) (string, error) {
 	type citationView struct {
-		CiteOrder  int    `json:"cite_order"`
-		URL        string `json:"url"`
-		Title      string `json:"title"`
-		StartIndex int    `json:"start_index"`
-		EndIndex   int    `json:"end_index"`
+		CiteOrder    int    `json:"cite_order"`
+		URL          string `json:"url"`
+		Title        string `json:"title"`
+		StartIndex   int    `json:"start_index"`
+		EndIndex     int    `json:"end_index"`
+		EvidenceSpan string `json:"evidence_span"`
 	}
+	spans := AttributeCitations(in.ResponseText, in.Citations)
+	runes := []rune(in.ResponseText)
 	citations := make([]citationView, 0, len(in.Citations))
-	for _, c := range in.Citations {
-		citations = append(citations, citationView(c))
+	for i, c := range OrderCitationAnnotations(in.Citations) {
+		evidence := ""
+		if i < len(spans) && spans[i].Start >= 0 && spans[i].Start <= spans[i].End && spans[i].End <= len(runes) {
+			evidence = string(runes[spans[i].Start:spans[i].End])
+		}
+		citations = append(citations, citationView{CiteOrder: i, URL: c.URL, Title: c.Title, StartIndex: c.StartIndex, EndIndex: c.EndIndex, EvidenceSpan: evidence})
 	}
 	aliases := in.BusinessAliases
 	if aliases == nil {

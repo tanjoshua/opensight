@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"opensight/internal/domain"
+	"opensight/internal/llm"
 	"opensight/internal/store"
 	"opensight/internal/visibility"
 
@@ -63,11 +64,14 @@ func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) (
 	research := &boundedHTTPResearcher{client: newSafeFetchHTTPClient(), remaining: visibility.ResearchURLBudget}
 	defer research.client.CloseIdleConnections()
 
-	input := visibility.FinderInput{Audit: in.Audit.Checks, Snapshot: snapshot}
+	input := visibility.FinderInput{Audit: in.Audit.Checks, Snapshot: snapshot, Classifier: a.SourceClassifier}
 	out := []visibility.Finding{}
 	for _, finder := range visibility.Finders() {
 		findings, err := finder.Find(ctx, input, research)
 		if err != nil {
+			if errors.Is(err, llm.ErrSourceClassificationValidation) {
+				return nil, temporal.NewNonRetryableApplicationError("classify citation sources", "InvalidSourceClassification", err)
+			}
 			return nil, fmt.Errorf("finder %s: %w", finder.Key(), err)
 		}
 		out = append(out, findings...)

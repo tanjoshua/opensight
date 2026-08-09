@@ -42,7 +42,8 @@ const (
 		`"target":{"sentiment":"positive","keywords":["braces"],` +
 		`"excerpts":["Atlas Dental is a great clinic for braces."]},` +
 		`"citations":[{"cite_order":0,"url":"https://ATLAS.example.com/team?utm_source=openai",` +
-		`"subject":"business","entity_indices":[0]}]}`
+		`"subject":"business","links":[{"entity_index":0,"reference":"Atlas Dental",` +
+		`"passage":"Atlas Dental is a great clinic for braces."}]}]}`
 	invalidExtraction = `{"entities":[{"verbatim_name":"Ghost Clinic","is_target":false,` +
 		`"excerpt":"Ghost Clinic is cheapest."}],"target":null,"citations":[]}`
 )

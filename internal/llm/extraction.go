@@ -52,10 +52,20 @@ type ExtractionTarget struct {
 // ExtractedCitation aligns one response citation to a best-effort subject
 // judged from the surrounding text only (design 05).
 type ExtractedCitation struct {
-	CiteOrder     int    `json:"cite_order"`
-	URL           string `json:"url"`
-	Subject       string `json:"subject"`
-	EntityIndices []int  `json:"entity_indices"`
+	CiteOrder int                  `json:"cite_order"`
+	URL       string               `json:"url"`
+	Subject   string               `json:"subject"`
+	Links     []CitationEntityLink `json:"links"`
+}
+
+// CitationEntityLink carries enough response-local evidence to validate that
+// an entity index was not shifted onto the wrong organization. Reference is the
+// exact name or shorthand used in the response; Passage is the exact claim
+// immediately supported by this citation occurrence.
+type CitationEntityLink struct {
+	EntityIndex int    `json:"entity_index"`
+	Reference   string `json:"reference"`
+	Passage     string `json:"passage"`
 }
 
 // ExtractionOutput is the decoded extraction schema (design 05). Validation
@@ -73,7 +83,7 @@ type EntityWithCitations struct {
 	CiteOrders []int
 }
 
-// LinkEntities inverts citations[].entity_indices into the per-entity shape
+// LinkEntities inverts citations[].links into the per-entity shape
 // reconciliation needs. ValidateExtraction has already guaranteed the indexes.
 func LinkEntities(out ExtractionOutput) []EntityWithCitations {
 	linked := make([]EntityWithCitations, len(out.Entities))
@@ -81,8 +91,8 @@ func LinkEntities(out ExtractionOutput) []EntityWithCitations {
 		linked[i] = EntityWithCitations{Entity: entity, CiteOrders: []int{}}
 	}
 	for _, citation := range out.Citations {
-		for _, entityIndex := range citation.EntityIndices {
-			linked[entityIndex].CiteOrders = append(linked[entityIndex].CiteOrders, citation.CiteOrder)
+		for _, link := range citation.Links {
+			linked[link.EntityIndex].CiteOrders = append(linked[link.EntityIndex].CiteOrders, citation.CiteOrder)
 		}
 	}
 	return linked

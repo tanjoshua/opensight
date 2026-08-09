@@ -1061,8 +1061,8 @@
  },
  {
   "name": "the first inspected page already shows the listing",
-  "note": "Presence is confirmed on the first URL, so the remaining budget is correctly left unspent.",
-  "expect": [],
+  "note": "An unlinked occurrence cannot suppress or inflate a link-specific finding; only the pages cited for competitors are inspected.",
+  "expect": ["citation-gap:yelp.com"],
   "monitoring": {
    "payload_version": 1,
    "business_name": "Bright Smile Dental",
