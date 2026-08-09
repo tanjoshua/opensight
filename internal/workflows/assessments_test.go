@@ -70,6 +70,10 @@ func TestAssessmentWorkflowPublishesWhatTheFindersProduced(t *testing.T) {
 
 func TestRobotsDeniesUsesSpecificGroupAndAllowTie(t *testing.T) {
 	contentPaths := []string{"/", "/blog/opening-hours"}
+	// A conventional way to admit one crawler and exclude the rest: the empty
+	// Disallow allows the named group everything, so it must not fall through
+	// to the wildcard group's blanket denial.
+	emptyDisallow := "User-agent: OAI-SearchBot\nDisallow:\n\nUser-agent: *\nDisallow: /"
 	tests := []struct {
 		name, body string
 		agent      string
@@ -88,6 +92,8 @@ func TestRobotsDeniesUsesSpecificGroupAndAllowTie(t *testing.T) {
 		{name: "training crawler denied alone", body: "User-agent: GPTBot\nDisallow: /", agent: visibility.AgentGPTBot, paths: contentPaths, denied: true},
 		{name: "search crawler unaffected by a GPTBot rule", body: "User-agent: GPTBot\nDisallow: /", agent: visibility.AgentOAISearchBot, paths: contentPaths, denied: false},
 		{name: "live fetcher denied by its own group", body: "User-agent: *\nAllow: /\n\nUser-agent: ChatGPT-User\nDisallow: /", agent: visibility.AgentChatGPTUser, paths: contentPaths, denied: true},
+		{name: "empty disallow allows the named group", body: emptyDisallow, agent: visibility.AgentOAISearchBot, paths: contentPaths, denied: false},
+		{name: "empty disallow leaves other crawlers denied", body: emptyDisallow, agent: visibility.AgentGPTBot, paths: contentPaths, denied: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

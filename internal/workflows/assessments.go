@@ -315,8 +315,16 @@ func robotsDenies(raw, agent string, paths []string) bool {
 			continue
 		}
 		sawRule = true
+		// An empty "Disallow:" means the group allows everything, so record it
+		// as the least specific allow rule: the group then counts as having
+		// rules (rather than falling back to the wildcard group) while any
+		// longer rule in the same group still wins. An empty "Allow:" says
+		// nothing.
 		if value == "" {
-			continue
+			if key != "disallow" {
+				continue
+			}
+			key, value = "allow", "/"
 		}
 		for _, agent := range agents {
 			rules[agent] = append(rules[agent], rule{allow: key == "allow", path: value})
