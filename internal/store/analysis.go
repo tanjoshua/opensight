@@ -271,10 +271,9 @@ type SuggestedAliasWrite struct {
 // DiscoveredKey when it resolved to one this same commit mints (resolved to the
 // new id via the Discovered map). A self subject sets neither.
 //
-// CiteOrder is the cite_order of the citation backing the text that named this
-// business, resolved to the citation row inside the transaction. llm.NoCitation
-// means the answer named the business without citing a source for it, which is
-// a real answer rather than a missing one.
+// CiteOrders are every model-supplied citation occurrence directly supporting
+// this entity. An empty slice means the answer mentioned it without a clear
+// supporting citation.
 type MentionWrite struct {
 	PromptResultID domain.ID
 	Subject        string // "self" | "competitor"
@@ -284,7 +283,7 @@ type MentionWrite struct {
 	MentionOrder   int
 	VerbatimName   string
 	Excerpt        string
-	CiteOrder      int
+	CiteOrders     []int
 }
 
 // ReconcileCommitParams is the whole-run write payload for CommitReconcile.
@@ -379,19 +378,23 @@ func (s *Store) CommitReconcile(ctx context.Context, accountID, businessID domai
 				}
 				competitorID = &cid
 			}
-			// A negative cite order is llm.NoCitation: the insert leaves citation_id
-			// null rather than pointing the mention at an unrelated source.
-			var citeOrder *int32
-			if m.CiteOrder >= 0 {
-				order := int32(m.CiteOrder)
-				citeOrder = &order
-			}
 			if err := q.InsertMention(ctx, storesqlc.InsertMentionParams{
 				ID: id, PromptResultID: m.PromptResultID, Subject: m.Subject, CompetitorID: competitorID,
 				MatchedBy: m.MatchedBy, MentionOrder: int32(m.MentionOrder),
-				VerbatimName: &m.VerbatimName, Excerpt: m.Excerpt, CiteOrder: citeOrder,
+				VerbatimName: &m.VerbatimName, Excerpt: m.Excerpt,
 			}); err != nil {
 				return fmt.Errorf("insert mention: %w", err)
+			}
+			for _, citeOrder := range m.CiteOrders {
+				rows, err := q.InsertMentionCitation(ctx, storesqlc.InsertMentionCitationParams{
+					MentionID: id, PromptResultID: m.PromptResultID, CiteOrder: int32(citeOrder),
+				})
+				if err != nil {
+					return fmt.Errorf("insert mention citation: %w", err)
+				}
+				if rows != 1 {
+					return fmt.Errorf("mention references missing citation order %d", citeOrder)
+				}
 			}
 		}
 

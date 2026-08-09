@@ -23,6 +23,9 @@ func TestParseCitationAnnotationsFromCapture(t *testing.T) {
 	// Every parsed annotation must be a usable url_citation: non-empty URL and a
 	// non-negative index range.
 	for i, a := range annotations {
+		if a.CiteOrder != i {
+			t.Errorf("annotation[%d].cite_order = %d", i, a.CiteOrder)
+		}
 		if a.URL == "" {
 			t.Errorf("annotation[%d] has empty URL", i)
 		}

@@ -52,8 +52,10 @@ type ExtractionTarget struct {
 // ExtractedCitation aligns one response citation to a best-effort subject
 // judged from the surrounding text only (design 05).
 type ExtractedCitation struct {
-	URL     string `json:"url"`
-	Subject string `json:"subject"`
+	CiteOrder     int    `json:"cite_order"`
+	URL           string `json:"url"`
+	Subject       string `json:"subject"`
+	EntityIndices []int  `json:"entity_indices"`
 }
 
 // ExtractionOutput is the decoded extraction schema (design 05). Validation
@@ -62,6 +64,28 @@ type ExtractionOutput struct {
 	Entities  []ExtractedEntity   `json:"entities"`
 	Target    *ExtractionTarget   `json:"target"`
 	Citations []ExtractedCitation `json:"citations"`
+}
+
+// EntityWithCitations carries an extracted entity into reconciliation together
+// with every citation occurrence the model directly linked to it.
+type EntityWithCitations struct {
+	Entity     ExtractedEntity
+	CiteOrders []int
+}
+
+// LinkEntities inverts citations[].entity_indices into the per-entity shape
+// reconciliation needs. ValidateExtraction has already guaranteed the indexes.
+func LinkEntities(out ExtractionOutput) []EntityWithCitations {
+	linked := make([]EntityWithCitations, len(out.Entities))
+	for i, entity := range out.Entities {
+		linked[i] = EntityWithCitations{Entity: entity, CiteOrders: []int{}}
+	}
+	for _, citation := range out.Citations {
+		for _, entityIndex := range citation.EntityIndices {
+			linked[entityIndex].CiteOrders = append(linked[entityIndex].CiteOrders, citation.CiteOrder)
+		}
+	}
+	return linked
 }
 
 // ExtractionRunner runs one structured-output extraction call per succeeded

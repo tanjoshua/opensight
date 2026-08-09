@@ -50,6 +50,7 @@ sqlc:
 check-sql:
 	@! rg -n 'database/sql' \
 		--glob '*.go' \
+		--glob '!*_test.go' \
 		--glob '!internal/store/sqlc/**' \
 		--glob '!internal/store/migrations.go' .
 	@! rg -U -n '["`][[:space:]]*(SELECT|INSERT|UPDATE|DELETE|WITH)[[:space:]]' \

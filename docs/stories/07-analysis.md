@@ -12,7 +12,8 @@ As the developer, I want the derived-analysis tables migrated, so that extractio
 - [x] `competitors (name, website NULL, aliases, suggested_aliases, source discovered|manual, status discovered|tracked|dismissed)`.
 - [x] `mentions (prompt_result_id, subject self|competitor, competitor_id NULL, matched_by exact|llm, mention_order, verbatim_name, excerpt)` — the **canonical and only** source of mention facts.
 - [x] `citations (prompt_result_id, url, domain, title NULL, cite_order, subject business|competitor|other|unknown)`.
-- [x] Store layer treats all four as wipe-and-rebuild (delete by result/run allowed; raw tables untouched).
+- [x] `mention_citations (mention_id, citation_id)` stores direct many-to-many citation support with cascading foreign keys.
+- [x] Store layer treats the analysis tables and citation links as wipe-and-rebuild (delete by result/run allowed; raw tables untouched).
 
 Deps: SCH-3 · Phase 2 · Ref: design 02 (Analysis tables)
 
@@ -21,10 +22,10 @@ Deps: SCH-3 · Phase 2 · Ref: design 02 (Analysis tables)
 As the developer, I want one structured-output LLM call per succeeded result with deterministic validation, so that extraction is cheap, retryable, and hallucination-checked.
 
 - [x] Mini-class model, configured separately from the execution model; `analysis_model` and `extraction_version` recorded per row.
-- [x] Output schema per design 05: `entities[]` (verbatim_name, is_target, excerpt, in order of first appearance), `target` (sentiment/keywords/excerpts, null if not mentioned), `citations[]` (url, subject).
-- [x] **Verbatim check**: every `verbatim_name` and excerpt must appear as a substring of `response_text` (whitespace-normalized); one retry with validation errors appended; a row failing after retry is flagged, not stored.
+- [x] Output schema per design 05: `entities[]` (verbatim_name, is_target, excerpt, in order of first appearance), `target` (sentiment/keywords/excerpts, null if not mentioned), `citations[]` (cite_order, url, subject, entity_indices).
+- [x] **Deterministic validation**: exact citation occurrence coverage and order/URL agreement, unique in-range entity indexes, and every `verbatim_name` and excerpt present in `response_text` (whitespace-normalized); one retry with validation errors appended; a row failing after retry is flagged, not stored.
 - [x] Extraction-prompt rules encoded: organizations only (never practitioners, directories, review sites, government bodies); practitioner-only recommendations yield **no entity**; sentiment/keywords describe how the response characterizes the target, each supportable by an excerpt; citation `subject` judged from surrounding text only, `unknown` is the honest default.
-- [x] Writes `result_analyses` + `citations`; returns the ordered entity list to the workflow. No mention writes.
+- [x] Writes `result_analyses` + `citations`; returns the ordered entity list with direct citation links to the workflow. No mention writes and no positional attribution fallback.
 - [x] **Quality gate (blocks calling Phase 2 done)**: manually spot-check extraction output against a full real replay week (~20 responses); bar is zero fabricated mentions and zero missed self-mentions. Iterate the extraction prompt (bumping `extraction_version`) until it passes; record the check. Checked 2026-07-21 against all 10 `testdata/spk1` captures with `gpt-5-mini`: 10/10 passed (zero validation errors) after fixing a model double-escaped-unicode artifact (`extraction_version` 2).
 
 Deps: ANA-1, RUN-4 · Phase 2 · Ref: design 05 (Phase 1 — AnalyzeResult)
@@ -55,7 +56,7 @@ Deps: ANA-4 · Phase 2 · Ref: design 05 (Phase 2, step 3)
 As the developer, I want reconcile to finish transactionally, so that metrics only ever see fully analyzed runs.
 
 - [x] Unmatched names (after both passes) create `competitors` rows: status `discovered`, source `discovered`, verbatim name as first alias; deduped within the run first. No minimum-mention threshold.
-- [x] All `mentions` written for the run: subject, matched_by, `mention_order` = first-appearance rank, excerpt. Delete-and-rewrite of the run's mention rows in one transaction (idempotent).
+- [x] All `mentions` and their model-supplied `mention_citations` links written for the run. Delete-and-rewrite of the run's mention rows and links happens in one transaction (idempotent).
 - [x] Commit sets `monitoring_runs.analysis_completed_at`. A result enters the metrics base only when this is set **and** it has a `result_analyses` row — unanalyzed results excluded from numerator and denominator alike.
 
 Deps: ANA-5 · Phase 2 · Ref: design 05 (Phase 2, steps 4–6)

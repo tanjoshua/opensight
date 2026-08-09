@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 )
 
@@ -11,6 +12,7 @@ import (
 // raw payload. StartIndex/EndIndex are text indices into the response text, so
 // the objective first-appearance order of citations is StartIndex ascending.
 type CitationAnnotation struct {
+	CiteOrder  int
 	URL        string
 	Title      string
 	StartIndex int
@@ -68,7 +70,18 @@ func ParseCitationAnnotations(rawResponse json.RawMessage) ([]CitationAnnotation
 			}
 		}
 	}
-	return annotations, nil
+	return OrderCitationAnnotations(annotations), nil
+}
+
+// OrderCitationAnnotations assigns every citation occurrence its objective
+// first-appearance order. Repeated URLs remain separate occurrences.
+func OrderCitationAnnotations(annotations []CitationAnnotation) []CitationAnnotation {
+	ordered := append([]CitationAnnotation(nil), annotations...)
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].StartIndex < ordered[j].StartIndex })
+	for i := range ordered {
+		ordered[i].CiteOrder = i
+	}
+	return ordered
 }
 
 // NormalizeCitationURL strips utm_* query parameters (OpenAI appends

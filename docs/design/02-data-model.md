@@ -27,6 +27,7 @@ erDiagram
     prompt_results ||--o{ mentions : ""
     prompt_results ||--o{ citations : ""
     competitors ||--o{ mentions : ""
+    mentions }o--o{ citations : "mention_citations"
 ```
 
 All IDs are UUIDv7 (time-ordered, index-friendly). `account_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through an account-checked business lookup. Callers without ambient account context (Temporal activities, CLI) first resolve the business's account via a single bootstrap lookup (`store.Store.ResolveAccountID`), then use the same account-checked repositories.
@@ -181,8 +182,7 @@ mentions (
   matched_by text,             -- 'exact' | 'llm' — how the name matched (see 05)
   mention_order int,
   verbatim_name text,          -- exact organization text extracted from the response
-  excerpt text,
-  citation_id uuid FK NULL     -- the source cited for THIS business; null = none was
+  excerpt text
 )
 
 citations (
@@ -192,13 +192,19 @@ citations (
   subject text,                -- 'business' | 'competitor' | 'other' | 'unknown' (best-effort)
   text_start int, text_end int -- the part of response_text this citation backs (05)
 )
+
+mention_citations (
+  mention_id uuid FK REFERENCES mentions(id) ON DELETE CASCADE,
+  citation_id uuid FK REFERENCES citations(id) ON DELETE CASCADE,
+  PRIMARY KEY (mention_id, citation_id)
+)
 ```
 
 - **`mentions` is canonical — the only source of mention facts**. Self-visibility, mention order, and every PRD §6 competitor metric (mention %, totals, average order, per-prompt appearances, trend) are aggregates over it; `result_analyses` never answers "was X mentioned". A result enters the metrics base only when its run's `analysis_completed_at` is set **and** it has a `result_analyses` row — unanalyzed results are excluded from numerator and denominator alike (badged in the UI, 06). Dismissed competitors keep their mention rows (dismissal is a display filter, so re-tracking restores history).
 - Discovery inserts `competitors` with status `discovered`; the extraction pipeline (design 05) matches names against `competitors.aliases` before creating new rows.
 - Editing `competitors.aliases` changes matching keys for future reconcile passes only. It does not rewrite `suggested_aliases`, prior mentions, or any historical metric.
 - `citations.subject` is best-effort inference from the response context, not from fetching cited pages; `unknown` is an honest value. Fetching cited pages to verify is a possible later enhancement, noted in design 05.
-- `mentions.citation_id` is the deterministic attribution from design 05: the source the response cited *for that business*, not merely a source cited somewhere in the same answer. It is null whenever no citation backs the text naming the business, and `ON DELETE SET NULL` so re-analysis rewriting a result's citations can never delete a mention. Anything asking "which businesses does this source name" must read this link — the answer-level set is every business the response mentioned, which is a different and much larger question.
+- `mention_citations` stores the extraction model's direct many-to-many links between entity mentions and citation occurrences. One citation may support several organizations and one organization may have several citations; no row means the relationship was unclear or the citation expressed general guidance. Anything asking which businesses a source supported must read this link — the answer-level set is every business the response mentioned, which is a different and much larger question.
 
 ## How the PRD's metrics map to queries
 

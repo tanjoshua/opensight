@@ -16,7 +16,7 @@ import (
 // recorded per row as result_analyses.extraction_version so a later pass can
 // target "re-analyze everything below version N" (design 05). Bump it in the
 // same commit as any change to extractionInstructions or extractionJSONSchema.
-const ExtractionPromptVersion = 4
+const ExtractionPromptVersion = 5
 
 const openAIExtractionSchemaName = "result_extraction"
 
@@ -40,8 +40,9 @@ TARGET
 - Every keyword and the sentiment must be supportable by one of the excerpts. Each excerpt must be an exact quote from the response text (only incidental whitespace may differ).
 
 CITATIONS
-- For each supplied citation, judge its subject FROM THE RESPONSE'S OWN SURROUNDING TEXT ONLY — never by guessing what the page contains: "business" if it supports the target business, "competitor" if it supports another organisation, "other" if neither, "unknown" when the surrounding text does not make it clear. "unknown" is the honest default, not a failure.
-- Return citations in order of first appearance in the response text.
+- Return exactly one item for every supplied citation occurrence, including repeated occurrences of the same URL, in cite_order. Copy its cite_order and URL exactly.
+- entity_indices contains every index in the entities array for an organisation directly supported by that citation. Return multiple indexes when appropriate. Return [] for general guidance or whenever the relationship is unclear; never guess from the cited page.
+- Judge subject FROM THE RESPONSE'S OWN SURROUNDING TEXT ONLY: "business" if it supports the target business, "competitor" if it supports another organisation, "other" if neither, "unknown" when unclear. "unknown" is the honest default.
 
 RETRY
 - If prior output and validation failures are provided, they list exactly what was wrong. Fix all of them and re-emit the FULL corrected object, not a diff.`
@@ -82,10 +83,12 @@ const extractionJSONSchema = `{
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["url", "subject"],
+        "required": ["cite_order", "url", "subject", "entity_indices"],
         "properties": {
+          "cite_order": {"type": "integer", "minimum": 0},
           "url": {"type": "string"},
-          "subject": {"type": "string", "enum": ["business", "competitor", "other", "unknown"]}
+          "subject": {"type": "string", "enum": ["business", "competitor", "other", "unknown"]},
+          "entity_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}}
         }
       }
     }
@@ -176,6 +179,7 @@ func (r *OpenAIExtractionRunner) requestParams(in ExtractionInput) (responses.Re
 // marshalExtractionUserContent serialises the analysis payload the model reads.
 func marshalExtractionUserContent(in ExtractionInput) (string, error) {
 	type citationView struct {
+		CiteOrder  int    `json:"cite_order"`
 		URL        string `json:"url"`
 		Title      string `json:"title"`
 		StartIndex int    `json:"start_index"`

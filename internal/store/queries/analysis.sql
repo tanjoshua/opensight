@@ -55,12 +55,13 @@ UPDATE competitors SET suggested_aliases=array_append(suggested_aliases,$3)
 WHERE id=$1 AND business_id=$2 AND NOT ($3=ANY(suggested_aliases)) AND NOT ($3=ANY(aliases));
 
 -- name: InsertMention :exec
--- citation_id resolves in the statement: the citations for this result are
--- already written by phase 1, and cite_order is unique per result, so the
--- subselect is single-row. A null cite_order leaves the mention unattributed.
-INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt,citation_id)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,
- (SELECT c.id FROM citations c WHERE c.prompt_result_id=$2 AND c.cite_order=sqlc.narg('cite_order')));
+INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
+
+-- name: InsertMentionCitation :execrows
+INSERT INTO mention_citations (mention_id,citation_id)
+SELECT sqlc.arg('mention_id'),c.id FROM citations c
+WHERE c.prompt_result_id=sqlc.arg('prompt_result_id') AND c.cite_order=sqlc.arg('cite_order');
 
 -- name: SetAnalysisCompleted :exec
 UPDATE monitoring_runs SET analysis_completed_at=now() WHERE id=$1 AND business_id=$2;

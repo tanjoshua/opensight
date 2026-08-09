@@ -12,11 +12,10 @@ import (
 )
 
 // ResultEntities carries one analyzed result's ordered entity list into phase 2,
-// each entity already attributed by phase 1 to the citation backing the text
-// that names it.
+// each entity carrying phase 1's validated model-supplied citation links.
 type ResultEntities struct {
 	ResultID domain.ID
-	Entities []llm.AttributedEntity
+	Entities []llm.EntityWithCitations
 }
 
 // ReconcileEntitiesInput is the whole-run phase-2 payload: only Analyzed==true
@@ -80,12 +79,12 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 
 	// Exact pass per result, keeping the per-result match slice so we can build
 	// mention rows with the right mention_order (index within the result), and
-	// the attributed entities alongside it. ExactMatchEntities returns one match
+	// the citation-linked entities alongside it. ExactMatchEntities returns one match
 	// per entity in the order given, so index i is the same entity in both.
 	type resultMatches struct {
-		resultID   domain.ID
-		attributed []llm.AttributedEntity
-		matches    []llm.ExactMatch
+		resultID domain.ID
+		linked   []llm.EntityWithCitations
+		matches  []llm.ExactMatch
 	}
 	perResult := make([]resultMatches, 0, len(in.Results))
 
@@ -102,7 +101,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 			entities[i] = a.Entity
 		}
 		matches := llm.ExactMatchEntities(entities, target, reconcileCompetitors)
-		perResult = append(perResult, resultMatches{resultID: re.ResultID, attributed: re.Entities, matches: matches})
+		perResult = append(perResult, resultMatches{resultID: re.ResultID, linked: re.Entities, matches: matches})
 		for _, m := range matches {
 			if m.Subject != llm.SubjectUnmatched {
 				continue
@@ -171,7 +170,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 				MentionOrder:   order,
 				VerbatimName:   m.Entity.VerbatimName,
 				Excerpt:        m.Entity.Excerpt,
-				CiteOrder:      pr.attributed[order].CiteOrder,
+				CiteOrders:     pr.linked[order].CiteOrders,
 			}
 			switch m.Subject {
 			case llm.SubjectSelf:

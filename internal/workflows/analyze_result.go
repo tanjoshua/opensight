@@ -24,12 +24,12 @@ type AnalyzeResultInput struct {
 // AnalyzeResultOutput is the extraction outcome. Analyzed is false when the
 // result failed validation after MaxExtractionAttempts: no result_analyses row
 // is written and the result is excluded from metrics (design 02/05). Entities
-// is the ordered entity list for phase 2, each already attributed to the
-// citation backing the text that names it (empty when !Analyzed).
+// is the ordered entity list for phase 2 with the model's validated direct
+// citation links (empty when !Analyzed).
 type AnalyzeResultOutput struct {
 	ResultID domain.ID
 	Analyzed bool
-	Entities []llm.AttributedEntity
+	Entities []llm.EntityWithCitations
 }
 
 // AnalyzeResult runs one structured-output extraction call per succeeded result
@@ -111,8 +111,8 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	output := result.Output
 	model := result.Model
 
-	// One attribution pass serves both writes: the spans order the citation rows
-	// and place each entity against the source the answer cited for it.
+	// Annotation spans are retained only as inline display evidence. Entity links
+	// come directly from the validated extraction output.
 	spans := llm.AttributeCitations(responseText, annotations)
 	citations, err := buildCitationWrites(output.Citations, spans)
 	if err != nil {
@@ -149,7 +149,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	return AnalyzeResultOutput{
 		ResultID: in.ResultID,
 		Analyzed: true,
-		Entities: llm.AttributeEntities(responseText, output.Entities, spans),
+		Entities: llm.LinkEntities(output),
 	}, nil
 }
 
@@ -168,16 +168,15 @@ func locationSummary(raw json.RawMessage) string {
 	return loc.Country
 }
 
-// buildCitationWrites turns the response's attributed citations into normalized
+// buildCitationWrites turns the response's annotated citations into normalized
 // citation rows. First-appearance order comes from the spans, which are ordered
 // by the annotations' StartIndex (objective), never from the model's output
-// array order. Each annotation's subject is looked up from the model output by
-// URL — the URL sets are guaranteed to match by ValidateExtraction before this
-// runs.
+// array order. Validation guarantees one model item per annotation occurrence,
+// so repeated URLs retain their distinct subjects and links.
 func buildCitationWrites(outCitations []llm.ExtractedCitation, spans []llm.CitationSpan) ([]store.CitationWrite, error) {
-	subjectByURL := make(map[string]string, len(outCitations))
+	subjectByOrder := make(map[int]string, len(outCitations))
 	for _, c := range outCitations {
-		subjectByURL[c.URL] = c.Subject
+		subjectByOrder[c.CiteOrder] = c.Subject
 	}
 
 	writes := make([]store.CitationWrite, 0, len(spans))
@@ -196,7 +195,7 @@ func buildCitationWrites(outCitations []llm.ExtractedCitation, spans []llm.Citat
 			Domain:    domain,
 			Title:     title,
 			CiteOrder: span.CiteOrder,
-			Subject:   subjectByURL[a.URL],
+			Subject:   subjectByOrder[span.CiteOrder],
 			TextStart: span.Start,
 			TextEnd:   span.End,
 		})

@@ -7,11 +7,6 @@ import (
 	"unicode/utf8"
 )
 
-// NoCitation is the CiteOrder of an entity no citation backs. It is a real and
-// common outcome — an intro paragraph, a bullet the model wrote without a
-// source, anything after the last citation — and never means "unknown".
-const NoCitation = -1
-
 // CitationSpan is one citation annotation paired with the text it backs.
 //
 // A url_citation annotation does not span the claim it supports: its
@@ -127,51 +122,6 @@ func lineStart(runes []rune, i int) int {
 		}
 	}
 	return 0
-}
-
-// AttributedEntity is one extracted entity paired with the citation backing the
-// text that names it. It is what phase 1 hands phase 2, so the mention row phase
-// 2 writes can record which source the answer cited for that business.
-type AttributedEntity struct {
-	Entity    ExtractedEntity
-	CiteOrder int
-}
-
-// AttributeEntities attributes every entity to the citation whose span contains
-// the text naming it, in the order given. An entity that no span covers, or that
-// cannot be located, keeps NoCitation: an attribution we cannot prove is one we
-// do not make.
-func AttributeEntities(responseText string, entities []ExtractedEntity, spans []CitationSpan) []AttributedEntity {
-	out := make([]AttributedEntity, len(entities))
-	for i, e := range entities {
-		out[i] = AttributedEntity{Entity: e, CiteOrder: NoCitation}
-		offset, ok := LocateEntity(responseText, e)
-		if !ok {
-			continue
-		}
-		for _, span := range spans {
-			if offset >= span.Start && offset < span.End {
-				out[i].CiteOrder = span.CiteOrder
-				break
-			}
-		}
-	}
-	return out
-}
-
-// LocateEntity reports where the response names an entity, as a rune offset. It
-// prefers the excerpt, which is longer and so less likely to match a different
-// sentence than the one the model read, and falls back to the verbatim name.
-// ValidateExtraction has already proven both appear verbatim in the response, so
-// a miss here means the whitespace-tolerant match disagreed with that check
-// rather than that the model invented the name.
-func LocateEntity(responseText string, e ExtractedEntity) (int, bool) {
-	for _, needle := range []string{e.Excerpt, e.VerbatimName} {
-		if i := locateText(responseText, needle); i >= 0 {
-			return i, true
-		}
-	}
-	return 0, false
 }
 
 // locateText finds needle's first occurrence as a rune offset, forgiving the

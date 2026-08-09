@@ -41,7 +41,8 @@ const (
 		`"excerpt":"Atlas Dental is a great clinic for braces."}],` +
 		`"target":{"sentiment":"positive","keywords":["braces"],` +
 		`"excerpts":["Atlas Dental is a great clinic for braces."]},` +
-		`"citations":[{"url":"https://ATLAS.example.com/team?utm_source=openai","subject":"business"}]}`
+		`"citations":[{"cite_order":0,"url":"https://ATLAS.example.com/team?utm_source=openai",` +
+		`"subject":"business","entity_indices":[0]}]}`
 	invalidExtraction = `{"entities":[{"verbatim_name":"Ghost Clinic","is_target":false,` +
 		`"excerpt":"Ghost Clinic is cheapest."}],"target":null,"citations":[]}`
 )
@@ -106,8 +107,8 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		}
 		// The entity sits in the text the marker backs, so it carries that source
 		// into phase 2.
-		if out.Entities[0].CiteOrder != 0 {
-			t.Errorf("Atlas Dental cite order = %d, want 0", out.Entities[0].CiteOrder)
+		if len(out.Entities[0].CiteOrders) != 1 || out.Entities[0].CiteOrders[0] != 0 {
+			t.Errorf("Atlas Dental cite orders = %v, want [0]", out.Entities[0].CiteOrders)
 		}
 
 		var sentiment string

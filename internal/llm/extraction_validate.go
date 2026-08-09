@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"unicode"
 )
@@ -104,41 +103,33 @@ func ValidateExtraction(out ExtractionOutput, responseText string, annotations [
 			errs = append(errs, fmt.Sprintf("citations[%d].subject %q is not one of business, competitor, other, unknown", i, c.Subject))
 		}
 	}
-	errs = append(errs, validateCitationURLSet(out.Citations, annotations)...)
+	errs = append(errs, validateCitationOccurrences(out.Citations, annotations, len(out.Entities))...)
 
 	return errs
 }
 
-func validateCitationURLSet(outCitations []ExtractedCitation, annotations []CitationAnnotation) []string {
-	annURLs := make(map[string]bool, len(annotations))
-	for _, a := range annotations {
-		annURLs[a.URL] = true
-	}
-	outURLs := make(map[string]bool, len(outCitations))
-	for _, c := range outCitations {
-		outURLs[c.URL] = true
-	}
-
-	var fabricated, omitted []string
-	for u := range outURLs {
-		if !annURLs[u] {
-			fabricated = append(fabricated, u)
-		}
-	}
-	for u := range annURLs {
-		if !outURLs[u] {
-			omitted = append(omitted, u)
-		}
-	}
-	sort.Strings(fabricated)
-	sort.Strings(omitted)
-
+func validateCitationOccurrences(out []ExtractedCitation, annotations []CitationAnnotation, entityCount int) []string {
+	ordered := OrderCitationAnnotations(annotations)
 	var errs []string
-	for _, u := range fabricated {
-		errs = append(errs, fmt.Sprintf("citation url %q was not among the response's citation annotations (fabricated)", u))
+	if len(out) != len(ordered) {
+		errs = append(errs, fmt.Sprintf("citations has %d occurrences; response annotations have %d", len(out), len(ordered)))
 	}
-	for _, u := range omitted {
-		errs = append(errs, fmt.Sprintf("citation url %q from the response annotations is missing from the output", u))
+	for i, c := range out {
+		if c.CiteOrder != i {
+			errs = append(errs, fmt.Sprintf("citations[%d].cite_order is %d; want %d", i, c.CiteOrder, i))
+		}
+		if i < len(ordered) && c.URL != ordered[i].URL {
+			errs = append(errs, fmt.Sprintf("citations[%d].url %q does not match annotation occurrence %d url %q", i, c.URL, i, ordered[i].URL))
+		}
+		seen := make(map[int]bool, len(c.EntityIndices))
+		for j, index := range c.EntityIndices {
+			if index < 0 || index >= entityCount {
+				errs = append(errs, fmt.Sprintf("citations[%d].entity_indices[%d] is %d; must reference an entity index in [0,%d)", i, j, index, entityCount))
+			} else if seen[index] {
+				errs = append(errs, fmt.Sprintf("citations[%d].entity_indices contains duplicate index %d", i, index))
+			}
+			seen[index] = true
+		}
 	}
 	return errs
 }

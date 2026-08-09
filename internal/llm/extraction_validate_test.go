@@ -89,7 +89,7 @@ func TestIsVerbatimSubstring(t *testing.T) {
 
 func TestValidateExtraction(t *testing.T) {
 	const responseText = "For braces, Atlas Dental is a solid choice. NDCS handles complex cases."
-	annotation := CitationAnnotation{URL: "https://atlas.example.com/?utm_source=openai", StartIndex: 10, EndIndex: 21}
+	annotation := CitationAnnotation{CiteOrder: 0, URL: "https://atlas.example.com/?utm_source=openai", StartIndex: 10, EndIndex: 21}
 
 	valid := ExtractionOutput{
 		Entities: []ExtractedEntity{
@@ -102,7 +102,7 @@ func TestValidateExtraction(t *testing.T) {
 			Excerpts:  []string{"Atlas Dental is a solid choice"},
 		},
 		Citations: []ExtractedCitation{
-			{URL: "https://atlas.example.com/?utm_source=openai", Subject: "business"},
+			{CiteOrder: 0, URL: "https://atlas.example.com/?utm_source=openai", Subject: "business", EntityIndices: []int{0}},
 		},
 	}
 
@@ -130,15 +130,14 @@ func TestValidateExtraction(t *testing.T) {
 		}
 	})
 
-	t.Run("fabricated citation url", func(t *testing.T) {
+	t.Run("url disagrees with occurrence", func(t *testing.T) {
 		out := valid
 		out.Citations = []ExtractedCitation{
-			{URL: "https://atlas.example.com/?utm_source=openai", Subject: "business"},
-			{URL: "https://made-up.example.com", Subject: "other"},
+			{CiteOrder: 0, URL: "https://made-up.example.com", Subject: "other"},
 		}
 		errs := ValidateExtraction(out, responseText, []CitationAnnotation{annotation})
-		if !containsSubstr(errs, "fabricated") {
-			t.Fatalf("expected a fabricated citation violation, got %v", errs)
+		if !containsSubstr(errs, "does not match annotation occurrence") {
+			t.Fatalf("expected an occurrence URL violation, got %v", errs)
 		}
 	})
 
@@ -146,8 +145,56 @@ func TestValidateExtraction(t *testing.T) {
 		out := valid
 		out.Citations = nil
 		errs := ValidateExtraction(out, responseText, []CitationAnnotation{annotation})
-		if !containsSubstr(errs, "missing from the output") {
+		if !containsSubstr(errs, "occurrences") {
 			t.Fatalf("expected an omitted citation violation, got %v", errs)
+		}
+	})
+
+	t.Run("repeated URL occurrences are required separately and in order", func(t *testing.T) {
+		annotations := []CitationAnnotation{
+			{URL: annotation.URL, StartIndex: 30, EndIndex: 40},
+			{URL: annotation.URL, StartIndex: 10, EndIndex: 20},
+		}
+		out := valid
+		out.Citations = []ExtractedCitation{
+			{CiteOrder: 0, URL: annotation.URL, Subject: "business", EntityIndices: []int{0}},
+			{CiteOrder: 1, URL: annotation.URL, Subject: "competitor", EntityIndices: []int{1}},
+		}
+		if errs := ValidateExtraction(out, responseText, annotations); len(errs) != 0 {
+			t.Fatalf("repeated occurrences rejected: %v", errs)
+		}
+		out.Citations[1].CiteOrder = 0
+		if errs := ValidateExtraction(out, responseText, annotations); !containsSubstr(errs, "cite_order") {
+			t.Fatalf("duplicate order accepted: %v", errs)
+		}
+	})
+
+	t.Run("entity indexes are unique and in range", func(t *testing.T) {
+		out := valid
+		out.Citations[0].EntityIndices = []int{0, 0, 2, -1}
+		errs := ValidateExtraction(out, responseText, []CitationAnnotation{annotation})
+		if !containsSubstr(errs, "duplicate index") || !containsSubstr(errs, "must reference") {
+			t.Fatalf("expected duplicate and range violations, got %v", errs)
+		}
+	})
+
+	t.Run("empty, one-to-many, and many-to-one links", func(t *testing.T) {
+		annotations := []CitationAnnotation{
+			{URL: "https://one.example", StartIndex: 10, EndIndex: 20},
+			{URL: "https://two.example", StartIndex: 30, EndIndex: 40},
+		}
+		out := valid
+		out.Citations = []ExtractedCitation{
+			{CiteOrder: 0, URL: "https://one.example", Subject: "other", EntityIndices: []int{}},
+			{CiteOrder: 1, URL: "https://two.example", Subject: "competitor", EntityIndices: []int{0, 1}},
+		}
+		if errs := ValidateExtraction(out, responseText, annotations); len(errs) != 0 {
+			t.Fatalf("empty/one-to-many links rejected: %v", errs)
+		}
+		out.Citations[0].EntityIndices = []int{0}
+		linked := LinkEntities(out)
+		if len(linked[0].CiteOrders) != 2 || len(linked[1].CiteOrders) != 1 {
+			t.Fatalf("many-to-one inversion = %+v", linked)
 		}
 	})
 }

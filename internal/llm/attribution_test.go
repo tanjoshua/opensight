@@ -54,74 +54,9 @@ func TestAttributeCitationsAgainstCaptures(t *testing.T) {
 	}
 }
 
-// TestAttributeEntitiesFromCapture labels one real answer by hand: the source
-// each business is cited from is the whole point of the attribution, so it is
-// worth asserting against a response nobody wrote for this test.
-func TestAttributeEntitiesFromCapture(t *testing.T) {
-	raw, err := os.ReadFile("../../testdata/spk1/01-category-dental.json")
-	if err != nil {
-		t.Fatalf("read capture: %v", err)
-	}
-	text := captureText(t, raw)
-	annotations, err := ParseCitationAnnotations(json.RawMessage(raw))
-	if err != nil {
-		t.Fatalf("parse annotations: %v", err)
-	}
-	spans := AttributeCitations(text, annotations)
-
-	for _, tc := range []struct{ name, wantDomain string }{
-		{"National Dental Centre Singapore", "ndcs.com.sg"},
-		{"National University Centre for Oral Health, Singapore", "nucohs.com.sg"},
-		{"Specialist Dental Group", "specialistdentalgroup.com"},
-	} {
-		attributed := AttributeEntities(text, []ExtractedEntity{{VerbatimName: tc.name, Excerpt: tc.name}}, spans)
-		if attributed[0].CiteOrder == NoCitation {
-			t.Errorf("%s: no citation attributed", tc.name)
-			continue
-		}
-		if got := spans[attributed[0].CiteOrder].Annotation.URL; !strings.Contains(got, tc.wantDomain) {
-			t.Errorf("%s attributed to %s, want %s", tc.name, got, tc.wantDomain)
-		}
-	}
-}
-
-// TestAttributeEntitiesBoundaries covers the shapes the captures do not contain,
-// where a wrong boundary would silently credit a source for a business it never
-// backed.
-func TestAttributeEntitiesBoundaries(t *testing.T) {
-	const text = "Several clinics are worth a look, including Prologue Dental.\n" +
-		"- Alpha Dental is the established choice. ([alpha.example](https://alpha.example/a))\n" +
-		"- Beta Dental is newer. ([dir.example](https://dir.example/list)) Gamma Dental shares the entry. ([dir.example](https://dir.example/list))\n" +
-		"- Delta Dental has no source at all."
-
-	annotations := []CitationAnnotation{
-		{URL: "https://alpha.example/a", StartIndex: idx(text, "([alpha.example]"), EndIndex: idx(text, "([alpha.example]") + len("([alpha.example](https://alpha.example/a))")},
-		{URL: "https://dir.example/list", StartIndex: idx(text, "([dir.example]"), EndIndex: idx(text, "([dir.example]") + len("([dir.example](https://dir.example/list))")},
-		{URL: "https://dir.example/list", StartIndex: lastIdx(text, "([dir.example]"), EndIndex: lastIdx(text, "([dir.example]") + len("([dir.example](https://dir.example/list))")},
-	}
-	spans := AttributeCitations(text, annotations)
-
-	for _, tc := range []struct {
-		name          string
-		wantCiteOrder int
-		why           string
-	}{
-		{"Prologue Dental", NoCitation, "named in the intro, before any citation"},
-		{"Alpha Dental", 0, "its own bullet's source"},
-		{"Beta Dental", 1, "the first of the two markers on its line"},
-		{"Gamma Dental", 2, "the second marker, not the first — the previous marker bounds the span"},
-		{"Delta Dental", NoCitation, "its bullet cites nothing"},
-	} {
-		got := AttributeEntities(text, []ExtractedEntity{{VerbatimName: tc.name, Excerpt: tc.name}}, spans)
-		if got[0].CiteOrder != tc.wantCiteOrder {
-			t.Errorf("%s cite order = %d, want %d (%s)", tc.name, got[0].CiteOrder, tc.wantCiteOrder, tc.why)
-		}
-	}
-}
-
 // TestAttributeCitationsResolvesUnusableIndices proves the URL check is load
 // bearing: a response whose indices do not line up with rune offsets is still
-// attributed by finding the marker, rather than silently backing the wrong text.
+// displayed by finding the marker, rather than silently showing the wrong text.
 func TestAttributeCitationsResolvesUnusableIndices(t *testing.T) {
 	const text = "Alpha Dental leads the list. ([alpha.example](https://alpha.example/a))"
 	spans := AttributeCitations(text, []CitationAnnotation{
@@ -132,19 +67,6 @@ func TestAttributeCitationsResolvesUnusableIndices(t *testing.T) {
 	}
 	if got := text[spans[0].Start:spans[0].End]; got != "Alpha Dental leads the list. " {
 		t.Errorf("span text = %q, want the prose before the marker", got)
-	}
-}
-
-func TestLocateEntityToleratesWhitespaceReformatting(t *testing.T) {
-	const text = "Best options:\n- Alpha\n  Dental Practice is nearby."
-	// The excerpt a model returns is whitespace-normalized; the response wrapped
-	// the same name across a line, which must still locate.
-	offset, ok := LocateEntity(text, ExtractedEntity{Excerpt: "Alpha Dental Practice is nearby."})
-	if !ok {
-		t.Fatal("excerpt did not locate")
-	}
-	if got := []rune(text)[offset]; got != 'A' {
-		t.Errorf("offset %d points at %q, want the start of the excerpt", offset, string(got))
 	}
 }
 
@@ -171,9 +93,4 @@ func captureText(t *testing.T, raw []byte) string {
 		}
 	}
 	return b.String()
-}
-
-func idx(text, needle string) int { return len([]rune(text[:strings.Index(text, needle)])) }
-func lastIdx(text, needle string) int {
-	return len([]rune(text[:strings.LastIndex(text, needle)]))
 }

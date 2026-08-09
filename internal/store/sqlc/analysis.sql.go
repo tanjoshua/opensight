@@ -134,9 +134,8 @@ func (q *Queries) InsertDiscoveredCompetitor(ctx context.Context, arg InsertDisc
 }
 
 const insertMention = `-- name: InsertMention :exec
-INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt,citation_id)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,
- (SELECT c.id FROM citations c WHERE c.prompt_result_id=$2 AND c.cite_order=$9))
+INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 `
 
 type InsertMentionParams struct {
@@ -148,12 +147,8 @@ type InsertMentionParams struct {
 	MentionOrder   int32
 	VerbatimName   *string
 	Excerpt        string
-	CiteOrder      *int32
 }
 
-// citation_id resolves in the statement: the citations for this result are
-// already written by phase 1, and cite_order is unique per result, so the
-// subselect is single-row. A null cite_order leaves the mention unattributed.
 func (q *Queries) InsertMention(ctx context.Context, arg InsertMentionParams) error {
 	_, err := q.db.Exec(ctx, insertMention,
 		arg.ID,
@@ -164,9 +159,28 @@ func (q *Queries) InsertMention(ctx context.Context, arg InsertMentionParams) er
 		arg.MentionOrder,
 		arg.VerbatimName,
 		arg.Excerpt,
-		arg.CiteOrder,
 	)
 	return err
+}
+
+const insertMentionCitation = `-- name: InsertMentionCitation :execrows
+INSERT INTO mention_citations (mention_id,citation_id)
+SELECT $1,c.id FROM citations c
+WHERE c.prompt_result_id=$2 AND c.cite_order=$3
+`
+
+type InsertMentionCitationParams struct {
+	MentionID      uuid.UUID
+	PromptResultID uuid.UUID
+	CiteOrder      int32
+}
+
+func (q *Queries) InsertMentionCitation(ctx context.Context, arg InsertMentionCitationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertMentionCitation, arg.MentionID, arg.PromptResultID, arg.CiteOrder)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const listAnalysisCompetitors = `-- name: ListAnalysisCompetitors :many

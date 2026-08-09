@@ -118,7 +118,11 @@ type Mention struct {
 	MentionOrder   int32
 	Excerpt        string
 	VerbatimName   *string
-	CitationID     *uuid.UUID
+}
+
+type MentionCitation struct {
+	MentionID  uuid.UUID
+	CitationID uuid.UUID
 }
 
 type MonitoringRun struct {

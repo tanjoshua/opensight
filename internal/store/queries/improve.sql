@@ -78,7 +78,7 @@ RETURNING *;
 
 -- name: LoadMonitoringEvidence :many
 -- Each citation carries the businesses the answer cited IT for, resolved through
--- mentions.citation_id (05). Grouping the competitors under their own citation
+-- mention_citations (05). Grouping the competitors under their own citation
 -- rather than under the result is the whole point: every business named anywhere
 -- in an answer is a much larger set than the businesses a given source was cited
 -- for, and a finder that confuses the two recommends sources on invented
@@ -88,7 +88,8 @@ SELECT r.id AS run_id,pr.id AS result_id,pr.prompt_id,p.text AS prompt,pr.respon
  COALESCE((SELECT json_agg(json_build_object(
     'url',c.url,'domain',c.domain,
     'competitors',COALESCE((SELECT array_agg(DISTINCT co.name ORDER BY co.name)
-      FROM mentions m JOIN competitors co ON co.id=m.competitor_id WHERE m.citation_id=c.id),'{}')
+      FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id
+      JOIN competitors co ON co.id=m.competitor_id WHERE mc.citation_id=c.id),'{}')
   ) ORDER BY c.cite_order) FROM citations c WHERE c.prompt_result_id=pr.id),'[]')::jsonb AS citations
 FROM monitoring_runs r JOIN prompt_results pr ON pr.run_id=r.id JOIN prompts p ON p.id=pr.prompt_id JOIN businesses b ON b.id=r.business_id
 WHERE r.business_id = @business_id AND b.account_id = @account_id AND r.analysis_completed_at IS NOT NULL
