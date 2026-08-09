@@ -75,7 +75,8 @@ type ImproveRun struct {
 
 // PublishImproveRun is the single write boundary. One transaction inserts the
 // audit, makes it current, refreshes every finding the run produced, and
-// confirms any completed finding the run did not reproduce.
+// confirms any completed finding the run did not reproduce. A run whose crawl
+// failed skips that last step: it re-checked nothing, so it can confirm nothing.
 //
 // Re-running the same monitoring run is a no-op: the audit insert conflicts on
 // monitoring_run_id and the transaction returns without touching published state.
@@ -120,6 +121,11 @@ func (s *Store) PublishImproveRun(ctx context.Context, accountID, businessID dom
 				return err
 			}
 			seen = append(seen, finding.Key)
+		}
+		if run.Failure != "" {
+			// The audit could not run, so nothing was re-checked. Absence from
+			// seen is missing evidence, not evidence the fix landed.
+			return nil
 		}
 		return q.VerifyCompletedFindings(ctx, storesqlc.VerifyCompletedFindingsParams{
 			BusinessID: businessID, AccountID: accountID, SeenKeys: seen,

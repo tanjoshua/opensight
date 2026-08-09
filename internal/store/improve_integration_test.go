@@ -16,7 +16,8 @@ import (
 // TestFindingLifecycleAcrossRuns covers the three rules that replaced numbered
 // action cycles: a finding the evidence stops producing drops out of the queue,
 // a completed one that comes back reopens, a completed one that stays gone is
-// confirmed fixed, and a dismissed one is never resurrected.
+// confirmed fixed — but only by a run that could actually check — and a
+// dismissed one is never resurrected.
 func TestFindingLifecycleAcrossRuns(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
@@ -46,15 +47,20 @@ func TestFindingLifecycleAcrossRuns(t *testing.T) {
 	listing := visibility.Finding{Key: listingKey, Source: visibility.SourceCitationGap, Category: visibility.CategoryListings, Title: "Get listed on healthhub.sg", Body: "b", Reach: 9, Priority: 1}
 
 	runNumber := 0
-	publish := func(findings ...visibility.Finding) {
+	publishRun := func(run ImproveRun) {
 		t.Helper()
 		runNumber++
 		runID := mustNewID(t)
 		scheduled := time.Date(2026, 1, 1+runNumber, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 		mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled',$3,'completed',$4,now(),now())", runID, businessID, scheduled, "improve-"+runID.String())
-		if err := s.PublishImproveRun(ctx, accountID, businessID, ImproveRun{RunID: runID, PagesRead: 3, Findings: findings}); err != nil {
+		run.RunID = runID
+		if err := s.PublishImproveRun(ctx, accountID, businessID, run); err != nil {
 			t.Fatal(err)
 		}
+	}
+	publish := func(findings ...visibility.Finding) {
+		t.Helper()
+		publishRun(ImproveRun{PagesRead: 3, Findings: findings})
 	}
 	active := func() map[string]FindingRecord {
 		t.Helper()
@@ -125,8 +131,15 @@ func TestFindingLifecycleAcrossRuns(t *testing.T) {
 		t.Error("a reopened finding kept its completion stamps")
 	}
 
-	// Completing and then not seeing it again confirms the fix landed.
+	// A run whose crawl failed produces no site-audit findings, but that absence
+	// is missing evidence rather than a passing re-check, so it must not confirm.
 	setStatus(reopened.ID, FindingDone, nil)
+	publishRun(ImproveRun{Failure: "dial tcp: connection refused"})
+	if unverified := find(blockedKey); unverified.VerifiedAt != nil {
+		t.Error("a run whose crawl failed confirmed a completed finding it never re-checked")
+	}
+
+	// Completing and then not seeing it again confirms the fix landed.
 	publish()
 	confirmed := find(blockedKey)
 	if confirmed.VerifiedAt == nil {
