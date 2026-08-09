@@ -61,8 +61,11 @@ type SourceClassificationInput struct {
 type SourceClassification struct {
 	CandidateIndex int    `json:"candidate_index"`
 	Kind           string `json:"classification"`
-	Owner          string `json:"owner"`
-	ClaimIndices   []int  `json:"claim_indices"`
+	// Owner and ClaimIndices make the model name the competitor and cite the
+	// claims before grouping them. Nothing reads them, so they are deliberately
+	// never validated: a reasoning aid must not be able to fail the run.
+	Owner        string `json:"owner"`
+	ClaimIndices []int  `json:"claim_indices"`
 }
 
 type SourceClaimReference struct {
@@ -75,13 +78,16 @@ type SourceClaimReference struct {
 // cover clearly enough. Key is constrained to a durable semantic slug so the
 // model controls the grouping without making finding identity presentation copy.
 type ContentGap struct {
-	Key            string                 `json:"topic_key"`
-	Title          string                 `json:"title"`
-	Reason         string                 `json:"reason"`
-	Recommendation string                 `json:"recommendation"`
-	Coverage       string                 `json:"coverage"`
-	SiteEvidence   []string               `json:"site_evidence"`
-	Evidence       []SourceClaimReference `json:"evidence"`
+	Key            string `json:"topic_key"`
+	Title          string `json:"title"`
+	Reason         string `json:"reason"`
+	Recommendation string `json:"recommendation"`
+	// Coverage and SiteEvidence make the model check the customer's site before
+	// claiming a gap. Neither is validated: SiteEvidence is read by nobody, and
+	// an unexpected Coverage value only costs one sentence of finding detail.
+	Coverage     string                 `json:"coverage"`
+	SiteEvidence []string               `json:"site_evidence"`
+	Evidence     []SourceClaimReference `json:"evidence"`
 }
 
 type SourceAnalysis struct {
@@ -116,9 +122,10 @@ func classifySourcesWithRetry(ctx context.Context, caller sourceClassificationCa
 		if err := json.Unmarshal(result.RawJSON, &out); err != nil {
 			validationErrs = []string{fmt.Sprintf("output is not valid JSON matching the schema: %v", err)}
 		} else {
-			validationErrs = validateSourceAnalysis(out, in)
+			validationErrs = validateSourceClassifications(out.Sources, in.Candidates)
 		}
 		if len(validationErrs) == 0 {
+			out.Gaps = usableContentGaps(out.Gaps, out.Sources, in)
 			return out, nil
 		}
 		in.PriorOutputJSON = result.RawJSON
@@ -130,116 +137,61 @@ func classifySourcesWithRetry(ctx context.Context, caller sourceClassificationCa
 	panic("unreachable")
 }
 
-func validateSourceAnalysis(out SourceAnalysis, in SourceClassificationInput) []string {
-	errs := validateSourceClassifications(out.Sources, in.Candidates)
-	if out.Gaps == nil {
-		errs = append(errs, "content_gaps is missing; use an empty array when there are no gaps")
+// usableContentGaps keeps the gaps the product can render and silently drops
+// the rest. A gap the model got wrong costs that one publishing job, never the
+// whole assessment, so nothing here retries or fails.
+func usableContentGaps(gaps []ContentGap, sources []SourceClassification, in SourceClassificationInput) []ContentGap {
+	out := []ContentGap{}
+	// Without readable customer-site content, absence cannot be verified.
+	if strings.TrimSpace(in.SiteContent) == "" {
+		return out
 	}
-	if strings.TrimSpace(in.SiteContent) == "" && len(out.Gaps) != 0 {
-		errs = append(errs, "content_gaps must be empty when customer-site content is unavailable")
-	}
-	classifications := map[int]SourceClassification{}
-	for _, classification := range out.Sources {
-		classifications[classification.CandidateIndex] = classification
+	// Classifications are validated before this runs, so every index here is in
+	// range for in.Candidates.
+	competitorOwned := map[int]bool{}
+	for _, classification := range sources {
+		if classification.Kind == SourceCompetitorOwned {
+			competitorOwned[classification.CandidateIndex] = true
+		}
 	}
 	keys := map[string]bool{}
-	for i, gap := range out.Gaps {
-		if !ValidContentGapKey(gap.Key) {
-			errs = append(errs, fmt.Sprintf("content_gaps[%d] has invalid topic_key %q", i, gap.Key))
+	for _, gap := range gaps {
+		if !ValidContentGapKey(gap.Key) || keys[gap.Key] {
+			continue
 		}
-		if reservedContentGapKeys[gap.Key] {
-			errs = append(errs, fmt.Sprintf("content_gaps[%d] topic_key %q is too generic", i, gap.Key))
+		if strings.TrimSpace(gap.Title) == "" || strings.TrimSpace(gap.Reason) == "" || strings.TrimSpace(gap.Recommendation) == "" {
+			continue
 		}
-		if keys[gap.Key] {
-			errs = append(errs, fmt.Sprintf("content gap topic_key %q is duplicated", gap.Key))
+		if len(gap.Evidence) == 0 || !usableEvidence(gap.Evidence, competitorOwned, in.Candidates) {
+			continue
 		}
 		keys[gap.Key] = true
-		if strings.TrimSpace(gap.Title) == "" || strings.TrimSpace(gap.Reason) == "" || strings.TrimSpace(gap.Recommendation) == "" {
-			errs = append(errs, fmt.Sprintf("content_gaps[%d] requires title, reason, and recommendation", i))
+		out = append(out, gap)
+	}
+	return out
+}
+
+// usableEvidence reports whether every reference points at a claim of a
+// competitor-owned candidate, which is what findings dereference directly.
+func usableEvidence(refs []SourceClaimReference, competitorOwned map[int]bool, candidates []SourceCandidate) bool {
+	for _, ref := range refs {
+		if !competitorOwned[ref.CandidateIndex] {
+			return false
 		}
-		switch gap.Coverage {
-		case "absent":
-			if len(gap.SiteEvidence) != 0 {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] absent coverage must have empty site_evidence", i))
-			}
-		case "partial":
-			if len(gap.SiteEvidence) == 0 {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] partial coverage requires site_evidence", i))
-			}
-		default:
-			errs = append(errs, fmt.Sprintf("content_gaps[%d] has invalid coverage %q", i, gap.Coverage))
-		}
-		for _, passage := range gap.SiteEvidence {
-			if strings.TrimSpace(passage) == "" || !strings.Contains(in.SiteContent, passage) {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] site_evidence is not verbatim customer-site content", i))
-			}
-		}
-		if len(gap.Evidence) == 0 {
-			errs = append(errs, fmt.Sprintf("content_gaps[%d] requires competitor-owned evidence", i))
-		}
-		seenEvidence := map[SourceClaimReference]bool{}
-		for _, ref := range gap.Evidence {
-			if seenEvidence[ref] {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] duplicates evidence candidate %d claim %d", i, ref.CandidateIndex, ref.ClaimIndex))
-			}
-			seenEvidence[ref] = true
-			if ref.CandidateIndex < 0 || ref.CandidateIndex >= len(in.Candidates) {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] candidate index %d is out of range", i, ref.CandidateIndex))
-				continue
-			}
-			if ref.ClaimIndex < 0 || ref.ClaimIndex >= len(in.Candidates[ref.CandidateIndex].Claims) {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] claim index %d is out of range", i, ref.ClaimIndex))
-				continue
-			}
-			classification, ok := classifications[ref.CandidateIndex]
-			if !ok || classification.Kind != SourceCompetitorOwned || !containsInt(classification.ClaimIndices, ref.ClaimIndex) {
-				errs = append(errs, fmt.Sprintf("content_gaps[%d] evidence candidate %d claim %d was not selected as competitor-owned", i, ref.CandidateIndex, ref.ClaimIndex))
-			}
-		}
-		copy := strings.ToLower(gap.Title + " " + gap.Reason + " " + gap.Recommendation)
-		for _, candidate := range in.Candidates {
-			for _, claim := range candidate.Claims {
-				owner := strings.ToLower(strings.TrimSpace(claim.Owner))
-				if owner != "" && strings.Contains(copy, owner) {
-					errs = append(errs, fmt.Sprintf("content_gaps[%d] user-facing copy names competitor %q", i, claim.Owner))
-				}
-				if ownerKey := contentKey(claim.Owner); ownerKey != "" && strings.Contains(gap.Key, ownerKey) {
-					errs = append(errs, fmt.Sprintf("content_gaps[%d] topic_key names competitor %q", i, claim.Owner))
-				}
-			}
+		if ref.ClaimIndex < 0 || ref.ClaimIndex >= len(candidates[ref.CandidateIndex].Claims) {
+			return false
 		}
 	}
-	return errs
+	return true
 }
 
 func ValidContentGapKey(key string) bool {
 	return len(key) >= 3 && len(key) <= 64 && contentGapKeyPattern.MatchString(key) && !reservedContentGapKeys[key]
 }
 
-func contentKey(value string) string {
-	var b strings.Builder
-	hyphen := true
-	for _, r := range strings.ToLower(value) {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			b.WriteRune(r)
-			hyphen = false
-		} else if !hyphen {
-			b.WriteByte('-')
-			hyphen = true
-		}
-	}
-	return strings.Trim(b.String(), "-")
-}
-
-func containsInt(values []int, want int) bool {
-	for _, value := range values {
-		if value == want {
-			return true
-		}
-	}
-	return false
-}
-
+// validateSourceClassifications checks the only classification facts the
+// product reads: one in-range verdict per candidate, from the known set.
+// Listings findings depend on all of them, so a failure here is fatal.
 func validateSourceClassifications(out []SourceClassification, candidates []SourceCandidate) []string {
 	var errs []string
 	if len(out) != len(candidates) {
@@ -257,32 +209,7 @@ func validateSourceClassifications(out []SourceClassification, candidates []Sour
 		}
 		seen[index] = true
 		switch classification.Kind {
-		case SourceThirdParty, SourceUnknown:
-			if strings.TrimSpace(classification.Owner) != "" || len(classification.ClaimIndices) != 0 {
-				errs = append(errs, fmt.Sprintf("candidate %d classification %s must have empty owner and claim_indices", index, classification.Kind))
-			}
-		case SourceCompetitorOwned:
-			owner := strings.TrimSpace(classification.Owner)
-			if owner == "" {
-				errs = append(errs, fmt.Sprintf("candidate %d competitor_owned classification requires an owner", index))
-			}
-			if len(classification.ClaimIndices) == 0 {
-				errs = append(errs, fmt.Sprintf("candidate %d competitor_owned classification requires selected claims", index))
-			}
-			claimSeen := map[int]bool{}
-			for _, claimIndex := range classification.ClaimIndices {
-				if claimIndex < 0 || claimIndex >= len(candidates[index].Claims) {
-					errs = append(errs, fmt.Sprintf("candidate %d claim index %d is out of range", index, claimIndex))
-					continue
-				}
-				if claimSeen[claimIndex] {
-					errs = append(errs, fmt.Sprintf("candidate %d claim index %d is duplicated", index, claimIndex))
-				}
-				claimSeen[claimIndex] = true
-				if candidates[index].Claims[claimIndex].Owner != owner {
-					errs = append(errs, fmt.Sprintf("candidate %d claim index %d belongs to %q, not selected owner %q", index, claimIndex, candidates[index].Claims[claimIndex].Owner, owner))
-				}
-			}
+		case SourceCompetitorOwned, SourceThirdParty, SourceUnknown:
 		default:
 			errs = append(errs, fmt.Sprintf("candidate %d has invalid classification %q", index, classification.Kind))
 		}

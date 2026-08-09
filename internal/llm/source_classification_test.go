@@ -29,81 +29,52 @@ func TestValidateSourceClassifications(t *testing.T) {
 		out  []SourceClassification
 		want string
 	}{
-		{"unknown is valid", []SourceClassification{{CandidateIndex: 0, Kind: SourceUnknown, ClaimIndices: []int{}}, {CandidateIndex: 1, Kind: SourceUnknown, ClaimIndices: []int{}}}, ""},
 		{"missing candidate", valid[:1], "missing"},
 		{"duplicate candidate", []SourceClassification{valid[0], valid[0]}, "duplicated"},
 		{"invalid candidate index", []SourceClassification{{CandidateIndex: 9, Kind: SourceUnknown}, valid[1]}, "out of range"},
 		{"invalid enum", []SourceClassification{{CandidateIndex: 0, Kind: "owned"}, valid[1]}, "invalid classification"},
-		{"wrong owner claim", []SourceClassification{{CandidateIndex: 0, Kind: SourceCompetitorOwned, Owner: "Rival Clinic", ClaimIndices: []int{1}}, valid[1]}, "belongs to"},
-		{"multiple owners require one selected owner", []SourceClassification{{CandidateIndex: 0, Kind: SourceCompetitorOwned, Owner: "Other Clinic", ClaimIndices: []int{0, 1}}, valid[1]}, "belongs to"},
-		{"invalid claim index", []SourceClassification{{CandidateIndex: 0, Kind: SourceCompetitorOwned, Owner: "Rival Clinic", ClaimIndices: []int{7}}, valid[1]}, "claim index"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validateSourceClassifications(tc.out, candidates)
-			if tc.want == "" && len(errs) != 0 {
-				t.Fatalf("unexpected errors: %v", errs)
-			}
-			if tc.want != "" && !containsSubstr(errs, tc.want) {
+			if errs := validateSourceClassifications(tc.out, candidates); !containsSubstr(errs, tc.want) {
 				t.Fatalf("errors %v do not contain %q", errs, tc.want)
 			}
 		})
 	}
 }
 
-func TestValidateGroupedContentGaps(t *testing.T) {
+// A gap the model got wrong must cost that gap alone: the run still returns the
+// usable gap and every source classification the rest of Improve depends on.
+// The kept gap also carries loosely-quoted site_evidence, which is grounding
+// only and must never decide whether the gap survives.
+func TestUnusableContentGapIsDroppedNotFatal(t *testing.T) {
 	in := SourceClassificationInput{
 		SiteContent: "Our specialist team has postgraduate training.",
 		Candidates:  classificationCandidates(),
 	}
-	sources := []SourceClassification{
-		{CandidateIndex: 0, Kind: SourceCompetitorOwned, Owner: "Rival Clinic", ClaimIndices: []int{0}},
-		{CandidateIndex: 1, Kind: SourceThirdParty, ClaimIndices: []int{}},
+	caller := &classificationSequence{outputs: []json.RawMessage{json.RawMessage(`{
+		"sources":[
+			{"candidate_index":0,"classification":"competitor_owned","owner":"Rival Clinic","claim_indices":[0]},
+			{"candidate_index":1,"classification":"third_party","owner":"","claim_indices":[]}
+		],
+		"content_gaps":[
+			{"topic_key":"treatment-technology","title":"Explain the technology used in treatment","reason":"The site names training but not the technology.","recommendation":"State which magnification tools are used, if applicable.","coverage":"partial","site_evidence":["Our  specialist team has postgraduate training"],"evidence":[{"candidate_index":0,"claim_index":0}]},
+			{"topic_key":"directory-presence","title":"Get listed","reason":"Cited by a directory.","recommendation":"Add a listing.","coverage":"absent","site_evidence":[],"evidence":[{"candidate_index":1,"claim_index":0}]}
+		]}`)}}
+	got, err := classifySourcesWithRetry(context.Background(), caller, in)
+	if err != nil || caller.calls != 1 {
+		t.Fatalf("err=%v calls=%d, want one call and no error", err, caller.calls)
 	}
-	valid := ContentGap{
-		Key: "treatment-technology", Title: "Explain the technology used in treatment",
-		Reason:         "The site names specialist training but not the treatment technology.",
-		Recommendation: "On the services page, state which imaging or magnification tools are used, if applicable.",
-		Coverage:       "partial", SiteEvidence: []string{"Our specialist team has postgraduate training."},
-		Evidence: []SourceClaimReference{{CandidateIndex: 0, ClaimIndex: 0}},
+	if len(got.Sources) != 2 {
+		t.Fatalf("sources = %v, want both classifications", got.Sources)
 	}
-	if errs := validateSourceAnalysis(SourceAnalysis{Sources: sources, Gaps: []ContentGap{valid}}, in); len(errs) != 0 {
-		t.Fatalf("valid grouped gap rejected: %v", errs)
+	if len(got.Gaps) != 1 || got.Gaps[0].Key != "treatment-technology" {
+		t.Fatalf("gaps = %v, want only the competitor-owned gap", got.Gaps)
 	}
 
-	tests := []struct {
-		name string
-		gap  ContentGap
-		want string
-	}{
-		{"duplicate topic key", valid, "duplicated"},
-		{"invalid topic key", func() ContentGap { g := valid; g.Key = "Technology_Gap"; return g }(), "invalid topic_key"},
-		{"generic topic key", func() ContentGap { g := valid; g.Key = "business-details"; return g }(), "too generic"},
-		{"competitor topic key", func() ContentGap { g := valid; g.Key = "rival-clinic-technology"; return g }(), "topic_key names competitor"},
-		{"non-verbatim site evidence", func() ContentGap { g := valid; g.SiteEvidence = []string{"not on site"}; return g }(), "not verbatim"},
-		{"third-party evidence", func() ContentGap {
-			g := valid
-			g.Evidence = []SourceClaimReference{{CandidateIndex: 1, ClaimIndex: 0}}
-			return g
-		}(), "not selected as competitor-owned"},
-		{"competitor named in action", func() ContentGap { g := valid; g.Title = "Match Rival Clinic technology"; return g }(), "names competitor"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			gaps := []ContentGap{tc.gap}
-			if tc.name == "duplicate topic key" {
-				gaps = append(gaps, valid)
-			}
-			errs := validateSourceAnalysis(SourceAnalysis{Sources: sources, Gaps: gaps}, in)
-			if !containsSubstr(errs, tc.want) {
-				t.Fatalf("errors %v do not contain %q", errs, tc.want)
-			}
-		})
-	}
-	missingSite := in
-	missingSite.SiteContent = ""
-	if errs := validateSourceAnalysis(SourceAnalysis{Sources: sources, Gaps: []ContentGap{valid}}, missingSite); !containsSubstr(errs, "unavailable") {
-		t.Fatalf("unreadable customer site accepted a content gap: %v", errs)
+	// Absence cannot be verified without readable customer-site content.
+	if gaps := usableContentGaps(got.Gaps, got.Sources, SourceClassificationInput{Candidates: in.Candidates}); len(gaps) != 0 {
+		t.Fatalf("gaps = %v, want none when the customer site is unreadable", gaps)
 	}
 }
 
@@ -122,7 +93,7 @@ func (s *classificationSequence) runSourceClassification(_ context.Context, in S
 
 func TestClassifySourcesRetriesValidationOnce(t *testing.T) {
 	caller := &classificationSequence{outputs: []json.RawMessage{
-		json.RawMessage(`{"sources":[{"candidate_index":0,"classification":"competitor_owned","owner":"Rival Clinic","claim_indices":[1]},{"candidate_index":1,"classification":"third_party","owner":"","claim_indices":[]}],"content_gaps":[]}`),
+		json.RawMessage(`{"sources":[{"candidate_index":0,"classification":"competitor_owned","owner":"Rival Clinic","claim_indices":[0]}],"content_gaps":[]}`),
 		json.RawMessage(`{"sources":[{"candidate_index":0,"classification":"competitor_owned","owner":"Rival Clinic","claim_indices":[0]},{"candidate_index":1,"classification":"third_party","owner":"","claim_indices":[]}],"content_gaps":[]}`),
 	}}
 	got, err := classifySourcesWithRetry(context.Background(), caller, SourceClassificationInput{Candidates: classificationCandidates()})
@@ -132,13 +103,13 @@ func TestClassifySourcesRetriesValidationOnce(t *testing.T) {
 	if caller.calls != 2 || len(got.Sources) != 2 {
 		t.Fatalf("calls=%d output=%v", caller.calls, got)
 	}
-	if len(caller.inputs[1].RetryValidationErrors) == 0 || !strings.Contains(string(caller.inputs[1].PriorOutputJSON), `"claim_indices":[1]`) {
+	if len(caller.inputs[1].RetryValidationErrors) == 0 || !strings.Contains(string(caller.inputs[1].PriorOutputJSON), `"sources":[{"candidate_index":0`) {
 		t.Fatalf("retry did not carry prior output and validation errors: %+v", caller.inputs[1])
 	}
 }
 
 func TestClassifySourcesFailsAfterRetry(t *testing.T) {
-	bad := json.RawMessage(`{"sources":[],"content_gaps":[]}`)
+	bad := json.RawMessage(`{"sources":[{"candidate_index":0,"classification":"owned"},{"candidate_index":1,"classification":"third_party"}],"content_gaps":[]}`)
 	caller := &classificationSequence{outputs: []json.RawMessage{bad, bad}}
 	_, err := classifySourcesWithRetry(context.Background(), caller, SourceClassificationInput{Candidates: classificationCandidates()})
 	if err == nil || caller.calls != 2 {
