@@ -21,13 +21,15 @@ import (
 
 type AssessmentWorkflowInput struct{ AccountID, BusinessID, RunID domain.ID }
 
-// SiteAuditResult is what one crawl of the business site yields. It carries the
-// check outcomes rather than the scan itself, so the 50KB of page text the
-// fetcher gathered never crosses an activity boundary it has no use on.
+// SiteAuditResult is what one crawl of the business site yields. The bounded
+// page text crosses the activity boundary because finders compare cited
+// competitor evidence with what the customer already publishes before asking
+// them to add anything.
 type SiteAuditResult struct {
-	Checks    []visibility.CheckResult
-	PagesRead int
-	Failure   string
+	Checks      []visibility.CheckResult
+	PagesRead   int
+	Failure     string
+	SiteContent string
 }
 
 // RunSiteAudit crawls the site once and evaluates the whole check catalog. A
@@ -45,7 +47,7 @@ func (a *Activities) RunSiteAudit(ctx context.Context, in AssessmentWorkflowInpu
 		fetcher.closeIdleConnections()
 	}
 	scan.BusinessName = business.Name
-	return SiteAuditResult{Checks: visibility.Audit(scan), PagesRead: len(scan.Pages), Failure: scan.FetchFailure}, nil
+	return SiteAuditResult{Checks: visibility.Audit(scan), PagesRead: len(scan.Pages), Failure: scan.FetchFailure, SiteContent: scan.Text}, nil
 }
 
 type FindImprovementsInput struct {
@@ -64,7 +66,7 @@ func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) (
 	research := &boundedHTTPResearcher{client: newSafeFetchHTTPClient(), remaining: visibility.ResearchURLBudget}
 	defer research.client.CloseIdleConnections()
 
-	input := visibility.FinderInput{Audit: in.Audit.Checks, Snapshot: snapshot, Classifier: a.SourceClassifier}
+	input := visibility.FinderInput{Audit: in.Audit.Checks, Snapshot: snapshot, SiteContent: in.Audit.SiteContent, Classifier: a.SourceClassifier}
 	out := []visibility.Finding{}
 	for _, finder := range visibility.Finders() {
 		findings, err := finder.Find(ctx, input, research)

@@ -44,14 +44,15 @@ func TestAssessmentWorkflowPublishesWhatTheFindersProduced(t *testing.T) {
 	env.RegisterActivity(activities.PublishImproveRun)
 
 	audit := SiteAuditResult{
-		Checks:    []visibility.CheckResult{{Key: visibility.CheckRobotsOAISearchBot, Outcome: visibility.CheckFail, Detail: "blocked"}},
-		PagesRead: 4,
+		Checks:      []visibility.CheckResult{{Key: visibility.CheckRobotsOAISearchBot, Outcome: visibility.CheckFail, Detail: "blocked"}},
+		PagesRead:   4,
+		SiteContent: "bounded customer-site content",
 	}
 	findings := []visibility.Finding{{Key: "site-audit:robots_allows_oai_searchbot", Source: visibility.SourceSiteAudit, Blocking: true}}
 
 	env.OnActivity(activities.RunSiteAudit, mock.Anything, mock.Anything).Return(audit, nil).Once()
 	env.OnActivity(activities.RunFinders, mock.Anything, mock.MatchedBy(func(in FindImprovementsInput) bool {
-		return len(in.Audit.Checks) == 1 && in.Audit.PagesRead == 4
+		return len(in.Audit.Checks) == 1 && in.Audit.PagesRead == 4 && in.Audit.SiteContent == "bounded customer-site content"
 	})).Return(findings, nil).Once()
 	env.OnActivity(activities.PublishImproveRun, mock.Anything, mock.MatchedBy(func(in PublishImproveRunInput) bool {
 		return len(in.Findings) == 1 && in.Findings[0].Blocking && in.Audit.PagesRead == 4

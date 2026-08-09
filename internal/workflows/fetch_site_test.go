@@ -192,6 +192,33 @@ func TestSiteFetcherFallsBackToWWWWhenApexHasNoContent(t *testing.T) {
 	}
 }
 
+func TestSiteFetcherReadsNavigationBeforeGuessedPaths(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			visited = append(visited, req.URL.Path)
+			switch req.URL.Path {
+			case "/":
+				return testFetchResponse(req, http.StatusOK, "text/html", `<div id="topnavigation"><a href="/practice/our-team/">Our team</a></div><main>Clinic</main>`), nil
+			case "/practice/our-team/":
+				return testFetchResponse(req, http.StatusOK, "text/html", `<main>Dr Lee is a registered specialist.</main>`), nil
+			default:
+				return testFetchResponse(req, http.StatusOK, "text/html", `<main>Page not found</main>`), nil
+			}
+		})),
+		textLimit: fetchSiteTextLimit, pageBodyLimit: fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit, maxRequests: 2,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "http://example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(visited) != 2 || visited[1] != "/practice/our-team/" || !strings.Contains(out.Text, "registered specialist") {
+		t.Fatalf("visited=%v text=%q, want linked team page before guessed paths", visited, out.Text)
+	}
+}
+
 func TestFetchSiteRefusesPrivateAddresses(t *testing.T) {
 	literals := []string{
 		"http://127.0.0.1/",

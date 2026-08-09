@@ -366,15 +366,19 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 		candidates = append(candidates, candidate)
 	}
 
-	for _, p := range fetchSiteHighValuePaths {
-		enqueue(originWithPath(origin, p))
-	}
 	if home != nil {
 		for _, href := range home.NavHrefs {
 			if candidate, ok := normalizeSameOriginFetchURL(home.URL, href, false); ok {
 				enqueue(candidate)
 			}
 		}
+	}
+	// Real navigation describes this site's actual information architecture and
+	// therefore outranks guessed conventional paths. The fallbacks still help a
+	// sparse homepage, but cannot spend the crawl budget on branded 404 pages
+	// before a linked team or services page is read.
+	for _, p := range fetchSiteHighValuePaths {
+		enqueue(originWithPath(origin, p))
 	}
 
 	processCandidates := func(candidates []*url.URL) error {
@@ -1028,7 +1032,11 @@ func skipHTMLTag(tag string) bool {
 }
 
 func navigationRole(n *html.Node) bool {
-	return strings.EqualFold(attrValue(n, "role"), "navigation")
+	if strings.EqualFold(attrValue(n, "role"), "navigation") {
+		return true
+	}
+	identity := strings.ToLower(attrValue(n, "id") + " " + attrValue(n, "class"))
+	return strings.Contains(identity, "navigation") || strings.Contains(identity, "main-menu") || strings.Contains(identity, "main_menu")
 }
 
 func attrValue(n *html.Node, key string) string {

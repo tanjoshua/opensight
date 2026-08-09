@@ -9,28 +9,82 @@ import (
 )
 
 type fixedSourceClassifier struct {
-	kind  string
-	owner string
-	calls int
-	in    llm.SourceClassificationInput
+	kind        string
+	owner       string
+	suppressGap bool
+	calls       int
+	in          llm.SourceClassificationInput
 }
 
-func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.SourceClassificationInput) ([]llm.SourceClassification, error) {
+func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.SourceClassificationInput) (llm.SourceAnalysis, error) {
 	c.calls++
 	c.in = in
 	out := make([]llm.SourceClassification, len(in.Candidates))
+	evidence := []llm.SourceClaimReference{}
 	for i, candidate := range in.Candidates {
 		out[i] = llm.SourceClassification{CandidateIndex: i, Kind: c.kind, ClaimIndices: []int{}}
 		if c.kind == llm.SourceCompetitorOwned {
-			out[i].Owner = c.owner
+			owner := c.owner
+			if owner == "" && len(candidate.Claims) > 0 {
+				owner = candidate.Claims[0].Owner
+			}
+			out[i].Owner = owner
 			for j, claim := range candidate.Claims {
-				if claim.Owner == c.owner {
+				if claim.Owner == owner {
 					out[i].ClaimIndices = append(out[i].ClaimIndices, j)
+					evidence = append(evidence, llm.SourceClaimReference{CandidateIndex: i, ClaimIndex: j})
 				}
 			}
 		}
 	}
-	return out, nil
+	analysis := llm.SourceAnalysis{Sources: out, Gaps: []llm.ContentGap{}}
+	if c.kind == llm.SourceCompetitorOwned && !c.suppressGap {
+		analysis.Gaps = []llm.ContentGap{{
+			Topic: llm.ContentTopicServices, Title: "Explain your complex-case services",
+			Reason:         "Your site does not clearly describe these capabilities.",
+			Recommendation: "On your services page, state which complex cases you treat, if offered.",
+			Coverage:       "absent", SiteEvidence: []string{}, Evidence: evidence,
+		}}
+	}
+	return analysis, nil
+}
+
+func TestCoveredCompetitorContentProducesNoAction(t *testing.T) {
+	classifier := &fixedSourceClassifier{kind: llm.SourceCompetitorOwned, owner: "Rival Clinic", suppressGap: true}
+	research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{
+		"https://www.rival.example/a": "Rival Clinic", "https://www.rival.example/b": "Rival Clinic",
+	}}
+	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{
+		Snapshot: linkedSnapshot(), SiteContent: "We offer microscope-assisted treatment and handle complex cases.", Classifier: classifier,
+	}, research)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("already-covered competitor content produced findings: %+v", findings)
+	}
+}
+
+func TestCompetitorContentGroupsDomainsByActionableTopic(t *testing.T) {
+	snapshot := MonitoringSnapshot{BusinessName: "Customer Clinic", Runs: []SnapshotRun{{RunID: "run-1", Results: []SnapshotResult{
+		{ResultID: "a-1", PromptID: "p-1", Citations: []SnapshotCitation{{URL: "https://alpha.example/team", Domain: "alpha.example", Passage: "Alpha Clinic publishes each specialist's credentials.", Competitors: []string{"Alpha Clinic"}}}},
+		{ResultID: "a-2", PromptID: "p-2", Citations: []SnapshotCitation{{URL: "https://alpha.example/about", Domain: "alpha.example", Passage: "Alpha Clinic explains its specialist experience.", Competitors: []string{"Alpha Clinic"}}}},
+		{ResultID: "b-1", PromptID: "p-3", Citations: []SnapshotCitation{{URL: "https://beta.example/team", Domain: "beta.example", Passage: "Beta Clinic lists postgraduate qualifications.", Competitors: []string{"Beta Clinic"}}}},
+		{ResultID: "b-2", PromptID: "p-4", Citations: []SnapshotCitation{{URL: "https://beta.example/about", Domain: "beta.example", Passage: "Beta Clinic names its specialist registrations.", Competitors: []string{"Beta Clinic"}}}},
+	}}}}
+	classifier := &fixedSourceClassifier{kind: llm.SourceCompetitorOwned}
+	research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{
+		"https://alpha.example/team": "Alpha Clinic", "https://alpha.example/about": "Alpha Clinic",
+		"https://beta.example/team": "Beta Clinic", "https://beta.example/about": "Beta Clinic",
+	}}
+
+	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: snapshot, Classifier: classifier}, research)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 1 || findings[0].Key != "competitor-content:services_capabilities" || findings[0].Reach != 4 || len(findings[0].Sources) != 4 {
+		t.Fatalf("competitor domains were not grouped into one topic finding: %+v", findings)
+	}
 }
 
 func linkedSnapshot() MonitoringSnapshot {
@@ -75,21 +129,22 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 		"https://www.rival.example/a": "<html><title>Rival Clinic</title><body>Official site</body></html>",
 		"https://www.rival.example/b": "<html><body>Official Rival Clinic content</body></html>",
 	}}
-	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: linkedSnapshot(), Classifier: classifier}, research)
+	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: linkedSnapshot(), SiteContent: "Customer Clinic already describes its team.", Classifier: classifier}, research)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(findings) != 1 {
 		t.Fatalf("findings=%+v", findings)
 	}
+	if classifier.in.SiteContent != "Customer Clinic already describes its team." || classifier.in.BusinessName != "Customer Clinic" {
+		t.Fatalf("customer-site context was not supplied to analysis: %+v", classifier.in)
+	}
 	f := findings[0]
-	if f.Key != "competitor-content:www.rival.example" || f.Category != GroupIdentity || strings.Contains(f.Key, "citation-gap") {
+	if f.Key != "competitor-content:services_capabilities" || f.Category != GroupIdentity || strings.Contains(f.Key, "citation-gap") {
 		t.Fatalf("competitor-owned source routed incorrectly: %+v", f)
 	}
-	for _, claim := range []string{"Rival Clinic offers microscope-assisted treatment.", "Rival Clinic handles complex cases."} {
-		if !strings.Contains(f.Detail, claim) {
-			t.Errorf("detail lost exact claim %q: %q", claim, f.Detail)
-		}
+	if strings.Contains(f.Detail, "Rival Clinic offers") || !strings.Contains(f.Detail, "1 competitor-owned source") {
+		t.Errorf("detail should summarize grouped evidence without dumping claims: %q", f.Detail)
 	}
 	if !strings.Contains(strings.Join(f.Steps, " "), "do not copy") || !strings.Contains(strings.Join(f.Steps, " "), "substantiate") {
 		t.Errorf("content action lacks safety constraints: %v", f.Steps)
