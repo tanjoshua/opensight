@@ -126,9 +126,9 @@ type FetchSiteOutput struct {
 	// Pages carries the structured facts read from each page in URLs order, so
 	// the owned-site scan needs no second parse. Onboarding ignores it.
 	Pages []visibility.PageFacts `json:"pages,omitempty"`
-	// SitemapFound reports that /sitemap.xml answered with usable XML. It is
-	// false when the crawl finished before the sitemap was needed, so only the
-	// scan — which always reaches for it — should read it.
+	// SitemapFound reports that /sitemap.xml answered. The probe always runs, so
+	// false means the URL was requested and did not answer — never that the crawl
+	// stopped before looking.
 	SitemapFound bool `json:"sitemap_found,omitempty"`
 }
 
@@ -413,25 +413,30 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 		return FetchSiteOutput{}, err
 	}
 
+	// The probe is the only evidence behind the scan's sitemap verdict, so it runs
+	// even once the page crawl has spent its budget: "we stopped looking" must
+	// never be reported as "there is no sitemap". Raising the limit to one past
+	// the requests already made pays for the probe itself and nothing more — the
+	// child-sitemap recursion stops one below that same limit.
+	probe := *f
+	probe.maxRequests = max(f.maxRequests, requests+1)
 	sitemapFound := false
-	if acc.hasRoom() && requests < f.maxRequests {
-		sitemapURL := originWithPath(origin, "/sitemap.xml")
-		sitemapCandidates, err := f.fetchSitemap(ctx, origin, sitemapURL, &requests, 0, &firstTransientErr)
-		if errors.Is(err, errUnsafeFetchURL) {
+	sitemapURL := originWithPath(origin, "/sitemap.xml")
+	sitemapCandidates, err := probe.fetchSitemap(ctx, origin, sitemapURL, &requests, 0, &firstTransientErr)
+	if errors.Is(err, errUnsafeFetchURL) {
+		return FetchSiteOutput{}, err
+	}
+	if err != nil && !errors.Is(err, errUnusablePage) && firstTransientErr == nil {
+		firstTransientErr = err
+	}
+	if err == nil {
+		sitemapFound = true
+		candidates = candidates[:0]
+		for _, candidate := range sitemapCandidates {
+			enqueue(candidate)
+		}
+		if err := processCandidates(candidates); err != nil {
 			return FetchSiteOutput{}, err
-		}
-		if err != nil && !errors.Is(err, errUnusablePage) && firstTransientErr == nil {
-			firstTransientErr = err
-		}
-		if err == nil {
-			sitemapFound = true
-			candidates = candidates[:0]
-			for _, candidate := range sitemapCandidates {
-				enqueue(candidate)
-			}
-			if err := processCandidates(candidates); err != nil {
-				return FetchSiteOutput{}, err
-			}
 		}
 	}
 
@@ -547,8 +552,11 @@ func (f *siteFetcher) fetchSitemap(ctx context.Context, origin, target *url.URL,
 		recordFetchTransient(firstTransientErr, err)
 		return nil, err
 	}
+	// A catch-all route answering 200 with the SPA shell is the commonest way a
+	// site with no sitemap still returns one. Reporting that as an unusable page
+	// rather than an empty success is what stops it reading as a found sitemap.
 	if res.ContentType != "" && !isXMLLikeContentType(res.ContentType) {
-		return nil, nil
+		return nil, errUnusablePage
 	}
 
 	locs := parseSitemapLocs(res.Body)
