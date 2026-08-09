@@ -13,8 +13,8 @@ import (
 // TestExtractionQualityGate is the ANA-2 quality-gate driver. It is skipped by
 // default and makes real OpenAI calls: it runs the live extraction against every
 // captured response in testdata/spk1 and prints the extraction output alongside
-// a deterministic verbatim check, so a human can spot-check for zero fabricated
-// mentions and zero missed self-mentions (ANA-2 quality gate).
+// deterministic validation, so a human can spot-check both entity extraction
+// and citation-to-entity sets for zero false or missed clear links.
 //
 // Run it (from the repo root, with the OpenAI key exported and a real analysis
 // model chosen):
@@ -110,7 +110,7 @@ func TestExtractionQualityGate(t *testing.T) {
 			}
 			t.Logf("CITATIONS (%d):", len(out.Citations))
 			for _, c := range out.Citations {
-				t.Logf("  - [%s] %s", c.Subject, c.URL)
+				t.Logf("  - #%d [%s] %s -> links %v", c.CiteOrder, c.Subject, c.URL, c.Links)
 			}
 
 			// PASS = analyzed (verbatim-clean, zero validation errors) after at

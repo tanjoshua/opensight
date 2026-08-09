@@ -52,8 +52,20 @@ type ExtractionTarget struct {
 // ExtractedCitation aligns one response citation to a best-effort subject
 // judged from the surrounding text only (design 05).
 type ExtractedCitation struct {
-	URL     string `json:"url"`
-	Subject string `json:"subject"`
+	CiteOrder int                  `json:"cite_order"`
+	URL       string               `json:"url"`
+	Subject   string               `json:"subject"`
+	Links     []CitationEntityLink `json:"links"`
+}
+
+// CitationEntityLink carries enough response-local evidence to validate that
+// an entity index was not shifted onto the wrong organization. Reference is the
+// exact name or shorthand used in the response; Passage is the exact claim
+// immediately supported by this citation occurrence.
+type CitationEntityLink struct {
+	EntityIndex int    `json:"entity_index"`
+	Reference   string `json:"reference"`
+	Passage     string `json:"passage"`
 }
 
 // ExtractionOutput is the decoded extraction schema (design 05). Validation
@@ -62,6 +74,28 @@ type ExtractionOutput struct {
 	Entities  []ExtractedEntity   `json:"entities"`
 	Target    *ExtractionTarget   `json:"target"`
 	Citations []ExtractedCitation `json:"citations"`
+}
+
+// EntityWithCitations carries an extracted entity into reconciliation together
+// with every citation occurrence the model directly linked to it.
+type EntityWithCitations struct {
+	Entity     ExtractedEntity
+	CiteOrders []int
+}
+
+// LinkEntities inverts citations[].links into the per-entity shape
+// reconciliation needs. ValidateExtraction has already guaranteed the indexes.
+func LinkEntities(out ExtractionOutput) []EntityWithCitations {
+	linked := make([]EntityWithCitations, len(out.Entities))
+	for i, entity := range out.Entities {
+		linked[i] = EntityWithCitations{Entity: entity, CiteOrders: []int{}}
+	}
+	for _, citation := range out.Citations {
+		for _, link := range citation.Links {
+			linked[link.EntityIndex].CiteOrders = append(linked[link.EntityIndex].CiteOrders, citation.CiteOrder)
+		}
+	}
+	return linked
 }
 
 // ExtractionRunner runs one structured-output extraction call per succeeded

@@ -62,7 +62,7 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
 		VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_1"}'::jsonb, 'Analysis Clinic and Rival Clinic are options.')`, resultID, runID, promptID)
 
-	// Derived rows across all four tables — proves the schema is writable from
+	// Derived rows and their link table — proves the schema is writable from
 	// Go end to end.
 	mustExec(t, db, ctx, `
 		INSERT INTO competitors (id, business_id, name, aliases, source, status)
@@ -71,14 +71,16 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		INSERT INTO result_analyses (prompt_result_id, sentiment, keywords, excerpts, analysis_model, extraction_version)
 		VALUES ($1, 'positive', ARRAY['friendly']::text[], '["Analysis Clinic is a good option."]'::jsonb, 'gpt-5-mini', 1)`, resultID)
 	mustExec(t, db, ctx, `
-		INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order)
-		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'business', 0)`, citationID, resultID)
+		INSERT INTO citations (id, prompt_result_id, url, domain, subject, cite_order, text_start, text_end)
+		VALUES ($1, $2, 'https://example.com/x', 'example.com', 'business', 0, 0, 10)`, citationID, resultID)
 	mustExec(t, db, ctx, `
 		INSERT INTO mentions (id, prompt_result_id, subject, matched_by, mention_order, excerpt)
 		VALUES ($1, $2, 'self', 'exact', 0, 'Analysis Clinic ... options.')`, selfMentionID, resultID)
 	mustExec(t, db, ctx, `
 		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
 		VALUES ($1, $2, 'competitor', $3, 'exact', 1, 'Rival Clinic ... options.')`, competitorMentionID, resultID, competitorID)
+	mustExec(t, db, ctx, `INSERT INTO mention_citations (mention_id,citation_id) VALUES ($1,$2),($3,$2)`,
+		selfMentionID, citationID, competitorMentionID)
 
 	// The canonical mention invariant: competitor_id is required iff
 	// subject = 'competitor'.
@@ -104,6 +106,9 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 	}
 	if got := count(t, db, ctx, "SELECT count(*) FROM citations WHERE prompt_result_id = $1", resultID); got != 0 {
 		t.Fatalf("citations after wipe = %d, want 0", got)
+	}
+	if got := count(t, db, ctx, `SELECT count(*) FROM mention_citations WHERE mention_id IN ($1,$2)`, selfMentionID, competitorMentionID); got != 0 {
+		t.Fatalf("mention citation links after citation wipe = %d, want 0 (cascade)", got)
 	}
 	if got := count(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 2 {
 		t.Fatalf("mentions after result wipe = %d, want 2 (untouched by result wipe)", got)

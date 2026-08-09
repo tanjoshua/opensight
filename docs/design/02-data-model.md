@@ -27,6 +27,7 @@ erDiagram
     prompt_results ||--o{ mentions : ""
     prompt_results ||--o{ citations : ""
     competitors ||--o{ mentions : ""
+    mentions }o--o{ citations : "mention_citations"
 ```
 
 All IDs are UUIDv7 (time-ordered, index-friendly). `account_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through an account-checked business lookup. Callers without ambient account context (Temporal activities, CLI) first resolve the business's account via a single bootstrap lookup (`store.Store.ResolveAccountID`), then use the same account-checked repositories.
@@ -187,8 +188,15 @@ mentions (
 citations (
   id UUID PK, prompt_result_id FK,
   url text, domain text, title text NULL,
-  cite_order int,
-  subject text                 -- 'business' | 'competitor' | 'other' | 'unknown' (best-effort)
+  cite_order int,              -- unique per result; how a mention resolves its citation
+  subject text,                -- 'business' | 'competitor' | 'other' | 'unknown' (best-effort)
+  text_start int, text_end int -- the part of response_text this citation backs (05)
+)
+
+mention_citations (
+  mention_id uuid FK REFERENCES mentions(id) ON DELETE CASCADE,
+  citation_id uuid FK REFERENCES citations(id) ON DELETE CASCADE,
+  PRIMARY KEY (mention_id, citation_id)
 )
 ```
 
@@ -196,6 +204,7 @@ citations (
 - Discovery inserts `competitors` with status `discovered`; the extraction pipeline (design 05) matches names against `competitors.aliases` before creating new rows.
 - Editing `competitors.aliases` changes matching keys for future reconcile passes only. It does not rewrite `suggested_aliases`, prior mentions, or any historical metric.
 - `citations.subject` is best-effort inference from the response context, not from fetching cited pages; `unknown` is an honest value. Fetching cited pages to verify is a possible later enhancement, noted in design 05.
+- `mention_citations` stores the extraction model's direct many-to-many links between entity mentions and citation occurrences. One citation may support several organizations and one organization may have several citations; no row means the relationship was unclear or the citation expressed general guidance. Anything asking which businesses a source supported must read this link — the answer-level set is every business the response mentioned, which is a different and much larger question.
 
 ## How the PRD's metrics map to queries
 

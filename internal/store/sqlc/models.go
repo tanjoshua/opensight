@@ -45,29 +45,6 @@ type AnalyzedResult struct {
 	HasSelfMention bool
 }
 
-type AssessmentGeneration struct {
-	ID              uuid.UUID
-	AccountID       uuid.UUID
-	BusinessID      uuid.UUID
-	MonitoringRunID uuid.UUID
-	Status          string
-	CompilerVersion int32
-	RankerVersion   int32
-	ModulePlan      json.RawMessage
-	Error           *string
-	StartedAt       time.Time
-	CompletedAt     *time.Time
-}
-
-type AssessmentModuleOutcome struct {
-	GenerationID uuid.UUID
-	AccountID    uuid.UUID
-	AssessorKey  string
-	Status       string
-	Error        *string
-	CompletedAt  time.Time
-}
-
 type Business struct {
 	ID          uuid.UUID
 	AccountID   uuid.UUID
@@ -90,6 +67,8 @@ type Citation struct {
 	Title          *string
 	CiteOrder      int32
 	Subject        string
+	TextStart      int32
+	TextEnd        int32
 }
 
 type Competitor struct {
@@ -104,47 +83,30 @@ type Competitor struct {
 	CreatedAt        time.Time
 }
 
-type EvidenceArtifact struct {
-	ID               uuid.UUID
-	GenerationID     uuid.UUID
-	AccountID        uuid.UUID
-	CollectorKey     string
-	CollectorVersion int32
-	PayloadVersion   int32
-	Status           string
-	CheckedAt        time.Time
-	Payload          json.RawMessage
-	Error            *string
-}
-
-type ImprovementAction struct {
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-	BusinessID          uuid.UUID
-	PracticeKey         string
-	SubjectKey          string
-	Cycle               int32
-	RecommendationKey   string
-	CurrentAssessmentID *uuid.UUID
-	Rank                int32
-	Presentation        json.RawMessage
-	Status              string
-	DismissalReason     *string
-	CompletionBaseline  *json.RawMessage
-	StartedAt           *time.Time
-	CompletedAt         *time.Time
-	FirstSeenAt         time.Time
-	UpdatedAt           time.Time
-}
-
-type ImprovementActionEvent struct {
-	ID        uuid.UUID
-	ActionID  uuid.UUID
-	AccountID uuid.UUID
-	EventKey  string
-	EventType string
-	Payload   json.RawMessage
-	CreatedAt time.Time
+type Finding struct {
+	ID              uuid.UUID
+	AccountID       uuid.UUID
+	BusinessID      uuid.UUID
+	Key             string
+	Source          string
+	Category        string
+	Title           string
+	Body            string
+	Steps           json.RawMessage
+	Detail          string
+	ResultIds       []uuid.UUID
+	PromptIds       []uuid.UUID
+	Sources         []string
+	Blocking        bool
+	Reach           int32
+	Priority        int32
+	Status          string
+	DismissalReason *string
+	FirstSeenAt     time.Time
+	LastSeenAt      time.Time
+	CompletedAt     *time.Time
+	DismissedAt     *time.Time
+	VerifiedAt      *time.Time
 }
 
 type Mention struct {
@@ -156,6 +118,11 @@ type Mention struct {
 	MentionOrder   int32
 	Excerpt        string
 	VerbatimName   *string
+}
+
+type MentionCitation struct {
+	MentionID  uuid.UUID
+	CitationID uuid.UUID
 }
 
 type MonitoringRun struct {
@@ -222,6 +189,18 @@ type Session struct {
 	ExpiresAt time.Time
 }
 
+type SiteAudit struct {
+	ID              uuid.UUID
+	AccountID       uuid.UUID
+	BusinessID      uuid.UUID
+	MonitoringRunID uuid.UUID
+	CheckedAt       time.Time
+	PagesRead       int32
+	Failure         *string
+	Checks          json.RawMessage
+	Published       bool
+}
+
 type Subscription struct {
 	AccountID            uuid.UUID
 	PlanCode             string
@@ -241,30 +220,4 @@ type User struct {
 	Email     string
 	CreatedAt time.Time
 	GoogleSub *string
-}
-
-type VisibilityAssessment struct {
-	ID              uuid.UUID
-	GenerationID    uuid.UUID
-	AccountID       uuid.UUID
-	BusinessID      uuid.UUID
-	PracticeKey     string
-	CriteriaVersion int32
-	AssessorKey     string
-	AssessorVersion int32
-	SubjectKey      string
-	Status          string
-	ResultIds       []uuid.UUID
-	PromptIds       []uuid.UUID
-	CheckedSources  []string
-	Explanation     string
-	Reach           int32
-	Persistence     int32
-	EvidenceQuality int32
-	Actionability   int32
-	Effort          int32
-	PayloadVersion  int32
-	Payload         json.RawMessage
-	Published       bool
-	AssessedAt      time.Time
 }

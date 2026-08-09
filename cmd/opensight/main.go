@@ -8,7 +8,6 @@
 //	opensight account member add # add a member to an account
 //	opensight business create # seed an active business from a spec file
 //	opensight seed dev        # seed a dev account and login
-//	opensight assess replay   # re-derive verdicts from stored evidence (read-only)
 //	opensight stripe portal-config  # apply the Billing Portal configuration
 //	opensight stripe webhook-config # create/update the production webhook endpoint
 //
@@ -47,7 +46,7 @@ import (
 )
 
 const (
-	usage                 = "usage: opensight <serve|work|migrate|account|business|seed|assess|stripe>"
+	usage                 = "usage: opensight <serve|work|migrate|account|business|seed|stripe>"
 	accountCreateUsage    = "usage: opensight account create --name <account-name>"
 	accountMemberAddUsage = "usage: opensight account member add --account <account-id> --email <email> --role <owner|admin|member|viewer>"
 	businessCreateUsage   = "usage: opensight business create --account <account-id> --file <spec.yaml>"
@@ -107,8 +106,6 @@ func run(ctx context.Context, args []string) error {
 		return runBusinessCommand(ctx, cfg, args[1:])
 	case "seed":
 		return runSeedCommand(ctx, cfg, args[1:])
-	case "assess":
-		return runAssessCommand(ctx, cfg, args[1:])
 	case "stripe":
 		return runStripeCommand(ctx, cfg, args[1:])
 	default:
@@ -440,6 +437,14 @@ func work(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("build match runner: %w", err)
 	}
 
+	sourceClassifier, err := llm.NewSourceClassifier(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
+		APIKey: cfg.OpenAIAPIKey,
+		Model:  cfg.OpenAIAnalysisModel,
+	})
+	if err != nil {
+		return fmt.Errorf("build source classifier: %w", err)
+	}
+
 	proposer, err := llm.NewProposeProfileRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
 		APIKey: cfg.OpenAIAPIKey,
 		Model:  cfg.OpenAIOnboardingModel,
@@ -463,11 +468,12 @@ func work(ctx context.Context, cfg config.Config) error {
 	)
 
 	activities := &workflows.Activities{
-		Store:     store.New(db),
-		Runner:    runner,
-		Extractor: extractor,
-		Matcher:   matcher,
-		Proposer:  proposer,
+		Store:            store.New(db),
+		Runner:           runner,
+		Extractor:        extractor,
+		Matcher:          matcher,
+		Proposer:         proposer,
+		SourceClassifier: sourceClassifier,
 	}
 
 	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
@@ -487,10 +493,9 @@ func work(ctx context.Context, cfg config.Config) error {
 	w.RegisterActivity(activities.ReconcileEntities)
 	w.RegisterActivity(activities.ProposeProfile)
 	w.RegisterActivity(activities.PersistProposal)
-	w.RegisterActivity(activities.ResolveAssessmentPlan)
-	w.RegisterActivity(activities.CollectAssessmentEvidence)
-	w.RegisterActivity(activities.RunPracticeAssessor)
-	w.RegisterActivity(activities.PublishAssessments)
+	w.RegisterActivity(activities.RunSiteAudit)
+	w.RegisterActivity(activities.RunFinders)
+	w.RegisterActivity(activities.PublishImproveRun)
 
 	if err := w.Start(); err != nil {
 		return fmt.Errorf("start worker: %w", err)

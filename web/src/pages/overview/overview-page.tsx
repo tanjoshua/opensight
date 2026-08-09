@@ -236,29 +236,26 @@ function NoDataState({ overview }: { overview: Overview }) {
       />
     )
   }
-  if (run.status === RunStatus.RUNNING) {
-    return (
-      <Empty className="border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <LayoutDashboard />
-          </EmptyMedia>
-          <EmptyTitle>First run in progress</EmptyTitle>
-          <EmptyDescription>
-            <div className="w-full max-w-xs pt-2 text-left">
-              <RunStageStrip run={run} variant="full" />
-            </div>
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    )
-  }
+  // One view for the whole pipeline. FinalizeRun sets the run's terminal status
+  // before the AnalyzeRun child finishes (see run_workflow.go), so the run stops
+  // being RUNNING while analysis is still in flight — branching on status here
+  // would swap the user to a different component mid-pipeline. The stage strip
+  // already renders that state as an active Analyzing step, so keep it mounted
+  // and let the stages advance in place.
   return (
-    <SectionMessage
-      icon={LayoutDashboard}
-      title="Analyzing responses"
-      description="Your run has finished and its responses are being analyzed. Your visibility appears here shortly."
-    />
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <LayoutDashboard />
+        </EmptyMedia>
+        <EmptyTitle>First run in progress</EmptyTitle>
+        <EmptyDescription>
+          <div className="w-full max-w-xs pt-2 text-left">
+            <RunStageStrip run={run} variant="full" />
+          </div>
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   )
 }
 

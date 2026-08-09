@@ -11,10 +11,11 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-// ResultEntities carries one analyzed result's ordered entity list into phase 2.
+// ResultEntities carries one analyzed result's ordered entity list into phase 2,
+// each entity carrying phase 1's validated model-supplied citation links.
 type ResultEntities struct {
 	ResultID domain.ID
-	Entities []llm.ExtractedEntity
+	Entities []llm.EntityWithCitations
 }
 
 // ReconcileEntitiesInput is the whole-run phase-2 payload: only Analyzed==true
@@ -77,9 +78,12 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 	}
 
 	// Exact pass per result, keeping the per-result match slice so we can build
-	// mention rows with the right mention_order (index within the result).
+	// mention rows with the right mention_order (index within the result), and
+	// the citation-linked entities alongside it. ExactMatchEntities returns one match
+	// per entity in the order given, so index i is the same entity in both.
 	type resultMatches struct {
 		resultID domain.ID
+		linked   []llm.EntityWithCitations
 		matches  []llm.ExactMatch
 	}
 	perResult := make([]resultMatches, 0, len(in.Results))
@@ -92,8 +96,12 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 	seenUnmatched := map[string]bool{}
 
 	for _, re := range in.Results {
-		matches := llm.ExactMatchEntities(re.Entities, target, reconcileCompetitors)
-		perResult = append(perResult, resultMatches{resultID: re.ResultID, matches: matches})
+		entities := make([]llm.ExtractedEntity, len(re.Entities))
+		for i, a := range re.Entities {
+			entities[i] = a.Entity
+		}
+		matches := llm.ExactMatchEntities(entities, target, reconcileCompetitors)
+		perResult = append(perResult, resultMatches{resultID: re.ResultID, linked: re.Entities, matches: matches})
 		for _, m := range matches {
 			if m.Subject != llm.SubjectUnmatched {
 				continue
@@ -162,6 +170,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 				MentionOrder:   order,
 				VerbatimName:   m.Entity.VerbatimName,
 				Excerpt:        m.Entity.Excerpt,
+				CiteOrders:     pr.linked[order].CiteOrders,
 			}
 			switch m.Subject {
 			case llm.SubjectSelf:

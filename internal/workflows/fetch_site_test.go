@@ -160,6 +160,124 @@ func TestSiteFetcherDiscoversHighValuePages(t *testing.T) {
 	}
 }
 
+func TestSiteFetcherFallsBackToWWWWhenApexHasNoContent(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			visited = append(visited, req.URL.String())
+			switch req.URL.String() {
+			case "https://example.com/":
+				return testFetchResponse(req, http.StatusOK, "text/html", "\n"), nil
+			case "https://www.example.com/":
+				return testFetchResponse(req, http.StatusOK, "text/html", "<main>Example Clinic on www</main>"), nil
+			default:
+				return testFetchResponse(req, http.StatusNotFound, "text/html", "missing"), nil
+			}
+		})),
+		textLimit:        fetchSiteTextLimit,
+		pageBodyLimit:    fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit,
+		maxRequests:      fetchSiteMaxRequests,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "https://example.com"})
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(out.URLs) == 0 || out.URLs[0] != "https://www.example.com/" {
+		t.Fatalf("URLs = %#v, want www homepage", out.URLs)
+	}
+	if len(visited) < 2 || visited[0] != "https://example.com/" || visited[1] != "https://www.example.com/" {
+		t.Fatalf("visited = %#v, want apex then www", visited)
+	}
+}
+
+func TestSiteFetcherReadsNavigationBeforeGuessedPaths(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			visited = append(visited, req.URL.Path)
+			switch req.URL.Path {
+			case "/":
+				return testFetchResponse(req, http.StatusOK, "text/html", `<div id="topnavigation"><a href="/practice/our-team/">Our team</a></div><main>Clinic</main>`), nil
+			case "/practice/our-team/":
+				return testFetchResponse(req, http.StatusOK, "text/html", `<main>Dr Lee is a registered specialist.</main>`), nil
+			default:
+				return testFetchResponse(req, http.StatusOK, "text/html", `<main>Page not found</main>`), nil
+			}
+		})),
+		textLimit: fetchSiteTextLimit, pageBodyLimit: fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit, maxRequests: 2,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "http://example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The budget of 2 buys the homepage and the linked team page; the third visit
+	// is the budget-exempt sitemap probe, not a guessed path.
+	if len(visited) != 3 || visited[1] != "/practice/our-team/" || visited[2] != "/sitemap.xml" || !strings.Contains(out.Text, "registered specialist") {
+		t.Fatalf("visited=%v text=%q, want linked team page before guessed paths", visited, out.Text)
+	}
+}
+
+// The owned-site scan fails sitemap_published from SitemapFound alone, so a site
+// whose pages spend the whole request budget must still have its sitemap probed:
+// "we stopped looking" is not evidence that no sitemap exists.
+func TestSiteFetcherProbesSitemapAfterRequestBudgetIsSpent(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			visited = append(visited, req.URL.Path)
+			switch req.URL.Path {
+			case "/":
+				return testFetchResponse(req, http.StatusOK, "text/html", `<nav><a href="/about">About</a></nav><main>Clinic</main>`), nil
+			case "/sitemap.xml":
+				return testFetchResponse(req, http.StatusOK, "application/xml",
+					`<urlset><url><loc>http://example.com/team</loc></url></urlset>`), nil
+			default:
+				return testFetchResponse(req, http.StatusOK, "text/html", `<main>About the clinic</main>`), nil
+			}
+		})),
+		textLimit: fetchSiteTextLimit, pageBodyLimit: fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit, maxRequests: 2,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "http://example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !out.SitemapFound {
+		t.Fatalf("SitemapFound = false, want the sitemap probed; visited=%v", visited)
+	}
+	// The exemption buys the probe itself and nothing else: the page it lists is
+	// out of budget, so the crawl stops at three requests.
+	if len(visited) != 3 {
+		t.Fatalf("visited=%v, want exactly one request past the budget of 2", visited)
+	}
+}
+
+// Now that the probe runs on every crawl, an SPA catch-all answering 200 with
+// the app shell at /sitemap.xml reaches it on every site rather than only the
+// small ones. A non-XML answer is no sitemap, and must not pass the check.
+func TestSiteFetcherRejectsNonXMLSitemap(t *testing.T) {
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			return testFetchResponse(req, http.StatusOK, "text/html", `<main>Clinic</main>`), nil
+		})),
+		textLimit: fetchSiteTextLimit, pageBodyLimit: fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit, maxRequests: fetchSiteMaxRequests,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "http://example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.SitemapFound {
+		t.Fatal("SitemapFound = true for an HTML response, want no sitemap")
+	}
+}
+
 func TestFetchSiteRefusesPrivateAddresses(t *testing.T) {
 	literals := []string{
 		"http://127.0.0.1/",
@@ -478,6 +596,9 @@ func TestSiteFetcherCapsOutputText(t *testing.T) {
 	hugeText := strings.Repeat("orthopaedic clinic singapore ", fetchSiteTextLimit)
 	fetcher := &siteFetcher{
 		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			if req.URL.Path == "/sitemap.xml" {
+				return testFetchResponse(req, http.StatusNotFound, "", ""), nil
+			}
 			if req.URL.Path != "/" {
 				t.Fatalf("unexpected request after text cap was full: %s", req.URL.String())
 			}
@@ -505,6 +626,9 @@ func TestSiteFetcherCapsResponseBody(t *testing.T) {
 	body := "<html><body>visible text " + strings.Repeat("x", 2048) + " tail marker</body></html>"
 	fetcher := &siteFetcher{
 		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			if req.URL.Path == "/sitemap.xml" {
+				return testFetchResponse(req, http.StatusNotFound, "", ""), nil
+			}
 			if req.URL.Path != "/" {
 				t.Fatalf("unexpected request: %s", req.URL.String())
 			}

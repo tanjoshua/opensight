@@ -16,7 +16,7 @@ import (
 // recorded per row as result_analyses.extraction_version so a later pass can
 // target "re-analyze everything below version N" (design 05). Bump it in the
 // same commit as any change to extractionInstructions or extractionJSONSchema.
-const ExtractionPromptVersion = 4
+const ExtractionPromptVersion = 6
 
 const openAIExtractionSchemaName = "result_extraction"
 
@@ -40,8 +40,9 @@ TARGET
 - Every keyword and the sentiment must be supportable by one of the excerpts. Each excerpt must be an exact quote from the response text (only incidental whitespace may differ).
 
 CITATIONS
-- For each supplied citation, judge its subject FROM THE RESPONSE'S OWN SURROUNDING TEXT ONLY — never by guessing what the page contains: "business" if it supports the target business, "competitor" if it supports another organisation, "other" if neither, "unknown" when the surrounding text does not make it clear. "unknown" is the honest default, not a failure.
-- Return citations in order of first appearance in the response text.
+- Return exactly one item for every supplied citation occurrence, including repeated occurrences of the same URL, in cite_order. Copy its cite_order and URL exactly.
+- links contains one entry for every organisation directly supported by that citation, and [] for general guidance or whenever the relationship is unclear. entity_index identifies the organisation in entities. reference is an exact name, acronym, or shorthand used for that organisation anywhere in the response; never use a pronoun or generic description as the reference. passage is copied exactly from that citation occurrence's supplied evidence_span. The passage need not contain reference when the response uses a pronoun there, but the relationship must still be clear from the response. Never paraphrase. Return multiple links when one occurrence supports multiple organisations.
+- Judge subject FROM THE RESPONSE'S OWN SURROUNDING TEXT ONLY: "business" if it supports the target business, "competitor" if it supports another organisation, "other" if neither, "unknown" when unclear. "unknown" is the honest default.
 
 RETRY
 - If prior output and validation failures are provided, they list exactly what was wrong. Fix all of them and re-emit the FULL corrected object, not a diff.`
@@ -82,10 +83,24 @@ const extractionJSONSchema = `{
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["url", "subject"],
+        "required": ["cite_order", "url", "subject", "links"],
         "properties": {
+          "cite_order": {"type": "integer", "minimum": 0},
           "url": {"type": "string"},
-          "subject": {"type": "string", "enum": ["business", "competitor", "other", "unknown"]}
+          "subject": {"type": "string", "enum": ["business", "competitor", "other", "unknown"]},
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["entity_index", "reference", "passage"],
+              "properties": {
+                "entity_index": {"type": "integer", "minimum": 0},
+                "reference": {"type": "string"},
+                "passage": {"type": "string"}
+              }
+            }
+          }
         }
       }
     }
@@ -176,14 +191,22 @@ func (r *OpenAIExtractionRunner) requestParams(in ExtractionInput) (responses.Re
 // marshalExtractionUserContent serialises the analysis payload the model reads.
 func marshalExtractionUserContent(in ExtractionInput) (string, error) {
 	type citationView struct {
-		URL        string `json:"url"`
-		Title      string `json:"title"`
-		StartIndex int    `json:"start_index"`
-		EndIndex   int    `json:"end_index"`
+		CiteOrder    int    `json:"cite_order"`
+		URL          string `json:"url"`
+		Title        string `json:"title"`
+		StartIndex   int    `json:"start_index"`
+		EndIndex     int    `json:"end_index"`
+		EvidenceSpan string `json:"evidence_span"`
 	}
+	spans := AttributeCitations(in.ResponseText, in.Citations)
+	runes := []rune(in.ResponseText)
 	citations := make([]citationView, 0, len(in.Citations))
-	for _, c := range in.Citations {
-		citations = append(citations, citationView(c))
+	for i, c := range OrderCitationAnnotations(in.Citations) {
+		evidence := ""
+		if i < len(spans) && spans[i].Start >= 0 && spans[i].Start <= spans[i].End && spans[i].End <= len(runes) {
+			evidence = string(runes[spans[i].Start:spans[i].End])
+		}
+		citations = append(citations, citationView{CiteOrder: i, URL: c.URL, Title: c.Title, StartIndex: c.StartIndex, EndIndex: c.EndIndex, EvidenceSpan: evidence})
 	}
 	aliases := in.BusinessAliases
 	if aliases == nil {

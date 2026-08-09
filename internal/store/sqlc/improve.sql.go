@@ -8,785 +8,174 @@ package sqlc
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-const countActionEvents = `-- name: CountActionEvents :one
-SELECT count(*) FROM improvement_action_events e JOIN improvement_actions a ON a.id=e.action_id
-WHERE a.business_id = $1 AND e.account_id = $2
+const getFinding = `-- name: GetFinding :one
+SELECT id, account_id, business_id, key, source, category, title, body, steps, detail, result_ids, prompt_ids, sources, blocking, reach, priority, status, dismissal_reason, first_seen_at, last_seen_at, completed_at, dismissed_at, verified_at FROM findings WHERE id = $1 AND account_id = $2
 `
 
-type CountActionEventsParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-}
-
-func (q *Queries) CountActionEvents(ctx context.Context, arg CountActionEventsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countActionEvents, arg.BusinessID, arg.AccountID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const endImprovementAction = `-- name: EndImprovementAction :exec
-UPDATE improvement_actions SET status = $1,current_assessment_id = $2,updated_at = now()
-WHERE id = $3 AND account_id = $4 AND status IN ('OPEN','IN_PROGRESS')
-`
-
-type EndImprovementActionParams struct {
-	Status              string
-	CurrentAssessmentID *uuid.UUID
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-}
-
-func (q *Queries) EndImprovementAction(ctx context.Context, arg EndImprovementActionParams) error {
-	_, err := q.db.Exec(ctx, endImprovementAction,
-		arg.Status,
-		arg.CurrentAssessmentID,
-		arg.ID,
-		arg.AccountID,
-	)
-	return err
-}
-
-const failAssessmentGeneration = `-- name: FailAssessmentGeneration :exec
-UPDATE assessment_generations SET status = 'FAILED',error = $1,completed_at = now() WHERE id = $2 AND account_id = $3 AND status = 'RUNNING'
-`
-
-type FailAssessmentGenerationParams struct {
-	Error     *string
+type GetFindingParams struct {
 	ID        uuid.UUID
 	AccountID uuid.UUID
 }
 
-func (q *Queries) FailAssessmentGeneration(ctx context.Context, arg FailAssessmentGenerationParams) error {
-	_, err := q.db.Exec(ctx, failAssessmentGeneration, arg.Error, arg.ID, arg.AccountID)
-	return err
-}
-
-const finishAssessmentGeneration = `-- name: FinishAssessmentGeneration :exec
-UPDATE assessment_generations SET status = $1,error = $2,completed_at = now() WHERE id = $3 AND account_id = $4
-`
-
-type FinishAssessmentGenerationParams struct {
-	Status    string
-	Error     *string
-	ID        uuid.UUID
-	AccountID uuid.UUID
-}
-
-func (q *Queries) FinishAssessmentGeneration(ctx context.Context, arg FinishAssessmentGenerationParams) error {
-	_, err := q.db.Exec(ctx, finishAssessmentGeneration,
-		arg.Status,
-		arg.Error,
-		arg.ID,
-		arg.AccountID,
-	)
-	return err
-}
-
-const getBusinessAction = `-- name: GetBusinessAction :one
-SELECT a.id, a.account_id, a.business_id, a.practice_key, a.subject_key, a.cycle, a.recommendation_key, a.current_assessment_id, a.rank, a.presentation, a.status, a.dismissal_reason, a.completion_baseline, a.started_at, a.completed_at, a.first_seen_at, a.updated_at,v.status AS assessment_status,v.result_ids,v.prompt_ids,v.checked_sources,v.explanation,v.assessed_at,
- (v.generation_id=(SELECT id FROM assessment_generations WHERE business_id=a.business_id AND account_id=a.account_id AND status IN ('READY','PARTIAL') ORDER BY completed_at DESC LIMIT 1))::bool AS fresh
-FROM improvement_actions a LEFT JOIN visibility_assessments v ON v.id=a.current_assessment_id
-WHERE a.id = $1 AND a.account_id = $2
-`
-
-type GetBusinessActionParams struct {
-	ID        uuid.UUID
-	AccountID uuid.UUID
-}
-
-type GetBusinessActionRow struct {
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-	BusinessID          uuid.UUID
-	PracticeKey         string
-	SubjectKey          string
-	Cycle               int32
-	RecommendationKey   string
-	CurrentAssessmentID *uuid.UUID
-	Rank                int32
-	Presentation        json.RawMessage
-	Status              string
-	DismissalReason     *string
-	CompletionBaseline  *json.RawMessage
-	StartedAt           *time.Time
-	CompletedAt         *time.Time
-	FirstSeenAt         time.Time
-	UpdatedAt           time.Time
-	AssessmentStatus    *string
-	ResultIds           []uuid.UUID
-	PromptIds           []uuid.UUID
-	CheckedSources      []string
-	Explanation         *string
-	AssessedAt          *time.Time
-	Fresh               bool
-}
-
-func (q *Queries) GetBusinessAction(ctx context.Context, arg GetBusinessActionParams) (GetBusinessActionRow, error) {
-	row := q.db.QueryRow(ctx, getBusinessAction, arg.ID, arg.AccountID)
-	var i GetBusinessActionRow
+func (q *Queries) GetFinding(ctx context.Context, arg GetFindingParams) (Finding, error) {
+	row := q.db.QueryRow(ctx, getFinding, arg.ID, arg.AccountID)
+	var i Finding
 	err := row.Scan(
 		&i.ID,
 		&i.AccountID,
 		&i.BusinessID,
-		&i.PracticeKey,
-		&i.SubjectKey,
-		&i.Cycle,
-		&i.RecommendationKey,
-		&i.CurrentAssessmentID,
-		&i.Rank,
-		&i.Presentation,
-		&i.Status,
-		&i.DismissalReason,
-		&i.CompletionBaseline,
-		&i.StartedAt,
-		&i.CompletedAt,
-		&i.FirstSeenAt,
-		&i.UpdatedAt,
-		&i.AssessmentStatus,
+		&i.Key,
+		&i.Source,
+		&i.Category,
+		&i.Title,
+		&i.Body,
+		&i.Steps,
+		&i.Detail,
 		&i.ResultIds,
 		&i.PromptIds,
-		&i.CheckedSources,
-		&i.Explanation,
-		&i.AssessedAt,
-		&i.Fresh,
+		&i.Sources,
+		&i.Blocking,
+		&i.Reach,
+		&i.Priority,
+		&i.Status,
+		&i.DismissalReason,
+		&i.FirstSeenAt,
+		&i.LastSeenAt,
+		&i.CompletedAt,
+		&i.DismissedAt,
+		&i.VerifiedAt,
 	)
 	return i, err
 }
 
-const getLatestPublishedGeneration = `-- name: GetLatestPublishedGeneration :one
-SELECT g.id, g.account_id, g.business_id, g.monitoring_run_id, g.status, g.compiler_version, g.ranker_version, g.module_plan, g.error, g.started_at, g.completed_at FROM assessment_generations g WHERE g.business_id = $1 AND g.account_id = $2 AND g.status IN ('READY','PARTIAL') ORDER BY g.completed_at DESC LIMIT 1
+const getPublishedSiteAudit = `-- name: GetPublishedSiteAudit :one
+SELECT id, account_id, business_id, monitoring_run_id, checked_at, pages_read, failure, checks, published FROM site_audits WHERE business_id = $1 AND account_id = $2 AND published
 `
 
-type GetLatestPublishedGenerationParams struct {
+type GetPublishedSiteAuditParams struct {
 	BusinessID uuid.UUID
 	AccountID  uuid.UUID
 }
 
-func (q *Queries) GetLatestPublishedGeneration(ctx context.Context, arg GetLatestPublishedGenerationParams) (AssessmentGeneration, error) {
-	row := q.db.QueryRow(ctx, getLatestPublishedGeneration, arg.BusinessID, arg.AccountID)
-	var i AssessmentGeneration
+func (q *Queries) GetPublishedSiteAudit(ctx context.Context, arg GetPublishedSiteAuditParams) (SiteAudit, error) {
+	row := q.db.QueryRow(ctx, getPublishedSiteAudit, arg.BusinessID, arg.AccountID)
+	var i SiteAudit
 	err := row.Scan(
 		&i.ID,
 		&i.AccountID,
 		&i.BusinessID,
 		&i.MonitoringRunID,
-		&i.Status,
-		&i.CompilerVersion,
-		&i.RankerVersion,
-		&i.ModulePlan,
-		&i.Error,
-		&i.StartedAt,
-		&i.CompletedAt,
+		&i.CheckedAt,
+		&i.PagesRead,
+		&i.Failure,
+		&i.Checks,
+		&i.Published,
 	)
 	return i, err
 }
 
-const insertImprovementAction = `-- name: InsertImprovementAction :one
-INSERT INTO improvement_actions (id,account_id,business_id,practice_key,subject_key,cycle,recommendation_key,current_assessment_id,rank,presentation,status)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'OPEN') RETURNING id, account_id, business_id, practice_key, subject_key, cycle, recommendation_key, current_assessment_id, rank, presentation, status, dismissal_reason, completion_baseline, started_at, completed_at, first_seen_at, updated_at
+const insertSiteAudit = `-- name: InsertSiteAudit :one
+INSERT INTO site_audits (id,account_id,business_id,monitoring_run_id,checked_at,pages_read,failure,checks,published)
+SELECT $1,$2,$3,r.id,now(),$4,$5,$6,false
+FROM monitoring_runs r JOIN businesses b ON b.id=r.business_id
+WHERE r.id = $7 AND r.business_id = $3 AND b.account_id = $2
+ON CONFLICT (monitoring_run_id) DO NOTHING
+RETURNING id
 `
 
-type InsertImprovementActionParams struct {
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-	BusinessID          uuid.UUID
-	PracticeKey         string
-	SubjectKey          string
-	Cycle               int32
-	RecommendationKey   string
-	CurrentAssessmentID *uuid.UUID
-	Rank                int32
-	Presentation        json.RawMessage
+type InsertSiteAuditParams struct {
+	ID              uuid.UUID
+	AccountID       uuid.UUID
+	BusinessID      uuid.UUID
+	PagesRead       int32
+	Failure         *string
+	Checks          json.RawMessage
+	MonitoringRunID uuid.UUID
 }
 
-func (q *Queries) InsertImprovementAction(ctx context.Context, arg InsertImprovementActionParams) (ImprovementAction, error) {
-	row := q.db.QueryRow(ctx, insertImprovementAction,
+// The unique monitoring_run_id makes a retried publish a no-op rather than a
+// second audit, which is the whole idempotency story now that there is no
+// generation state machine.
+// The run is joined rather than passed straight through, so the insert only
+// happens for a run that really belongs to this business and account.
+func (q *Queries) InsertSiteAudit(ctx context.Context, arg InsertSiteAuditParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertSiteAudit,
 		arg.ID,
 		arg.AccountID,
 		arg.BusinessID,
-		arg.PracticeKey,
-		arg.SubjectKey,
-		arg.Cycle,
-		arg.RecommendationKey,
-		arg.CurrentAssessmentID,
-		arg.Rank,
-		arg.Presentation,
+		arg.PagesRead,
+		arg.Failure,
+		arg.Checks,
+		arg.MonitoringRunID,
 	)
-	var i ImprovementAction
-	err := row.Scan(
-		&i.ID,
-		&i.AccountID,
-		&i.BusinessID,
-		&i.PracticeKey,
-		&i.SubjectKey,
-		&i.Cycle,
-		&i.RecommendationKey,
-		&i.CurrentAssessmentID,
-		&i.Rank,
-		&i.Presentation,
-		&i.Status,
-		&i.DismissalReason,
-		&i.CompletionBaseline,
-		&i.StartedAt,
-		&i.CompletedAt,
-		&i.FirstSeenAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
-const insertImprovementActionEvent = `-- name: InsertImprovementActionEvent :exec
-INSERT INTO improvement_action_events (id,action_id,account_id,event_key,event_type,payload)
-SELECT $1,$2,$3,$4,$5,$6
-WHERE EXISTS (SELECT 1 FROM improvement_actions WHERE id = $2 AND account_id = $3)
-ON CONFLICT (action_id,event_key) DO NOTHING
+const listFindings = `-- name: ListFindings :many
+SELECT f.id, f.account_id, f.business_id, f.key, f.source, f.category, f.title, f.body, f.steps, f.detail, f.result_ids, f.prompt_ids, f.sources, f.blocking, f.reach, f.priority, f.status, f.dismissal_reason, f.first_seen_at, f.last_seen_at, f.completed_at, f.dismissed_at, f.verified_at FROM findings f
+WHERE f.business_id = $1 AND f.account_id = $2
+  AND (f.status <> 'OPEN' OR f.last_seen_at >= COALESCE(
+    (SELECT a.checked_at FROM site_audits a WHERE a.business_id = $1 AND a.published), '-infinity'::timestamptz))
+ORDER BY f.blocking DESC,
+  COALESCE(array_position($3::text[], f.category), array_length($3::text[], 1) + 1),
+  f.reach DESC, f.priority, f.key
 `
 
-type InsertImprovementActionEventParams struct {
-	ID        uuid.UUID
-	ActionID  uuid.UUID
-	AccountID uuid.UUID
-	EventKey  string
-	EventType string
-	Payload   json.RawMessage
+type ListFindingsParams struct {
+	BusinessID    uuid.UUID
+	AccountID     uuid.UUID
+	CategoryOrder []string
 }
 
-func (q *Queries) InsertImprovementActionEvent(ctx context.Context, arg InsertImprovementActionEventParams) error {
-	_, err := q.db.Exec(ctx, insertImprovementActionEvent,
-		arg.ID,
-		arg.ActionID,
-		arg.AccountID,
-		arg.EventKey,
-		arg.EventType,
-		arg.Payload,
-	)
-	return err
-}
-
-const listActionCycles = `-- name: ListActionCycles :many
-SELECT id, account_id, business_id, practice_key, subject_key, cycle, recommendation_key, current_assessment_id, rank, presentation, status, dismissal_reason, completion_baseline, started_at, completed_at, first_seen_at, updated_at FROM improvement_actions WHERE business_id = $1 AND account_id = $2 AND practice_key = $3 AND subject_key = $4 ORDER BY cycle DESC
-`
-
-type ListActionCyclesParams struct {
-	BusinessID  uuid.UUID
-	AccountID   uuid.UUID
-	PracticeKey string
-	SubjectKey  string
-}
-
-func (q *Queries) ListActionCycles(ctx context.Context, arg ListActionCyclesParams) ([]ImprovementAction, error) {
-	rows, err := q.db.Query(ctx, listActionCycles,
-		arg.BusinessID,
-		arg.AccountID,
-		arg.PracticeKey,
-		arg.SubjectKey,
-	)
+// Active work is what the current audit still reproduces, so a finding the
+// evidence has moved past drops out of the queue without needing a retired
+// state. Both timestamps are the publishing transaction's now(), so "seen by the
+// current audit" is an exact comparison rather than a tolerance. The ordering is
+// the product's triage: blockers, then the work most within the business's own
+// control, then how many answers are affected.
+//
+// category_order is passed in rather than written here as a literal, because the
+// sequence is catalog data owned by the visibility package; a copy in SQL would
+// drift the first time a category is added. An unknown category sorts last.
+func (q *Queries) ListFindings(ctx context.Context, arg ListFindingsParams) ([]Finding, error) {
+	rows, err := q.db.Query(ctx, listFindings, arg.BusinessID, arg.AccountID, arg.CategoryOrder)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ImprovementAction
+	var items []Finding
 	for rows.Next() {
-		var i ImprovementAction
+		var i Finding
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
 			&i.BusinessID,
-			&i.PracticeKey,
-			&i.SubjectKey,
-			&i.Cycle,
-			&i.RecommendationKey,
-			&i.CurrentAssessmentID,
-			&i.Rank,
-			&i.Presentation,
+			&i.Key,
+			&i.Source,
+			&i.Category,
+			&i.Title,
+			&i.Body,
+			&i.Steps,
+			&i.Detail,
+			&i.ResultIds,
+			&i.PromptIds,
+			&i.Sources,
+			&i.Blocking,
+			&i.Reach,
+			&i.Priority,
 			&i.Status,
 			&i.DismissalReason,
-			&i.CompletionBaseline,
-			&i.StartedAt,
-			&i.CompletedAt,
 			&i.FirstSeenAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listActionEvents = `-- name: ListActionEvents :many
-SELECT e.id, e.action_id, e.account_id, e.event_key, e.event_type, e.payload, e.created_at,a.business_id,a.practice_key,a.subject_key,a.cycle,a.presentation
-FROM improvement_action_events e JOIN improvement_actions a ON a.id=e.action_id
-WHERE a.business_id = $1 AND e.account_id = $2
-ORDER BY e.created_at DESC,e.id DESC LIMIT $4 OFFSET $3
-`
-
-type ListActionEventsParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-	PageOffset int32
-	PageLimit  int32
-}
-
-type ListActionEventsRow struct {
-	ID           uuid.UUID
-	ActionID     uuid.UUID
-	AccountID    uuid.UUID
-	EventKey     string
-	EventType    string
-	Payload      json.RawMessage
-	CreatedAt    time.Time
-	BusinessID   uuid.UUID
-	PracticeKey  string
-	SubjectKey   string
-	Cycle        int32
-	Presentation json.RawMessage
-}
-
-func (q *Queries) ListActionEvents(ctx context.Context, arg ListActionEventsParams) ([]ListActionEventsRow, error) {
-	rows, err := q.db.Query(ctx, listActionEvents,
-		arg.BusinessID,
-		arg.AccountID,
-		arg.PageOffset,
-		arg.PageLimit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListActionEventsRow
-	for rows.Next() {
-		var i ListActionEventsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ActionID,
-			&i.AccountID,
-			&i.EventKey,
-			&i.EventType,
-			&i.Payload,
-			&i.CreatedAt,
-			&i.BusinessID,
-			&i.PracticeKey,
-			&i.SubjectKey,
-			&i.Cycle,
-			&i.Presentation,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listActiveActionsForPractices = `-- name: ListActiveActionsForPractices :many
-SELECT id, account_id, business_id, practice_key, subject_key, cycle, recommendation_key, current_assessment_id, rank, presentation, status, dismissal_reason, completion_baseline, started_at, completed_at, first_seen_at, updated_at FROM improvement_actions
-WHERE business_id = $1 AND account_id = $2 AND practice_key = ANY($3::text[]) AND status IN ('OPEN','IN_PROGRESS')
-ORDER BY rank,practice_key,subject_key
-`
-
-type ListActiveActionsForPracticesParams struct {
-	BusinessID   uuid.UUID
-	AccountID    uuid.UUID
-	PracticeKeys []string
-}
-
-func (q *Queries) ListActiveActionsForPractices(ctx context.Context, arg ListActiveActionsForPracticesParams) ([]ImprovementAction, error) {
-	rows, err := q.db.Query(ctx, listActiveActionsForPractices, arg.BusinessID, arg.AccountID, arg.PracticeKeys)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ImprovementAction
-	for rows.Next() {
-		var i ImprovementAction
-		if err := rows.Scan(
-			&i.ID,
-			&i.AccountID,
-			&i.BusinessID,
-			&i.PracticeKey,
-			&i.SubjectKey,
-			&i.Cycle,
-			&i.RecommendationKey,
-			&i.CurrentAssessmentID,
-			&i.Rank,
-			&i.Presentation,
-			&i.Status,
-			&i.DismissalReason,
-			&i.CompletionBaseline,
-			&i.StartedAt,
+			&i.LastSeenAt,
 			&i.CompletedAt,
-			&i.FirstSeenAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listBusinessActions = `-- name: ListBusinessActions :many
-SELECT a.id, a.account_id, a.business_id, a.practice_key, a.subject_key, a.cycle, a.recommendation_key, a.current_assessment_id, a.rank, a.presentation, a.status, a.dismissal_reason, a.completion_baseline, a.started_at, a.completed_at, a.first_seen_at, a.updated_at,v.status AS assessment_status,v.result_ids,v.prompt_ids,v.checked_sources,v.explanation,v.assessed_at,
- (v.generation_id=(SELECT id FROM assessment_generations WHERE business_id=a.business_id AND account_id=a.account_id AND status IN ('READY','PARTIAL') ORDER BY completed_at DESC LIMIT 1))::bool AS fresh
-FROM improvement_actions a LEFT JOIN visibility_assessments v ON v.id=a.current_assessment_id
-WHERE a.business_id = $1 AND a.account_id = $2
-ORDER BY a.rank,a.practice_key,a.subject_key,a.cycle DESC
-`
-
-type ListBusinessActionsParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-}
-
-type ListBusinessActionsRow struct {
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-	BusinessID          uuid.UUID
-	PracticeKey         string
-	SubjectKey          string
-	Cycle               int32
-	RecommendationKey   string
-	CurrentAssessmentID *uuid.UUID
-	Rank                int32
-	Presentation        json.RawMessage
-	Status              string
-	DismissalReason     *string
-	CompletionBaseline  *json.RawMessage
-	StartedAt           *time.Time
-	CompletedAt         *time.Time
-	FirstSeenAt         time.Time
-	UpdatedAt           time.Time
-	AssessmentStatus    *string
-	ResultIds           []uuid.UUID
-	PromptIds           []uuid.UUID
-	CheckedSources      []string
-	Explanation         *string
-	AssessedAt          *time.Time
-	Fresh               bool
-}
-
-func (q *Queries) ListBusinessActions(ctx context.Context, arg ListBusinessActionsParams) ([]ListBusinessActionsRow, error) {
-	rows, err := q.db.Query(ctx, listBusinessActions, arg.BusinessID, arg.AccountID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListBusinessActionsRow
-	for rows.Next() {
-		var i ListBusinessActionsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.AccountID,
-			&i.BusinessID,
-			&i.PracticeKey,
-			&i.SubjectKey,
-			&i.Cycle,
-			&i.RecommendationKey,
-			&i.CurrentAssessmentID,
-			&i.Rank,
-			&i.Presentation,
-			&i.Status,
-			&i.DismissalReason,
-			&i.CompletionBaseline,
-			&i.StartedAt,
-			&i.CompletedAt,
-			&i.FirstSeenAt,
-			&i.UpdatedAt,
-			&i.AssessmentStatus,
-			&i.ResultIds,
-			&i.PromptIds,
-			&i.CheckedSources,
-			&i.Explanation,
-			&i.AssessedAt,
-			&i.Fresh,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listGenerationAssessmentRows = `-- name: ListGenerationAssessmentRows :many
-SELECT id, generation_id, account_id, business_id, practice_key, criteria_version, assessor_key, assessor_version, subject_key, status, result_ids, prompt_ids, checked_sources, explanation, reach, persistence, evidence_quality, actionability, effort, payload_version, payload, published, assessed_at FROM visibility_assessments WHERE generation_id = $1 AND account_id = $2 ORDER BY practice_key,subject_key
-`
-
-type ListGenerationAssessmentRowsParams struct {
-	GenerationID uuid.UUID
-	AccountID    uuid.UUID
-}
-
-func (q *Queries) ListGenerationAssessmentRows(ctx context.Context, arg ListGenerationAssessmentRowsParams) ([]VisibilityAssessment, error) {
-	rows, err := q.db.Query(ctx, listGenerationAssessmentRows, arg.GenerationID, arg.AccountID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []VisibilityAssessment
-	for rows.Next() {
-		var i VisibilityAssessment
-		if err := rows.Scan(
-			&i.ID,
-			&i.GenerationID,
-			&i.AccountID,
-			&i.BusinessID,
-			&i.PracticeKey,
-			&i.CriteriaVersion,
-			&i.AssessorKey,
-			&i.AssessorVersion,
-			&i.SubjectKey,
-			&i.Status,
-			&i.ResultIds,
-			&i.PromptIds,
-			&i.CheckedSources,
-			&i.Explanation,
-			&i.Reach,
-			&i.Persistence,
-			&i.EvidenceQuality,
-			&i.Actionability,
-			&i.Effort,
-			&i.PayloadVersion,
-			&i.Payload,
-			&i.Published,
-			&i.AssessedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listPublishedAssessments = `-- name: ListPublishedAssessments :many
-SELECT a.id, a.generation_id, a.account_id, a.business_id, a.practice_key, a.criteria_version, a.assessor_key, a.assessor_version, a.subject_key, a.status, a.result_ids, a.prompt_ids, a.checked_sources, a.explanation, a.reach, a.persistence, a.evidence_quality, a.actionability, a.effort, a.payload_version, a.payload, a.published, a.assessed_at,g.status AS generation_status,g.completed_at AS generation_completed_at
-FROM visibility_assessments a JOIN assessment_generations g ON g.id=a.generation_id
-WHERE a.business_id = $1 AND a.account_id = $2 AND a.published
-ORDER BY a.practice_key,a.subject_key
-`
-
-type ListPublishedAssessmentsParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-}
-
-type ListPublishedAssessmentsRow struct {
-	ID                    uuid.UUID
-	GenerationID          uuid.UUID
-	AccountID             uuid.UUID
-	BusinessID            uuid.UUID
-	PracticeKey           string
-	CriteriaVersion       int32
-	AssessorKey           string
-	AssessorVersion       int32
-	SubjectKey            string
-	Status                string
-	ResultIds             []uuid.UUID
-	PromptIds             []uuid.UUID
-	CheckedSources        []string
-	Explanation           string
-	Reach                 int32
-	Persistence           int32
-	EvidenceQuality       int32
-	Actionability         int32
-	Effort                int32
-	PayloadVersion        int32
-	Payload               json.RawMessage
-	Published             bool
-	AssessedAt            time.Time
-	GenerationStatus      string
-	GenerationCompletedAt *time.Time
-}
-
-func (q *Queries) ListPublishedAssessments(ctx context.Context, arg ListPublishedAssessmentsParams) ([]ListPublishedAssessmentsRow, error) {
-	rows, err := q.db.Query(ctx, listPublishedAssessments, arg.BusinessID, arg.AccountID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListPublishedAssessmentsRow
-	for rows.Next() {
-		var i ListPublishedAssessmentsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.GenerationID,
-			&i.AccountID,
-			&i.BusinessID,
-			&i.PracticeKey,
-			&i.CriteriaVersion,
-			&i.AssessorKey,
-			&i.AssessorVersion,
-			&i.SubjectKey,
-			&i.Status,
-			&i.ResultIds,
-			&i.PromptIds,
-			&i.CheckedSources,
-			&i.Explanation,
-			&i.Reach,
-			&i.Persistence,
-			&i.EvidenceQuality,
-			&i.Actionability,
-			&i.Effort,
-			&i.PayloadVersion,
-			&i.Payload,
-			&i.Published,
-			&i.AssessedAt,
-			&i.GenerationStatus,
-			&i.GenerationCompletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listPublishedForPractices = `-- name: ListPublishedForPractices :many
-SELECT id, generation_id, account_id, business_id, practice_key, criteria_version, assessor_key, assessor_version, subject_key, status, result_ids, prompt_ids, checked_sources, explanation, reach, persistence, evidence_quality, actionability, effort, payload_version, payload, published, assessed_at FROM visibility_assessments
-WHERE business_id = $1 AND account_id = $2 AND published AND practice_key = ANY($3::text[])
-ORDER BY practice_key,subject_key
-`
-
-type ListPublishedForPracticesParams struct {
-	BusinessID   uuid.UUID
-	AccountID    uuid.UUID
-	PracticeKeys []string
-}
-
-func (q *Queries) ListPublishedForPractices(ctx context.Context, arg ListPublishedForPracticesParams) ([]VisibilityAssessment, error) {
-	rows, err := q.db.Query(ctx, listPublishedForPractices, arg.BusinessID, arg.AccountID, arg.PracticeKeys)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []VisibilityAssessment
-	for rows.Next() {
-		var i VisibilityAssessment
-		if err := rows.Scan(
-			&i.ID,
-			&i.GenerationID,
-			&i.AccountID,
-			&i.BusinessID,
-			&i.PracticeKey,
-			&i.CriteriaVersion,
-			&i.AssessorKey,
-			&i.AssessorVersion,
-			&i.SubjectKey,
-			&i.Status,
-			&i.ResultIds,
-			&i.PromptIds,
-			&i.CheckedSources,
-			&i.Explanation,
-			&i.Reach,
-			&i.Persistence,
-			&i.EvidenceQuality,
-			&i.Actionability,
-			&i.Effort,
-			&i.PayloadVersion,
-			&i.Payload,
-			&i.Published,
-			&i.AssessedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const loadCompletionBusinessTotals = `-- name: LoadCompletionBusinessTotals :one
-SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM mentions m WHERE m.prompt_result_id=pr.id AND m.subject='self'))::int AS mentioned,
- count(*)::int AS analyzed
-FROM prompt_results pr JOIN result_analyses ra ON ra.prompt_result_id=pr.id JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE r.business_id = $1 AND b.account_id = $2 AND r.analysis_completed_at IS NOT NULL AND pr.status='succeeded'
- AND r.id = (SELECT id FROM monitoring_runs WHERE business_id = $1 AND analysis_completed_at IS NOT NULL ORDER BY scheduled_for DESC LIMIT 1)
-`
-
-type LoadCompletionBusinessTotalsParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-}
-
-type LoadCompletionBusinessTotalsRow struct {
-	Mentioned int32
-	Analyzed  int32
-}
-
-func (q *Queries) LoadCompletionBusinessTotals(ctx context.Context, arg LoadCompletionBusinessTotalsParams) (LoadCompletionBusinessTotalsRow, error) {
-	row := q.db.QueryRow(ctx, loadCompletionBusinessTotals, arg.BusinessID, arg.AccountID)
-	var i LoadCompletionBusinessTotalsRow
-	err := row.Scan(&i.Mentioned, &i.Analyzed)
-	return i, err
-}
-
-const loadCompletionQuestionEvidence = `-- name: LoadCompletionQuestionEvidence :many
-SELECT DISTINCT ON (pr.prompt_id) pr.prompt_id,p.text AS prompt,pr.id AS result_id,
- EXISTS (SELECT 1 FROM mentions m WHERE m.prompt_result_id=pr.id AND m.subject='self') AS mentioned
-FROM prompt_results pr JOIN result_analyses ra ON ra.prompt_result_id=pr.id JOIN prompts p ON p.id=pr.prompt_id JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
-WHERE r.business_id = $1 AND b.account_id = $2 AND pr.status='succeeded'
- AND (pr.id = ANY($3::uuid[]) OR pr.prompt_id = ANY($4::uuid[]))
-ORDER BY pr.prompt_id,(pr.id = ANY($3::uuid[])) DESC,pr.requested_at DESC
-`
-
-type LoadCompletionQuestionEvidenceParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-	ResultIds  []uuid.UUID
-	PromptIds  []uuid.UUID
-}
-
-type LoadCompletionQuestionEvidenceRow struct {
-	PromptID  uuid.UUID
-	Prompt    string
-	ResultID  uuid.UUID
-	Mentioned bool
-}
-
-func (q *Queries) LoadCompletionQuestionEvidence(ctx context.Context, arg LoadCompletionQuestionEvidenceParams) ([]LoadCompletionQuestionEvidenceRow, error) {
-	rows, err := q.db.Query(ctx, loadCompletionQuestionEvidence,
-		arg.BusinessID,
-		arg.AccountID,
-		arg.ResultIds,
-		arg.PromptIds,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []LoadCompletionQuestionEvidenceRow
-	for rows.Next() {
-		var i LoadCompletionQuestionEvidenceRow
-		if err := rows.Scan(
-			&i.PromptID,
-			&i.Prompt,
-			&i.ResultID,
-			&i.Mentioned,
+			&i.DismissedAt,
+			&i.VerifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -801,9 +190,13 @@ func (q *Queries) LoadCompletionQuestionEvidence(ctx context.Context, arg LoadCo
 const loadMonitoringEvidence = `-- name: LoadMonitoringEvidence :many
 SELECT r.id AS run_id,pr.id AS result_id,pr.prompt_id,p.text AS prompt,pr.response_text,
  EXISTS(SELECT 1 FROM mentions m WHERE m.prompt_result_id=pr.id AND m.subject='self') AS mentioned,
- COALESCE((SELECT array_agg(DISTINCT c.domain ORDER BY c.domain) FROM citations c WHERE c.prompt_result_id=pr.id),'{}')::text[] AS citation_domains,
- COALESCE((SELECT array_agg(c.url ORDER BY c.cite_order,c.id) FROM citations c WHERE c.prompt_result_id=pr.id),'{}')::text[] AS citation_urls,
- COALESCE((SELECT array_agg(DISTINCT co.name ORDER BY co.name) FROM mentions m JOIN competitors co ON co.id=m.competitor_id WHERE m.prompt_result_id=pr.id),'{}')::text[] AS competitors
+ COALESCE((SELECT json_agg(json_build_object(
+    'url',c.url,'domain',c.domain,
+	'passage',substring(COALESCE(pr.response_text,'') FROM c.text_start + 1 FOR GREATEST(c.text_end-c.text_start,0)),
+    'competitors',COALESCE((SELECT array_agg(DISTINCT co.name ORDER BY co.name)
+      FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id
+      JOIN competitors co ON co.id=m.competitor_id WHERE mc.citation_id=c.id),'{}')
+  ) ORDER BY c.cite_order) FROM citations c WHERE c.prompt_result_id=pr.id),'[]')::jsonb AS citations
 FROM monitoring_runs r JOIN prompt_results pr ON pr.run_id=r.id JOIN prompts p ON p.id=pr.prompt_id JOIN businesses b ON b.id=r.business_id
 WHERE r.business_id = $1 AND b.account_id = $2 AND r.analysis_completed_at IS NOT NULL
  AND r.id IN (SELECT id FROM monitoring_runs WHERE business_id = $1 AND analysis_completed_at IS NOT NULL ORDER BY scheduled_for DESC LIMIT 4)
@@ -816,17 +209,21 @@ type LoadMonitoringEvidenceParams struct {
 }
 
 type LoadMonitoringEvidenceRow struct {
-	RunID           uuid.UUID
-	ResultID        uuid.UUID
-	PromptID        uuid.UUID
-	Prompt          string
-	ResponseText    *string
-	Mentioned       bool
-	CitationDomains []string
-	CitationUrls    []string
-	Competitors     []string
+	RunID        uuid.UUID
+	ResultID     uuid.UUID
+	PromptID     uuid.UUID
+	Prompt       string
+	ResponseText *string
+	Mentioned    bool
+	Citations    json.RawMessage
 }
 
+// Each citation carries the businesses the answer cited IT for, resolved through
+// mention_citations (05). Grouping the competitors under their own citation
+// rather than under the result is the whole point: every business named anywhere
+// in an answer is a much larger set than the businesses a given source was cited
+// for, and a finder that confuses the two recommends sources on invented
+// evidence.
 func (q *Queries) LoadMonitoringEvidence(ctx context.Context, arg LoadMonitoringEvidenceParams) ([]LoadMonitoringEvidenceRow, error) {
 	rows, err := q.db.Query(ctx, loadMonitoringEvidence, arg.BusinessID, arg.AccountID)
 	if err != nil {
@@ -843,9 +240,7 @@ func (q *Queries) LoadMonitoringEvidence(ctx context.Context, arg LoadMonitoring
 			&i.Prompt,
 			&i.ResponseText,
 			&i.Mentioned,
-			&i.CitationDomains,
-			&i.CitationUrls,
-			&i.Competitors,
+			&i.Citations,
 		); err != nil {
 			return nil, err
 		}
@@ -857,284 +252,153 @@ func (q *Queries) LoadMonitoringEvidence(ctx context.Context, arg LoadMonitoring
 	return items, nil
 }
 
-const lockAssessmentGeneration = `-- name: LockAssessmentGeneration :one
-SELECT status FROM assessment_generations WHERE id = $1 AND account_id = $2 FOR UPDATE
+const publishSiteAudit = `-- name: PublishSiteAudit :exec
+UPDATE site_audits SET published = (id = $1) WHERE business_id = $2 AND (published OR id = $1)
 `
 
-type LockAssessmentGenerationParams struct {
-	ID        uuid.UUID
-	AccountID uuid.UUID
+type PublishSiteAuditParams struct {
+	ID         uuid.UUID
+	BusinessID uuid.UUID
 }
 
-func (q *Queries) LockAssessmentGeneration(ctx context.Context, arg LockAssessmentGenerationParams) (string, error) {
-	row := q.db.QueryRow(ctx, lockAssessmentGeneration, arg.ID, arg.AccountID)
-	var status string
-	err := row.Scan(&status)
-	return status, err
-}
-
-const publishGenerationPractices = `-- name: PublishGenerationPractices :exec
-UPDATE visibility_assessments SET published=true
-WHERE generation_id = $1 AND account_id = $2 AND practice_key = ANY($3::text[])
-`
-
-type PublishGenerationPracticesParams struct {
-	GenerationID uuid.UUID
-	AccountID    uuid.UUID
-	PracticeKeys []string
-}
-
-func (q *Queries) PublishGenerationPractices(ctx context.Context, arg PublishGenerationPracticesParams) error {
-	_, err := q.db.Exec(ctx, publishGenerationPractices, arg.GenerationID, arg.AccountID, arg.PracticeKeys)
+// Unpublish-then-publish under one transaction, guarded by the partial unique
+// index, so exactly one audit is ever current for a business.
+func (q *Queries) PublishSiteAudit(ctx context.Context, arg PublishSiteAuditParams) error {
+	_, err := q.db.Exec(ctx, publishSiteAudit, arg.ID, arg.BusinessID)
 	return err
 }
 
-const setImprovementActionStatus = `-- name: SetImprovementActionStatus :one
-UPDATE improvement_actions SET status = $1,dismissal_reason = $2,
- started_at=CASE WHEN $1='IN_PROGRESS' THEN COALESCE(started_at,now()) ELSE started_at END,
- completed_at=CASE WHEN $1='COMPLETED' THEN COALESCE(completed_at,now()) ELSE completed_at END,
- completion_baseline=CASE WHEN $1='COMPLETED' THEN COALESCE(completion_baseline,$3) ELSE completion_baseline END,
- updated_at = now() WHERE id = $4 AND account_id = $5 AND status = $6 RETURNING id, account_id, business_id, practice_key, subject_key, cycle, recommendation_key, current_assessment_id, rank, presentation, status, dismissal_reason, completion_baseline, started_at, completed_at, first_seen_at, updated_at
+const setFindingStatus = `-- name: SetFindingStatus :one
+UPDATE findings SET
+  status = $1,
+  dismissal_reason = CASE WHEN $1 = 'DISMISSED' THEN $2 ELSE NULL END,
+  completed_at = CASE WHEN $1 = 'DONE' THEN now() ELSE NULL END,
+  dismissed_at = CASE WHEN $1 = 'DISMISSED' THEN now() ELSE NULL END,
+  verified_at = NULL
+WHERE id = $3 AND account_id = $4 AND status = $5
+RETURNING id, account_id, business_id, key, source, category, title, body, steps, detail, result_ids, prompt_ids, sources, blocking, reach, priority, status, dismissal_reason, first_seen_at, last_seen_at, completed_at, dismissed_at, verified_at
 `
 
-type SetImprovementActionStatusParams struct {
-	Status             string
-	DismissalReason    *string
-	CompletionBaseline *json.RawMessage
-	ID                 uuid.UUID
-	AccountID          uuid.UUID
-	PreviousStatus     string
+type SetFindingStatusParams struct {
+	Status          string
+	DismissalReason *string
+	ID              uuid.UUID
+	AccountID       uuid.UUID
+	PreviousStatus  string
 }
 
-func (q *Queries) SetImprovementActionStatus(ctx context.Context, arg SetImprovementActionStatusParams) (ImprovementAction, error) {
-	row := q.db.QueryRow(ctx, setImprovementActionStatus,
+func (q *Queries) SetFindingStatus(ctx context.Context, arg SetFindingStatusParams) (Finding, error) {
+	row := q.db.QueryRow(ctx, setFindingStatus,
 		arg.Status,
 		arg.DismissalReason,
-		arg.CompletionBaseline,
 		arg.ID,
 		arg.AccountID,
 		arg.PreviousStatus,
 	)
-	var i ImprovementAction
+	var i Finding
 	err := row.Scan(
 		&i.ID,
 		&i.AccountID,
 		&i.BusinessID,
-		&i.PracticeKey,
-		&i.SubjectKey,
-		&i.Cycle,
-		&i.RecommendationKey,
-		&i.CurrentAssessmentID,
-		&i.Rank,
-		&i.Presentation,
+		&i.Key,
+		&i.Source,
+		&i.Category,
+		&i.Title,
+		&i.Body,
+		&i.Steps,
+		&i.Detail,
+		&i.ResultIds,
+		&i.PromptIds,
+		&i.Sources,
+		&i.Blocking,
+		&i.Reach,
+		&i.Priority,
 		&i.Status,
 		&i.DismissalReason,
-		&i.CompletionBaseline,
-		&i.StartedAt,
-		&i.CompletedAt,
 		&i.FirstSeenAt,
-		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.CompletedAt,
+		&i.DismissedAt,
+		&i.VerifiedAt,
 	)
 	return i, err
 }
 
-const unpublishPractices = `-- name: UnpublishPractices :exec
-UPDATE visibility_assessments SET published=false
-WHERE business_id = $1 AND account_id = $2 AND published AND practice_key = ANY($3::text[])
+const upsertFinding = `-- name: UpsertFinding :exec
+INSERT INTO findings (id,account_id,business_id,key,source,category,title,body,steps,detail,result_ids,prompt_ids,sources,blocking,reach,priority)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+ON CONFLICT (business_id,key) DO UPDATE SET
+  source=EXCLUDED.source,category=EXCLUDED.category,title=EXCLUDED.title,body=EXCLUDED.body,steps=EXCLUDED.steps,detail=EXCLUDED.detail,
+  result_ids=EXCLUDED.result_ids,prompt_ids=EXCLUDED.prompt_ids,sources=EXCLUDED.sources,
+  blocking=EXCLUDED.blocking,reach=EXCLUDED.reach,priority=EXCLUDED.priority,
+  last_seen_at=now(),
+  status=CASE WHEN findings.status='DONE' THEN 'OPEN' ELSE findings.status END,
+  completed_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.completed_at END,
+  verified_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.verified_at END
 `
 
-type UnpublishPracticesParams struct {
-	BusinessID   uuid.UUID
-	AccountID    uuid.UUID
-	PracticeKeys []string
+type UpsertFindingParams struct {
+	ID         uuid.UUID
+	AccountID  uuid.UUID
+	BusinessID uuid.UUID
+	Key        string
+	Source     string
+	Category   string
+	Title      string
+	Body       string
+	Steps      json.RawMessage
+	Detail     string
+	ResultIds  []uuid.UUID
+	PromptIds  []uuid.UUID
+	Sources    []string
+	Blocking   bool
+	Reach      int32
+	Priority   int32
 }
 
-func (q *Queries) UnpublishPractices(ctx context.Context, arg UnpublishPracticesParams) error {
-	_, err := q.db.Exec(ctx, unpublishPractices, arg.BusinessID, arg.AccountID, arg.PracticeKeys)
-	return err
-}
-
-const updateActiveImprovementAction = `-- name: UpdateActiveImprovementAction :exec
-UPDATE improvement_actions SET current_assessment_id = $1,rank = $2,presentation = $3,updated_at = now()
-WHERE id = $4 AND account_id = $5 AND status IN ('OPEN','IN_PROGRESS')
-`
-
-type UpdateActiveImprovementActionParams struct {
-	CurrentAssessmentID *uuid.UUID
-	Rank                int32
-	Presentation        json.RawMessage
-	ID                  uuid.UUID
-	AccountID           uuid.UUID
-}
-
-func (q *Queries) UpdateActiveImprovementAction(ctx context.Context, arg UpdateActiveImprovementActionParams) error {
-	_, err := q.db.Exec(ctx, updateActiveImprovementAction,
-		arg.CurrentAssessmentID,
-		arg.Rank,
-		arg.Presentation,
-		arg.ID,
-		arg.AccountID,
-	)
-	return err
-}
-
-const upsertAssessmentGeneration = `-- name: UpsertAssessmentGeneration :one
-INSERT INTO assessment_generations (id,account_id,business_id,monitoring_run_id,status,compiler_version,ranker_version,module_plan)
-SELECT $1,$2,$3,$4,'RUNNING',$5,$6,$7
-WHERE EXISTS (SELECT 1 FROM monitoring_runs r JOIN businesses b ON b.id=r.business_id
- WHERE r.id=$4 AND r.business_id=$3 AND b.account_id=$2 AND r.analysis_completed_at IS NOT NULL)
-ON CONFLICT (monitoring_run_id) DO UPDATE SET module_plan=assessment_generations.module_plan
-RETURNING id,status
-`
-
-type UpsertAssessmentGenerationParams struct {
-	ID              uuid.UUID
-	AccountID       uuid.UUID
-	BusinessID      uuid.UUID
-	MonitoringRunID uuid.UUID
-	CompilerVersion int32
-	RankerVersion   int32
-	ModulePlan      json.RawMessage
-}
-
-type UpsertAssessmentGenerationRow struct {
-	ID     uuid.UUID
-	Status string
-}
-
-func (q *Queries) UpsertAssessmentGeneration(ctx context.Context, arg UpsertAssessmentGenerationParams) (UpsertAssessmentGenerationRow, error) {
-	row := q.db.QueryRow(ctx, upsertAssessmentGeneration,
+// A finder reproducing a key refreshes the evidence and moves last_seen_at
+// forward without touching the user's own decision. A DONE finding that comes
+// back reopens — that single rule is the entire regression story. A DISMISSED
+// one stays dismissed, which is the entire suppression story.
+func (q *Queries) UpsertFinding(ctx context.Context, arg UpsertFindingParams) error {
+	_, err := q.db.Exec(ctx, upsertFinding,
 		arg.ID,
 		arg.AccountID,
 		arg.BusinessID,
-		arg.MonitoringRunID,
-		arg.CompilerVersion,
-		arg.RankerVersion,
-		arg.ModulePlan,
-	)
-	var i UpsertAssessmentGenerationRow
-	err := row.Scan(&i.ID, &i.Status)
-	return i, err
-}
-
-const upsertEvidenceArtifact = `-- name: UpsertEvidenceArtifact :exec
-INSERT INTO evidence_artifacts (id,generation_id,account_id,collector_key,collector_version,payload_version,status,checked_at,payload,error)
-SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
-WHERE EXISTS (SELECT 1 FROM assessment_generations WHERE id=$2 AND account_id=$3)
-ON CONFLICT (generation_id,collector_key) DO UPDATE SET collector_version=EXCLUDED.collector_version,payload_version=EXCLUDED.payload_version,status=EXCLUDED.status,checked_at=EXCLUDED.checked_at,payload=EXCLUDED.payload,error=EXCLUDED.error
-`
-
-type UpsertEvidenceArtifactParams struct {
-	ID               uuid.UUID
-	GenerationID     uuid.UUID
-	AccountID        uuid.UUID
-	CollectorKey     string
-	CollectorVersion int32
-	PayloadVersion   int32
-	Status           string
-	CheckedAt        time.Time
-	Payload          json.RawMessage
-	Error            *string
-}
-
-func (q *Queries) UpsertEvidenceArtifact(ctx context.Context, arg UpsertEvidenceArtifactParams) error {
-	_, err := q.db.Exec(ctx, upsertEvidenceArtifact,
-		arg.ID,
-		arg.GenerationID,
-		arg.AccountID,
-		arg.CollectorKey,
-		arg.CollectorVersion,
-		arg.PayloadVersion,
-		arg.Status,
-		arg.CheckedAt,
-		arg.Payload,
-		arg.Error,
-	)
-	return err
-}
-
-const upsertModuleOutcome = `-- name: UpsertModuleOutcome :exec
-INSERT INTO assessment_module_outcomes (generation_id,account_id,assessor_key,status,error)
-VALUES ($1,$2,$3,$4,$5)
-ON CONFLICT (generation_id,assessor_key) DO UPDATE SET status=EXCLUDED.status,error=EXCLUDED.error,completed_at=now()
-`
-
-type UpsertModuleOutcomeParams struct {
-	GenerationID uuid.UUID
-	AccountID    uuid.UUID
-	AssessorKey  string
-	Status       string
-	Error        *string
-}
-
-func (q *Queries) UpsertModuleOutcome(ctx context.Context, arg UpsertModuleOutcomeParams) error {
-	_, err := q.db.Exec(ctx, upsertModuleOutcome,
-		arg.GenerationID,
-		arg.AccountID,
-		arg.AssessorKey,
-		arg.Status,
-		arg.Error,
-	)
-	return err
-}
-
-const upsertVisibilityAssessment = `-- name: UpsertVisibilityAssessment :one
-INSERT INTO visibility_assessments (id,generation_id,account_id,business_id,practice_key,criteria_version,assessor_key,assessor_version,subject_key,status,result_ids,prompt_ids,checked_sources,explanation,reach,persistence,evidence_quality,actionability,effort,payload_version,payload)
-SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
-WHERE EXISTS (SELECT 1 FROM assessment_generations WHERE id=$2 AND account_id=$3 AND business_id=$4)
-ON CONFLICT (generation_id,practice_key,subject_key) DO UPDATE SET status=EXCLUDED.status,result_ids=EXCLUDED.result_ids,prompt_ids=EXCLUDED.prompt_ids,checked_sources=EXCLUDED.checked_sources,explanation=EXCLUDED.explanation,reach=EXCLUDED.reach,persistence=EXCLUDED.persistence,evidence_quality=EXCLUDED.evidence_quality,actionability=EXCLUDED.actionability,effort=EXCLUDED.effort,payload=EXCLUDED.payload
-RETURNING id
-`
-
-type UpsertVisibilityAssessmentParams struct {
-	ID              uuid.UUID
-	GenerationID    uuid.UUID
-	AccountID       uuid.UUID
-	BusinessID      uuid.UUID
-	PracticeKey     string
-	CriteriaVersion int32
-	AssessorKey     string
-	AssessorVersion int32
-	SubjectKey      string
-	Status          string
-	ResultIds       []uuid.UUID
-	PromptIds       []uuid.UUID
-	CheckedSources  []string
-	Explanation     string
-	Reach           int32
-	Persistence     int32
-	EvidenceQuality int32
-	Actionability   int32
-	Effort          int32
-	PayloadVersion  int32
-	Payload         json.RawMessage
-}
-
-func (q *Queries) UpsertVisibilityAssessment(ctx context.Context, arg UpsertVisibilityAssessmentParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, upsertVisibilityAssessment,
-		arg.ID,
-		arg.GenerationID,
-		arg.AccountID,
-		arg.BusinessID,
-		arg.PracticeKey,
-		arg.CriteriaVersion,
-		arg.AssessorKey,
-		arg.AssessorVersion,
-		arg.SubjectKey,
-		arg.Status,
+		arg.Key,
+		arg.Source,
+		arg.Category,
+		arg.Title,
+		arg.Body,
+		arg.Steps,
+		arg.Detail,
 		arg.ResultIds,
 		arg.PromptIds,
-		arg.CheckedSources,
-		arg.Explanation,
+		arg.Sources,
+		arg.Blocking,
 		arg.Reach,
-		arg.Persistence,
-		arg.EvidenceQuality,
-		arg.Actionability,
-		arg.Effort,
-		arg.PayloadVersion,
-		arg.Payload,
+		arg.Priority,
 	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
+	return err
+}
+
+const verifyCompletedFindings = `-- name: VerifyCompletedFindings :exec
+UPDATE findings SET verified_at=now()
+WHERE business_id = $1 AND account_id = $2
+  AND status='DONE' AND verified_at IS NULL AND completed_at IS NOT NULL
+  AND NOT (key = ANY($3::text[]))
+`
+
+type VerifyCompletedFindingsParams struct {
+	BusinessID uuid.UUID
+	AccountID  uuid.UUID
+	SeenKeys   []string
+}
+
+// A completed finding the latest run did not reproduce is confirmed fixed. This
+// re-checks the finding, never the visibility that followed it, so it carries no
+// causal claim.
+func (q *Queries) VerifyCompletedFindings(ctx context.Context, arg VerifyCompletedFindingsParams) error {
+	_, err := q.db.Exec(ctx, verifyCompletedFindings, arg.BusinessID, arg.AccountID, arg.SeenKeys)
+	return err
 }

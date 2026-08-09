@@ -43,7 +43,14 @@ One structured-output LLM call per succeeded result. A small/cheap model (mini-c
     "excerpts": ["…"]     // quotes supporting sentiment + keywords
   },
   "citations": [          // aligned to the response's citation annotations
-    { "url": "…", "subject": "business|competitor|other|unknown" }
+    {
+      "cite_order": 0,
+      "url": "…",
+      "subject": "business|competitor|other|unknown",
+      "links": [
+        {"entity_index": 0, "reference": "…", "passage": "…"}
+      ]
+    }
   ]
 }
 ```
@@ -53,8 +60,13 @@ Rules encoded in the extraction prompt:
 - Entities are **organizations only** (clinics, practices, hospitals) — never individual practitioners or employees, and not directories, review sites, or government bodies (those appear as citation domains instead). A response that recommends only a person ("see Dr Tan Wei Ming") without naming an organization yields **no entity** for that recommendation: practitioner-only mentions are not business mentions and never become competitors. Matching keys are organization trading names exclusively. Extraction test fixtures (replay data, 07) must cover the three canonical cases: practitioner-only, organization-only, and combined.
 - Sentiment and keywords describe **how the response characterizes the target business**, not the response's overall tone. Every keyword and the sentiment must be supportable by an excerpt — excerpts are the user-facing evidence (PRD §6) and our spot-check surface against extraction hallucination.
 - Citation `subject` is judged from the response's own text around the citation, never by fetching the cited page (02 decision). `unknown` is the honest default.
+- Every citation annotation is returned as a separate occurrence in `cite_order`, including repeated URLs. `links` contains every organization directly supported by that occurrence, with its entity index, exact response reference, and exact supporting response passage; it is empty for general guidance or an unclear relationship.
 
-Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **no mention facts**; those come exclusively from phase 2 into `mentions` (02). If reconcile later demotes the model's `is_target` judgment, the stored sentiment simply never surfaces, since metrics gate on `mentions`. Returns the entity list to the workflow for phase 2.
+**Citation evidence and entity links.** A `url_citation` annotation's `start_index`/`end_index` cover the inline marker rather than the supported claim. Annotation spans are therefore retained only to display the surrounding inline evidence: after sorting annotations by `start_index`, each marker stores `[max(previous marker end, start of its line), marker start)` as `text_start`/`text_end`. A URL check with a marker-location fallback keeps these display offsets robust when provider indexes differ.
+
+Entity attribution comes directly from the same extraction call's evidence-bearing links; there is no positional fallback. Each citation's computed evidence span is supplied to the model. Validation requires exact citation occurrence coverage, `cite_order` and URL agreement, unique in-range entity indexes, verbatim references and passages, a reference matching the selected entity (including genuine response shorthand or acronyms), and a passage contained by that occurrence's citation evidence span. A passage may use a pronoun when the relationship is clear, but its separate reference must still be a real name or shorthand from the response. Invalid output retries once through the normal extraction retry path. An uncertain relationship produces no link.
+
+Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **no mention facts**; those come exclusively from phase 2 into `mentions` (02). If reconcile later demotes the model's `is_target` judgment, the stored sentiment simply never surfaces, since metrics gate on `mentions`. Returns the entity list with its model-supplied citation orders to the workflow for phase 2.
 
 ## Phase 2 — ReconcileEntities (per run)
 
@@ -64,7 +76,7 @@ Serial, so name-matching and competitor creation have no races and one dedupe pa
 2. **Match (exact pass)** against (a) the target business's name + aliases, then (b) all existing competitors' names + aliases, *regardless of status* — mentions of dismissed competitors still accrue (02: dismissal is a display filter). Exact-on-normalized only; no fuzzy string distance. The model's `is_target` flag is a hint, but a target match must also pass normalized alias matching — an unverified flag demotes to a normal entity (conservative: better to surface a false "competitor" the user can merge than silently inflate own visibility).
 3. **Match (LLM pass)** — one cheap-model call for the run's still-unmatched names, judged against the existing competitor list (names + aliases + any known websites). Bar is deliberately conservative: *"same real-world business, only if the evidence is strong; otherwise new"* — because a wrong split is visible and fixable, while a wrong merge silently pollutes a competitor's trend. On a match: write the mention with `matched_by='llm'` and record the variant in the competitor's `suggested_aliases`; the reconcile write boundary trims surrounding whitespace and skips a now-empty value, so the stored value is the exact review key. **An alias becomes a permanent matching key only when the user approves it** (one click in the competitor detail, 06), which atomically removes that exact suggestion, appends it once to `aliases`, and hands future matching to the exact pass. Rejecting removes only the current suggestion; there is deliberately no deny-list, so later evidence may suggest the same variant again. Until approved, variants are re-judged by the LLM pass each run. Exact-pass matches record `matched_by='exact'`.
 4. **Create** a `competitors` row (status `discovered`, source `discovered`, the verbatim name as first alias) for names unmatched by both passes, deduping within the run first. A newly-discovered competitor's own triggering mention records `matched_by='exact'` — it exact-matches the competitor's just-minted alias, so no new `mentions.matched_by` enum value is needed.
-5. **Write** `mentions` for every entity occurrence: subject self/competitor, `matched_by`, `mention_order` = first-appearance rank from phase 1, excerpt.
+5. **Write** `mentions` for every entity occurrence, then write every supplied link to `mention_citations` by `(prompt_result_id, cite_order)`, in the same transaction. An empty link set means no citation clearly supported that organization, so a reader can never mistake “cited somewhere in this answer” for “cited for this business.”
 6. **Commit** — set `monitoring_runs.analysis_completed_at`. A result enters the metrics base only when this is set *and* it has a `result_analyses` row: succeeded-but-unanalyzed results are excluded from numerator and denominator alike, so an analysis failure can never masquerade as a visibility drop — it shows as a badge instead (06).
 
 No minimum-mention threshold for discovery: every recommended provider becomes a `discovered` row — suppressing at creation throws away unrecoverable data; suppressing at display costs nothing. Noise control is a display concern (06): the Competitors tab shows everything ranked by response coverage, while Overview auto-surfaces only tracked competitors plus the top few discovered. Expected volume with 20 same-category prompts: ~15–40 unique competitors after run one, growing slowly.

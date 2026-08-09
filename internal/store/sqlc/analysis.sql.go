@@ -86,8 +86,8 @@ func (q *Queries) DeleteRunMentions(ctx context.Context, arg DeleteRunMentionsPa
 }
 
 const insertCitation = `-- name: InsertCitation :exec
-INSERT INTO citations (id,prompt_result_id,url,domain,title,cite_order,subject)
-VALUES ($1,$2,$3,$4,$5,$6,$7)
+INSERT INTO citations (id,prompt_result_id,url,domain,title,cite_order,subject,text_start,text_end)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 `
 
 type InsertCitationParams struct {
@@ -98,6 +98,8 @@ type InsertCitationParams struct {
 	Title          *string
 	CiteOrder      int32
 	Subject        string
+	TextStart      int32
+	TextEnd        int32
 }
 
 func (q *Queries) InsertCitation(ctx context.Context, arg InsertCitationParams) error {
@@ -109,6 +111,8 @@ func (q *Queries) InsertCitation(ctx context.Context, arg InsertCitationParams) 
 		arg.Title,
 		arg.CiteOrder,
 		arg.Subject,
+		arg.TextStart,
+		arg.TextEnd,
 	)
 	return err
 }
@@ -157,6 +161,26 @@ func (q *Queries) InsertMention(ctx context.Context, arg InsertMentionParams) er
 		arg.Excerpt,
 	)
 	return err
+}
+
+const insertMentionCitation = `-- name: InsertMentionCitation :execrows
+INSERT INTO mention_citations (mention_id,citation_id)
+SELECT $1,c.id FROM citations c
+WHERE c.prompt_result_id=$2 AND c.cite_order=$3
+`
+
+type InsertMentionCitationParams struct {
+	MentionID      uuid.UUID
+	PromptResultID uuid.UUID
+	CiteOrder      int32
+}
+
+func (q *Queries) InsertMentionCitation(ctx context.Context, arg InsertMentionCitationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertMentionCitation, arg.MentionID, arg.PromptResultID, arg.CiteOrder)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const listAnalysisCompetitors = `-- name: ListAnalysisCompetitors :many

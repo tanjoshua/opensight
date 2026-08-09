@@ -23,8 +23,3 @@ export const setActionStatus = ImproveService.method.setActionStatus;
  * @generated from rpc opensight.v1.ImproveService.GetChecklist
  */
 export const getChecklist = ImproveService.method.getChecklist;
-
-/**
- * @generated from rpc opensight.v1.ImproveService.ListActivity
- */
-export const listActivity = ImproveService.method.listActivity;

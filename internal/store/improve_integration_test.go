@@ -2,17 +2,23 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
+	"opensight/internal/domain"
 	"opensight/internal/visibility"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func TestImprovementActionCyclesRequireRegressionOrChangedRecommendation(t *testing.T) {
+// TestFindingLifecycleAcrossRuns covers the three rules that replaced numbered
+// action cycles: a finding the evidence stops producing drops out of the queue,
+// a completed one that comes back reopens, a completed one that stays gone is
+// confirmed fixed — but only by a run that could actually check — and a
+// dismissed one is never resurrected.
+func TestFindingLifecycleAcrossRuns(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
 		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
@@ -25,120 +31,155 @@ func TestImprovementActionCyclesRequireRegressionOrChangedRecommendation(t *test
 	t.Cleanup(db.Close)
 	s := New(db)
 	accountID, businessID := mustNewID(t), mustNewID(t)
-	insertAccount(t, db, ctx, accountID, "Improve Cycle Account")
-	mustExec(t, db, ctx, "INSERT INTO businesses (id,account_id,status,name,category,location,activated_at) VALUES ($1,$2,'active','Cycle Clinic','clinic','{\"country\":\"SG\"}'::jsonb,now())", businessID, accountID)
+	insertAccount(t, db, ctx, accountID, "Improve Lifecycle Account")
+	mustExec(t, db, ctx, "INSERT INTO businesses (id,account_id,status,name,category,location,activated_at) VALUES ($1,$2,'active','Lifecycle Clinic','clinic','{\"country\":\"SG\"}'::jsonb,now())", businessID, accountID)
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id=$1", businessID)
 		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id=$1", accountID)
 		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id=$1", accountID)
 	})
 
+	const blockedKey = "site-audit:robots_allows_oai_searchbot"
+	const sitemapKey = "site-audit:sitemap_published"
+	const listingKey = "citation-gap:healthhub.sg"
+	blocked := visibility.Finding{Key: blockedKey, Source: visibility.SourceSiteAudit, Category: visibility.GroupAccess, Title: "Allow OAI-SearchBot", Body: "b", Blocking: true}
+	sitemap := visibility.Finding{Key: sitemapKey, Source: visibility.SourceSiteAudit, Category: visibility.GroupStructure, Title: "Publish a sitemap", Body: "b"}
+	listing := visibility.Finding{Key: listingKey, Source: visibility.SourceCitationGap, Category: visibility.CategoryListings, Title: "Get listed on healthhub.sg", Body: "b", Reach: 9, Priority: 1}
+
 	runNumber := 0
-	publish := func(status visibility.AssessmentStatus, payload string) {
+	publishRun := func(run ImproveRun) {
 		t.Helper()
 		runNumber++
 		runID := mustNewID(t)
 		scheduled := time.Date(2026, 1, 1+runNumber, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 		mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled',$3,'completed',$4,now(),now())", runID, businessID, scheduled, "improve-"+runID.String())
-		generation, err := s.StartAssessmentGeneration(ctx, accountID, businessID, runID, nil)
+		run.RunID = runID
+		if err := s.PublishImproveRun(ctx, accountID, businessID, run); err != nil {
+			t.Fatal(err)
+		}
+	}
+	publish := func(findings ...visibility.Finding) {
+		t.Helper()
+		publishRun(ImproveRun{PagesRead: 3, Findings: findings})
+	}
+	active := func() map[string]FindingRecord {
+		t.Helper()
+		rows, err := s.ListFindings(ctx, accountID, businessID)
 		if err != nil {
 			t.Fatal(err)
 		}
-		draft := visibility.AssessmentDraft{PracticeKey: visibility.PracticeSearchAccess, CriteriaVersion: 1, AssessorKey: "search-access", AssessorVersion: 1, SubjectKey: visibility.BusinessSubjectKey, Status: status, Explanation: "checked", Reach: 1, Persistence: 1, EvidenceQuality: 1, Actionability: 1, Effort: 1, PayloadVersion: 1, Payload: json.RawMessage(payload)}
-		assessmentID, err := s.SaveAssessment(ctx, generation.ID, accountID, businessID, draft)
-		if err != nil {
-			t.Fatal(err)
+		out := map[string]FindingRecord{}
+		for _, row := range rows {
+			out[row.Key] = row
 		}
-		items := []CompiledAction{}
-		if visibility.Eligible(draft) {
-			items = append(items, CompiledAction{AssessmentID: assessmentID, CompiledAssessment: visibility.CompiledAssessment{Draft: draft, Presentation: visibility.Presentation{Title: "Search access", Summary: "checked", Effort: "Small"}}})
+		return out
+	}
+	find := func(key string) FindingRecord {
+		t.Helper()
+		row, ok := active()[key]
+		if !ok {
+			t.Fatalf("finding %s is not listed", key)
 		}
-		if err := s.PublishAssessmentGeneration(ctx, accountID, businessID, generation.ID, []ModuleOutcome{{AssessorKey: "search-access", Status: "SUCCEEDED"}}, items); err != nil {
+		return row
+	}
+	setStatus := func(id domain.ID, status FindingStatus, reason *string) {
+		t.Helper()
+		if _, err := s.SetFindingStatus(ctx, accountID, id, status, reason); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	publish(visibility.StatusNotMet, `{"barrier":true}`)
-	actions, err := s.ListActions(ctx, accountID, businessID)
-	if err != nil || len(actions) != 1 {
-		t.Fatalf("first actions=%d err=%v", len(actions), err)
+	// Run 1 produces all three findings.
+	publish(blocked, sitemap, listing)
+	if got := len(active()); got != 3 {
+		t.Fatalf("run 1 listed %d findings, want 3", got)
 	}
-	first := actions[0]
-	if _, err = s.SetActionStatus(ctx, accountID, first.ID, ActionInProgress, nil); err != nil {
-		t.Fatal(err)
+	if got := find(sitemapKey).Category; got != visibility.GroupStructure {
+		t.Errorf("category round-tripped as %q, want %q", got, visibility.GroupStructure)
 	}
-	if _, err = s.SetActionStatus(ctx, accountID, first.ID, ActionCompleted, nil); err != nil {
-		t.Fatal(err)
-	}
-	completed, err := s.GetAction(ctx, accountID, first.ID)
+	// The queue's order is the product's triage, and the query is what the page
+	// actually reads — so it is pinned here rather than only over the in-memory
+	// ranking. The listing outranks both site findings on reach and still comes
+	// last, because it is the work the business is least able to finish alone.
+	rows, err := s.ListFindings(ctx, accountID, businessID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	baseline := string(completed.CompletionBaseline)
-	if baseline == "" {
-		t.Fatal("completion baseline was not frozen")
+	order := make([]string, 0, len(rows))
+	for _, row := range rows {
+		order = append(order, row.Key)
+	}
+	if want := []string{blockedKey, sitemapKey, listingKey}; !slices.Equal(order, want) {
+		t.Errorf("queue order = %v, want %v", order, want)
 	}
 
-	// A running generation is invisible, and a failed assessor publishes no
-	// replacement scope. The prior standing remains readable and becomes stale.
-	runNumber++
-	failedRunID := mustNewID(t)
-	failedDate := time.Date(2026, 1, 1+runNumber, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
-	mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled',$3,'completed',$4,now(),now())", failedRunID, businessID, failedDate, "improve-"+failedRunID.String())
-	failedGeneration, err := s.StartAssessmentGeneration(ctx, accountID, businessID, failedRunID, nil)
-	if err != nil {
-		t.Fatal(err)
+	// Run 2 no longer produces the sitemap finding, so it drops out of the queue
+	// without any retirement bookkeeping.
+	publish(blocked)
+	if _, listed := active()[sitemapKey]; listed {
+		t.Error("a finding the evidence stopped producing is still active")
 	}
-	beforePublish, _, err := s.PublishedAssessments(ctx, accountID, businessID)
-	if err != nil || len(beforePublish) != 1 || beforePublish[0].GenerationID == failedGeneration.ID {
-		t.Fatalf("running generation leaked into reads: rows=%v err=%v", beforePublish, err)
+
+	// Completing then seeing it again reopens it: the only regression rule.
+	setStatus(find(blockedKey).ID, FindingDone, nil)
+	publish(blocked)
+	reopened := find(blockedKey)
+	if reopened.Status != FindingOpen {
+		t.Errorf("status after recurrence = %s, want OPEN", reopened.Status)
 	}
-	if err = s.PublishAssessmentGeneration(ctx, accountID, businessID, failedGeneration.ID, []ModuleOutcome{{AssessorKey: "search-access", Status: "FAILED", Error: "inspection failed"}}, nil); err != nil {
-		t.Fatal(err)
+	if reopened.CompletedAt != nil || reopened.VerifiedAt != nil {
+		t.Error("a reopened finding kept its completion stamps")
 	}
-	preserved, freshness, err := s.PublishedAssessments(ctx, accountID, businessID)
-	if err != nil || len(preserved) != 1 || !freshness.Partial || !freshness.Stale {
-		t.Fatalf("failed scope was not preserved stale: rows=%v freshness=%+v err=%v", preserved, freshness, err)
+
+	// A run whose crawl failed produces no site-audit findings, but that absence
+	// is missing evidence rather than a passing re-check, so it must not confirm.
+	setStatus(reopened.ID, FindingDone, nil)
+	publishRun(ImproveRun{Failure: "dial tcp: connection refused"})
+	if unverified := find(blockedKey); unverified.VerifiedAt != nil {
+		t.Error("a run whose crawl failed confirmed a completed finding it never re-checked")
 	}
-	publish(visibility.StatusNotMet, `{"barrier":true}`)
-	actions, _ = s.ListActions(ctx, accountID, businessID)
-	if len(actions) != 1 {
-		t.Fatalf("unchanged actionable assessment created a cycle: %d actions", len(actions))
+
+	// Completing and then not seeing it again confirms the fix landed.
+	publish()
+	confirmed := find(blockedKey)
+	if confirmed.VerifiedAt == nil {
+		t.Error("a completed finding the next run did not reproduce was never confirmed")
 	}
-	publish(visibility.StatusMet, `{"barrier":false}`)
-	publish(visibility.StatusNotMet, `{"barrier":true}`)
-	actions, _ = s.ListActions(ctx, accountID, businessID)
-	if len(actions) != 2 || actions[0].Cycle != 2 {
-		t.Fatalf("verified regression actions=%v", actions)
+	if confirmed.Status != FindingDone {
+		t.Errorf("status after confirmation = %s, want DONE", confirmed.Status)
 	}
-	second := actions[0]
+
+	// A dismissal survives the finding recurring, which is the whole suppression
+	// rule — no dismissed work is ever handed back.
+	publish(blocked, sitemap)
 	reason := "NOT_RELEVANT"
-	if _, err = s.SetActionStatus(ctx, accountID, second.ID, ActionDismissed, &reason); err != nil {
+	setStatus(find(sitemapKey).ID, FindingDismissed, &reason)
+	publish(blocked, sitemap)
+	dismissed := find(sitemapKey)
+	if dismissed.Status != FindingDismissed {
+		t.Errorf("status after recurrence of a dismissed finding = %s, want DISMISSED", dismissed.Status)
+	}
+	if dismissed.DismissalReason == nil || *dismissed.DismissalReason != reason {
+		t.Errorf("dismissal reason = %v, want %s", dismissed.DismissalReason, reason)
+	}
+
+	// Re-publishing the same monitoring run must not double-apply anything.
+	if rows, err = s.ListFindings(ctx, accountID, businessID); err != nil {
 		t.Fatal(err)
 	}
-	publish(visibility.StatusNotMet, `{"barrier":true}`)
-	actions, _ = s.ListActions(ctx, accountID, businessID)
-	if len(actions) != 2 {
-		t.Fatalf("dismissed identical recommendation was not suppressed: %d", len(actions))
+	before := len(rows)
+	lastRun := mustNewID(t)
+	mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled','2026-06-01','completed',$3,now(),now())", lastRun, businessID, "improve-"+lastRun.String())
+	for range 2 {
+		if err := s.PublishImproveRun(ctx, accountID, businessID, ImproveRun{RunID: lastRun, PagesRead: 3, Findings: []visibility.Finding{blocked}}); err != nil {
+			t.Fatal(err)
+		}
 	}
-	publish(visibility.StatusNotMet, `{"barrier":true,"kind":"robots"}`)
-	actions, _ = s.ListActions(ctx, accountID, businessID)
-	if len(actions) != 3 || actions[0].Cycle != 3 {
-		t.Fatalf("changed recommendation did not recur: %v", actions)
+	if rows, err = s.ListFindings(ctx, accountID, businessID); err != nil || len(rows) != before {
+		t.Errorf("re-publishing the same run changed the queue: %d -> %d (%v)", before, len(rows), err)
 	}
-	completed, err = s.GetAction(ctx, accountID, first.ID)
-	if err != nil || string(completed.CompletionBaseline) != baseline {
-		t.Fatalf("completion baseline changed after reassessment: %v", err)
-	}
-	page1, total, err := s.ListActivity(ctx, accountID, businessID, 2, 0)
-	if err != nil || len(page1) != 2 || total < 7 {
-		t.Fatalf("activity first page len=%d total=%d err=%v", len(page1), total, err)
-	}
-	page2, secondTotal, err := s.ListActivity(ctx, accountID, businessID, 2, 2)
-	if err != nil || len(page2) != 2 || secondTotal != total || page1[1].ID == page2[0].ID {
-		t.Fatalf("activity pagination invalid: page2=%v total=%d err=%v", page2, secondTotal, err)
-	}
-	if _, err = s.GetAction(ctx, mustNewID(t), actions[0].ID); err != ErrNotFound {
-		t.Fatalf("cross-account action read error=%v, want ErrNotFound", err)
+	audit, assessed, err := s.PublishedAudit(ctx, accountID, businessID)
+	if err != nil || !assessed || audit.PagesRead != 3 {
+		t.Errorf("published audit = %+v assessed=%t err=%v", audit, assessed, err)
 	}
 }

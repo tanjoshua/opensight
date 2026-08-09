@@ -31,7 +31,10 @@ func TestAnalyzeRunFansOutAndReconciles(t *testing.T) {
 	env.OnActivity(a.AnalyzeResult, mock.Anything, mock.MatchedBy(func(in AnalyzeResultInput) bool {
 		return in.ResultID == r1
 	})).Return(AnalyzeResultOutput{ResultID: r1, Analyzed: true,
-		Entities: []llm.ExtractedEntity{{VerbatimName: "Rival Clinic", Excerpt: "Rival Clinic is good."}}}, nil).Once()
+		Entities: []llm.EntityWithCitations{{
+			Entity:     llm.ExtractedEntity{VerbatimName: "Rival Clinic", Excerpt: "Rival Clinic is good."},
+			CiteOrders: []int{},
+		}}}, nil).Once()
 	env.OnActivity(a.AnalyzeResult, mock.Anything, mock.MatchedBy(func(in AnalyzeResultInput) bool {
 		return in.ResultID == r2
 	})).Return(AnalyzeResultOutput{ResultID: r2, Analyzed: false}, nil).Once()

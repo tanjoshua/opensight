@@ -70,6 +70,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	runID := mustID(t)
 	resultID := mustID(t)
 	bravoID := mustID(t)
+	atlasCiteID, dirCiteID := mustID(t), mustID(t)
 
 	t.Cleanup(func() {
 		_, _ = db.Exec(ctx, "DELETE FROM mentions WHERE prompt_result_id = $1", resultID)
@@ -94,27 +95,38 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'reconcile-wf', now())`, runID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
-		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb, 'text')`, resultID, runID, promptID)
+		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb,
+		'Atlas Dental is great. Bravo Clinic and Charlie Medical are recommended.')`, resultID, runID, promptID)
+	// Two citations for the result, as phase 1 would have written them, so the
+	// mentions phase 2 writes can resolve their source by cite_order.
+	mustExec(t, db, ctx, `
+		INSERT INTO citations (id, prompt_result_id, url, domain, title, cite_order, subject, text_start, text_end)
+		VALUES ($1, $3, 'https://atlas.example/a', 'atlas.example', NULL, 0, 'business', 0, 22),
+		       ($2, $3, 'https://dir.example/b', 'dir.example', NULL, 1, 'competitor', 23, 72)`,
+		atlasCiteID, dirCiteID, resultID)
 	// An existing competitor for the exact + LLM passes to match against.
 	mustExec(t, db, ctx, `
 		INSERT INTO competitors (id, business_id, name, aliases, source, status)
 		VALUES ($1, $2, 'Bravo Clinic', ARRAY['bravo clinic']::text[], 'manual', 'tracked')`, bravoID, businessID)
 
-	store := store.New(db)
+	analysisStore := store.New(db)
 	matcher := &fakeMatcher{matchNameToCompetitor: map[string]string{"Bravo Klinik": "Bravo Clinic"}}
-	acts := &Activities{Store: store, Matcher: matcher}
+	acts := &Activities{Store: analysisStore, Matcher: matcher}
 
 	in := ReconcileEntitiesInput{
-		AccountID:   accountID,
+		AccountID:  accountID,
 		BusinessID: businessID,
 		RunID:      runID,
 		Results: []ResultEntities{{
 			ResultID: resultID,
-			Entities: []llm.ExtractedEntity{
-				{VerbatimName: "Atlas Dental", IsTarget: true, Excerpt: "Atlas Dental is great."},
-				{VerbatimName: "Bravo Clinic", Excerpt: "Bravo Clinic is nearby."},
-				{VerbatimName: "Bravo Klinik", Excerpt: "Bravo Klinik also listed."},
-				{VerbatimName: "Charlie Medical", Excerpt: "Charlie Medical rounds it out."},
+			// Cite orders cover every case the link has: the business's own source,
+			// two businesses sharing one directory citation, and a business the
+			// answer named without citing anything for it.
+			Entities: []llm.EntityWithCitations{
+				{Entity: llm.ExtractedEntity{VerbatimName: "Atlas Dental", IsTarget: true, Excerpt: "Atlas Dental is great."}, CiteOrders: []int{0, 1}},
+				{Entity: llm.ExtractedEntity{VerbatimName: "Bravo Clinic", Excerpt: "Bravo Clinic is nearby."}, CiteOrders: []int{1}},
+				{Entity: llm.ExtractedEntity{VerbatimName: "Bravo Klinik", Excerpt: "Bravo Klinik also listed."}, CiteOrders: []int{}},
+				{Entity: llm.ExtractedEntity{VerbatimName: "Charlie Medical", Excerpt: "Charlie Medical rounds it out."}, CiteOrders: []int{1}},
 			},
 		}},
 	}
@@ -132,6 +144,51 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	assertMention(t, db, ctx, resultID, "competitor", 1, "exact", "Bravo Clinic")    // exact
 	assertMention(t, db, ctx, resultID, "competitor", 2, "llm", "Bravo Klinik")      // llm
 	assertMention(t, db, ctx, resultID, "competitor", 3, "exact", "Charlie Medical") // discovered, own alias exact
+
+	// Links are many-to-many: Atlas has two sources, the directory supports two
+	// competitors, and the unlinked variant stays unattributed.
+	for _, want := range []struct {
+		verbatim string
+		count    int
+	}{
+		{"Atlas Dental", 2},
+		{"Bravo Clinic", 1},
+		{"Bravo Klinik", 0},
+		{"Charlie Medical", 1},
+	} {
+		var got int
+		if err := db.QueryRow(ctx, `SELECT count(*) FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id
+			WHERE m.prompt_result_id=$1 AND m.verbatim_name=$2`, resultID, want.verbatim).Scan(&got); err != nil {
+			t.Fatalf("read mention citation (%s): %v", want.verbatim, err)
+		}
+		if got != want.count {
+			t.Errorf("%s citation links = %d, want %d", want.verbatim, got, want.count)
+		}
+	}
+
+	// Citation-gap consumes the persisted links through LoadMonitoringSnapshot.
+	// The directory citation gets only its linked competitors; the unlinked
+	// Bravo Klinik mention cannot create lift merely by sharing the answer.
+	snapshot, err := analysisStore.LoadMonitoringSnapshot(ctx, accountID, businessID)
+	if err != nil {
+		t.Fatalf("LoadMonitoringSnapshot: %v", err)
+	}
+	if len(snapshot.Runs) != 1 || len(snapshot.Runs[0].Results) != 1 {
+		t.Fatalf("snapshot shape = %+v", snapshot.Runs)
+	}
+	gotCitations := snapshot.Runs[0].Results[0].Citations
+	if len(gotCitations) != 2 {
+		t.Fatalf("snapshot citations = %+v", gotCitations)
+	}
+	if got := gotCitations[0].Competitors; len(got) != 0 {
+		t.Errorf("self-only citation competitor lift = %v, want none", got)
+	}
+	if got := gotCitations[1].Competitors; len(got) != 2 || got[0] != "Bravo Clinic" || got[1] != "Charlie Medical" {
+		t.Errorf("directory citation competitor lift = %v, want linked competitors only", got)
+	}
+	if got := gotCitations[1].Passage; got != "Bravo Clinic and Charlie Medical are recommended." {
+		t.Errorf("directory citation passage = %q, want exact stored citation context", got)
+	}
 
 	// The discovered competitor exists with the verbatim name as its sole alias.
 	var charlieStatus, charlieSource string
@@ -185,6 +242,25 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	bravoSuggested = textArray(t, db, ctx, "SELECT to_jsonb(suggested_aliases) FROM competitors WHERE id = $1", bravoID)
 	if n := countOccurrences(bravoSuggested, "Bravo Klinik"); n != 1 {
 		t.Errorf("Bravo Klinik appears %d times in suggested_aliases, want 1 (append idempotent)", n)
+	}
+
+	// A missing citation occurrence aborts the entire reconcile transaction:
+	// the previous mentions and links survive and the run is never half-rewritten.
+	err = analysisStore.CommitReconcile(ctx, accountID, businessID, store.ReconcileCommitParams{
+		RunID: runID,
+		Mentions: []store.MentionWrite{{
+			PromptResultID: resultID, Subject: "self", MatchedBy: "exact", MentionOrder: 0,
+			VerbatimName: "Atlas Dental", Excerpt: "Atlas Dental is great.", CiteOrders: []int{99},
+		}},
+	})
+	if err == nil {
+		t.Fatal("CommitReconcile with a missing citation order succeeded")
+	}
+	if got := countRows(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id=$1", resultID); got != 4 {
+		t.Errorf("mentions after rolled-back reconcile = %d, want 4", got)
+	}
+	if got := countRows(t, db, ctx, `SELECT count(*) FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id WHERE m.prompt_result_id=$1`, resultID); got != 4 {
+		t.Errorf("links after rolled-back reconcile = %d, want 4", got)
 	}
 }
 

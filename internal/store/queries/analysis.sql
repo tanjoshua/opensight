@@ -28,8 +28,8 @@ ON CONFLICT (prompt_result_id) DO UPDATE SET sentiment=EXCLUDED.sentiment,keywor
 DELETE FROM citations WHERE prompt_result_id=$1;
 
 -- name: InsertCitation :exec
-INSERT INTO citations (id,prompt_result_id,url,domain,title,cite_order,subject)
-VALUES ($1,$2,$3,$4,$5,$6,$7);
+INSERT INTO citations (id,prompt_result_id,url,domain,title,cite_order,subject,text_start,text_end)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);
 
 -- name: ListAnalysisCompetitors :many
 SELECT id,name,website,aliases,status FROM competitors
@@ -57,6 +57,11 @@ WHERE id=$1 AND business_id=$2 AND NOT ($3=ANY(suggested_aliases)) AND NOT ($3=A
 -- name: InsertMention :exec
 INSERT INTO mentions (id,prompt_result_id,subject,competitor_id,matched_by,mention_order,verbatim_name,excerpt)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
+
+-- name: InsertMentionCitation :execrows
+INSERT INTO mention_citations (mention_id,citation_id)
+SELECT sqlc.arg('mention_id'),c.id FROM citations c
+WHERE c.prompt_result_id=sqlc.arg('prompt_result_id') AND c.cite_order=sqlc.arg('cite_order');
 
 -- name: SetAnalysisCompleted :exec
 UPDATE monitoring_runs SET analysis_completed_at=now() WHERE id=$1 AND business_id=$2;

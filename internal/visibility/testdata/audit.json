@@ -1,0 +1,1321 @@
+[
+ {
+  "name": "public site with no barrier",
+  "note": "Pages were fetched and nothing denies indexing, which is the practice's whole requirement.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/robots.txt"
+   ],
+   "text": "Bright Smile Dental. Family and cosmetic dentistry in Portland. Book an appointment online.",
+   "reachable": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "robots disallows every agent",
+  "note": "A blanket Disallow: / under the wildcard group covers every OpenAI crawler, so retrieval is confirmed blocked and the training crawler is blocked as a consequence.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "FAIL",
+   "robots_allows_oai_searchbot": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "NOT_APPLICABLE",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/robots.txt"
+   ],
+   "text": "Bright Smile Dental. Family and cosmetic dentistry in Portland.",
+   "reachable": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": true,
+    "chatgpt-user": true,
+    "gptbot": true
+   }
+  }
+ },
+ {
+  "name": "robots disallows OAI-SearchBot specifically",
+  "note": "A named denial for the one agent this practice is about is the clearest NOT_MET there is.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "cascadedental.org",
+   "checked_urls": [
+    "https://cascadedental.org/",
+    "https://cascadedental.org/robots.txt"
+   ],
+   "text": "Cascade Dental Group. Implants, crowns, and whitening.",
+   "reachable": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": true,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "meta robots noindex",
+  "note": "A reachable page that forbids indexing cannot become search evidence.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "riverbendclinic.com",
+   "checked_urls": [
+    "https://riverbendclinic.com/"
+   ],
+   "text": "Riverbend Clinic. Walk-in urgent care.",
+   "reachable": true,
+   "noindex": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "X-Robots-Tag noindex header",
+  "note": "Same barrier as the meta tag, delivered as a header; the source of the denial does not change the verdict.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "riverbendclinic.com",
+   "checked_urls": [
+    "https://riverbendclinic.com/"
+   ],
+   "text": "Riverbend Clinic. Walk-in urgent care.",
+   "reachable": true,
+   "noindex": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "login wall on the whole site",
+  "note": "Authentication is a confirmed access barrier, not an inspection failure: the answer is known.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "site_reachable": "FAIL",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "members.northgatedental.com",
+   "checked_urls": [
+    "https://members.northgatedental.com/login"
+   ],
+   "auth_barrier": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "auth barrier on the root while inner pages were fetched",
+  "note": "A confirmed 401 on the entry point still blocks retrieval even though some content came back.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "northgatedental.com",
+   "checked_urls": [
+    "https://northgatedental.com/services"
+   ],
+   "text": "Northgate Dental services: cleanings, fillings, whitening.",
+   "reachable": true,
+   "auth_barrier": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "unreachable with no recorded failure",
+  "note": "Nothing usable came back and nothing says the inspection itself broke, so this is a confirmed barrier.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "FAIL",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "oldpracticesite.net",
+   "checked_urls": [
+    "https://oldpracticesite.net/"
+   ]
+  }
+ },
+ {
+  "name": "noindex and robots denial together",
+  "note": "Two independent barriers; the verdict is still a single confirmed NOT_MET.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "FAIL",
+   "robots_allows_oai_searchbot": "FAIL",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "quietclinic.com",
+   "checked_urls": [
+    "https://quietclinic.com/",
+    "https://quietclinic.com/robots.txt"
+   ],
+   "text": "Quiet Clinic. Private practice.",
+   "reachable": true,
+   "noindex": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": true,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "DNS lookup failed",
+  "note": "The scan never reached the site, so nothing about indexing is known; asserting a barrier would be a guess.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "fetch_failure": "lookup brightsmiledental.com: no such host"
+  }
+ },
+ {
+  "name": "fetch timed out",
+  "note": "A transient network failure is the textbook UNKNOWN: a later run may well succeed.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "cascadedental.org",
+   "fetch_failure": "Get \"https://cascadedental.org/\": context deadline exceeded"
+  }
+ },
+ {
+  "name": "business website is not configured",
+  "note": "With no site on file nothing was inspected. UNKNOWN, not NOT_APPLICABLE: the practice still applies, we simply cannot answer it.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "fetch_failure": "business website is not configured"
+  }
+ },
+ {
+  "name": "website URL is unparseable",
+  "note": "A malformed URL on the profile is a data problem, not evidence that OpenAI search is blocked.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "fetch_failure": "invalid website URL"
+  }
+ },
+ {
+  "name": "robots allows OAI-SearchBot while the wildcard group denies",
+  "note": "The named group wins for this agent, so the site is open to the crawler this practice is about.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "selectiveclinic.com",
+   "checked_urls": [
+    "https://selectiveclinic.com/",
+    "https://selectiveclinic.com/robots.txt"
+   ],
+   "text": "Selective Clinic. Dermatology and cosmetic care.",
+   "reachable": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "robots disallows only /admin",
+  "note": "Blocking a private path is normal hygiene and does not deny the public pages.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/robots.txt"
+   ],
+   "text": "Bright Smile Dental. Book online. Meet the team.",
+   "reachable": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "thin but fully accessible content",
+  "note": "The practice deliberately excludes content quality and generic SEO judgement; a one-page site that can be retrieved passes.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "tinypractice.com",
+   "checked_urls": [
+    "https://tinypractice.com/"
+   ],
+   "text": "Tiny Practice. Call 555-0100.",
+   "reachable": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "complete site structure",
+  "note": "Sitemap, robots directive, canonical, distinct titles, a title naming the business and a description are all present, which is the whole practice.",
+  "expect": {},
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "no sitemap published",
+  "note": "Without a sitemap crawlers must discover every page by following links, so the practice is not met.",
+  "expect": {
+   "sitemap_published": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": false,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "sitemap exists but robots does not point to it",
+  "note": "The directive is what makes the sitemap discoverable, so its absence is a real gap even when the file is served.",
+  "expect": {
+   "robots_declares_sitemap": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "no robots.txt at all",
+  "note": "A missing robots file cannot declare a sitemap; that is a shortfall for this practice even though it denies no crawler.",
+  "expect": {
+   "robots_declares_sitemap": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": false,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   }
+  }
+ },
+ {
+  "name": "homepage has no canonical tag",
+  "note": "Without a canonical the same page served at several addresses cannot be resolved to one.",
+  "expect": {
+   "canonical_url_set": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental",
+     "meta_description": "Root canal specialists.",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "two pages share one title",
+  "note": "Duplicate titles are the classic template default and leave a retrieval system unable to tell the pages apart.",
+  "expect": {
+   "titles_unique": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental",
+     "meta_description": "Root canals.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "Bright Smile Dental",
+     "meta_description": "Team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "no page carries a title",
+  "note": "A site with no titles at all fails the uniqueness check rather than passing it vacuously.",
+  "expect": {
+   "homepage_title_names_business": "FAIL",
+   "titles_unique": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "meta_description": "Root canals.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "homepage title omits the business name",
+  "note": "A generic title gives no way to associate the page with the business being asked about.",
+  "expect": {
+   "homepage_title_names_business": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Home",
+     "meta_description": "Root canals.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About us",
+     "meta_description": "Team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "homepage has no meta description",
+  "note": "The description is the summary most retrieval surfaces quote, so its absence is a genuine gap.",
+  "expect": {
+   "meta_description_present": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "robots.txt could not be read",
+  "note": "One unreadable file makes only the directive unverifiable; everything read from the pages keeps its verdict, so the practice is UNKNOWN rather than failed.",
+  "expect": {
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": false,
+   "robots_failure": "robots.txt returned status 503"
+  }
+ },
+ {
+  "name": "site could not be fetched",
+  "note": "Nothing was read, so every check is unverifiable and asserting any shortfall would be a guess.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "fetch_failure": "lookup brightsmiledental.com: no such host"
+  }
+ },
+ {
+  "name": "no confirmed business name on file",
+  "note": "With nothing to compare the title against the check is not applicable; it must not be scored as a failure.",
+  "expect": {
+   "homepage_title_names_business": "NOT_APPLICABLE"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "full LocalBusiness schema",
+  "note": "Type, telephone, address and opening hours are all declared, which is everything this practice asks for.",
+  "expect": {},
+  "site": {
+   "payload_version": 2,
+   "host": "brightsmiledental.com",
+   "business_name": "Bright Smile Dental",
+   "checked_urls": [
+    "https://brightsmiledental.com/",
+    "https://brightsmiledental.com/about"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://brightsmiledental.com/",
+     "title": "Bright Smile Dental \u2014 Endodontics in Singapore",
+     "meta_description": "Root canal specialists in Singapore.",
+     "canonical": "https://brightsmiledental.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"Dentist\", \"name\": \"Bright Smile Dental\", \"url\": \"https://brightsmiledental.com/\", \"telephone\": \"+65 6123 4567\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"1 Orchard Rd\", \"addressLocality\": \"Singapore\", \"postalCode\": \"238823\", \"addressCountry\": \"SG\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": \"Monday\", \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+     ]
+    },
+    {
+     "url": "https://brightsmiledental.com/about",
+     "title": "About Bright Smile Dental",
+     "meta_description": "Meet the team.",
+     "canonical": "https://brightsmiledental.com/about"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://brightsmiledental.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "schema nested inside an @graph",
+  "note": "Real sites wrap their markup; the walk must find a business type nested beside a WebSite node.",
+  "expect": {},
+  "site": {
+   "payload_version": 2,
+   "host": "cascadedental.org",
+   "business_name": "Cascade Dental Group",
+   "checked_urls": [
+    "https://cascadedental.org/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://cascadedental.org/",
+     "title": "Cascade Dental Group",
+     "meta_description": "Implants and crowns.",
+     "canonical": "https://cascadedental.org/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@graph\": [{\"@type\": \"WebSite\", \"url\": \"https://cascadedental.org/\"}, {\"@type\": \"MedicalClinic\", \"name\": \"Cascade Dental Group\", \"telephone\": \"+65 6222 1111\", \"address\": {\"@type\": \"PostalAddress\", \"addressLocality\": \"Singapore\"}, \"openingHours\": [\"Mo-Fr 09:00-18:00\"]}]}"
+     ]
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://cascadedental.org/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "telephone only as a tel: link",
+  "note": "A tel: link is machine-readable even when the markup omits the field, so the phone check passes on page evidence.",
+  "expect": {},
+  "site": {
+   "payload_version": 2,
+   "host": "harbourdental.co.uk",
+   "business_name": "Harbour Dental",
+   "checked_urls": [
+    "https://harbourdental.co.uk/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://harbourdental.co.uk/",
+     "title": "Harbour Dental",
+     "meta_description": "NHS and private dentistry.",
+     "canonical": "https://harbourdental.co.uk/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"LocalBusiness\", \"name\": \"Harbour Dental\", \"address\": {\"@type\": \"PostalAddress\", \"addressLocality\": \"Bristol\"}, \"openingHours\": [\"Mo-Sa 08:00-17:00\"]}"
+     ],
+     "has_tel_link": true
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://harbourdental.co.uk/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "no structured data at all",
+  "note": "Nothing to read means every identity field is missing, not unverifiable: the pages were fetched successfully.",
+  "expect": {
+   "structured_address": "FAIL",
+   "structured_business_type": "FAIL",
+   "structured_data_present": "FAIL",
+   "structured_opening_hours": "FAIL",
+   "structured_telephone": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "tinypractice.com",
+   "business_name": "Tiny Practice",
+   "checked_urls": [
+    "https://tinypractice.com/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://tinypractice.com/",
+     "title": "Tiny Practice",
+     "meta_description": "Call us.",
+     "canonical": "https://tinypractice.com/"
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://tinypractice.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "structured data declares no business type",
+  "note": "Breadcrumb markup is structured data but says nothing about who the business is.",
+  "expect": {
+   "structured_address": "FAIL",
+   "structured_business_type": "FAIL",
+   "structured_opening_hours": "FAIL",
+   "structured_telephone": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "tinypractice.com",
+   "business_name": "Tiny Practice",
+   "checked_urls": [
+    "https://tinypractice.com/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://tinypractice.com/",
+     "title": "Tiny Practice",
+     "meta_description": "Call us.",
+     "canonical": "https://tinypractice.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"BreadcrumbList\", \"itemListElement\": []}"
+     ]
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://tinypractice.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "address fields are present but empty",
+  "note": "Template-generated markup often emits empty strings; a populated key with no value must not read as a pass.",
+  "expect": {
+   "structured_address": "FAIL",
+   "structured_opening_hours": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "riverbendclinic.com",
+   "business_name": "Riverbend Clinic",
+   "checked_urls": [
+    "https://riverbendclinic.com/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://riverbendclinic.com/",
+     "title": "Riverbend Clinic",
+     "meta_description": "Urgent care.",
+     "canonical": "https://riverbendclinic.com/",
+     "json_ld": [
+      "{\"@context\": \"https://schema.org\", \"@type\": \"LocalBusiness\", \"name\": \"Riverbend Clinic\", \"telephone\": \"+65 6333 2222\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"\", \"addressLocality\": \"\"}, \"openingHoursSpecification\": []}"
+     ]
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://riverbendclinic.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "structured data block is malformed",
+  "note": "An unparseable block is the same as none for a consumer, so the practice reports it missing rather than erroring.",
+  "expect": {
+   "structured_address": "FAIL",
+   "structured_business_type": "FAIL",
+   "structured_data_present": "FAIL",
+   "structured_opening_hours": "FAIL",
+   "structured_telephone": "FAIL"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "tinypractice.com",
+   "business_name": "Tiny Practice",
+   "checked_urls": [
+    "https://tinypractice.com/"
+   ],
+   "text": "fixture",
+   "reachable": true,
+   "pages": [
+    {
+     "url": "https://tinypractice.com/",
+     "title": "Tiny Practice",
+     "meta_description": "Call us.",
+     "canonical": "https://tinypractice.com/",
+     "json_ld": [
+      "{\"@type\": \"LocalBusiness\","
+     ]
+    }
+   ],
+   "sitemap_found": true,
+   "robots_found": true,
+   "agent_denied": {
+    "oai-searchbot": false,
+    "chatgpt-user": false,
+    "gptbot": false
+   },
+   "robots_sitemaps": [
+    "https://tinypractice.com/sitemap.xml"
+   ]
+  }
+ },
+ {
+  "name": "identity unreadable when the site is unreachable",
+  "note": "Both practices share one artifact, so a fetch failure must leave identity UNKNOWN too.",
+  "expect": {
+   "canonical_url_set": "COULD_NOT_VERIFY",
+   "homepage_title_names_business": "COULD_NOT_VERIFY",
+   "meta_description_present": "COULD_NOT_VERIFY",
+   "no_login_wall": "COULD_NOT_VERIFY",
+   "pages_allow_indexing": "COULD_NOT_VERIFY",
+   "robots_allows_chatgpt_user": "COULD_NOT_VERIFY",
+   "robots_allows_oai_searchbot": "COULD_NOT_VERIFY",
+   "robots_declares_sitemap": "COULD_NOT_VERIFY",
+   "robots_gptbot": "COULD_NOT_VERIFY",
+   "site_reachable": "COULD_NOT_VERIFY",
+   "sitemap_published": "COULD_NOT_VERIFY",
+   "structured_address": "COULD_NOT_VERIFY",
+   "structured_business_type": "COULD_NOT_VERIFY",
+   "structured_data_present": "COULD_NOT_VERIFY",
+   "structured_opening_hours": "COULD_NOT_VERIFY",
+   "structured_telephone": "COULD_NOT_VERIFY",
+   "titles_unique": "COULD_NOT_VERIFY"
+  },
+  "site": {
+   "payload_version": 2,
+   "host": "tinypractice.com",
+   "business_name": "Tiny Practice",
+   "fetch_failure": "context deadline exceeded"
+  }
+ }
+]

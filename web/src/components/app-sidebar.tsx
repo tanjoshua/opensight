@@ -9,7 +9,6 @@ import {
   Users,
   Lightbulb,
   ClipboardCheck,
-  Activity,
 } from "lucide-react"
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
@@ -60,7 +59,6 @@ const improveSections = [
     to: "/improve/checklist",
     icon: ClipboardCheck,
   },
-  { title: "Activity history", to: "/improve/activity", icon: Activity },
 ]
 
 const workspaceSections = [{ title: "Members", to: "/team", icon: Users }]

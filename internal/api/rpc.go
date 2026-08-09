@@ -133,7 +133,6 @@ var procedureAccess = map[string]procedurePolicy{
 	opensightv1connect.ImproveServiceListActionsProcedure:                policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.ImproveServiceGetActionProcedure:                  policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.ImproveServiceGetChecklistProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
-	opensightv1connect.ImproveServiceListActivityProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.ImproveServiceSetActionStatusProcedure:            policy(scopeAccount, store.AccountRoleMember, classSubscriber),
 
 	// classActive — needs full. Exactly the procedures that reach an LLM or

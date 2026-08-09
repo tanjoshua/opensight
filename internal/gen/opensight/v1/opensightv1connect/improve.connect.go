@@ -45,9 +45,6 @@ const (
 	// ImproveServiceGetChecklistProcedure is the fully-qualified name of the ImproveService's
 	// GetChecklist RPC.
 	ImproveServiceGetChecklistProcedure = "/opensight.v1.ImproveService/GetChecklist"
-	// ImproveServiceListActivityProcedure is the fully-qualified name of the ImproveService's
-	// ListActivity RPC.
-	ImproveServiceListActivityProcedure = "/opensight.v1.ImproveService/ListActivity"
 )
 
 // ImproveServiceClient is a client for the opensight.v1.ImproveService service.
@@ -56,7 +53,6 @@ type ImproveServiceClient interface {
 	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
 	SetActionStatus(context.Context, *connect.Request[v1.SetActionStatusRequest]) (*connect.Response[v1.SetActionStatusResponse], error)
 	GetChecklist(context.Context, *connect.Request[v1.GetChecklistRequest]) (*connect.Response[v1.GetChecklistResponse], error)
-	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
 }
 
 // NewImproveServiceClient constructs a client for the opensight.v1.ImproveService service. By
@@ -94,12 +90,6 @@ func NewImproveServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(improveServiceMethods.ByName("GetChecklist")),
 			connect.WithClientOptions(opts...),
 		),
-		listActivity: connect.NewClient[v1.ListActivityRequest, v1.ListActivityResponse](
-			httpClient,
-			baseURL+ImproveServiceListActivityProcedure,
-			connect.WithSchema(improveServiceMethods.ByName("ListActivity")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -109,7 +99,6 @@ type improveServiceClient struct {
 	getAction       *connect.Client[v1.GetActionRequest, v1.GetActionResponse]
 	setActionStatus *connect.Client[v1.SetActionStatusRequest, v1.SetActionStatusResponse]
 	getChecklist    *connect.Client[v1.GetChecklistRequest, v1.GetChecklistResponse]
-	listActivity    *connect.Client[v1.ListActivityRequest, v1.ListActivityResponse]
 }
 
 // ListActions calls opensight.v1.ImproveService.ListActions.
@@ -132,18 +121,12 @@ func (c *improveServiceClient) GetChecklist(ctx context.Context, req *connect.Re
 	return c.getChecklist.CallUnary(ctx, req)
 }
 
-// ListActivity calls opensight.v1.ImproveService.ListActivity.
-func (c *improveServiceClient) ListActivity(ctx context.Context, req *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
-	return c.listActivity.CallUnary(ctx, req)
-}
-
 // ImproveServiceHandler is an implementation of the opensight.v1.ImproveService service.
 type ImproveServiceHandler interface {
 	ListActions(context.Context, *connect.Request[v1.ListActionsRequest]) (*connect.Response[v1.ListActionsResponse], error)
 	GetAction(context.Context, *connect.Request[v1.GetActionRequest]) (*connect.Response[v1.GetActionResponse], error)
 	SetActionStatus(context.Context, *connect.Request[v1.SetActionStatusRequest]) (*connect.Response[v1.SetActionStatusResponse], error)
 	GetChecklist(context.Context, *connect.Request[v1.GetChecklistRequest]) (*connect.Response[v1.GetChecklistResponse], error)
-	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
 }
 
 // NewImproveServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -177,12 +160,6 @@ func NewImproveServiceHandler(svc ImproveServiceHandler, opts ...connect.Handler
 		connect.WithSchema(improveServiceMethods.ByName("GetChecklist")),
 		connect.WithHandlerOptions(opts...),
 	)
-	improveServiceListActivityHandler := connect.NewUnaryHandler(
-		ImproveServiceListActivityProcedure,
-		svc.ListActivity,
-		connect.WithSchema(improveServiceMethods.ByName("ListActivity")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/opensight.v1.ImproveService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ImproveServiceListActionsProcedure:
@@ -193,8 +170,6 @@ func NewImproveServiceHandler(svc ImproveServiceHandler, opts ...connect.Handler
 			improveServiceSetActionStatusHandler.ServeHTTP(w, r)
 		case ImproveServiceGetChecklistProcedure:
 			improveServiceGetChecklistHandler.ServeHTTP(w, r)
-		case ImproveServiceListActivityProcedure:
-			improveServiceListActivityHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -218,8 +193,4 @@ func (UnimplementedImproveServiceHandler) SetActionStatus(context.Context, *conn
 
 func (UnimplementedImproveServiceHandler) GetChecklist(context.Context, *connect.Request[v1.GetChecklistRequest]) (*connect.Response[v1.GetChecklistResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.ImproveService.GetChecklist is not implemented"))
-}
-
-func (UnimplementedImproveServiceHandler) ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.ImproveService.ListActivity is not implemented"))
 }

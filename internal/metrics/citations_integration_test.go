@@ -84,8 +84,8 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 			titleArg = title
 		}
 		mustExec(t, db, ctx, `
-			INSERT INTO citations (id, prompt_result_id, url, domain, title, subject, cite_order)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)`, mustNewID(t), resultID, url, domainName, titleArg, subject, order)
+			INSERT INTO citations (id, prompt_result_id, url, domain, title, subject, cite_order, text_start, text_end)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 10)`, mustNewID(t), resultID, url, domainName, titleArg, subject, order)
 	}
 	// Duplicate annotations in a1 must still count as one source/page/business
 	// frequency because frequency is distinct analyzed responses.
