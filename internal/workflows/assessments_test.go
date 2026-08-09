@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"opensight/internal/visibility"
 
 	"github.com/stretchr/testify/mock"
+	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/converter"
 	"go.temporal.io/sdk/testsuite"
 )
 
@@ -21,7 +24,9 @@ func TestAssessmentWorkflowFinderFailureDoesNotPublish(t *testing.T) {
 	env.RegisterActivity(activities.PublishImproveRun)
 
 	env.OnActivity(activities.RunSiteAudit, mock.Anything, mock.Anything).Return(SiteAuditResult{}, nil).Once()
-	env.OnActivity(activities.RunFinders, mock.Anything, mock.Anything).Return(nil, errors.New("source classification failed validation")).Times(3)
+	// Twice, not three times: an attempt re-pays for every research fetch and the
+	// classification call, so RunFinders is granted one retry rather than two.
+	env.OnActivity(activities.RunFinders, mock.Anything, mock.Anything).Return(nil, errors.New("source classification failed validation")).Times(2)
 
 	env.ExecuteWorkflow(AssessmentWorkflow, AssessmentWorkflowInput{})
 	if err := env.GetWorkflowError(); err == nil {
@@ -66,6 +71,48 @@ func TestAssessmentWorkflowPublishesWhatTheFindersProduced(t *testing.T) {
 		t.Fatalf("workflow error: %v", err)
 	}
 	env.AssertExpectations(t)
+}
+
+// TestAssessmentActivitiesAreBudgetedForTheirOwnWork guards the one thing a
+// shared set of activity options gets wrong: the heaviest activity inherits the
+// smallest budget. The bounds are computed from the same constants the crawls
+// spend, so raising a request budget without raising the matching timeout fails
+// here rather than in production, where it surfaces as a timed-out run that
+// silently republishes nothing.
+func TestAssessmentActivitiesAreBudgetedForTheirOwnWork(t *testing.T) {
+	env := (&testsuite.WorkflowTestSuite{}).NewTestWorkflowEnvironment()
+	activities := &Activities{}
+	env.RegisterActivity(activities.RunSiteAudit)
+	env.RegisterActivity(activities.RunFinders)
+	env.RegisterActivity(activities.PublishImproveRun)
+
+	env.OnActivity(activities.RunSiteAudit, mock.Anything, mock.Anything).Return(SiteAuditResult{}, nil).Once()
+	env.OnActivity(activities.RunFinders, mock.Anything, mock.Anything).Return([]visibility.Finding{}, nil).Once()
+	env.OnActivity(activities.PublishImproveRun, mock.Anything, mock.Anything).Return(nil).Once()
+
+	budgets := map[string]time.Duration{}
+	env.SetOnActivityStartedListener(func(info *activity.Info, _ context.Context, _ converter.EncodedValues) {
+		budgets[info.ActivityType.Name] = info.StartToCloseTimeout
+	})
+
+	env.ExecuteWorkflow(AssessmentWorkflow, AssessmentWorkflowInput{})
+	if err := env.GetWorkflowError(); err != nil {
+		t.Fatalf("workflow error: %v", err)
+	}
+
+	// Both crawls fetch serially with each request capped at fetchSiteTimeout, so
+	// these products are what one attempt can actually take.
+	if want := fetchSiteMaxRequests * fetchSiteTimeout; budgets["RunSiteAudit"] < want {
+		t.Errorf("RunSiteAudit budget %s is below its %s crawl worst case", budgets["RunSiteAudit"], want)
+	}
+	if want := visibility.ResearchURLBudget * fetchSiteTimeout; budgets["RunFinders"] < want {
+		t.Errorf("RunFinders budget %s is below its %s research worst case", budgets["RunFinders"], want)
+	}
+	// A publication is one transaction. Sizing it like the crawls would be the
+	// same mistake in the other direction: a wedged write held for minutes.
+	if budgets["PublishImproveRun"] >= budgets["RunFinders"] {
+		t.Errorf("PublishImproveRun budget %s is not scaled to a single transaction", budgets["PublishImproveRun"])
+	}
 }
 
 func TestRobotsDeniesUsesSpecificGroupAndAllowTie(t *testing.T) {
