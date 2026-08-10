@@ -10,9 +10,15 @@ Marketing site for [opensight.app](https://opensight.app). Static HTML + Tailwin
 - `/pricing/` — the single Starter plan (both products) and what happens after signup.
 - `/faq/` — full FAQ.
 
-The header/footer are duplicated in each page (no templating) — edit all five when changing them, and keep the `aria-current` markers pointing at the page they sit on. New pages follow the same pattern; a page with the animated chat demo needs a `#chat-scenarios` JSON block (see `index.html`).
+A page with the animated chat demo needs a `#chat-scenarios` JSON block (see `index.html`).
 
-The header's Products dropdown is driven by `assets/site.js`: the `#products-menu` wrapper, a `[data-menu-trigger]` button, and a `[data-menu-panel]` panel that starts with the `hidden` attribute. Mobile uses the separate `#nav-menu` list instead, so the dropdown markup only ever renders at `md` and up.
+## Header and footer
+
+`partials/header.html` and `partials/footer.html` are the single source; `build.mjs` injects them into every page between its `<!-- partial:header -->` / `<!-- /partial:header -->` markers, so the pages stay directly servable static files with the markup inlined. Edit the partial, then `npm run build`.
+
+`build.mjs` also marks the current nav entry, which the shared partial cannot know: it matches on the route in `pages` and rewrites that link's classes. A new page needs an entry there, the two marker pairs, and — if its route should light up in the nav — a link the partial actually contains.
+
+The header's Products dropdown is driven by `assets/site.js`: the `#products-menu` wrapper, a `[data-menu-trigger]` button, and a `[data-menu-panel]` panel that starts with the `hidden` attribute. Mobile uses the separate `#nav-menu` list instead, so the dropdown only ever opens at `md` and up.
 
 ## Develop
 
@@ -28,10 +34,10 @@ The marketing dev server is also started by `make up` from the repository root.
 ## Build
 
 ```sh
-npm run build     # writes minified assets/style.css
+npm run build     # injects partials, then writes minified assets/style.css
 ```
 
-The built `assets/style.css` is committed, so the site deploys as plain static files with no build step required on the host.
+The injected pages and the built `assets/style.css` are both committed, so the site deploys as plain static files with no build step required on the host.
 
 ## Deploy
 
@@ -46,4 +52,5 @@ Any static host works. This site lives in the `marketing/` subdirectory of the [
 - **App URLs**: all CTAs point at `https://dashboard.opensight.app/signup` and sign-in at `https://dashboard.opensight.app` — adjust if the app lives elsewhere.
 - **Contact email**: `hello@opensight.app` in the footer.
 - **Testimonial**: intentionally omitted for v1; add a section between "Every number has a receipt" and the final CTA once a real quote exists.
-- **Copy discipline**: the pages deliberately claim only what the shipped product does (ChatGPT only, 20 prompts, weekly runs, same-day first run, 17 site checks, five action categories, no score or grade, no causal claims). Update copy when capabilities change.
+- **Copy discipline**: the pages claim only what the shipped product does (ChatGPT only, weekly runs, same-day first run, no score or grade, no causal claims), and deliberately state no fixed counts — no prompt quota, check total, or category count — so the copy survives the product growing. Keep it that way; numbers belong in the app, not the pitch.
+- **Concision**: every section has to earn its screen. Prefer cutting to adding — the pitch is clearer short, and filler reads as padding rather than proof.

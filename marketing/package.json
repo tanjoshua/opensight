@@ -3,9 +3,9 @@
   "private": true,
   "description": "Marketing site for opensight.app",
   "scripts": {
-    "build": "tailwindcss -i src/app.css -o assets/style.css --minify",
+    "build": "node build.mjs && tailwindcss -i src/app.css -o assets/style.css --minify",
     "watch": "tailwindcss -i src/app.css -o assets/style.css --watch --minify",
-    "dev": "concurrently -k -n css,serve -c yellow,cyan \"npm:watch\" \"live-server --port=8081 --no-browser\""
+    "dev": "npm run build && concurrently -k -n css,serve -c yellow,cyan \"npm:watch\" \"live-server --port=8081 --no-browser\""
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",

@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Monitor — track your business in ChatGPT answers | OpenSight</title>
-  <meta name="description" content="OpenSight Monitor runs 20 real customer questions against ChatGPT every week and shows where you appear, who is recommended instead, which sources are cited, and how you are described.">
+  <meta name="description" content="OpenSight Monitor runs real customer questions against ChatGPT every week and shows where you appear, who is recommended instead, which sources are cited, and how you are described.">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://opensight.app/monitor/">
   <meta property="og:title" content="Monitor — track your business in ChatGPT answers | OpenSight">
-  <meta property="og:description" content="Twenty customer questions, run weekly, with every raw answer stored behind every number.">
+  <meta property="og:description" content="Real customer questions, run weekly, with every raw answer stored behind every number.">
   <meta property="og:url" content="https://opensight.app/monitor/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#fafaf9">
@@ -20,6 +20,7 @@
 </head>
 <body class="overflow-x-hidden text-[1.0625rem] leading-relaxed">
 
+<!-- partial:header -->
 <header class="site-header" id="site-header">
   <div class="site-shell flex h-16 items-center justify-between gap-5">
     <a href="/" aria-label="OpenSight home" class="flex items-center gap-2.5 no-underline">
@@ -37,14 +38,14 @@
             <span class="nav-panel-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 2 5-7"/></svg></span>
             <span>
               <strong class="text-ink block text-[0.95rem]">Monitor</strong>
-              <span class="text-moss block text-[0.84rem] leading-snug">Track what ChatGPT says about you, who it names instead, and the sources behind it.</span>
+              <span class="text-moss block text-[0.84rem] leading-snug">What ChatGPT says about you, who it names instead, and the sources behind it.</span>
             </span>
           </a>
           <a href="/improve/" class="nav-panel-item">
             <span class="nav-panel-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V7"/><path d="m6 13 6-6 6 6"/></svg></span>
             <span>
               <strong class="text-ink block text-[0.95rem]">Improve</strong>
-              <span class="text-moss block text-[0.84rem] leading-snug">A ranked queue of evidence-backed fixes, plus 17 site checks on every run.</span>
+              <span class="text-moss block text-[0.84rem] leading-snug">A ranked queue of evidence-backed fixes, from your site and your answers.</span>
             </span>
           </a>
         </div>
@@ -74,6 +75,7 @@
     </div>
   </nav>
 </header>
+<!-- /partial:header -->
 
 <main>
   <section class="relative overflow-hidden pt-14 pb-20 md:pt-20 md:pb-24">
@@ -84,7 +86,7 @@
         <div class="relative z-10">
           <span class="product-tag border-line text-pine mb-6 w-fit bg-white"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 2 5-7"/></svg>Monitor</span>
           <h1 class="display-title max-w-[15ch] text-[clamp(2.3rem,4.4vw,3.9rem)]">Know exactly what ChatGPT tells your customers.</h1>
-          <p class="text-moss mt-6 max-w-[34rem] text-[1.08rem] leading-relaxed md:text-[1.18rem]">Twenty real customer questions, run every week, with the whole answer kept. Where you appear, who is named instead, and what the model actually read to decide.</p>
+          <p class="text-moss mt-6 max-w-[34rem] text-[1.08rem] leading-relaxed md:text-[1.18rem]">Real customer questions, run every week, with the whole answer kept. Where you appear, who is named instead, and what the model actually read to decide.</p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a href="https://dashboard.opensight.app/signup" class="button-primary">Check my AI visibility <span aria-hidden="true">↗</span></a>
             <a href="/improve/" class="button-ghost">See Improve <span aria-hidden="true">→</span></a>
@@ -136,8 +138,8 @@
                   </div>
                   <div class="bg-pinedeep rounded-xl p-4 text-white">
                     <p class="font-mono text-[0.58rem] tracking-wider text-white/60 uppercase">Newly visible</p>
-                    <p class="font-display mt-3 text-lg leading-tight font-bold">3 questions now name you.</p>
-                    <p class="mt-3 text-[0.68rem] leading-relaxed text-white/65">2 more still go to AirCare SG.</p>
+                    <p class="font-display mt-3 text-lg leading-tight font-bold">Three questions now name you.</p>
+                    <p class="mt-3 text-[0.68rem] leading-relaxed text-white/65">Two more still go to AirCare SG.</p>
                   </div>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -162,101 +164,89 @@
     </div>
   </section>
 
-  <section class="border-line border-y bg-white">
-    <div class="site-shell grid grid-cols-2 gap-x-6 gap-y-7 py-8 md:grid-cols-4 md:py-9">
-      <div class="metric-rule"><strong class="font-display block text-lg">20 questions</strong><span class="text-moss text-sm">yours to edit anytime</span></div>
-      <div class="metric-rule"><strong class="font-display block text-lg">Weekly runs</strong><span class="text-moss text-sm">the same set, every time</span></div>
-      <div class="metric-rule"><strong class="font-display block text-lg">Full history</strong><span class="text-moss text-sm">kept, gaps shown as gaps</span></div>
-      <div class="metric-rule"><strong class="font-display block text-lg">Raw answers</strong><span class="text-moss text-sm">stored behind every metric</span></div>
-    </div>
-  </section>
-
-  <section class="site-shell py-24 md:py-28">
-    <div class="reveal grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
-      <div>
-        <p class="eyebrow">Where it starts</p>
-        <h2 class="section-title max-w-[13ch]">The right questions, not a keyword list.</h2>
-      </div>
-      <div class="max-w-[42rem] lg:pt-10">
-        <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Nobody types “endodontist singapore” into ChatGPT. They describe a problem and ask who to see.</p>
-        <p class="text-moss mt-5 text-lg">OpenSight reads your website and drafts 20 questions in that shape — your services, your area, the way a customer would put it. You review and edit every one before the first run, and can replace them later without losing the history you already have.</p>
-      </div>
-    </div>
-
-    <div class="reveal panel mt-14 overflow-hidden">
-      <div class="border-line flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 md:px-7">
-        <p class="stat-label">Questions · latest run</p>
-        <span class="text-moss text-[0.8rem]">12 of 20 mention you</span>
-      </div>
-      <div class="divide-line divide-y">
-        <div class="flex flex-wrap items-center gap-3 px-5 py-4 md:px-7">
-          <span class="bg-paper text-pine rounded-full px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Mentioned · 1st</span>
-          <span class="flex-1 text-[0.97rem]">Best aircon servicing for a condo in Bukit Timah?</span>
-          <span class="text-moss font-mono text-[0.7rem]">3 sources</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-3 px-5 py-4 md:px-7">
-          <span class="bg-paper text-pine rounded-full px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Mentioned · 3rd</span>
-          <span class="flex-1 text-[0.97rem]">Who does honest aircon chemical wash pricing?</span>
-          <span class="text-moss font-mono text-[0.7rem]">5 sources</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-3 bg-paper px-5 py-4 md:px-7">
-          <span class="text-miss rounded-full bg-white px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Absent</span>
-          <span class="flex-1 text-[0.97rem]">Which aircon company handles same-day emergency repair?</span>
-          <span class="text-moss font-mono text-[0.7rem]">AirCare SG won it</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-3 bg-paper px-5 py-4 md:px-7">
-          <span class="text-miss rounded-full bg-white px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Absent</span>
-          <span class="flex-1 text-[0.97rem]">Aircon servicing contract for a whole condo block?</span>
-          <span class="text-moss font-mono text-[0.7rem]">Breeze won it</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section class="border-line border-y bg-stone-100">
     <div class="site-shell py-24 md:py-32">
-      <div class="reveal text-center">
-        <p class="eyebrow">One connected view</p>
-        <h2 class="section-title mx-auto max-w-[18ch]">Know where you stand. Understand why.</h2>
+      <div class="reveal grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
+        <div>
+          <p class="eyebrow">Where it starts</p>
+          <h2 class="section-title max-w-[13ch]">The right questions, not a keyword list.</h2>
+        </div>
+        <div class="max-w-[42rem] lg:pt-10">
+          <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Nobody types “endodontist singapore” into ChatGPT. They describe a problem and ask who to see.</p>
+          <p class="text-moss mt-5 text-lg">OpenSight reads your website and drafts questions in that shape — your services, your area, the way a customer would put it. You review and edit every one before the first run.</p>
+        </div>
       </div>
-      <div class="border-line mt-14 grid overflow-hidden rounded-2xl border bg-white md:grid-cols-2">
-        <article class="reveal border-line p-7 md:border-r md:border-b md:p-9">
-          <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">01 · Visibility</p>
-          <div class="mt-10 flex items-end justify-between gap-6"><strong class="font-display block text-5xl font-extrabold">60<span class="text-moss text-lg font-normal">%</span></strong><span class="text-moss text-sm">12 of 20 answers</span></div>
-          <div class="bg-line mt-5 h-1.5 rounded-full"><div class="bg-pine h-full w-[60%] rounded-full"></div></div>
-          <p class="text-moss mt-5 max-w-[28rem] text-sm">The share of answers naming you, where you sit in the list, and whether either moved this week. Newly visible, no longer visible, and still absent questions are called out by name.</p>
-        </article>
-        <article class="reveal border-line border-t p-7 md:border-t-0 md:border-b md:p-9">
-          <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">02 · Reputation</p>
-          <p class="font-display mt-10 text-2xl font-bold tracking-tight">“Responsive, punctual, transparent pricing.”</p>
-          <p class="text-moss mt-5 max-w-[28rem] text-sm">The tone AI takes about you and the words it keeps reaching for, each backed by the excerpt it came from. Useful when the story you tell and the story being told diverge.</p>
-        </article>
-        <article class="reveal border-line border-t p-7 md:border-t-0 md:border-r md:p-9">
-          <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">03 · Sources</p>
-          <div class="mt-9 grid gap-3 text-sm"><div class="border-line flex justify-between border-b pb-2"><span>homeservices.sg</span><b>14 answers</b></div><div class="border-line flex justify-between border-b pb-2"><span>reddit.com</span><b>9 answers</b></div><div class="flex justify-between"><span>coolworks.sg</span><b>5 answers</b></div></div>
-          <p class="text-moss mt-6 max-w-[28rem] text-sm">The domains and exact pages shaping recommendations in your market — and, for each, whether it mentions you or somebody else.</p>
-        </article>
-        <article class="reveal border-line border-t bg-stone-100 p-7 md:border-t-0 md:p-9">
-          <p class="font-mono text-[0.66rem] tracking-wider uppercase">04 · Competitors</p>
-          <p class="font-display mt-10 text-2xl leading-tight font-bold">See who wins when you don’t — and where.</p>
-          <p class="text-moss mt-5 max-w-[28rem] text-sm">Competitors are discovered from the answers themselves, then compared on mention share, total mentions, average position, and weekly movement. Track, dismiss, or add your own.</p>
-        </article>
+
+      <div class="reveal panel mt-12 overflow-hidden">
+        <div class="border-line flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 md:px-7">
+          <p class="stat-label">Questions · latest run</p>
+          <span class="text-moss text-[0.8rem]">12 mention you</span>
+        </div>
+        <div class="divide-line divide-y">
+          <div class="flex flex-wrap items-center gap-3 px-5 py-4 md:px-7">
+            <span class="bg-paper text-pine rounded-full px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Mentioned · 1st</span>
+            <span class="flex-1 text-[0.97rem]">Best aircon servicing for a condo in Bukit Timah?</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 px-5 py-4 md:px-7">
+            <span class="bg-paper text-pine rounded-full px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Mentioned · 3rd</span>
+            <span class="flex-1 text-[0.97rem]">Who does honest aircon chemical wash pricing?</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 bg-paper px-5 py-4 md:px-7">
+            <span class="text-miss rounded-full bg-white px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Absent</span>
+            <span class="flex-1 text-[0.97rem]">Which aircon company handles same-day emergency repair?</span>
+            <span class="text-moss font-mono text-[0.7rem]">AirCare SG won it</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 bg-paper px-5 py-4 md:px-7">
+            <span class="text-miss rounded-full bg-white px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Absent</span>
+            <span class="flex-1 text-[0.97rem]">Aircon servicing contract for a whole condo block?</span>
+            <span class="text-moss font-mono text-[0.7rem]">Breeze won it</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="site-shell py-24 md:py-32">
-    <div class="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+    <div class="reveal text-center">
+      <p class="eyebrow">One connected view</p>
+      <h2 class="section-title mx-auto max-w-[18ch]">Know where you stand. Understand why.</h2>
+    </div>
+    <div class="border-line mt-14 grid overflow-hidden rounded-2xl border bg-white md:grid-cols-2">
+      <article class="reveal border-line p-7 md:border-r md:border-b md:p-9">
+        <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">01 · Visibility</p>
+        <div class="mt-10 flex items-end justify-between gap-6"><strong class="font-display block text-5xl font-extrabold">60<span class="text-moss text-lg font-normal">%</span></strong><span class="text-moss text-sm">of answers name you</span></div>
+        <div class="bg-line mt-5 h-1.5 rounded-full"><div class="bg-pine h-full w-[60%] rounded-full"></div></div>
+        <p class="text-moss mt-5 max-w-[28rem] text-sm">The share of answers naming you and where you sit in the list. Newly visible, no longer visible, and still absent questions are called out by name.</p>
+      </article>
+      <article class="reveal border-line border-t p-7 md:border-t-0 md:border-b md:p-9">
+        <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">02 · Reputation</p>
+        <p class="font-display mt-10 text-2xl font-bold tracking-tight">“Responsive, punctual, transparent pricing.”</p>
+        <p class="text-moss mt-5 max-w-[28rem] text-sm">The tone AI takes about you and the words it keeps reaching for, each backed by the excerpt it came from.</p>
+      </article>
+      <article class="reveal border-line border-t p-7 md:border-t-0 md:border-r md:p-9">
+        <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">03 · Sources</p>
+        <div class="mt-9 grid gap-3 text-sm"><div class="border-line flex justify-between border-b pb-2"><span>homeservices.sg</span><b>14 answers</b></div><div class="border-line flex justify-between border-b pb-2"><span>reddit.com</span><b>9 answers</b></div><div class="flex justify-between"><span>coolworks.sg</span><b>5 answers</b></div></div>
+        <p class="text-moss mt-6 max-w-[28rem] text-sm">The domains and exact pages shaping recommendations in your market — and whether each one mentions you or somebody else.</p>
+      </article>
+      <article class="reveal border-line border-t bg-stone-100 p-7 md:border-t-0 md:p-9">
+        <p class="font-mono text-[0.66rem] tracking-wider uppercase">04 · Competitors</p>
+        <p class="font-display mt-10 text-2xl leading-tight font-bold">See who wins when you don’t — and where.</p>
+        <p class="text-moss mt-5 max-w-[28rem] text-sm">Discovered from the answers themselves, then compared on mention share, average position, and weekly movement. Track, dismiss, or add your own.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="bg-pinedeep noise text-white">
+    <div class="site-shell grid items-center gap-14 py-24 md:py-32 lg:grid-cols-2 lg:gap-20">
       <div class="reveal">
-        <p class="eyebrow">A monitored answer</p>
-        <h2 class="section-title max-w-[14ch]">The whole answer, not a mention count.</h2>
-        <p class="text-moss mt-6 text-lg">Every run stores the question, the model, the run time, the full response, every business named in it, the order they were named in, and every citation.</p>
-        <p class="text-moss mt-4">That is what makes the trend interpretable months later: when a number moves, you open the answers underneath it and read what changed. Models change too, so the exact one is recorded with every run.</p>
-        <a href="/faq/" class="button-ghost mt-8">How we query ChatGPT <span aria-hidden="true">→</span></a>
+        <p class="font-mono mb-4 text-[0.72rem] tracking-[0.16em] text-white/55 uppercase">A monitored answer</p>
+        <h2 class="font-display text-[clamp(1.9rem,3.8vw,3.2rem)] leading-[1.05] font-bold tracking-[-0.035em]">The whole answer, not a mention count.</h2>
+        <p class="mt-6 max-w-[34rem] text-lg text-white/68">Every run stores the question, the model, the full response, every business named in it, the order they were named in, and every citation.</p>
+        <p class="mt-5 max-w-[34rem] text-white/68">That is what makes the trend readable months later. The chart plots exact observed values and never draws a point that was not measured; pause your subscription and the unmonitored weeks show as a gap, never as an estimate.</p>
       </div>
 
-      <div class="reveal relative mx-auto w-full max-w-[540px]">
-        <div class="noise border-line overflow-hidden rounded-2xl border bg-white shadow-[0_35px_90px_-42px_rgba(28,25,23,.38)]">
+      <div class="reveal relative mx-auto w-full max-w-[520px]">
+        <div class="noise border-line overflow-hidden rounded-2xl border bg-white text-ink shadow-[0_35px_80px_-30px_rgba(0,0,0,.5)]">
           <div class="border-line flex items-center justify-between border-b bg-stone-100 px-4 py-3">
             <span class="stat-label">A customer asks ChatGPT</span>
             <span class="border-line rounded-full border bg-white px-2.5 py-1 font-mono text-[0.58rem]">GPT-5 · WEB SEARCH</span>
@@ -273,47 +263,13 @@
     </div>
   </section>
 
-  <section class="bg-pinedeep noise text-white">
-    <div class="site-shell grid items-start gap-14 py-24 md:py-32 lg:grid-cols-2 lg:gap-24">
-      <div class="reveal">
-        <p class="font-mono mb-4 text-[0.72rem] tracking-[0.16em] text-white/55 uppercase">History</p>
-        <h2 class="font-display text-[clamp(1.9rem,3.8vw,3.2rem)] leading-[1.05] font-bold tracking-[-0.035em]">A trend you can trust because nothing is smoothed.</h2>
-        <p class="mt-6 max-w-[34rem] text-lg text-white/68">Inspect any single run as a dated snapshot, or compare runs over time. The chart plots exact observed values and never draws a point that was not measured.</p>
-        <p class="mt-5 max-w-[34rem] text-white/68">Pause your subscription and the collected history stays readable; the unmonitored weeks appear as a gap, never as an estimate.</p>
-      </div>
-      <div class="reveal grid gap-4">
-        <div class="rounded-2xl bg-white/[0.06] p-6 md:p-7">
-          <p class="font-mono text-[0.6rem] tracking-wider text-white/50 uppercase">Newly visible this week</p>
-          <p class="font-display mt-3 text-xl leading-snug font-bold">“Who does honest aircon chemical wash pricing?”</p>
-          <p class="mt-2 text-sm text-white/60">Absent on 13 Jul · mentioned 3rd on 20 Jul</p>
-        </div>
-        <div class="rounded-2xl bg-white/[0.06] p-6 md:p-7">
-          <p class="font-mono text-[0.6rem] tracking-wider text-white/50 uppercase">No baseline yet</p>
-          <p class="font-display mt-3 text-xl leading-snug font-bold">Two questions have only one run.</p>
-          <p class="mt-2 text-sm text-white/60">Shown as having no baseline rather than as a change of zero.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section class="site-shell py-24 md:py-32">
-    <div class="reveal border-line grid items-center gap-10 rounded-2xl border bg-stone-100 p-7 md:p-12 lg:grid-cols-[1fr_auto]">
-      <div>
-        <p class="eyebrow">Next</p>
-        <h2 class="font-display max-w-[24ch] text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">Measuring is half of it. Improve does the other half.</h2>
-        <p class="text-moss mt-4 max-w-[38rem]">The same evidence feeds a ranked queue of concrete work: what to publish, what to fix on your site, and which sources to get onto. Both products are in the one plan.</p>
-      </div>
-      <a href="/improve/" class="button-primary">Explore Improve <span aria-hidden="true">→</span></a>
-    </div>
-  </section>
-
-  <section class="site-shell pb-24 md:pb-32">
     <div class="reveal border-line relative overflow-hidden rounded-2xl border bg-white px-6 py-14 text-center shadow-[0_30px_80px_-50px_rgba(28,25,23,.35)] md:px-12 md:py-20">
       <div class="bg-line/70 pointer-events-none absolute -top-32 left-1/2 size-96 -translate-x-1/2 rounded-full blur-[100px]" aria-hidden="true"></div>
       <div class="relative">
-        <p class="eyebrow">Your first brief is waiting</p>
+        <p class="eyebrow">Measuring is half of it</p>
         <h2 class="section-title mx-auto max-w-[18ch]">See this week’s answers about your business.</h2>
-        <p class="text-moss mx-auto mt-5 max-w-[34rem]">Enter your business name and website. First results the same day, S$50 a month, cancel whenever you like.</p>
+        <p class="text-moss mx-auto mt-5 max-w-[34rem]">The same evidence feeds <a href="/improve/" class="text-pine underline underline-offset-4">Improve</a>, which ranks what to do about it. Both products, S$50 a month.</p>
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <a href="https://dashboard.opensight.app/signup" class="button-primary">Check my AI visibility <span aria-hidden="true">↗</span></a>
           <a href="/pricing/" class="button-ghost">See pricing</a>
@@ -323,6 +279,7 @@
   </section>
 </main>
 
+<!-- partial:footer -->
 <footer class="border-line border-t bg-stone-100">
   <div class="site-shell grid gap-12 py-14 md:grid-cols-[1.4fr_.6fr_.6fr_.6fr] md:py-16">
     <div>
@@ -346,6 +303,7 @@
     <div class="site-shell text-moss flex flex-col gap-2 py-5 text-xs sm:flex-row sm:items-center sm:justify-between"><span>© 2026 OpenSight</span><span>Made with care in Singapore.</span></div>
   </div>
 </footer>
+<!-- /partial:footer -->
 
 <script type="application/json" id="chat-scenarios">
 [

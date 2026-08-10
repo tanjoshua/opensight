@@ -8,7 +8,7 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://opensight.app/improve/">
   <meta property="og:title" content="Improve — fix what keeps you out of AI answers | OpenSight">
-  <meta property="og:description" content="A ranked queue of evidence-backed actions, plus 17 site checks on every run. No scores, no grades.">
+  <meta property="og:description" content="A ranked queue of evidence-backed actions, plus a full site checklist on every run. No scores, no grades.">
   <meta property="og:url" content="https://opensight.app/improve/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#fafaf9">
@@ -20,6 +20,7 @@
 </head>
 <body class="overflow-x-hidden text-[1.0625rem] leading-relaxed">
 
+<!-- partial:header -->
 <header class="site-header" id="site-header">
   <div class="site-shell flex h-16 items-center justify-between gap-5">
     <a href="/" aria-label="OpenSight home" class="flex items-center gap-2.5 no-underline">
@@ -37,14 +38,14 @@
             <span class="nav-panel-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 2 5-7"/></svg></span>
             <span>
               <strong class="text-ink block text-[0.95rem]">Monitor</strong>
-              <span class="text-moss block text-[0.84rem] leading-snug">Track what ChatGPT says about you, who it names instead, and the sources behind it.</span>
+              <span class="text-moss block text-[0.84rem] leading-snug">What ChatGPT says about you, who it names instead, and the sources behind it.</span>
             </span>
           </a>
           <a href="/improve/" class="nav-panel-item bg-paper" aria-current="page">
             <span class="nav-panel-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V7"/><path d="m6 13 6-6 6 6"/></svg></span>
             <span>
               <strong class="text-ink block text-[0.95rem]">Improve</strong>
-              <span class="text-moss block text-[0.84rem] leading-snug">A ranked queue of evidence-backed fixes, plus 17 site checks on every run.</span>
+              <span class="text-moss block text-[0.84rem] leading-snug">A ranked queue of evidence-backed fixes, from your site and your answers.</span>
             </span>
           </a>
         </div>
@@ -74,6 +75,7 @@
     </div>
   </nav>
 </header>
+<!-- /partial:header -->
 
 <main>
   <section class="relative overflow-hidden pt-14 pb-20 md:pt-20 md:pb-24">
@@ -84,10 +86,10 @@
         <div class="relative z-10">
           <span class="product-tag border-line text-pine mb-6 w-fit bg-white"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V7"/><path d="m6 13 6-6 6 6"/></svg>Improve</span>
           <h1 class="display-title max-w-[15ch] text-[clamp(2.3rem,4.4vw,3.9rem)]">Stop guessing why the answer went elsewhere.</h1>
-          <p class="text-moss mt-6 max-w-[34rem] text-[1.08rem] leading-relaxed md:text-[1.18rem]">Every run audits your website and reads the answers you were left out of, then hands you a short ranked queue of specific work — each action carrying the quoted evidence that argues for it.</p>
+          <p class="text-moss mt-6 max-w-[34rem] text-[1.08rem] leading-relaxed md:text-[1.18rem]">Every run audits your website and reads the answers you were left out of, then hands you a ranked queue of specific work — each action carrying the quoted evidence that argues for it.</p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a href="https://dashboard.opensight.app/signup" class="button-primary">Get my action queue <span aria-hidden="true">↗</span></a>
-            <a href="#checklist" class="button-ghost">See the 17 checks <span aria-hidden="true">↓</span></a>
+            <a href="/monitor/" class="button-ghost">See Monitor <span aria-hidden="true">→</span></a>
           </div>
           <p class="text-moss mt-4 text-[0.84rem]">Included in the S$50/month plan, with Monitor.</p>
         </div>
@@ -96,16 +98,16 @@
           <div class="noise border-line overflow-hidden rounded-2xl border bg-white shadow-[0_35px_90px_-42px_rgba(28,25,23,.38)]">
             <div class="border-line flex items-center justify-between border-b bg-stone-100 px-5 py-3">
               <span class="stat-label">Next actions · 20 Jul</span>
-              <span class="border-line rounded-full border bg-white px-2.5 py-1 font-mono text-[0.58rem]">4 ACTIVE</span>
+              <span class="border-line rounded-full border bg-white px-2.5 py-1 font-mono text-[0.58rem]">RANKED</span>
             </div>
 
             <article class="border-line border-b p-5 sm:p-6">
               <div class="text-moss flex flex-wrap items-center gap-2 font-mono text-[0.58rem] tracking-wider uppercase">
                 <span class="bg-pine rounded px-1.5 py-0.5 text-white">Blocking</span>
-                <span class="bg-paper rounded px-1.5 py-0.5">Website access</span><span>·</span><span>Affects all 20 answers</span>
+                <span class="bg-paper rounded px-1.5 py-0.5">Website access</span><span>·</span><span>Affects every answer</span>
               </div>
               <h2 class="font-display mt-3 text-[1.12rem] leading-snug font-bold">Your services page tells crawlers not to index it.</h2>
-              <p class="text-moss mt-2 text-[0.88rem] leading-relaxed">A <code class="font-mono text-[0.82em]">noindex</code> directive was found on 2 of 6 pages read, including /services.</p>
+              <p class="text-moss mt-2 text-[0.88rem] leading-relaxed">A <code class="font-mono text-[0.82em]">noindex</code> directive was found on 2 of the 6 pages read, including /services.</p>
               <div class="border-line mt-4 rounded-lg border bg-paper px-4 py-3 text-[0.82rem]">
                 <p class="stat-label">Steps</p>
                 <p class="mt-2">1. Remove the <code class="font-mono text-[0.82em]">robots</code> meta tag from /services and /team.</p>
@@ -117,7 +119,7 @@
                 <span class="bg-paper rounded px-1.5 py-0.5">Website content</span><span>·</span><span>Affects 6 answers</span>
               </div>
               <h2 class="font-display mt-3 text-[1.12rem] leading-snug font-bold">Your site never mentions same-day emergency callouts.</h2>
-              <p class="text-moss mt-2 text-[0.88rem] leading-relaxed">Three answers that omitted you cited pages where a competitor states it plainly.</p>
+              <p class="text-moss mt-2 text-[0.88rem] leading-relaxed">Answers that omitted you cited pages where a competitor states it plainly.</p>
             </article>
           </div>
         </div>
@@ -125,189 +127,149 @@
     </div>
   </section>
 
-  <section class="border-line border-y bg-white">
-    <div class="site-shell grid grid-cols-2 gap-x-6 gap-y-7 py-8 md:grid-cols-4 md:py-9">
-      <div class="metric-rule"><strong class="font-display block text-lg">17 site checks</strong><span class="text-moss text-sm">every run, always all of them</span></div>
-      <div class="metric-rule"><strong class="font-display block text-lg">5 kinds of work</strong><span class="text-moss text-sm">filter to one afternoon’s job</span></div>
-      <div class="metric-rule"><strong class="font-display block text-lg">Quoted evidence</strong><span class="text-moss text-sm">theirs and yours, side by side</span></div>
-      <div class="metric-rule"><strong class="font-display block text-lg">No grade</strong><span class="text-moss text-sm">no score, no health index</span></div>
-    </div>
-  </section>
-
-  <section class="site-shell py-24 md:py-28">
-    <div class="reveal grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
-      <div>
-        <p class="eyebrow">Where actions come from</p>
-        <h2 class="section-title max-w-[13ch]">Two sources. No generic advice.</h2>
-      </div>
-      <div class="max-w-[42rem] lg:pt-10">
-        <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Most “AI SEO” advice is the same checklist handed to everyone. Improve only tells you things it can point at.</p>
-        <p class="text-moss mt-5 text-lg">Half comes from a deterministic audit of your own website — facts about the web that are true for a clinic and a software company alike. The other half comes from your monitored answers: the sources ChatGPT cited when it recommended somebody else, read page by page and compared against what your site actually says.</p>
-      </div>
-    </div>
-
-    <div class="mt-14 grid gap-4 lg:grid-cols-2">
-      <article class="reveal panel p-7 md:p-9">
-        <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Source 01 · Site audit</p>
-        <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">Seventeen checks against your own site.</h3>
-        <p class="text-moss mt-4">Reachability, crawler access, indexing directives, sitemaps, canonicals, titles, and the structured data that states who and where you are. A failed check that has a fix becomes an action; the rest stay on the checklist as evidence.</p>
-      </article>
-      <article class="reveal panel bg-stone-100 p-7 md:p-9">
-        <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Source 02 · Monitored answers</p>
-        <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">The pages that won the answers you lost.</h3>
-        <p class="text-moss mt-4">When a source is cited across answers that omit you, OpenSight reads it. If it is a directory you are missing from, that is a listing to get. If it is a competitor’s page making a claim your site never makes, that is a content gap.</p>
-      </article>
-    </div>
-  </section>
-
   <section class="border-line border-y bg-stone-100">
     <div class="site-shell py-24 md:py-32">
-      <div class="reveal max-w-[42rem]">
-        <p class="eyebrow">The comparison</p>
-        <h2 class="section-title max-w-[16ch]">What they say. What you don’t.</h2>
-        <p class="text-moss mt-6 text-lg">The claim behind a content action is that a recommendation went elsewhere over something you never said. A summary of that claim is unverifiable, so Improve quotes both sides — the cited passage that won the answer, and the closest thing your own site says.</p>
+      <div class="reveal grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
+        <div>
+          <p class="eyebrow">Where actions come from</p>
+          <h2 class="section-title max-w-[13ch]">Nothing we can’t point at.</h2>
+        </div>
+        <div class="max-w-[42rem] lg:pt-10">
+          <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Most “AI SEO” advice is the same checklist handed to everyone.</p>
+          <p class="text-moss mt-5 text-lg">Improve reads two things you actually own the outcome of: your website, and the answers where a customer was recommended somebody else.</p>
+        </div>
       </div>
 
-      <div class="reveal panel mt-12 overflow-hidden">
-        <div class="border-line flex flex-wrap items-center gap-2 border-b px-5 py-4 font-mono text-[0.6rem] tracking-wider uppercase md:px-8">
-          <span class="bg-paper text-pine rounded px-2 py-1">Website content</span><span class="text-moss">·</span><span class="text-moss">Affects 6 answers</span>
-        </div>
-        <div class="p-5 md:p-8">
-          <h3 class="font-display text-2xl leading-tight font-bold tracking-tight">Your site never states that root canal treatment is completed in a single visit.</h3>
-          <p class="text-moss mt-3 max-w-[46rem]">Across three answers that recommended another clinic, the cited pages each led with single-visit treatment. Your services page describes the procedure but not how many appointments it takes.</p>
-
-          <div class="mt-8 grid gap-4 md:grid-cols-2">
-            <div>
-              <p class="stat-label mb-3">What the cited pages said</p>
-              <div class="grid gap-3">
-                <figure class="quote-card m-0">
-                  <blockquote class="text-[0.94rem] leading-relaxed">“Most root canals here are completed in a single 90-minute appointment.”</blockquote>
-                  <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · clinicgeek.com</figcaption>
-                </figure>
-                <figure class="quote-card m-0">
-                  <blockquote class="text-[0.94rem] leading-relaxed">“Single-visit endodontics for most cases, with same-week appointments.”</blockquote>
-                  <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · marlowedental.sg</figcaption>
-                </figure>
-              </div>
-            </div>
-            <div>
-              <p class="stat-label mb-3">What your site says</p>
-              <figure class="quote-card m-0 bg-white">
-                <blockquote class="text-[0.94rem] leading-relaxed">“We provide root canal treatment using modern rotary instrumentation and digital imaging.”</blockquote>
-                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">YOUR SITE · /services</figcaption>
-              </figure>
-              <p class="text-moss mt-3 text-[0.88rem]"><b class="text-ink">Covered, but not with the detail cited alongside.</b></p>
-            </div>
-          </div>
-
-          <div class="border-line mt-8 rounded-xl border bg-paper p-5">
-            <p class="stat-label">What to do</p>
-            <p class="mt-2 text-[0.96rem]">If single-visit treatment is something you offer, say so on the services page in those words, with the typical appointment length.</p>
-            <p class="text-moss mt-4 text-[0.82rem] italic">Publish only what is true of your practice. OpenSight never asks you to copy a competitor or claim an outcome you cannot support.</p>
-          </div>
-        </div>
+      <div class="mt-12 grid gap-4 lg:grid-cols-2">
+        <article class="reveal panel p-7 md:p-9">
+          <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Your site</p>
+          <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">A deterministic audit, run every week.</h3>
+          <p class="text-moss mt-4">Reachability, crawler access, indexing directives, sitemaps, canonicals, titles, and the structured data that states who and where you are. A failed check that has a fix becomes an action.</p>
+        </article>
+        <article class="reveal panel bg-white p-7 md:p-9">
+          <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Your answers</p>
+          <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">The pages that won the answers you lost.</h3>
+          <p class="text-moss mt-4">When a source is cited across answers that omit you, OpenSight reads it. A directory you are missing from is a listing to get. A competitor’s page making a claim your site never makes is a content gap.</p>
+        </article>
       </div>
     </div>
   </section>
 
   <section class="site-shell py-24 md:py-32">
-    <div class="reveal flex flex-col justify-between gap-6 md:flex-row md:items-end">
-      <div>
-        <p class="eyebrow">One queue, ranked</p>
-        <h2 class="section-title max-w-[15ch]">Sorted by what to do first, not by what scores worst.</h2>
+    <div class="reveal max-w-[42rem]">
+      <p class="eyebrow">The comparison</p>
+      <h2 class="section-title max-w-[16ch]">What they say. What you don’t.</h2>
+      <p class="text-moss mt-6 text-lg">The claim behind a content action is that a recommendation went elsewhere over something you never said. A summary of that claim is unverifiable, so Improve quotes both sides.</p>
+    </div>
+
+    <div class="reveal panel mt-12 overflow-hidden">
+      <div class="border-line flex flex-wrap items-center gap-2 border-b px-5 py-4 font-mono text-[0.6rem] tracking-wider uppercase md:px-8">
+        <span class="bg-paper text-pine rounded px-2 py-1">Website content</span><span class="text-moss">·</span><span class="text-moss">Affects 6 answers</span>
       </div>
-      <p class="text-moss max-w-[28rem]">Blockers come first. Then work on your own site, because it is entirely within your control, before work that depends on a third party accepting you. Reach breaks the ties.</p>
-    </div>
+      <div class="p-5 md:p-8">
+        <h3 class="font-display text-2xl leading-tight font-bold tracking-tight">Your site never states that root canal treatment is completed in a single visit.</h3>
+        <p class="text-moss mt-3 max-w-[46rem]">Across answers that recommended another clinic, the cited pages each led with single-visit treatment. Your services page describes the procedure but not how many appointments it takes.</p>
 
-    <div class="mt-12 grid gap-3 md:grid-cols-5">
-      <div class="reveal panel p-5"><p class="font-mono text-pine text-[0.62rem] tracking-wider uppercase">01</p><p class="font-display mt-6 font-bold">Website access</p><p class="text-moss mt-2 text-[0.85rem]">Reachability, crawlers, indexing.</p></div>
-      <div class="reveal panel p-5"><p class="font-mono text-pine text-[0.62rem] tracking-wider uppercase">02</p><p class="font-display mt-6 font-bold">Site structure</p><p class="text-moss mt-2 text-[0.85rem]">Sitemaps, canonicals, titles.</p></div>
-      <div class="reveal panel p-5"><p class="font-mono text-pine text-[0.62rem] tracking-wider uppercase">03</p><p class="font-display mt-6 font-bold">Business details</p><p class="text-moss mt-2 text-[0.85rem]">Structured data, phone, address, hours.</p></div>
-      <div class="reveal panel p-5"><p class="font-mono text-pine text-[0.62rem] tracking-wider uppercase">04</p><p class="font-display mt-6 font-bold">Website content</p><p class="text-moss mt-2 text-[0.85rem]">What your pages say, and don’t.</p></div>
-      <div class="reveal panel bg-stone-100 p-5"><p class="font-mono text-pine text-[0.62rem] tracking-wider uppercase">05</p><p class="font-display mt-6 font-bold">Listings &amp; directories</p><p class="text-moss mt-2 text-[0.85rem]">The third-party sources AI keeps citing.</p></div>
-    </div>
-
-    <div class="reveal mt-4 grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
-      <article class="panel p-7 md:p-9">
-        <p class="eyebrow">Ready to hand off</p>
-        <h3 class="font-display text-2xl leading-tight font-bold tracking-tight">Most of this is edits to a codebase.</h3>
-        <p class="text-moss mt-4">So every action copies itself as text — the finding, the evidence, the steps and the sources it was read from — ready to paste into your developer’s inbox or straight into a coding agent. Nothing is added that is not on the card.</p>
-        <div class="border-line mt-7 rounded-xl border bg-paper p-4 font-mono text-[0.78rem] leading-relaxed">
-          <p class="text-moss"># Your services page tells crawlers not to index it</p>
-          <p class="mt-2">**Category:** Website access · **Affects:** 20 answers</p>
-          <p class="mt-2">## Steps</p>
-          <p>1. Remove the `robots` meta tag from /services…</p>
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <div>
+            <p class="stat-label mb-3">What the cited pages said</p>
+            <div class="grid gap-3">
+              <figure class="quote-card m-0">
+                <blockquote class="text-[0.94rem] leading-relaxed">“Most root canals here are completed in a single 90-minute appointment.”</blockquote>
+                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · clinicgeek.com</figcaption>
+              </figure>
+              <figure class="quote-card m-0">
+                <blockquote class="text-[0.94rem] leading-relaxed">“Single-visit endodontics for most cases, with same-week appointments.”</blockquote>
+                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · marlowedental.sg</figcaption>
+              </figure>
+            </div>
+          </div>
+          <div>
+            <p class="stat-label mb-3">What your site says</p>
+            <figure class="quote-card m-0 bg-white">
+              <blockquote class="text-[0.94rem] leading-relaxed">“We provide root canal treatment using modern rotary instrumentation and digital imaging.”</blockquote>
+              <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">YOUR SITE · /services</figcaption>
+            </figure>
+            <p class="text-moss mt-3 text-[0.88rem]"><b class="text-ink">Covered, but not with the detail cited alongside.</b></p>
+          </div>
         </div>
-      </article>
-      <article class="bg-pinedeep noise rounded-2xl p-7 text-white md:p-9">
-        <p class="font-mono text-[0.72rem] tracking-[0.16em] text-white/55 uppercase">Lifecycle</p>
-        <h3 class="font-display mt-4 text-2xl leading-tight font-bold tracking-tight">Done means done, until the evidence says otherwise.</h3>
-        <ul class="mt-6 grid list-none gap-4 p-0 text-[0.95rem] text-white/70">
-          <li class="flex gap-3"><span class="text-white/40">→</span><span>Complete an action and it leaves the queue.</span></li>
-          <li class="flex gap-3"><span class="text-white/40">→</span><span>If a later run finds the same problem again, it reopens.</span></li>
-          <li class="flex gap-3"><span class="text-white/40">→</span><span>Dismiss one and it stays dismissed, however often it recurs.</span></li>
-        </ul>
-      </article>
+
+        <div class="border-line mt-8 rounded-xl border bg-paper p-5">
+          <p class="stat-label">What to do</p>
+          <p class="mt-2 text-[0.96rem]">If single-visit treatment is something you offer, say so on the services page in those words, with the typical appointment length.</p>
+          <p class="text-moss mt-4 text-[0.82rem] italic">Publish only what is true of your practice. OpenSight never asks you to copy a competitor or claim an outcome you cannot support.</p>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="border-line border-y bg-stone-100" id="checklist">
-    <div class="site-shell py-24 md:py-32">
-      <div class="reveal flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div>
-          <p class="eyebrow">The visibility checklist</p>
-          <h2 class="section-title max-w-[15ch]">All 17 checks. Every run. Nothing hidden.</h2>
+  <section class="border-line border-y bg-stone-100">
+    <div class="site-shell grid items-center gap-12 py-20 md:py-24 lg:grid-cols-[1fr_1fr] lg:gap-20">
+      <div class="reveal">
+        <p class="eyebrow">Ready to hand off</p>
+        <h2 class="font-display text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">Most of this is edits to a codebase.</h2>
+        <p class="text-moss mt-5">So every action copies itself as text — the finding, the evidence, the steps and the sources it was read from — ready to paste into your developer’s inbox or straight into a coding agent. Nothing is added that is not on the card.</p>
+      </div>
+      <div class="reveal border-line rounded-xl border bg-white p-5 font-mono text-[0.78rem] leading-relaxed md:p-6">
+        <p class="text-moss"># Your services page tells crawlers not to index it</p>
+        <p class="mt-2">**Category:** Website access · **Affects:** every answer</p>
+        <p class="mt-2">## Steps</p>
+        <p>1. Remove the `robots` meta tag from /services…</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="site-shell py-24 md:py-32" id="checklist">
+    <div class="reveal flex flex-col justify-between gap-6 md:flex-row md:items-end">
+      <div>
+        <p class="eyebrow">The visibility checklist</p>
+        <h2 class="section-title max-w-[15ch]">Every check. Every run. Nothing hidden.</h2>
+      </div>
+      <p class="text-moss max-w-[27rem]">The queue shows what to do. The checklist shows everything that was examined — including what passed — with the exact evidence behind each verdict.</p>
+    </div>
+
+    <div class="mt-12 grid gap-4 lg:grid-cols-3">
+      <article class="reveal panel p-6 md:p-7">
+        <div class="border-line flex items-center justify-between border-b pb-4">
+          <p class="font-display font-bold">Access</p>
+          <span class="text-moss font-mono text-[0.65rem]">1 to fix</span>
         </div>
-        <p class="text-moss max-w-[28rem]">The queue shows what to do. The checklist shows everything that was examined — including what passed — with the exact evidence behind each verdict. Same list every visit, so you can read it like a record.</p>
-      </div>
+        <div class="mt-2">
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Your website is reachable</span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>No login wall in the way</span></div>
+          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Pages allow indexing<span class="text-moss block text-[0.8rem]">2 of the 6 pages read carry a noindex directive.</span></span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>OpenAI’s search crawler is allowed</span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-moss">i</span><span>Model-training crawler<span class="text-moss block text-[0.8rem]">Blocked — a legitimate choice, not a shortfall.</span></span></div>
+        </div>
+      </article>
 
-      <div class="mt-12 grid gap-4 lg:grid-cols-3">
-        <article class="reveal panel p-6 md:p-7">
-          <div class="border-line flex items-center justify-between border-b pb-4">
-            <p class="font-display font-bold">Access</p>
-            <span class="text-moss font-mono text-[0.65rem]">5 of 6 passed</span>
-          </div>
-          <div class="mt-2">
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Your website is reachable</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>No login wall in the way</span></div>
-            <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Pages allow indexing<span class="text-moss block text-[0.8rem]">2 of 6 pages carry a noindex directive.</span></span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>OpenAI’s search crawler is allowed</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>ChatGPT’s browsing agent is allowed</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-moss">i</span><span>Model-training crawler<span class="text-moss block text-[0.8rem]">Blocked — a legitimate choice, not a shortfall.</span></span></div>
-          </div>
-        </article>
+      <article class="reveal panel p-6 md:p-7">
+        <div class="border-line flex items-center justify-between border-b pb-4">
+          <p class="font-display font-bold">Structure</p>
+          <span class="text-moss font-mono text-[0.65rem]">2 to fix</span>
+        </div>
+        <div class="mt-2">
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>A sitemap is published</span></div>
+          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>robots.txt points to the sitemap</span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Pages declare a canonical URL</span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Business name in the homepage title</span></div>
+          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Every page has a meta description</span></div>
+        </div>
+      </article>
 
-        <article class="reveal panel p-6 md:p-7">
-          <div class="border-line flex items-center justify-between border-b pb-4">
-            <p class="font-display font-bold">Structure</p>
-            <span class="text-moss font-mono text-[0.65rem]">4 of 6 passed</span>
-          </div>
-          <div class="mt-2">
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>A sitemap is published</span></div>
-            <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>robots.txt points to the sitemap</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Pages declare a canonical URL</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Page titles are unique</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Business name in the homepage title</span></div>
-            <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Every page has a meta description</span></div>
-          </div>
-        </article>
-
-        <article class="reveal panel p-6 md:p-7">
-          <div class="border-line flex items-center justify-between border-b pb-4">
-            <p class="font-display font-bold">Identity</p>
-            <span class="text-moss font-mono text-[0.65rem]">2 of 5 passed</span>
-          </div>
-          <div class="mt-2">
-            <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Structured data is published<span class="text-moss block text-[0.8rem]">No JSON-LD found on any page read.</span></span></div>
-            <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>It declares a business type</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>A phone number machines can read</span></div>
-            <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>A postal address is published</span></div>
-            <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Opening hours are published</span></div>
-          </div>
-        </article>
-      </div>
-
-      <p class="text-moss reveal mt-8 max-w-[46rem] text-[0.95rem]">Counts are absolute — passed of total. There is no percentage, no letter grade, and no filter that hides the parts you would rather not read. A check that could not be verified says so instead of guessing.</p>
+      <article class="reveal panel p-6 md:p-7">
+        <div class="border-line flex items-center justify-between border-b pb-4">
+          <p class="font-display font-bold">Identity</p>
+          <span class="text-moss font-mono text-[0.65rem]">3 to fix</span>
+        </div>
+        <div class="mt-2">
+          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Structured data is published<span class="text-moss block text-[0.8rem]">No JSON-LD found on any page read.</span></span></div>
+          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>It declares a business type</span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>A phone number machines can read</span></div>
+          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>A postal address is published</span></div>
+          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Opening hours are published</span></div>
+        </div>
+      </article>
     </div>
   </section>
 
@@ -320,39 +282,28 @@
       </div>
       <div class="reveal grid gap-4">
         <div class="rounded-2xl bg-white/[0.06] p-6 md:p-7">
-          <p class="font-display text-lg font-bold">An empty queue says what it means.</p>
-          <p class="mt-2 text-white/65">“No actions found in the latest evidence” — not “your site is healthy”.</p>
-        </div>
-        <div class="rounded-2xl bg-white/[0.06] p-6 md:p-7">
           <p class="font-display text-lg font-bold">Nothing is invented.</p>
           <p class="mt-2 text-white/65">A passage is quoted back to you only if it genuinely appears on the page it is attributed to. Where your details are unknown, the wording stays conditional.</p>
         </div>
         <div class="rounded-2xl bg-white/[0.06] p-6 md:p-7">
-          <p class="font-display text-lg font-bold">Every action names its sources.</p>
-          <p class="mt-2 text-white/65">The pages read, the answers behind it, and the run it came from are all one click away.</p>
+          <p class="font-display text-lg font-bold">Done means done, until the evidence says otherwise.</p>
+          <p class="mt-2 text-white/65">Complete an action and it leaves the queue. If a later run finds the same problem, it reopens. Dismiss one and it stays dismissed.</p>
+        </div>
+        <div class="rounded-2xl bg-white/[0.06] p-6 md:p-7">
+          <p class="font-display text-lg font-bold">An empty queue says what it means.</p>
+          <p class="mt-2 text-white/65">“No actions found in the latest evidence” — not “your site is healthy”.</p>
         </div>
       </div>
     </div>
   </section>
 
   <section class="site-shell py-24 md:py-32">
-    <div class="reveal border-line grid items-center gap-10 rounded-2xl border bg-stone-100 p-7 md:p-12 lg:grid-cols-[1fr_auto]">
-      <div>
-        <p class="eyebrow">The other half</p>
-        <h2 class="font-display max-w-[24ch] text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">Improve is only as good as what it reads.</h2>
-        <p class="text-moss mt-4 max-w-[38rem]">Its evidence comes from Monitor: 20 customer questions run against ChatGPT every week, with every answer, mention and citation kept. Both products are in the one plan.</p>
-      </div>
-      <a href="/monitor/" class="button-primary">Explore Monitor <span aria-hidden="true">→</span></a>
-    </div>
-  </section>
-
-  <section class="site-shell pb-24 md:pb-32">
     <div class="reveal border-line relative overflow-hidden rounded-2xl border bg-white px-6 py-14 text-center shadow-[0_30px_80px_-50px_rgba(28,25,23,.35)] md:px-12 md:py-20">
       <div class="bg-line/70 pointer-events-none absolute -top-32 left-1/2 size-96 -translate-x-1/2 rounded-full blur-[100px]" aria-hidden="true"></div>
       <div class="relative">
         <p class="eyebrow">Start with the evidence</p>
         <h2 class="section-title mx-auto max-w-[18ch]">Find out what is keeping you out of the answer.</h2>
-        <p class="text-moss mx-auto mt-5 max-w-[34rem]">Your first site audit and action queue arrive with your first monitoring run — the same day you sign up.</p>
+        <p class="text-moss mx-auto mt-5 max-w-[34rem]">Your first site audit and action queue arrive with your first <a href="/monitor/" class="text-pine underline underline-offset-4">monitoring</a> run — the same day you sign up.</p>
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <a href="https://dashboard.opensight.app/signup" class="button-primary">Get my action queue <span aria-hidden="true">↗</span></a>
           <a href="/pricing/" class="button-ghost">See pricing</a>
@@ -362,6 +313,7 @@
   </section>
 </main>
 
+<!-- partial:footer -->
 <footer class="border-line border-t bg-stone-100">
   <div class="site-shell grid gap-12 py-14 md:grid-cols-[1.4fr_.6fr_.6fr_.6fr] md:py-16">
     <div>
@@ -385,6 +337,7 @@
     <div class="site-shell text-moss flex flex-col gap-2 py-5 text-xs sm:flex-row sm:items-center sm:justify-between"><span>© 2026 OpenSight</span><span>Made with care in Singapore.</span></div>
   </div>
 </footer>
+<!-- /partial:footer -->
 <script src="/assets/site.js"></script>
 </body>
 </html>
