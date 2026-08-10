@@ -350,11 +350,21 @@ function hostOf(url: string) {
   }
 }
 
-// EvidenceComparison is the argument for a content action, side by side: what
-// answers said about competitors, and what the customer's own site says. Both
-// halves are quotations, because the claim being made — that a recommendation
-// went somewhere else over something they do not say — is one the user must be
-// able to check rather than take on trust.
+const panelHeading =
+  "text-xs font-medium tracking-wide text-muted-foreground uppercase"
+
+const quoteStyle = "border-l-2 pl-3 text-muted-foreground italic"
+
+// EvidenceComparison is the argument for a content action: what answers said
+// about competitors, and what the customer's own site says. Both halves are
+// quotations, because the claim being made — that a recommendation went
+// somewhere else over something they do not say — is one the user must be able
+// to check rather than take on trust.
+//
+// Two panels only when there are two things to compare. With no site passage to
+// quote there is no second side, and a panel the width of the evidence holding
+// one sentence reads as a rendering fault rather than as an absence; the verdict
+// becomes a line under the evidence instead.
 function EvidenceComparison({
   comparison,
   caption,
@@ -362,59 +372,57 @@ function EvidenceComparison({
   comparison: NonNullable<ImprovementAction["comparison"]>
   caption: string
 }) {
-  if (comparison.cited.length === 0 && comparison.site.length === 0) return null
+  const cited = comparison.cited
+  const site = comparison.site
+  if (cited.length === 0 && site.length === 0) return null
+  const paired = cited.length > 0 && site.length > 0
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <section className="rounded-lg border bg-muted/40 p-3">
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          What ChatGPT said instead
-        </h3>
-        <ul className="mt-2 flex flex-col gap-3">
-          {comparison.cited.map((quote) => (
-            <li key={quote.quote}>
-              <blockquote className="border-l-2 pl-3 text-muted-foreground italic">
-                {quote.quote}
-              </blockquote>
-              <p className="mt-1 pl-3 text-xs text-muted-foreground">
-                cited {quote.domain}
-              </p>
-            </li>
-          ))}
-        </ul>
-        {caption && (
-          <p className="mt-3 text-xs text-muted-foreground">{caption}</p>
-        )}
-      </section>
-      <section className="rounded-lg border p-3">
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          What your site says
-        </h3>
-        {comparison.site.length > 0 ? (
-          <>
-            <ul className="mt-2 flex flex-col gap-3">
-              {comparison.site.map((quote) => (
-                <li key={quote}>
-                  <blockquote className="border-l-2 pl-3 text-muted-foreground italic">
-                    {quote}
-                  </blockquote>
-                </li>
-              ))}
-            </ul>
-            {comparison.coverage === "partial" && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Closest wording we found, and it stops short of the detail cited
-                alongside.
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="mt-2 font-medium">
+    <div className={paired ? "grid gap-3 sm:grid-cols-2" : "flex flex-col"}>
+      {cited.length > 0 && (
+        <section className="rounded-lg border bg-muted/40 p-3">
+          <h3 className={panelHeading}>What ChatGPT said instead</h3>
+          <ul className="mt-2 flex flex-col gap-3">
+            {cited.map((quote) => (
+              <li key={quote.quote}>
+                <blockquote className={quoteStyle}>{quote.quote}</blockquote>
+                <p className="mt-1 pl-3 text-xs text-muted-foreground">
+                  cited {quote.domain}
+                </p>
+              </li>
+            ))}
+          </ul>
+          {caption && (
+            <p className="mt-3 text-xs text-muted-foreground">{caption}</p>
+          )}
+        </section>
+      )}
+      {site.length > 0 ? (
+        <section className="rounded-lg border p-3">
+          <h3 className={panelHeading}>What your site says</h3>
+          <ul className="mt-2 flex flex-col gap-3">
+            {site.map((quote) => (
+              <li key={quote}>
+                <blockquote className={quoteStyle}>{quote}</blockquote>
+              </li>
+            ))}
+          </ul>
+          {comparison.coverage === "partial" && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Closest wording we found, and it stops short of the detail cited
+              alongside.
+            </p>
+          )}
+        </section>
+      ) : (
+        <p className="mt-3 flex flex-wrap items-baseline gap-x-2 px-3">
+          <span className={panelHeading}>What your site says</span>
+          <span className="text-sm font-medium">
             {comparison.coverage === "partial"
               ? "Covered, but not with the detail cited alongside"
               : "Nothing on this subject"}
-          </p>
-        )}
-      </section>
+          </span>
+        </p>
+      )}
     </div>
   )
 }
