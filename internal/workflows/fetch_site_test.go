@@ -192,6 +192,89 @@ func TestSiteFetcherFallsBackToWWWWhenApexHasNoContent(t *testing.T) {
 	}
 }
 
+func TestSiteFetcherFallsBackToApexWhenWWWIsUnreachable(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{
+		client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			visited = append(visited, req.URL.String())
+			switch req.URL.String() {
+			case "https://www.example.com/":
+				return nil, errors.New("temporary DNS failure")
+			case "https://example.com/":
+				return testFetchResponse(req, http.StatusOK, "text/html", "<main>Example Clinic on apex</main>"), nil
+			default:
+				return testFetchResponse(req, http.StatusNotFound, "text/html", "missing"), nil
+			}
+		})),
+		textLimit:        fetchSiteTextLimit,
+		pageBodyLimit:    fetchSitePageBodyLimit,
+		sitemapBodyLimit: fetchSiteSitemapBodyLimit,
+		maxRequests:      fetchSiteMaxRequests,
+	}
+
+	out, err := fetcher.Fetch(context.Background(), FetchSiteInput{Website: "https://www.example.com"})
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(out.URLs) == 0 || out.URLs[0] != "https://example.com/" {
+		t.Fatalf("URLs = %#v, want apex homepage", out.URLs)
+	}
+	if len(visited) < 2 || visited[0] != "https://www.example.com/" || visited[1] != "https://example.com/" {
+		t.Fatalf("visited = %#v, want www then apex", visited)
+	}
+}
+
+func TestNormalizeSameSiteFetchURL(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		raw  string
+		want string
+	}{
+		{name: "www alias and stale scheme", raw: "http://www.example.com/treatment/", want: "https://www.example.com/treatment/"},
+		{name: "apex alias from www", base: "https://www.example.com/", raw: "http://example.com/about", want: "https://example.com/about"},
+		{name: "stale scheme on same host", raw: "http://example.com/about", want: "https://example.com/about"},
+		{name: "relative reference", raw: "/services", want: "https://example.com/services"},
+		{name: "arbitrary subdomain", raw: "https://app.example.com/about"},
+		{name: "unrelated host", raw: "https://elsewhere.example/about"},
+		{name: "lookalike suffix", raw: "https://notexample.com/about"},
+		{name: "different port", raw: "https://www.example.com:8443/about"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.base == "" {
+				tt.base = "https://example.com/"
+			}
+			base, err := parseFetchURL(tt.base)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, ok := normalizeSameSiteFetchURL(base, tt.raw, true)
+			if tt.want == "" {
+				if ok {
+					t.Fatalf("normalizeSameSiteFetchURL(%q) = %s, want rejected", tt.raw, got)
+				}
+				return
+			}
+			if !ok || got.String() != tt.want {
+				t.Fatalf("normalizeSameSiteFetchURL(%q) = %v, %t; want %s", tt.raw, got, ok, tt.want)
+			}
+		})
+	}
+}
+
+func TestConventionalHostVariantURLRejectsArbitrarySubdomainsAndPublicSuffixes(t *testing.T) {
+	for _, raw := range []string{"https://app.example.com", "https://co.uk"} {
+		target, err := parseFetchURL(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := conventionalHostVariantURL(target); got != nil {
+			t.Fatalf("conventionalHostVariantURL(%q) = %s, want nil", raw, got)
+		}
+	}
+}
+
 func TestSiteFetcherReadsNavigationBeforeGuessedPaths(t *testing.T) {
 	var visited []string
 	fetcher := &siteFetcher{

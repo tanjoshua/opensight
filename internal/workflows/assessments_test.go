@@ -231,6 +231,39 @@ func TestScanOwnedSiteVerdicts(t *testing.T) {
 	}
 }
 
+func TestScanOwnedSiteUsesServingHostForRobots(t *testing.T) {
+	var visited []string
+	fetcher := &siteFetcher{client: testFetchHTTPClient(roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		visited = append(visited, req.URL.String())
+		switch req.URL.String() {
+		case "https://example.com/":
+			return testFetchResponse(req, http.StatusOK, "text/html", "\n"), nil
+		case "https://www.example.com/":
+			return testFetchResponse(req, http.StatusOK, "text/html", `<main>Example Clinic homepage</main>`), nil
+		case "https://www.example.com/robots.txt":
+			return testFetchResponse(req, http.StatusNotFound, "text/plain", ""), nil
+		case "https://example.com/robots.txt":
+			return testFetchResponse(req, http.StatusServiceUnavailable, "text/plain", ""), nil
+		default:
+			return testFetchResponse(req, http.StatusNotFound, "text/html", ""), nil
+		}
+	}))}
+
+	scan := scanOwnedSite(context.Background(), fetcher, "https://example.com")
+	if scan.Host != "www.example.com" {
+		t.Fatalf("Host = %q, want serving host www.example.com", scan.Host)
+	}
+	if scan.RobotsFailure != "" {
+		t.Fatalf("RobotsFailure = %q, want successful www robots inspection", scan.RobotsFailure)
+	}
+	if !containsString(visited, "https://www.example.com/robots.txt") {
+		t.Fatalf("visited = %#v, want www robots.txt", visited)
+	}
+	if containsString(visited, "https://example.com/robots.txt") {
+		t.Fatalf("visited = %#v, must not inspect robots.txt on the unused apex", visited)
+	}
+}
+
 // TestScanOwnedSiteCapturesPageFactsWithoutExtraRequests is the guard on the
 // premise of the structure and identity practices: every fact they read comes
 // out of markup the scan already fetched for search access, so adding those

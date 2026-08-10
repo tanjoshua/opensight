@@ -22,6 +22,7 @@ import (
 
 	"go.temporal.io/sdk/temporal"
 	"golang.org/x/net/html"
+	"golang.org/x/net/publicsuffix"
 )
 
 const (
@@ -323,13 +324,12 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 	}
 
 	home, err := f.fetchHTMLPage(ctx, startURL, &requests)
-	// Some sites publish their real homepage on www but leave the apex host
-	// answering 200 with an empty body instead of redirecting. Treat www as the
-	// one conventional host alias we can discover without crawling arbitrary
-	// subdomains. The alternate still passes the same DNS/IP and redirect SSRF
-	// checks as every other request.
-	if errors.Is(err, errUnusablePage) && !errors.Is(err, errAuthBarrier) {
-		if alternate := wwwFetchURL(startURL); alternate != nil {
+	// A registrable apex and its exact www alias are the one host pair we can
+	// safely infer without crawling arbitrary subdomains. Try the sibling when
+	// the configured entry page is unusable or transiently unreachable, but do
+	// not route around an authentication barrier, unsafe target, or cancellation.
+	if err != nil && !errors.Is(err, errAuthBarrier) && !errors.Is(err, errUnsafeFetchURL) && ctx.Err() == nil {
+		if alternate := conventionalHostVariantURL(startURL); alternate != nil {
 			alternateHome, alternateErr := f.fetchHTMLPage(ctx, alternate, &requests)
 			switch {
 			case alternateErr == nil:
@@ -368,7 +368,7 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 
 	if home != nil {
 		for _, href := range home.NavHrefs {
-			if candidate, ok := normalizeSameOriginFetchURL(home.URL, href, false); ok {
+			if candidate, ok := normalizeSameSiteFetchURL(home.URL, href, false); ok {
 				enqueue(candidate)
 			}
 		}
@@ -457,18 +457,30 @@ func (f *siteFetcher) Fetch(ctx context.Context, in FetchSiteInput) (FetchSiteOu
 	return out, nil
 }
 
-func wwwFetchURL(source *url.URL) *url.URL {
+func conventionalHostVariantURL(source *url.URL) *url.URL {
 	if source == nil {
 		return nil
 	}
-	hostname := strings.ToLower(source.Hostname())
-	if hostname == "" || strings.HasPrefix(hostname, "www.") || net.ParseIP(hostname) != nil {
+	hostname := strings.ToLower(strings.TrimSuffix(source.Hostname(), "."))
+	registrable, err := publicsuffix.EffectiveTLDPlusOne(hostname)
+	if err != nil {
 		return nil
 	}
+
+	var alternateHostname string
+	switch hostname {
+	case registrable:
+		alternateHostname = "www." + registrable
+	case "www." + registrable:
+		alternateHostname = registrable
+	default:
+		return nil
+	}
+
 	alternate := *source
-	alternate.Host = "www." + hostname
+	alternate.Host = alternateHostname
 	if port := source.Port(); port != "" {
-		alternate.Host = net.JoinHostPort("www."+hostname, port)
+		alternate.Host = net.JoinHostPort(alternateHostname, port)
 	}
 	return &alternate
 }
@@ -563,7 +575,7 @@ func (f *siteFetcher) fetchSitemap(ctx context.Context, origin, target *url.URL,
 	var pageCandidates []*url.URL
 	var childSitemaps []*url.URL
 	for _, loc := range locs {
-		candidate, ok := normalizeSameOriginFetchURL(origin, loc, true)
+		candidate, ok := normalizeSameSiteFetchURL(origin, loc, true)
 		if !ok {
 			continue
 		}
@@ -779,7 +791,7 @@ func originWithPath(origin *url.URL, p string) *url.URL {
 	return &next
 }
 
-func normalizeSameOriginFetchURL(base *url.URL, raw string, allowSitemap bool) (*url.URL, bool) {
+func normalizeSameSiteFetchURL(base *url.URL, raw string, allowSitemap bool) (*url.URL, bool) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil, false
@@ -795,8 +807,13 @@ func normalizeSameOriginFetchURL(base *url.URL, raw string, allowSitemap bool) (
 	if candidate.Path == "" {
 		candidate.Path = "/"
 	}
-	if !sameFetchOrigin(base, candidate) {
+	if !sameFetchSite(base, candidate) {
 		return nil, false
+	}
+	// A sitemap or navigation link may retain an old http spelling after the
+	// site moves to https. Never downgrade an https crawl for that stale link.
+	if strings.EqualFold(base.Scheme, "https") {
+		candidate.Scheme = "https"
 	}
 	if err := validateFetchURL(candidate); err != nil {
 		return nil, false
@@ -815,8 +832,25 @@ func normalizeSameOriginFetchURL(base *url.URL, raw string, allowSitemap bool) (
 	return candidate, true
 }
 
-func sameFetchOrigin(a, b *url.URL) bool {
-	return strings.EqualFold(a.Scheme, b.Scheme) && strings.EqualFold(a.Host, b.Host)
+func sameFetchSite(a, b *url.URL) bool {
+	if a == nil || b == nil || a.Port() != b.Port() {
+		return false
+	}
+	aHost := strings.ToLower(strings.TrimSuffix(a.Hostname(), "."))
+	bHost := strings.ToLower(strings.TrimSuffix(b.Hostname(), "."))
+	if aHost == bHost {
+		return true
+	}
+	aRegistrable, aErr := publicsuffix.EffectiveTLDPlusOne(aHost)
+	bRegistrable, bErr := publicsuffix.EffectiveTLDPlusOne(bHost)
+	if aErr != nil || bErr != nil || aRegistrable != bRegistrable {
+		return false
+	}
+	return conventionalSiteHost(aHost, aRegistrable) && conventionalSiteHost(bHost, bRegistrable)
+}
+
+func conventionalSiteHost(host, registrable string) bool {
+	return host == registrable || host == "www."+registrable
 }
 
 func canonicalFetchURLKey(target *url.URL) string {

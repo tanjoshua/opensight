@@ -244,9 +244,17 @@ func scanOwnedSite(ctx context.Context, fetcher *siteFetcher, website string) vi
 		return scan
 	}
 
-	robots := *u
+	robotsBase := u
+	if len(scan.CheckedURLs) > 0 {
+		if served, parseErr := url.Parse(scan.CheckedURLs[0]); parseErr == nil && served.IsAbs() {
+			robotsBase = served
+			scan.Host = strings.ToLower(served.Hostname())
+		}
+	}
+	robots := *robotsBase
 	robots.Path = "/robots.txt"
 	robots.RawQuery = ""
+	robots.Fragment = ""
 	report, robotsErr := inspectRobots(ctx, fetcher.client, robots.String(), checkedPaths(scan.CheckedURLs))
 	scan.CheckedURLs = append(scan.CheckedURLs, robots.String())
 	if robotsErr != nil {
