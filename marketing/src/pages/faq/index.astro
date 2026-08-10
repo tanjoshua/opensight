@@ -1,0 +1,67 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Questions, answered — OpenSight" description="Straight answers about how OpenSight measures your business in ChatGPT, what it stores, and what you need to set it up." ogDescription="Everything you need to know about OpenSight and AI visibility monitoring.">
+<main>
+  <section class="relative overflow-hidden pt-14 pb-16 md:pt-20 md:pb-20">
+    <div class="grid-field pointer-events-none absolute inset-0" aria-hidden="true"></div>
+    <div class="site-shell relative">
+      <div class="reveal max-w-[46rem]">
+        <p class="eyebrow">No fine print</p>
+        <h1 class="font-display text-[clamp(2.35rem,5vw,4.35rem)] leading-[1] font-extrabold tracking-[-0.04em]">The details,<br>without the fine print.</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-line border-y bg-white">
+    <div class="site-shell grid gap-12 py-20 md:py-24 lg:grid-cols-[.5fr_1.5fr] lg:gap-20">
+      <aside class="reveal lg:sticky lg:top-28 lg:self-start">
+        <p class="text-moss max-w-[18rem] text-sm">Can’t find your question? Write to <a href="mailto:hello@opensight.app" class="text-pine underline underline-offset-4">hello@opensight.app</a>.</p>
+      </aside>
+
+      <div class="reveal space-y-3">
+        <details class="faq-item border-line group rounded-xl border bg-paper px-5 py-1 transition-colors md:px-6" open>
+          <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[1.05rem] font-bold [&::-webkit-details-marker]:hidden">
+            Is this exactly what a customer sees in ChatGPT?
+            <span class="border-line grid size-8 shrink-0 place-items-center rounded-full border font-mono text-lg group-open:rotate-45 transition-transform" aria-hidden="true">+</span>
+          </summary>
+          <p class="text-moss max-w-[45rem] pb-6 text-[0.97rem]">Very close, with one important difference: OpenSight queries OpenAI’s models through the official API with web search enabled, without any one user’s personal chat history affecting the result. That creates a fair, repeatable benchmark. We record the exact model with every run so your trend remains interpretable as models change.</p>
+        </details>
+
+        <details class="faq-item border-line group rounded-xl border bg-paper px-5 py-1 transition-colors md:px-6">
+          <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[1.05rem] font-bold [&::-webkit-details-marker]:hidden">Which AI platforms do you monitor?<span class="border-line grid size-8 shrink-0 place-items-center rounded-full border font-mono text-lg group-open:rotate-45 transition-transform" aria-hidden="true">+</span></summary>
+          <p class="text-moss max-w-[45rem] pb-6 text-[0.97rem]">ChatGPT. The plan focuses on doing one platform properly: relevant questions, weekly monitoring, and the complete raw evidence behind every result.</p>
+        </details>
+
+        <details class="faq-item border-line group rounded-xl border bg-paper px-5 py-1 transition-colors md:px-6">
+          <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[1.05rem] font-bold [&::-webkit-details-marker]:hidden">Do I need to install anything?<span class="border-line grid size-8 shrink-0 place-items-center rounded-full border font-mono text-lg group-open:rotate-45 transition-transform" aria-hidden="true">+</span></summary>
+          <p class="text-moss max-w-[45rem] pb-6 text-[0.97rem]">No. OpenSight works from the outside, just like a prospective customer. Setup only requires your business name and website. You don’t need to add code or grant access to any accounts.</p>
+        </details>
+
+        <details class="faq-item border-line group rounded-xl border bg-paper px-5 py-1 transition-colors md:px-6">
+          <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[1.05rem] font-bold [&::-webkit-details-marker]:hidden">Can I change the questions?<span class="border-line grid size-8 shrink-0 place-items-center rounded-full border font-mono text-lg group-open:rotate-45 transition-transform" aria-hidden="true">+</span></summary>
+          <p class="text-moss max-w-[45rem] pb-6 text-[0.97rem]">Yes. You can edit or replace them. A replaced question keeps its old history, while the new question begins a fresh trend so the comparison remains honest. OpenSight warns you before the change is confirmed.</p>
+        </details>
+
+        <details class="faq-item border-line group rounded-xl border bg-paper px-5 py-1 transition-colors md:px-6">
+          <summary class="font-display flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[1.05rem] font-bold [&::-webkit-details-marker]:hidden">What kinds of businesses is this for?<span class="border-line grid size-8 shrink-0 place-items-center rounded-full border font-mono text-lg group-open:rotate-45 transition-transform" aria-hidden="true">+</span></summary>
+          <p class="text-moss max-w-[45rem] pb-6 text-[0.97rem]">Local and specialist service businesses that people discover by asking for a recommendation — clinics, home services, studios, and professional practices. Your questions are based on your own website, market, and services.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="site-shell py-24 md:py-32">
+    <div class="reveal bg-pinedeep noise relative overflow-hidden rounded-2xl px-7 py-14 text-center text-white md:px-12 md:py-20">
+      <div class="bg-marker/15 pointer-events-none absolute -top-40 left-1/2 size-96 -translate-x-1/2 rounded-full blur-[90px]" aria-hidden="true"></div>
+      <div class="relative">
+        <p class="font-mono mb-4 text-[0.72rem] tracking-[0.16em] text-white/55 uppercase">See it for yourself</p>
+        <h2 class="font-display mx-auto max-w-[18ch] text-[clamp(1.9rem,3.8vw,3.2rem)] leading-[1.05] font-bold tracking-[-0.035em]">Your first AI visibility brief starts with two details.</h2>
+        <p class="mx-auto mt-5 max-w-[32rem] text-white/65">Your business name and website. That’s it.</p>
+        <a href="https://dashboard.opensight.app/signup" class="button-light mt-8">Check my AI visibility <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+</BaseLayout>

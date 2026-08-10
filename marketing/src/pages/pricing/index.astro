@@ -1,0 +1,60 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Simple pricing — OpenSight" description="One OpenSight plan at S$50/month: Monitor and Improve together — weekly ChatGPT monitoring, a ranked action queue, a full site checklist, and every raw response." ogDescription="Both products. One plan. S$50/month.">
+<main>
+  <section class="relative overflow-hidden pt-14 pb-24 md:pt-20 md:pb-32">
+    <div class="grid-field pointer-events-none absolute inset-0" aria-hidden="true"></div>
+    <div class="site-shell relative">
+      <div class="reveal mx-auto max-w-[50rem] text-center">
+        <p class="eyebrow">Simple pricing</p>
+        <h1 class="font-display text-[clamp(2.35rem,5vw,4.25rem)] leading-[1] font-extrabold tracking-[-0.04em]">Both products.<br>One clear price.</h1>
+        <p class="text-moss mx-auto mt-6 max-w-[38rem] text-lg md:text-xl">No feature maze, no seat calculator, no sales call. Monitor and Improve together for S$50 a month.</p>
+      </div>
+
+      <div class="mt-14 grid items-stretch gap-4 lg:grid-cols-[1.05fr_.95fr]">
+        <article class="reveal bg-pinedeep noise flex flex-col rounded-2xl p-7 text-white md:p-10">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <span class="rounded-full border border-white/20 px-3 py-1 font-mono text-[0.66rem] tracking-wider uppercase">OpenSight Starter</span>
+            <span class="text-sm text-white/60">Everything included</span>
+          </div>
+          <div class="mt-12 flex items-end gap-2">
+            <span class="font-display text-[clamp(3.4rem,7vw,5.5rem)] leading-none font-extrabold tracking-[-0.055em]">S$50</span>
+            <span class="mb-2 text-white/60">/ month</span>
+          </div>
+          <p class="mt-5 max-w-[32rem] text-white/70">A weekly view of how ChatGPT sees your business, and a ranked queue of what to change — with the evidence behind both.</p>
+          <div class="mt-8 grid gap-2 text-sm text-white/75">
+            <p class="flex items-center gap-2.5"><span class="grid size-5 shrink-0 place-items-center rounded-full bg-white/10 text-[0.6rem]">✓</span> <b class="font-semibold text-white">Monitor</b> — measure your AI visibility</p>
+            <p class="flex items-center gap-2.5"><span class="grid size-5 shrink-0 place-items-center rounded-full bg-white/10 text-[0.6rem]">✓</span> <b class="font-semibold text-white">Improve</b> — fix what keeps you out of answers</p>
+          </div>
+          <div class="mt-10 lg:mt-auto lg:pt-10">
+            <a href="https://dashboard.opensight.app/signup" class="button-light w-full sm:w-fit">Check my AI visibility <span aria-hidden="true">↗</span></a>
+            <p class="mt-4 text-xs text-white/50">Setup takes 2 minutes. First results the same day. Cancel anytime.</p>
+          </div>
+        </article>
+
+        <article class="reveal border-line rounded-2xl border bg-white p-7 md:p-10">
+          <p class="font-mono text-pine text-[0.68rem] tracking-[0.14em] uppercase">Your plan includes</p>
+          <ul class="mt-8 grid list-none gap-5 p-0">
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">The questions your customers actually ask</strong><span class="text-moss text-sm">Drafted from your website and your market. Edit them anytime.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">Weekly ChatGPT monitoring</strong><span class="text-moss text-sm">Visibility, sentiment, sources, and competitors — your first run starts as soon as you approve your setup.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">A ranked action queue, every run</strong><span class="text-moss text-sm">Evidence-backed work with steps, sources read, and the answers behind it.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">A full site checklist</strong><span class="text-moss text-sm">Every assertion, outcome, and the exact evidence — no score or grade.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">Full history and raw evidence</strong><span class="text-moss text-sm">Every answer is stored and linked to the metric it supports.</span></span></li>
+          </ul>
+          <p class="text-moss border-line mt-8 border-t pt-6 text-sm">Both <a href="/monitor/" class="text-pine underline underline-offset-4">Monitor</a> and <a href="/improve/" class="text-pine underline underline-offset-4">Improve</a> are included. There is no upgrade to buy.</p>
+        </article>
+      </div>
+
+      <div class="reveal border-line mt-4 grid items-center gap-6 rounded-2xl border bg-stone-100 p-7 md:p-10 lg:grid-cols-[1fr_auto]">
+        <div>
+          <h2 class="font-display max-w-[22ch] text-2xl leading-tight font-bold tracking-[-0.03em] md:text-3xl">Straight answers, before you spend a dollar.</h2>
+          <p class="text-moss mt-3">How we query ChatGPT, what gets stored, and what makes a result trustworthy.</p>
+        </div>
+        <a href="/faq/" class="button-primary">Read the FAQ <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+</BaseLayout>

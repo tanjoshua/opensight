@@ -9,6 +9,8 @@
 
 # Node / frontend
 node_modules/
+marketing/.astro/
+marketing/dist/
 web/dist/*
 !web/dist/
 !web/dist/index.html
