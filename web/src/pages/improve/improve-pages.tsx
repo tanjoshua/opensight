@@ -7,9 +7,11 @@ import {
 } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import {
+  Check as CheckIcon,
   CheckCircle2,
   CircleDashed,
   ClipboardCheck,
+  Copy,
   ExternalLink,
   HelpCircle,
   Info,
@@ -18,7 +20,7 @@ import {
   XCircle,
 } from "lucide-react"
 import { useSearchParams } from "react-router"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { useCurrentBusiness } from "@/api/hooks"
 import {
@@ -34,6 +36,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -66,6 +69,8 @@ import {
   listActions,
   setActionStatus,
 } from "@/gen/opensight/v1/improve-ImproveService_connectquery"
+import { actionMarkdown } from "@/pages/improve/action-markdown"
+import { contentCategory, substantiationNote } from "@/pages/improve/shared"
 
 const checkOutcomeIcons: Record<
   number,
@@ -192,10 +197,6 @@ function CategoryFilter({
 // The sentinel the toggle group uses for "no filter". An empty string cannot be
 // a toggle value, and it is never a real category key.
 const allCategories = "all"
-
-// contentCategory mirrors visibility.CategoryContent. Only these actions ask the
-// user to write something, so only they carry the substantiation note.
-const contentCategory = "content"
 
 export function ActionsPage() {
   const { business, isError, isReady } = useCurrentBusiness()
@@ -427,6 +428,46 @@ function EvidenceComparison({
   )
 }
 
+// CopyAction hands the whole card to the tool that will do the work: most of
+// these changes are edits to a codebase, and retyping the evidence and steps
+// into a coding agent is the step between reading the card and acting on it.
+function CopyAction({ action }: { action: ImprovementAction }) {
+  const [state, setState] = useState<"" | "copied" | "failed">("")
+  useEffect(() => {
+    if (!state) return
+    const timer = setTimeout(() => setState(""), 2000)
+    return () => clearTimeout(timer)
+  }, [state])
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(actionMarkdown(action))
+      setState("copied")
+    } catch {
+      // Writing can be refused outright — an insecure origin, or a browser that
+      // withholds the permission. Saying so beats a button that does nothing.
+      setState("failed")
+    }
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={copy}
+      aria-label="Copy this action as text"
+      className="text-muted-foreground"
+    >
+      {state === "copied" ? (
+        <CheckIcon aria-hidden data-icon="inline-start" />
+      ) : (
+        <Copy aria-hidden data-icon="inline-start" />
+      )}
+      {state === "copied" ? "Copied" : state === "failed" ? "Failed" : "Copy"}
+    </Button>
+  )
+}
+
 function ActionCard({
   action,
   mutation,
@@ -463,6 +504,9 @@ function ActionCard({
           </div>
           <CardTitle>{action.title}</CardTitle>
           <CardDescription>{action.body}</CardDescription>
+          <CardAction>
+            <CopyAction action={action} />
+          </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-sm">
           {action.comparison && (
@@ -491,15 +535,13 @@ function ActionCard({
                   ))}
                 </ol>
               )}
-              {/* Substantiation is a constraint on how every website-content
-                  change is written, not a second task. Numbered beside the
-                  recommendation it read as half the work; it stays on the card
-                  so a filtered or deep-linked view never drops it. */}
+              {/* Numbered beside the recommendation the note read as half the
+                  work; it stays on the card so a filtered or deep-linked view
+                  never drops it. */}
               {action.category === contentCategory && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
                   <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                  Publish only facts you can substantiate. Do not copy another
-                  business&rsquo;s wording or imply outcomes you cannot support.
+                  {substantiationNote}
                 </p>
               )}
             </div>
