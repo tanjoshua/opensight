@@ -36,6 +36,69 @@
   window.addEventListener("scroll", updateHeader, { passive: true });
 })();
 
+// Products dropdown: click anywhere, hover as a shortcut on pointer devices.
+(function () {
+  const root = document.getElementById("products-menu");
+  const trigger = root?.querySelector("[data-menu-trigger]");
+  const panel = root?.querySelector("[data-menu-panel]");
+  if (!root || !trigger || !panel) return;
+
+  const canHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+  let closeTimer;
+  let openedByHover = false;
+
+  function setOpen(open) {
+    window.clearTimeout(closeTimer);
+    trigger.setAttribute("aria-expanded", String(open));
+    if (open) {
+      panel.hidden = false;
+      panel.classList.add("nav-panel-enter");
+      requestAnimationFrame(() => panel.classList.remove("nav-panel-enter"));
+    } else {
+      panel.hidden = true;
+    }
+  }
+
+  // A pointer that already opened the menu on hover must not close it by
+  // clicking the trigger it is sitting on; the click confirms it instead.
+  trigger.addEventListener("click", () => {
+    if (openedByHover) {
+      openedByHover = false;
+      setOpen(true);
+      return;
+    }
+    setOpen(trigger.getAttribute("aria-expanded") !== "true");
+  });
+
+  root.addEventListener("mouseenter", () => {
+    window.clearTimeout(closeTimer);
+    if (!canHover.matches || trigger.getAttribute("aria-expanded") === "true") return;
+    openedByHover = true;
+    setOpen(true);
+  });
+  root.addEventListener("mouseleave", () => {
+    if (!canHover.matches) return;
+    closeTimer = window.setTimeout(() => {
+      openedByHover = false;
+      setOpen(false);
+    }, 120);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!root.contains(event.target)) setOpen(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    setOpen(false);
+    if (root.contains(document.activeElement)) trigger.focus();
+  });
+
+  root.addEventListener("focusout", (event) => {
+    if (!root.contains(event.relatedTarget)) setOpen(false);
+  });
+})();
+
 // Subtle entrance motion, disabled automatically when reduced motion is set.
 (function () {
   const elements = document.querySelectorAll(".reveal");

@@ -4,11 +4,15 @@ Marketing site for [opensight.app](https://opensight.app). Static HTML + Tailwin
 
 ## Pages
 
-- `/` — homepage: AI visibility for local businesses.
-- `/pricing/` — the single Starter plan and what happens after signup.
+- `/` — homepage: the pitch, with both products as its centrepiece and detail pushed to their pages.
+- `/monitor/` — product page for measurement: 20 questions, weekly runs, competitors, sources, history.
+- `/improve/` — product page for the action queue, the evidence comparison, and the 17-check checklist.
+- `/pricing/` — the single Starter plan (both products) and what happens after signup.
 - `/faq/` — full FAQ.
 
-The header/footer are duplicated in each page (no templating) — edit all three when changing them. New pages follow the same pattern; a page with the animated chat demo needs a `#chat-scenarios` JSON block (see `index.html`, "Why it matters" section).
+The header/footer are duplicated in each page (no templating) — edit all five when changing them, and keep the `aria-current` markers pointing at the page they sit on. New pages follow the same pattern; a page with the animated chat demo needs a `#chat-scenarios` JSON block (see `index.html`).
+
+The header's Products dropdown is driven by `assets/site.js`: the `#products-menu` wrapper, a `[data-menu-trigger]` button, and a `[data-menu-panel]` panel that starts with the `hidden` attribute. Mobile uses the separate `#nav-menu` list instead, so the dropdown markup only ever renders at `md` and up.
 
 ## Develop
 
@@ -42,4 +46,4 @@ Any static host works. This site lives in the `marketing/` subdirectory of the [
 - **App URLs**: all CTAs point at `https://dashboard.opensight.app/signup` and sign-in at `https://dashboard.opensight.app` — adjust if the app lives elsewhere.
 - **Contact email**: `hello@opensight.app` in the footer.
 - **Testimonial**: intentionally omitted for v1; add a section between "Every number has a receipt" and the final CTA once a real quote exists.
-- **Copy discipline**: the pages deliberately claim only what the shipped product does (ChatGPT only, 20 prompts, weekly runs, same-day first run). Update copy when capabilities change.
+- **Copy discipline**: the pages deliberately claim only what the shipped product does (ChatGPT only, 20 prompts, weekly runs, same-day first run, 17 site checks, five action categories, no score or grade, no causal claims). Update copy when capabilities change.

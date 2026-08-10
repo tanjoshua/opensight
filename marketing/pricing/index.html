@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simple pricing — OpenSight</title>
-  <meta name="description" content="One OpenSight plan at S$50/month: 20 tracked customer questions, weekly ChatGPT monitoring, competitor insights, and every raw response.">
+  <meta name="description" content="One OpenSight plan at S$50/month: Monitor and Improve together — 20 tracked questions, weekly ChatGPT monitoring, a ranked action queue, 17 site checks, and every raw response.">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://opensight.app/pricing/">
   <meta property="og:title" content="Simple pricing — OpenSight">
@@ -22,17 +22,56 @@
 
 <header class="site-header" id="site-header">
   <div class="site-shell flex h-16 items-center justify-between gap-5">
-    <a href="/" aria-label="OpenSight home" class="flex items-center gap-2.5 no-underline"><span class="logo-mark" aria-hidden="true"></span><span class="font-display text-[1.18rem] font-extrabold tracking-[-0.035em]">OpenSight</span></a>
+    <a href="/" aria-label="OpenSight home" class="flex items-center gap-2.5 no-underline">
+      <span class="logo-mark" aria-hidden="true"></span>
+      <span class="font-display text-[1.18rem] font-extrabold tracking-[-0.035em]">OpenSight</span>
+    </a>
     <nav class="hidden items-center gap-7 text-[0.92rem] font-medium md:flex" aria-label="Main navigation">
-      <a href="/#product" class="text-moss hover:text-ink no-underline">Product</a><a href="/pricing/" class="text-ink no-underline" aria-current="page">Pricing</a><a href="/faq/" class="text-moss hover:text-ink no-underline">FAQ</a>
+      <div class="relative" id="products-menu">
+        <button type="button" data-menu-trigger class="nav-link flex cursor-pointer items-center gap-1.5 bg-transparent font-medium" aria-expanded="false" aria-haspopup="true" aria-controls="products-panel">
+          Products
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="products-panel" data-menu-panel hidden class="nav-panel">
+          <a href="/monitor/" class="nav-panel-item">
+            <span class="nav-panel-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 2 5-7"/></svg></span>
+            <span>
+              <strong class="text-ink block text-[0.95rem]">Monitor</strong>
+              <span class="text-moss block text-[0.84rem] leading-snug">Track what ChatGPT says about you, who it names instead, and the sources behind it.</span>
+            </span>
+          </a>
+          <a href="/improve/" class="nav-panel-item">
+            <span class="nav-panel-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V7"/><path d="m6 13 6-6 6 6"/></svg></span>
+            <span>
+              <strong class="text-ink block text-[0.95rem]">Improve</strong>
+              <span class="text-moss block text-[0.84rem] leading-snug">A ranked queue of evidence-backed fixes, plus 17 site checks on every run.</span>
+            </span>
+          </a>
+        </div>
+      </div>
+      <a href="/pricing/" class="nav-link-current" aria-current="page">Pricing</a>
+      <a href="/faq/" class="nav-link">FAQ</a>
     </nav>
-    <div class="hidden items-center gap-4 md:flex"><a href="https://dashboard.opensight.app" class="text-moss hover:text-ink text-[0.92rem] font-medium no-underline">Sign in</a><a href="https://dashboard.opensight.app/signup" class="button-primary min-h-10 px-4 py-2 text-[0.88rem]">Check my visibility <span aria-hidden="true">↗</span></a></div>
+    <div class="hidden items-center gap-4 md:flex">
+      <a href="https://dashboard.opensight.app" class="nav-link text-[0.92rem] font-medium">Sign in</a>
+      <a href="https://dashboard.opensight.app/signup" class="button-primary min-h-10 px-4 py-2 text-[0.88rem]">Check my visibility <span aria-hidden="true">↗</span></a>
+    </div>
     <button id="nav-toggle" type="button" class="border-line grid size-10 place-items-center rounded-full border bg-white md:hidden" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
-      <svg class="nav-open-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 16h14"/></svg><svg class="nav-close-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      <svg class="nav-open-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 16h14"/></svg>
+      <svg class="nav-close-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
     </button>
   </div>
   <nav id="nav-menu" hidden class="border-line border-t bg-white px-5 py-5 md:hidden" aria-label="Mobile navigation">
-    <div class="mx-auto grid max-w-[1200px] gap-1"><a href="/#product" class="rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">Product</a><a href="/pricing/" class="bg-paper rounded-xl px-3 py-3 font-medium no-underline" aria-current="page">Pricing</a><a href="/faq/" class="rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">FAQ</a><a href="https://dashboard.opensight.app" class="text-moss rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">Sign in</a><a href="https://dashboard.opensight.app/signup" class="button-primary mt-3">Check my visibility <span aria-hidden="true">↗</span></a></div>
+    <div class="mx-auto grid max-w-[1200px] gap-1">
+      <p class="stat-label px-3 pt-1 pb-2">Products</p>
+      <a href="/monitor/" class="rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">Monitor <span class="text-moss block text-[0.82rem] font-normal">Measure your AI visibility</span></a>
+      <a href="/improve/" class="rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">Improve <span class="text-moss block text-[0.82rem] font-normal">Fix what keeps you out of answers</span></a>
+      <p class="stat-label px-3 pt-3 pb-2">Company</p>
+      <a href="/pricing/" class="bg-paper rounded-xl px-3 py-3 font-medium no-underline" aria-current="page">Pricing</a>
+      <a href="/faq/" class="rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">FAQ</a>
+      <a href="https://dashboard.opensight.app" class="text-moss rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">Sign in</a>
+      <a href="https://dashboard.opensight.app/signup" class="button-primary mt-3">Check my visibility <span aria-hidden="true">↗</span></a>
+    </div>
   </nav>
 </header>
 
@@ -43,7 +82,7 @@
       <div class="reveal mx-auto max-w-[50rem] text-center">
         <p class="eyebrow">Simple pricing</p>
         <h1 class="font-display text-[clamp(2.35rem,5vw,4.25rem)] leading-[1] font-extrabold tracking-[-0.04em]">Everything you need.<br>One clear price.</h1>
-        <p class="text-moss mx-auto mt-6 max-w-[38rem] text-lg md:text-xl">No feature maze, seat calculator, or sales call. Everything you need to understand your AI visibility for S$50 a month.</p>
+        <p class="text-moss mx-auto mt-6 max-w-[38rem] text-lg md:text-xl">Both products, no feature maze, no seat calculator, no sales call. Monitor and Improve together for S$50 a month.</p>
       </div>
 
       <div class="mt-14 grid items-stretch gap-4 lg:grid-cols-[1.05fr_.95fr]">
@@ -56,19 +95,27 @@
             <span class="font-display text-[clamp(3.4rem,7vw,5.5rem)] leading-none font-extrabold tracking-[-0.055em]">S$50</span>
             <span class="mb-2 text-white/60">/ month</span>
           </div>
-          <p class="mt-5 max-w-[32rem] text-white/70">A complete, weekly view of how ChatGPT sees your business—and the evidence behind it.</p>
-          <a href="https://dashboard.opensight.app/signup" class="button-light mt-10 w-full sm:w-fit">Check my AI visibility <span aria-hidden="true">↗</span></a>
-          <p class="mt-4 text-xs text-white/50">Setup takes 2 minutes. First results the same day.</p>
+          <p class="mt-5 max-w-[32rem] text-white/70">A weekly view of how ChatGPT sees your business, and a ranked queue of what to change — with the evidence behind both.</p>
+          <div class="mt-8 grid gap-2 text-sm text-white/75">
+            <p class="flex items-center gap-2.5"><span class="grid size-5 shrink-0 place-items-center rounded-full bg-white/10 text-[0.6rem]">✓</span> <b class="font-semibold text-white">Monitor</b> — measure your AI visibility</p>
+            <p class="flex items-center gap-2.5"><span class="grid size-5 shrink-0 place-items-center rounded-full bg-white/10 text-[0.6rem]">✓</span> <b class="font-semibold text-white">Improve</b> — fix what keeps you out of answers</p>
+          </div>
+          <div class="mt-10 lg:mt-auto lg:pt-10">
+            <a href="https://dashboard.opensight.app/signup" class="button-light w-full sm:w-fit">Check my AI visibility <span aria-hidden="true">↗</span></a>
+            <p class="mt-4 text-xs text-white/50">Setup takes 2 minutes. First results the same day.</p>
+          </div>
         </article>
 
         <article class="reveal border-line rounded-2xl border bg-white p-7 md:p-10">
           <p class="font-mono text-pine text-[0.68rem] tracking-[0.14em] uppercase">Your plan includes</p>
           <ul class="mt-8 grid list-none gap-5 p-0">
             <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">20 tracked customer questions</strong><span class="text-moss text-sm">Tailored to your services, location, and customers. Edit them anytime.</span></span></li>
-            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">Weekly ChatGPT monitoring</strong><span class="text-moss text-sm">Your first run starts as soon as you approve your setup.</span></span></li>
-            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">Visibility, sentiment, sources, and competitors</strong><span class="text-moss text-sm">The complete picture, not a single abstract score.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">Weekly ChatGPT monitoring</strong><span class="text-moss text-sm">Visibility, sentiment, sources, and competitors — your first run starts as soon as you approve your setup.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">A ranked action queue, every run</strong><span class="text-moss text-sm">Evidence-backed work with steps, sources read, and the answers behind it.</span></span></li>
+            <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">17 site checks and the full checklist</strong><span class="text-moss text-sm">Every assertion, outcome, and the exact evidence — no score or grade.</span></span></li>
             <li class="flex gap-3"><span class="bg-paper text-pine mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs">✓</span><span><strong class="block">Full history and raw evidence</strong><span class="text-moss text-sm">Every answer is stored and linked to the metric it supports.</span></span></li>
           </ul>
+          <p class="text-moss border-line mt-8 border-t pt-6 text-sm">Both <a href="/monitor/" class="text-pine underline underline-offset-4">Monitor</a> and <a href="/improve/" class="text-pine underline underline-offset-4">Improve</a> are included. There is no upgrade to buy.</p>
         </article>
       </div>
     </div>
@@ -89,12 +136,12 @@
         <li class="reveal">
           <div class="border-line mb-6 flex items-center gap-3 border-b pb-4"><span class="font-display text-pine text-3xl font-bold">02</span><span class="font-mono text-moss text-[0.65rem] tracking-wider uppercase">Same day</span></div>
           <h3 class="font-display text-xl font-bold">Get your first answers.</h3>
-          <p class="text-moss mt-3 text-[0.96rem]">Approve your setup and the first monitoring run starts. See where you appear, who appears instead, and why.</p>
+          <p class="text-moss mt-3 text-[0.96rem]">Approve your setup and the first run starts. It returns your brief, your site audit, and your first action queue together.</p>
         </li>
         <li class="reveal">
           <div class="border-line mb-6 flex items-center gap-3 border-b pb-4"><span class="font-display text-pine text-3xl font-bold">03</span><span class="font-mono text-moss text-[0.65rem] tracking-wider uppercase">Every week</span></div>
-          <h3 class="font-display text-xl font-bold">Measure what changed.</h3>
-          <p class="text-moss mt-3 text-[0.96rem]">Act on a trusted source or improve your story, then use the next run to see whether it moved the answer.</p>
+          <h3 class="font-display text-xl font-bold">Work the queue.</h3>
+          <p class="text-moss mt-3 text-[0.96rem]">Take the top actions and mark them done. Anything still reproduced next week reopens itself, so nothing quietly disappears.</p>
         </li>
       </ol>
     </div>
@@ -113,12 +160,27 @@
 </main>
 
 <footer class="border-line border-t bg-stone-100">
-  <div class="site-shell grid gap-12 py-14 md:grid-cols-[1.4fr_.6fr_.6fr] md:py-16">
-    <div><a href="/" aria-label="OpenSight home" class="inline-flex items-center gap-2.5 no-underline"><span class="logo-mark" aria-hidden="true"></span><span class="font-display text-[1.18rem] font-extrabold tracking-[-0.035em]">OpenSight</span></a><p class="text-moss mt-5 max-w-[21rem] text-sm">Know where your business stands in the answers that increasingly shape customer decisions.</p></div>
-    <div><p class="font-mono text-[0.65rem] tracking-wider uppercase">Explore</p><nav class="mt-4 grid gap-2.5 text-sm" aria-label="Footer navigation"><a href="/#product" class="footer-link">Product</a><a href="/#how" class="footer-link">How it works</a><a href="/pricing/" class="footer-link">Pricing</a><a href="/faq/" class="footer-link">FAQ</a></nav></div>
-    <div><p class="font-mono text-[0.65rem] tracking-wider uppercase">Get in touch</p><div class="mt-4 grid gap-2.5 text-sm"><a href="mailto:hello@opensight.app" class="footer-link">hello@opensight.app</a><a href="https://dashboard.opensight.app" class="footer-link">Sign in to OpenSight</a></div></div>
+  <div class="site-shell grid gap-12 py-14 md:grid-cols-[1.4fr_.6fr_.6fr_.6fr] md:py-16">
+    <div>
+      <a href="/" aria-label="OpenSight home" class="inline-flex items-center gap-2.5 no-underline"><span class="logo-mark" aria-hidden="true"></span><span class="font-display text-[1.18rem] font-extrabold tracking-[-0.035em]">OpenSight</span></a>
+      <p class="text-moss mt-5 max-w-[21rem] text-sm">Know where your business stands in the answers that increasingly shape customer decisions.</p>
+    </div>
+    <div>
+      <p class="font-mono text-[0.65rem] tracking-wider uppercase">Products</p>
+      <nav class="mt-4 grid gap-2.5 text-sm" aria-label="Product navigation"><a href="/monitor/" class="footer-link">Monitor</a><a href="/improve/" class="footer-link">Improve</a></nav>
+    </div>
+    <div>
+      <p class="font-mono text-[0.65rem] tracking-wider uppercase">Explore</p>
+      <nav class="mt-4 grid gap-2.5 text-sm" aria-label="Footer navigation"><a href="/#how" class="footer-link">How it works</a><a href="/pricing/" class="footer-link">Pricing</a><a href="/faq/" class="footer-link">FAQ</a></nav>
+    </div>
+    <div>
+      <p class="font-mono text-[0.65rem] tracking-wider uppercase">Get in touch</p>
+      <div class="mt-4 grid gap-2.5 text-sm"><a href="mailto:hello@opensight.app" class="footer-link">hello@opensight.app</a><a href="https://dashboard.opensight.app" class="footer-link">Sign in to OpenSight</a></div>
+    </div>
   </div>
-  <div class="border-line border-t"><div class="site-shell text-moss flex flex-col gap-2 py-5 text-xs sm:flex-row sm:items-center sm:justify-between"><span>© 2026 OpenSight</span><span>Made with care in Singapore.</span></div></div>
+  <div class="border-line border-t">
+    <div class="site-shell text-moss flex flex-col gap-2 py-5 text-xs sm:flex-row sm:items-center sm:justify-between"><span>© 2026 OpenSight</span><span>Made with care in Singapore.</span></div>
+  </div>
 </footer>
 <script src="/assets/site.js"></script>
 </body>
