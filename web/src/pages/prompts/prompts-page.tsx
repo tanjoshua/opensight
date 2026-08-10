@@ -11,7 +11,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query"
 import { MessageSquareText, Plus } from "lucide-react"
 import { useState } from "react"
-import { useNavigate } from "react-router"
+import { useAccountNavigate } from "@/lib/account-path"
 
 import { errorMessage } from "@/api/errors"
 import { useCurrentBusiness } from "@/api/hooks"
@@ -54,7 +54,7 @@ import {
 
 export function PromptsPage() {
   const { business, isError, isReady } = useCurrentBusiness()
-  const navigate = useNavigate()
+  const navigate = useAccountNavigate()
   const queryClient = useQueryClient()
   const promptsQuery = useQuery(
     listPrompts,

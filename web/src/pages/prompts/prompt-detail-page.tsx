@@ -12,7 +12,9 @@ import { timestampDate, type Timestamp } from "@bufbuild/protobuf/wkt"
 import { useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, MessageSquareText, Replace } from "lucide-react"
 import { useState } from "react"
-import { Link, useNavigate, useParams } from "react-router"
+import { Link, useParams } from "react-router"
+
+import { useAccountNavigate, useAccountPath } from "@/lib/account-path"
 
 import { errorMessage } from "@/api/errors"
 import { useCurrentBusiness } from "@/api/hooks"
@@ -48,7 +50,8 @@ import {
 
 export function PromptDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const navigate = useAccountNavigate()
+  const path = useAccountPath()
   const { businessId } = useCurrentBusiness()
   const queryClient = useQueryClient()
   const promptQuery = useQuery(
@@ -176,7 +179,7 @@ export function PromptDetailPage() {
               <div key={r.replacedId}>
                 Replaced{" "}
                 <Link
-                  to={`/prompts/${r.replacedId}`}
+                  to={path(`/prompts/${r.replacedId}`)}
                   className="text-foreground underline underline-offset-2"
                 >
                   “{r.replacedText}”

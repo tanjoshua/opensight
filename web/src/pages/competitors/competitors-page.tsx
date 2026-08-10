@@ -3,7 +3,9 @@
 import { useMutation } from "@connectrpc/connect-query"
 import { Plus, Users } from "lucide-react"
 import { useState } from "react"
-import { useNavigate, useSearchParams } from "react-router"
+import { useSearchParams } from "react-router"
+
+import { useAccountNavigate } from "@/lib/account-path"
 
 import { errorMessage } from "@/api/errors"
 import {
@@ -46,7 +48,7 @@ import { TrackedSection } from "./tracked-section"
 
 export function CompetitorsPage() {
   const { business, isError, isReady } = useCurrentBusiness()
-  const navigate = useNavigate()
+  const navigate = useAccountNavigate()
   const [searchParams] = useSearchParams()
   const focus = statusParam(searchParams.get("status"))
   const competitorsQuery = useAllCompetitors(business?.id)

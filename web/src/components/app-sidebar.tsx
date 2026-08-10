@@ -85,6 +85,13 @@ export function AppSidebar() {
   const hasBusinessNavigation =
     business !== undefined && account?.access !== Access.NEVER
   const hasMultipleWorkspaces = (me?.memberships.length ?? 0) > 1
+  // Select needs items to resolve the value (a slug) to its label; without
+  // them the trigger falls back to rendering the raw slug.
+  const workspaceItems = (me?.memberships ?? []).flatMap((membership) =>
+    membership.account
+      ? [{ value: membership.account.slug, label: membership.account.name }]
+      : []
+  )
   const visibleWorkspaceSections =
     account?.role === AccountRole.OWNER
       ? [
@@ -122,22 +129,20 @@ export function AppSidebar() {
             <span className="px-2 text-xs text-muted-foreground">
               Workspace
             </span>
-            <Select value={slug} onValueChange={switchAccount}>
+            <Select
+              items={workspaceItems}
+              value={slug}
+              onValueChange={switchAccount}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {me.memberships.map(
-                  (membership) =>
-                    membership.account && (
-                      <SelectItem
-                        key={membership.account.id}
-                        value={membership.account.slug}
-                      >
-                        {membership.account.name}
-                      </SelectItem>
-                    )
-                )}
+                {workspaceItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

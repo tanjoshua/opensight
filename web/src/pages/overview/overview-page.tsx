@@ -7,8 +7,8 @@
 import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { LayoutDashboard, TriangleAlert } from "lucide-react"
 import { useState } from "react"
-import { Link, useNavigate } from "react-router"
-import { useAccountPath } from "@/lib/account-path"
+import { Link } from "react-router"
+import { useAccountNavigate, useAccountPath } from "@/lib/account-path"
 
 import { pollWhileRunning, useCurrentBusiness, usePlan } from "@/api/hooks"
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
@@ -40,7 +40,7 @@ import { WhatChanged } from "./what-changed"
 export function OverviewPage() {
   const { business, isError, isReady } = useCurrentBusiness()
   const { plan } = usePlan()
-  const navigate = useNavigate()
+  const navigate = useAccountNavigate()
   // Overview polls off its own latest_run rather than the runs list, but with
   // the shared poll-while-running cadence (first-run-in-progress, design 06).
   const overview = useQuery(
@@ -193,6 +193,7 @@ function OverviewHeader() {
 }
 
 function PartialRunBanner({ overview }: { overview: Overview }) {
+  const path = useAccountPath()
   const run = overview.latestRun
   // The overview payload carries run status but not per-prompt success counts, so
   // the banner names the condition and links to the failed responses rather than
@@ -213,7 +214,7 @@ function PartialRunBanner({ overview }: { overview: Overview }) {
       </AlertTitle>
       <AlertDescription>
         <Link
-          to={`/runs/${run.id}?status=failed`}
+          to={path(`/runs/${run.id}?status=failed`)}
           className="underline underline-offset-2"
         >
           Review the failed responses

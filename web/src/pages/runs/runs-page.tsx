@@ -4,7 +4,7 @@
 // links to /runs/:id for that run's responses.
 import { timestampDate } from "@bufbuild/protobuf/wkt"
 import { History } from "lucide-react"
-import { useNavigate } from "react-router"
+import { useAccountNavigate } from "@/lib/account-path"
 
 import { useCurrentBusiness, useRuns } from "@/api/hooks"
 import { runStatusLabel, runTriggerLabel } from "@/api/labels"
@@ -35,7 +35,7 @@ import {
 
 export function RunsPage() {
   const { business, isError, isReady } = useCurrentBusiness()
-  const navigate = useNavigate()
+  const navigate = useAccountNavigate()
   const runsQuery = useRuns(business?.id)
 
   if (isError) {

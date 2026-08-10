@@ -14,7 +14,9 @@ import {
   X,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import { useNavigate, useParams, useSearchParams } from "react-router"
+import { useParams, useSearchParams } from "react-router"
+
+import { useAccountNavigate } from "@/lib/account-path"
 
 import { resultStatusLabel } from "@/api/labels"
 import { RUN_POLL_INTERVAL_MS, useCurrentBusiness, useRuns } from "@/api/hooks"
@@ -61,7 +63,7 @@ const ALL_FILTER_VALUE = "all"
 
 export function RunDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const navigate = useAccountNavigate()
   const { businessId } = useCurrentBusiness()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()

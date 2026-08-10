@@ -162,15 +162,16 @@ function CompetitorsPanel({
   // top_competitors is truncated to the top-3 discovered, so the backlog count
   // comes from the server's untruncated discovered_total.
   const discovered = overview.discoveredTotal
+  const path = useAccountPath()
   return (
     <Panel
       title="Competitors appearing"
       description="Ranked by coverage across analyzed responses"
       footer={
         <Link
-          to={
+          to={path(
             discovered > 0 ? "/competitors?status=discovered" : "/competitors"
-          }
+          )}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           {discovered > 0
