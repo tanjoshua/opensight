@@ -400,9 +400,12 @@ function EvidenceComparison({
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Found on your site, but without the detail cited alongside it.
-            </p>
+            {comparison.coverage === "partial" && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Closest wording we found, and it stops short of the detail cited
+                alongside.
+              </p>
+            )}
           </>
         ) : (
           <p className="mt-2 font-medium">

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 
 	"opensight/internal/llm"
 )
@@ -475,8 +477,15 @@ func citedQuotes(order []string, byDomain map[string][]string) []CitedQuote {
 // siteQuotes keeps only the passages that really do appear in the crawled text.
 // The model is told to copy them exactly, but its output is never validated, and
 // a quote the card attributes to the customer's own page has to be one they can
-// go and find there. Matching ignores case and whitespace because text
-// extraction collapses both.
+// go and find there.
+//
+// The comparison is on letters and digits alone. Extracting text from markup
+// leaves punctuation attached to whatever inline element held it — a real page
+// yielded "for root canal treatment ." where the model, reading the same text,
+// wrote "treatment." — and discarding a genuine quote over one space is worse
+// than the false positive this risks, which would require the customer's own
+// site to contain the whole passage contiguously anyway. The stored string stays
+// the model's, since it is the same words with the extraction artifacts removed.
 func siteQuotes(claimed []string, siteContent string) []string {
 	haystack := normalizeQuote(siteContent)
 	if haystack == "" {
@@ -496,10 +505,17 @@ func siteQuotes(claimed []string, siteContent string) []string {
 	return out
 }
 
+// spaceBeforePunctuation matches the gap extraction leaves when a sentence's
+// closing mark sits in its own inline element, which yields "treatment ." from
+// markup a reader sees as "treatment.".
+var spaceBeforePunctuation = regexp.MustCompile(`\s+([.,;:!?])`)
+
 // trimQuote renders a passage as one line of quotable prose: collapsed
-// whitespace, no leading list marker, and cut on a word boundary if it is long.
+// whitespace, no leading list marker, no extraction artifact before a
+// punctuation mark, and cut on a word boundary if it is long.
 func trimQuote(passage string) string {
 	quote := strings.TrimLeft(strings.Join(strings.Fields(passage), " "), "-*•– ")
+	quote = spaceBeforePunctuation.ReplaceAllString(quote, "$1")
 	runes := []rune(quote)
 	if len(runes) <= maxQuoteRunes {
 		return quote
@@ -512,7 +528,13 @@ func trimQuote(passage string) string {
 }
 
 func normalizeQuote(s string) string {
-	return strings.ToLower(strings.Join(strings.Fields(s), " "))
+	var b strings.Builder
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(unicode.ToLower(r))
+		}
+	}
+	return b.String()
 }
 
 // confirmAbsent reads the cited pages and reports which were readable, whether

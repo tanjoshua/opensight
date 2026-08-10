@@ -191,21 +191,26 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 func TestSiteQuotesMustAppearOnTheSite(t *testing.T) {
 	classifier := &fixedSourceClassifier{
 		kind: llm.SourceCompetitorOwned, owner: "Rival Clinic", coverage: "partial",
-		siteEvidence: []string{"We treat   COMPLEX cases", "We guarantee a 100% success rate"},
+		siteEvidence: []string{"We treat  COMPLEX cases .", "We guarantee a 100% success rate"},
 	}
 	research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{
 		"https://www.rival.example/a": "<h1>Rival Clinic</h1>", "https://www.rival.example/b": "<h1>Rival Clinic</h1>",
 	}}
 	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{
-		Snapshot: linkedSnapshot(), SiteContent: "About us. We treat complex cases every week.", Classifier: classifier,
+		// "cases ." is what extraction produces when a sentence's final period
+		// sits in its own inline element, and it is the real shape that dropped a
+		// genuine quote before matching ignored punctuation.
+		Snapshot: linkedSnapshot(), SiteContent: "About us. We treat  complex cases . Every week.", Classifier: classifier,
 	}, research)
 	if err != nil {
 		t.Fatal(err)
 	}
 	site := findings[0].Comparison.Site
-	// The first quote differs from the page only in case and spacing, which text
-	// extraction collapses; the second appears nowhere and must not survive.
-	if len(site) != 1 || site[0] != "We treat COMPLEX cases" {
+	// The first quote is the same words as the page, differing only in case,
+	// spacing and where the period sits; the second appears nowhere.
+	// The stored quote also loses the extraction artifact, so a card never shows
+	// the customer a stray space their own page does not display.
+	if len(site) != 1 || site[0] != "We treat COMPLEX cases." {
 		t.Fatalf("site quotes = %v, want only the passage that is really on the site", site)
 	}
 }
