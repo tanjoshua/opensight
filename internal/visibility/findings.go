@@ -47,8 +47,12 @@ const (
 )
 
 type FinderInput struct {
-	Audit            []CheckResult
-	Snapshot         MonitoringSnapshot
+	Audit    []CheckResult
+	Snapshot MonitoringSnapshot
+	// Profile is the confirmed business profile. It lets a finding say what to
+	// publish rather than what kind of thing to publish, using data the user has
+	// already reviewed.
+	Profile          SiteProfile
 	SiteContent      string
 	PriorContentGaps []llm.PriorContentGap
 	Classifier       llm.SourceClassifier
@@ -99,6 +103,12 @@ type siteAuditFinder struct{}
 func (siteAuditFinder) Key() string { return SourceSiteAudit }
 
 func (siteAuditFinder) Find(_ context.Context, in FinderInput, _ BoundedResearcher) ([]Finding, error) {
+	failed := map[string]bool{}
+	for _, result := range in.Audit {
+		if result.Outcome == CheckFail {
+			failed[result.Key] = true
+		}
+	}
 	out := []Finding{}
 	for _, result := range in.Audit {
 		if result.Outcome != CheckFail {
@@ -108,7 +118,13 @@ func (siteAuditFinder) Find(_ context.Context, in FinderInput, _ BoundedResearch
 		if !ok || check.Informational || len(check.Fix) == 0 {
 			continue
 		}
-		out = append(out, Finding{
+		// A failure entailed by its parent's failure is not separate work: the
+		// parent's fix is the only way to attempt it. It stays on the checklist
+		// and folds into the parent's finding here.
+		if check.DependsOn != "" && failed[check.DependsOn] {
+			continue
+		}
+		finding := Finding{
 			Key:      SourceSiteAudit + ":" + check.Key,
 			Source:   SourceSiteAudit,
 			Category: check.Group,
@@ -119,9 +135,29 @@ func (siteAuditFinder) Find(_ context.Context, in FinderInput, _ BoundedResearch
 			Sources:  result.Sources,
 			Blocking: check.Blocking,
 			Priority: check.Priority,
-		})
+		}
+		if check.Key == CheckStructuredData {
+			steps, detail := structuredDataSteps(in.Profile, foldedInto(check.Key, failed))
+			if len(steps) > 0 {
+				finding.Steps = steps
+			}
+			finding.Detail += detail
+		}
+		out = append(out, finding)
 	}
 	return out, nil
+}
+
+// foldedInto returns the failed checks the given parent absorbed, in catalog
+// order.
+func foldedInto(parent string, failed map[string]bool) []Check {
+	out := []Check{}
+	for _, check := range catalog {
+		if check.DependsOn == parent && failed[check.Key] {
+			out = append(out, check)
+		}
+	}
+	return out
 }
 
 // citationGapFinder reads the answer corpus for sources that shape answers the
@@ -344,7 +380,7 @@ func competitorContentFinding(gap llm.ContentGap, inspected []inspectedDomain, c
 	}
 	return Finding{
 		Key: SourceCompetitorContent + ":" + gap.Key, Source: SourceCompetitorContent,
-		Category: GroupIdentity, Title: gap.Title,
+		Category: CategoryContent, Title: gap.Title,
 		Body: fmt.Sprintf("In %d %s that omitted you, ChatGPT relied on this kind of information when recommending other businesses. %s", len(results), plural(len(results), "answer", "answers"), gap.Reason),
 		Steps: []string{
 			gap.Recommendation,

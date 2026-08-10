@@ -13,7 +13,7 @@ import (
 )
 
 const getFinding = `-- name: GetFinding :one
-SELECT id, account_id, business_id, key, source, category, title, body, steps, detail, result_ids, prompt_ids, sources, blocking, reach, priority, status, dismissal_reason, first_seen_at, last_seen_at, completed_at, dismissed_at, verified_at FROM findings WHERE id = $1 AND account_id = $2
+SELECT id, account_id, business_id, key, source, category, title, body, steps, detail, result_ids, prompt_ids, sources, blocking, reach, priority, status, dismissal_reason, first_seen_at, last_seen_at, completed_at, dismissed_at FROM findings WHERE id = $1 AND account_id = $2
 `
 
 type GetFindingParams struct {
@@ -47,7 +47,6 @@ func (q *Queries) GetFinding(ctx context.Context, arg GetFindingParams) (Finding
 		&i.LastSeenAt,
 		&i.CompletedAt,
 		&i.DismissedAt,
-		&i.VerifiedAt,
 	)
 	return i, err
 }
@@ -118,7 +117,7 @@ func (q *Queries) InsertSiteAudit(ctx context.Context, arg InsertSiteAuditParams
 }
 
 const listFindings = `-- name: ListFindings :many
-SELECT f.id, f.account_id, f.business_id, f.key, f.source, f.category, f.title, f.body, f.steps, f.detail, f.result_ids, f.prompt_ids, f.sources, f.blocking, f.reach, f.priority, f.status, f.dismissal_reason, f.first_seen_at, f.last_seen_at, f.completed_at, f.dismissed_at, f.verified_at FROM findings f
+SELECT f.id, f.account_id, f.business_id, f.key, f.source, f.category, f.title, f.body, f.steps, f.detail, f.result_ids, f.prompt_ids, f.sources, f.blocking, f.reach, f.priority, f.status, f.dismissal_reason, f.first_seen_at, f.last_seen_at, f.completed_at, f.dismissed_at FROM findings f
 WHERE f.business_id = $1 AND f.account_id = $2
   AND (f.status <> 'OPEN' OR f.last_seen_at >= COALESCE(
     (SELECT a.checked_at FROM site_audits a WHERE a.business_id = $1 AND a.published), '-infinity'::timestamptz))
@@ -175,7 +174,6 @@ func (q *Queries) ListFindings(ctx context.Context, arg ListFindingsParams) ([]F
 			&i.LastSeenAt,
 			&i.CompletedAt,
 			&i.DismissedAt,
-			&i.VerifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -273,10 +271,9 @@ UPDATE findings SET
   status = $1,
   dismissal_reason = CASE WHEN $1 = 'DISMISSED' THEN $2 ELSE NULL END,
   completed_at = CASE WHEN $1 = 'DONE' THEN now() ELSE NULL END,
-  dismissed_at = CASE WHEN $1 = 'DISMISSED' THEN now() ELSE NULL END,
-  verified_at = NULL
+  dismissed_at = CASE WHEN $1 = 'DISMISSED' THEN now() ELSE NULL END
 WHERE id = $3 AND account_id = $4 AND status = $5
-RETURNING id, account_id, business_id, key, source, category, title, body, steps, detail, result_ids, prompt_ids, sources, blocking, reach, priority, status, dismissal_reason, first_seen_at, last_seen_at, completed_at, dismissed_at, verified_at
+RETURNING id, account_id, business_id, key, source, category, title, body, steps, detail, result_ids, prompt_ids, sources, blocking, reach, priority, status, dismissal_reason, first_seen_at, last_seen_at, completed_at, dismissed_at
 `
 
 type SetFindingStatusParams struct {
@@ -319,7 +316,6 @@ func (q *Queries) SetFindingStatus(ctx context.Context, arg SetFindingStatusPara
 		&i.LastSeenAt,
 		&i.CompletedAt,
 		&i.DismissedAt,
-		&i.VerifiedAt,
 	)
 	return i, err
 }
@@ -333,8 +329,7 @@ ON CONFLICT (business_id,key) DO UPDATE SET
   blocking=EXCLUDED.blocking,reach=EXCLUDED.reach,priority=EXCLUDED.priority,
   last_seen_at=now(),
   status=CASE WHEN findings.status='DONE' THEN 'OPEN' ELSE findings.status END,
-  completed_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.completed_at END,
-  verified_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.verified_at END
+  completed_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.completed_at END
 `
 
 type UpsertFindingParams struct {
@@ -379,26 +374,5 @@ func (q *Queries) UpsertFinding(ctx context.Context, arg UpsertFindingParams) er
 		arg.Reach,
 		arg.Priority,
 	)
-	return err
-}
-
-const verifyCompletedFindings = `-- name: VerifyCompletedFindings :exec
-UPDATE findings SET verified_at=now()
-WHERE business_id = $1 AND account_id = $2
-  AND status='DONE' AND verified_at IS NULL AND completed_at IS NOT NULL
-  AND NOT (key = ANY($3::text[]))
-`
-
-type VerifyCompletedFindingsParams struct {
-	BusinessID uuid.UUID
-	AccountID  uuid.UUID
-	SeenKeys   []string
-}
-
-// A completed finding the latest run did not reproduce is confirmed fixed. This
-// re-checks the finding, never the visibility that followed it, so it carries no
-// causal claim.
-func (q *Queries) VerifyCompletedFindings(ctx context.Context, arg VerifyCompletedFindingsParams) error {
-	_, err := q.db.Exec(ctx, verifyCompletedFindings, arg.BusinessID, arg.AccountID, arg.SeenKeys)
 	return err
 }

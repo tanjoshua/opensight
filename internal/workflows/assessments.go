@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -52,6 +53,7 @@ type SiteAuditResult struct {
 	PagesRead   int
 	Failure     string
 	SiteContent string
+	Profile     visibility.SiteProfile
 }
 
 // RunSiteAudit crawls the site once and evaluates the whole check catalog. A
@@ -69,7 +71,30 @@ func (a *Activities) RunSiteAudit(ctx context.Context, in AssessmentWorkflowInpu
 		fetcher.closeIdleConnections()
 	}
 	scan.BusinessName = business.Name
-	return SiteAuditResult{Checks: visibility.Audit(scan), PagesRead: len(scan.Pages), Failure: scan.FetchFailure, SiteContent: scan.Text}, nil
+	return SiteAuditResult{
+		Checks: visibility.Audit(scan), PagesRead: len(scan.Pages), Failure: scan.FetchFailure,
+		SiteContent: scan.Text, Profile: siteProfile(business),
+	}, nil
+}
+
+// siteProfile carries the reviewed profile to the finders so a structured-data
+// finding can hand back a block filled with the user's own confirmed values. A
+// location that will not parse simply yields no address, which drops the field
+// rather than publishing a broken one.
+func siteProfile(business store.Business) visibility.SiteProfile {
+	profile := visibility.SiteProfile{Name: business.Name}
+	if business.Website != nil {
+		profile.Website = *business.Website
+	}
+	var location struct {
+		Address string `json:"address"`
+		City    string `json:"city"`
+		Country string `json:"country"`
+	}
+	if len(business.Location) > 0 && json.Unmarshal(business.Location, &location) == nil {
+		profile.Address, profile.City, profile.Country = location.Address, location.City, location.Country
+	}
+	return profile
 }
 
 type FindImprovementsInput struct {
@@ -113,7 +138,7 @@ func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) (
 	defer research.client.CloseIdleConnections()
 
 	input := visibility.FinderInput{
-		Audit: in.Audit.Checks, Snapshot: snapshot, SiteContent: in.Audit.SiteContent,
+		Audit: in.Audit.Checks, Snapshot: snapshot, Profile: in.Audit.Profile, SiteContent: in.Audit.SiteContent,
 		PriorContentGaps: priorContentGaps, Classifier: a.SourceClassifier,
 	}
 	out := []visibility.Finding{}

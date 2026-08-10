@@ -32,17 +32,7 @@ ON CONFLICT (business_id,key) DO UPDATE SET
   blocking=EXCLUDED.blocking,reach=EXCLUDED.reach,priority=EXCLUDED.priority,
   last_seen_at=now(),
   status=CASE WHEN findings.status='DONE' THEN 'OPEN' ELSE findings.status END,
-  completed_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.completed_at END,
-  verified_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.verified_at END;
-
--- name: VerifyCompletedFindings :exec
--- A completed finding the latest run did not reproduce is confirmed fixed. This
--- re-checks the finding, never the visibility that followed it, so it carries no
--- causal claim.
-UPDATE findings SET verified_at=now()
-WHERE business_id = @business_id AND account_id = @account_id
-  AND status='DONE' AND verified_at IS NULL AND completed_at IS NOT NULL
-  AND NOT (key = ANY(@seen_keys::text[]));
+  completed_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.completed_at END;
 
 -- name: ListFindings :many
 -- Active work is what the current audit still reproduces, so a finding the
@@ -71,8 +61,7 @@ UPDATE findings SET
   status = @status,
   dismissal_reason = CASE WHEN @status = 'DISMISSED' THEN sqlc.narg('dismissal_reason') ELSE NULL END,
   completed_at = CASE WHEN @status = 'DONE' THEN now() ELSE NULL END,
-  dismissed_at = CASE WHEN @status = 'DISMISSED' THEN now() ELSE NULL END,
-  verified_at = NULL
+  dismissed_at = CASE WHEN @status = 'DISMISSED' THEN now() ELSE NULL END
 WHERE id = @id AND account_id = @account_id AND status = @previous_status
 RETURNING *;
 

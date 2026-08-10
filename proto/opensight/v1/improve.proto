@@ -91,9 +91,11 @@ message ImprovementAction {
   DismissalReason dismissal_reason = 14;
   google.protobuf.Timestamp first_seen_at = 15;
   google.protobuf.Timestamp completed_at = 16;
-  // verified_at is set when a later run did not reproduce a completed action.
-  // It confirms the fix landed and claims nothing about visibility.
-  google.protobuf.Timestamp verified_at = 17;
+  // 17 was verified_at, which stamped a completed action the next run stopped
+  // reproducing. Whether work actually changed visibility is a question the
+  // product does not answer yet, and a re-check of the finding was never an
+  // answer to it.
+  reserved 17;
   // category is the kind of change the action asks for, and the axis the work
   // queue filters on. Its key matches the checklist group for work on the
   // customer's own site; category_label is the word the user reads.

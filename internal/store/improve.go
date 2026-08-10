@@ -59,7 +59,6 @@ type FindingRecord struct {
 	LastSeenAt      time.Time
 	CompletedAt     *time.Time
 	DismissedAt     *time.Time
-	VerifiedAt      *time.Time
 }
 
 // ImproveRun is everything one monitoring run produced for the Improve feature.
@@ -74,9 +73,10 @@ type ImproveRun struct {
 }
 
 // PublishImproveRun is the single write boundary. One transaction inserts the
-// audit, makes it current, refreshes every finding the run produced, and
-// confirms any completed finding the run did not reproduce. A run whose crawl
-// failed skips that last step: it re-checked nothing, so it can confirm nothing.
+// audit, makes it current, and refreshes every finding the run produced. A
+// finding the run did not reproduce is left exactly as it is: it simply stops
+// being active, because ListFindings reads the current audit's timestamp rather
+// than any per-finding state.
 //
 // Re-running the same monitoring run is a no-op: the audit insert conflicts on
 // monitoring_run_id and the transaction returns without touching published state.
@@ -111,7 +111,6 @@ func (s *Store) PublishImproveRun(ctx context.Context, accountID, businessID dom
 			return err
 		}
 
-		seen := make([]string, 0, len(run.Findings))
 		for _, finding := range run.Findings {
 			params, err := findingParams(accountID, businessID, finding)
 			if err != nil {
@@ -120,16 +119,8 @@ func (s *Store) PublishImproveRun(ctx context.Context, accountID, businessID dom
 			if err := q.UpsertFinding(ctx, params); err != nil {
 				return err
 			}
-			seen = append(seen, finding.Key)
 		}
-		if run.Failure != "" {
-			// The audit could not run, so nothing was re-checked. Absence from
-			// seen is missing evidence, not evidence the fix landed.
-			return nil
-		}
-		return q.VerifyCompletedFindings(ctx, storesqlc.VerifyCompletedFindingsParams{
-			BusinessID: businessID, AccountID: accountID, SeenKeys: seen,
-		})
+		return nil
 	})
 }
 
@@ -271,7 +262,7 @@ func findingRecord(row storesqlc.Finding) (FindingRecord, error) {
 		Detail: row.Detail, Sources: row.Sources, Blocking: row.Blocking,
 		Reach: int(row.Reach), Priority: int(row.Priority), Status: FindingStatus(row.Status),
 		DismissalReason: row.DismissalReason, FirstSeenAt: row.FirstSeenAt, LastSeenAt: row.LastSeenAt,
-		CompletedAt: row.CompletedAt, DismissedAt: row.DismissedAt, VerifiedAt: row.VerifiedAt,
+		CompletedAt: row.CompletedAt, DismissedAt: row.DismissedAt,
 	}
 	if err := json.Unmarshal(row.Steps, &record.Steps); err != nil {
 		return FindingRecord{}, err

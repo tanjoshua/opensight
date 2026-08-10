@@ -144,10 +144,10 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 		t.Fatalf("customer-site context was not supplied to analysis: %+v", classifier.in)
 	}
 	if len(classifier.in.PriorContentGaps) != 1 || classifier.in.PriorContentGaps[0].Key != "complex-case-services" {
-		t.Fatalf("prior model-defined gap was not supplied for identity reuse: %+v", classifier.in.PriorContentGaps)
+		t.Fatalf("prior model-defined gap was not supplied for topic reuse: %+v", classifier.in.PriorContentGaps)
 	}
 	f := findings[0]
-	if f.Key != "competitor-content:complex-case-services" || f.Category != GroupIdentity || strings.Contains(f.Key, "citation-gap") {
+	if f.Key != "competitor-content:complex-case-services" || f.Category != CategoryContent || strings.Contains(f.Key, "citation-gap") {
 		t.Fatalf("competitor-owned source routed incorrectly: %+v", f)
 	}
 	if strings.Contains(f.Detail, "Rival Clinic offers") || !strings.Contains(f.Detail, "1 competitor-owned source") {

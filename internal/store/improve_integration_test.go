@@ -127,26 +127,18 @@ func TestFindingLifecycleAcrossRuns(t *testing.T) {
 	if reopened.Status != FindingOpen {
 		t.Errorf("status after recurrence = %s, want OPEN", reopened.Status)
 	}
-	if reopened.CompletedAt != nil || reopened.VerifiedAt != nil {
-		t.Error("a reopened finding kept its completion stamps")
+	if reopened.CompletedAt != nil {
+		t.Error("a reopened finding kept its completion stamp")
 	}
 
-	// A run whose crawl failed produces no site-audit findings, but that absence
-	// is missing evidence rather than a passing re-check, so it must not confirm.
+	// Completing and then not seeing it again leaves it done and reachable. The
+	// product records nothing further: a later run not reproducing a finding is
+	// not evidence that the work changed anything, so nothing claims it did.
 	setStatus(reopened.ID, FindingDone, nil)
-	publishRun(ImproveRun{Failure: "dial tcp: connection refused"})
-	if unverified := find(blockedKey); unverified.VerifiedAt != nil {
-		t.Error("a run whose crawl failed confirmed a completed finding it never re-checked")
-	}
-
-	// Completing and then not seeing it again confirms the fix landed.
 	publish()
-	confirmed := find(blockedKey)
-	if confirmed.VerifiedAt == nil {
-		t.Error("a completed finding the next run did not reproduce was never confirmed")
-	}
-	if confirmed.Status != FindingDone {
-		t.Errorf("status after confirmation = %s, want DONE", confirmed.Status)
+	resolved := find(blockedKey)
+	if resolved.Status != FindingDone {
+		t.Errorf("status after a run that did not reproduce it = %s, want DONE", resolved.Status)
 	}
 
 	// A dismissal survives the finding recurring, which is the whole suppression

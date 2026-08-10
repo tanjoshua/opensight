@@ -103,6 +103,23 @@ function formatDate(value: Parameters<typeof timestampDate>[0] | undefined) {
     : "Not yet checked"
 }
 
+// A step may end with a preformatted block after a blank line — the
+// structured-data action puts the JSON-LD to paste there. Rendering it as a
+// code block is the point of generating it: collapsed into the sentence, the
+// indentation and newlines the user has to copy would be lost.
+function ActionStep({ step }: { step: string }) {
+  const split = step.indexOf("\n\n")
+  if (split === -1) return <li>{step}</li>
+  return (
+    <li>
+      {step.slice(0, split)}
+      <pre className="mt-2 overflow-x-auto rounded-md border bg-muted p-3 text-xs">
+        <code>{step.slice(split + 2)}</code>
+      </pre>
+    </li>
+  )
+}
+
 function useActionMutation(businessId?: string) {
   const queryClient = useQueryClient()
   return useMutation(setActionStatus, {
@@ -355,7 +372,7 @@ function ActionCard({
               <h3 className="font-medium">What to do</h3>
               <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-5">
                 {action.steps.map((step) => (
-                  <li key={step}>{step}</li>
+                  <ActionStep key={step} step={step} />
                 ))}
               </ol>
             </div>
@@ -393,14 +410,6 @@ function ActionCard({
               View {action.resultIds.length} supporting response
               {action.resultIds.length === 1 ? "" : "s"}
             </Button>
-          )}
-          {action.verifiedAt && (
-            <Alert>
-              <AlertDescription>
-                Confirmed on {formatDate(action.verifiedAt)}: a later check no
-                longer found this issue.
-              </AlertDescription>
-            </Alert>
           )}
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2">

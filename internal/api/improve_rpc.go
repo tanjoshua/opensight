@@ -102,9 +102,6 @@ func actionToProto(row store.FindingRecord) *opensightv1.ImprovementAction {
 	if row.CompletedAt != nil {
 		action.CompletedAt = timestamppb.New(*row.CompletedAt)
 	}
-	if row.VerifiedAt != nil {
-		action.VerifiedAt = timestamppb.New(*row.VerifiedAt)
-	}
 	return action
 }
 

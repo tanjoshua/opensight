@@ -106,7 +106,6 @@ type Finding struct {
 	LastSeenAt      time.Time
 	CompletedAt     *time.Time
 	DismissedAt     *time.Time
-	VerifiedAt      *time.Time
 }
 
 type Mention struct {

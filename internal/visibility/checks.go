@@ -37,6 +37,12 @@ type Check struct {
 	// failure, which is why the imperative is written out rather than derived.
 	FixTitle string
 	Fix      []string
+	// DependsOn names a check whose failure necessarily fails this one too. The
+	// checklist still reports both, because a user reading it wants to see every
+	// assertion — but the work queue folds the dependent into its parent rather
+	// than asking for the same edit five times. Doing the parent's fix is the
+	// only way to attempt the dependent's, so they were never separate work.
+	DependsOn string
 	// Priority orders findings from failed checks against each other, 1 (most
 	// urgent) to 3. It never crosses the blocking boundary.
 	Priority int
@@ -87,22 +93,34 @@ var groups = []GroupDefinition{
 
 func Groups() []GroupDefinition { return append([]GroupDefinition(nil), groups...) }
 
-// CategoryListings is the one category no check produces: work done on somebody
-// else's website rather than the customer's own.
-const CategoryListings = "listings"
+// CategoryContent and CategoryListings are the two categories no check
+// produces. Content is writing for the customer's own site, derived from
+// evidence rather than from a fixed assertion; listings is work done on
+// somebody else's website.
+const (
+	CategoryContent  = "content"
+	CategoryListings = "listings"
+)
 
 // CategoryDefinition names a kind of change, which is how the work queue is
-// filtered. The three site categories are the checklist groups themselves — a
-// finding from a failed check belongs to that check's group — so there is one
-// taxonomy, not two. The labels differ from the group titles because a group
+// filtered. Every checklist group is also a category — a finding from a failed
+// check belongs to that check's group — so the deterministic half needs no
+// second taxonomy. The labels differ from the group titles because a group
 // heads a list of assertions ("ChatGPT can open your website") while a category
 // names a body of work ("Website access").
+//
+// The open half adds categories the catalog cannot: a check asserts something
+// verifiable about the markup, while "explain what you do for complex cases" is
+// a writing job discovered from the answer corpus. Keeping it out of Business
+// details is what makes the filter mean something — pasting a JSON-LD block and
+// drafting a services page are not the same afternoon's work.
 type CategoryDefinition struct{ Key, Label string }
 
 var categories = []CategoryDefinition{
 	{Key: GroupAccess, Label: "Website access"},
 	{Key: GroupStructure, Label: "Site structure"},
 	{Key: GroupIdentity, Label: "Business details"},
+	{Key: CategoryContent, Label: "Website content"},
 	{Key: CategoryListings, Label: "Listings & directories"},
 }
 
@@ -113,9 +131,11 @@ func Categories() []CategoryDefinition {
 // CategoryKeys is the catalog order, and it is also the work queue's order:
 // changes to the customer's own site come before getting listed on somebody
 // else's, because a site change is entirely within their control while a
-// listing depends on a third party accepting it. Ordering the queue by how
-// hard the work is to actually finish is the point of the sequence, so keep
-// the slice ordered easiest-to-act-on first.
+// listing depends on a third party accepting it. Writing sits between the two —
+// it is still their own site, so it beats a listing, but it costs real drafting
+// effort rather than a markup edit, so it loses to the mechanical fixes.
+// Ordering the queue by how hard the work is to actually finish is the point of
+// the sequence, so keep the slice ordered easiest-to-act-on first.
 func CategoryKeys() []string {
 	out := make([]string, 0, len(categories))
 	for _, category := range categories {
@@ -305,15 +325,18 @@ var catalog = []Check{
 		},
 	},
 	{
-		Key: CheckStructuredType, Group: GroupIdentity, Priority: 2,
+		Key: CheckStructuredType, Group: GroupIdentity, Priority: 2, DependsOn: CheckStructuredData,
 		Title:    "Your type of business is clearly identified",
-		What:     "We check whether your structured data identifies what kind of business you are, such as a dental clinic or medical clinic.",
+		What:     "We check whether your structured data identifies what kind of business you are.",
 		FixTitle: "Declare your business type in structured data",
 		Fix: []string{
-			"Set the structured data's @type to the most specific type that fits, such as Dentist or MedicalClinic.",
+			"Set the structured data's @type to the most specific schema.org type that fits your business, rather than a generic Organization.",
 		},
 	},
 	{
+		// Deliberately not DependsOn structured data: a tel: link satisfies this
+		// check on a site with no JSON-LD at all, so it has a remedy of its own
+		// and stays its own work item.
 		Key: CheckStructuredTelephone, Group: GroupIdentity, Priority: 2,
 		Title:    "Software can recognise your phone number",
 		What:     "We check whether your phone number is labelled in structured data or linked as a number that can be called.",
@@ -324,7 +347,7 @@ var catalog = []Check{
 		},
 	},
 	{
-		Key: CheckStructuredAddress, Group: GroupIdentity, Priority: 2,
+		Key: CheckStructuredAddress, Group: GroupIdentity, Priority: 2, DependsOn: CheckStructuredData,
 		Title:    "Software can recognise your address",
 		What:     "We check whether your postal address is labelled in your site's structured data.",
 		FixTitle: "Make your address machine-readable",
@@ -333,12 +356,12 @@ var catalog = []Check{
 		},
 	},
 	{
-		Key: CheckStructuredOpenHours, Group: GroupIdentity, Priority: 2,
+		Key: CheckStructuredOpenHours, Group: GroupIdentity, Priority: 2, DependsOn: CheckStructuredData,
 		Title:    "Software can recognise your opening hours",
 		What:     "We check whether your opening hours are labelled in your site's structured data.",
 		FixTitle: "Make your opening hours machine-readable",
 		Fix: []string{
-			"Add opening hours to your structured data. Answers often cite availability as a reason to recommend one clinic over another.",
+			"Add opening hours to your structured data. Answers often cite availability as a reason to recommend one business over another.",
 		},
 	},
 }

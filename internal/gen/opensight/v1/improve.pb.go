@@ -507,9 +507,6 @@ type ImprovementAction struct {
 	DismissalReason DismissalReason        `protobuf:"varint,14,opt,name=dismissal_reason,json=dismissalReason,proto3,enum=opensight.v1.DismissalReason" json:"dismissal_reason,omitempty"`
 	FirstSeenAt     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=first_seen_at,json=firstSeenAt,proto3" json:"first_seen_at,omitempty"`
 	CompletedAt     *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
-	// verified_at is set when a later run did not reproduce a completed action.
-	// It confirms the fix landed and claims nothing about visibility.
-	VerifiedAt *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=verified_at,json=verifiedAt,proto3" json:"verified_at,omitempty"`
 	// category is the kind of change the action asks for, and the axis the work
 	// queue filters on. Its key matches the checklist group for work on the
 	// customer's own site; category_label is the word the user reads.
@@ -657,13 +654,6 @@ func (x *ImprovementAction) GetFirstSeenAt() *timestamppb.Timestamp {
 func (x *ImprovementAction) GetCompletedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CompletedAt
-	}
-	return nil
-}
-
-func (x *ImprovementAction) GetVerifiedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.VerifiedAt
 	}
 	return nil
 }
@@ -1218,7 +1208,7 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"references\x12+\n" +
 	"\x06checks\x18\x05 \x03(\v2\x13.opensight.v1.CheckR\x06checks\x12#\n" +
 	"\rchecks_passed\x18\x06 \x01(\x05R\fchecksPassed\x12!\n" +
-	"\fchecks_total\x18\a \x01(\x05R\vchecksTotal\"\xac\x05\n" +
+	"\fchecks_total\x18\a \x01(\x05R\vchecksTotal\"\xf5\x04\n" +
 	"\x11ImprovementAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x16\n" +
@@ -1238,11 +1228,9 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\x06status\x18\r \x01(\x0e2\x1a.opensight.v1.ActionStatusR\x06status\x12H\n" +
 	"\x10dismissal_reason\x18\x0e \x01(\x0e2\x1d.opensight.v1.DismissalReasonR\x0fdismissalReason\x12>\n" +
 	"\rfirst_seen_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vfirstSeenAt\x12=\n" +
-	"\fcompleted_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12;\n" +
-	"\vverified_at\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"verifiedAt\x12\x1a\n" +
+	"\fcompleted_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1a\n" +
 	"\bcategory\x18\x12 \x01(\tR\bcategory\x12%\n" +
-	"\x0ecategory_label\x18\x13 \x01(\tR\rcategoryLabel\"N\n" +
+	"\x0ecategory_label\x18\x13 \x01(\tR\rcategoryLabelJ\x04\b\x11\x10\x12\"N\n" +
 	"\x0eActionCategory\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x14\n" +
@@ -1353,32 +1341,31 @@ var file_opensight_v1_improve_proto_depIdxs = []int32{
 	2,  // 4: opensight.v1.ImprovementAction.dismissal_reason:type_name -> opensight.v1.DismissalReason
 	17, // 5: opensight.v1.ImprovementAction.first_seen_at:type_name -> google.protobuf.Timestamp
 	17, // 6: opensight.v1.ImprovementAction.completed_at:type_name -> google.protobuf.Timestamp
-	17, // 7: opensight.v1.ImprovementAction.verified_at:type_name -> google.protobuf.Timestamp
-	7,  // 8: opensight.v1.ListActionsResponse.actions:type_name -> opensight.v1.ImprovementAction
-	7,  // 9: opensight.v1.ListActionsResponse.resolved_actions:type_name -> opensight.v1.ImprovementAction
-	3,  // 10: opensight.v1.ListActionsResponse.empty_reason:type_name -> opensight.v1.ActionsEmptyReason
-	17, // 11: opensight.v1.ListActionsResponse.checked_at:type_name -> google.protobuf.Timestamp
-	8,  // 12: opensight.v1.ListActionsResponse.categories:type_name -> opensight.v1.ActionCategory
-	7,  // 13: opensight.v1.GetActionResponse.action:type_name -> opensight.v1.ImprovementAction
-	1,  // 14: opensight.v1.SetActionStatusRequest.status:type_name -> opensight.v1.ActionStatus
-	2,  // 15: opensight.v1.SetActionStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	7,  // 16: opensight.v1.SetActionStatusResponse.action:type_name -> opensight.v1.ImprovementAction
-	5,  // 17: opensight.v1.GetChecklistResponse.check_counts:type_name -> opensight.v1.CheckCount
-	6,  // 18: opensight.v1.GetChecklistResponse.groups:type_name -> opensight.v1.CheckGroup
-	17, // 19: opensight.v1.GetChecklistResponse.checked_at:type_name -> google.protobuf.Timestamp
-	9,  // 20: opensight.v1.ImproveService.ListActions:input_type -> opensight.v1.ListActionsRequest
-	11, // 21: opensight.v1.ImproveService.GetAction:input_type -> opensight.v1.GetActionRequest
-	13, // 22: opensight.v1.ImproveService.SetActionStatus:input_type -> opensight.v1.SetActionStatusRequest
-	15, // 23: opensight.v1.ImproveService.GetChecklist:input_type -> opensight.v1.GetChecklistRequest
-	10, // 24: opensight.v1.ImproveService.ListActions:output_type -> opensight.v1.ListActionsResponse
-	12, // 25: opensight.v1.ImproveService.GetAction:output_type -> opensight.v1.GetActionResponse
-	14, // 26: opensight.v1.ImproveService.SetActionStatus:output_type -> opensight.v1.SetActionStatusResponse
-	16, // 27: opensight.v1.ImproveService.GetChecklist:output_type -> opensight.v1.GetChecklistResponse
-	24, // [24:28] is the sub-list for method output_type
-	20, // [20:24] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	7,  // 7: opensight.v1.ListActionsResponse.actions:type_name -> opensight.v1.ImprovementAction
+	7,  // 8: opensight.v1.ListActionsResponse.resolved_actions:type_name -> opensight.v1.ImprovementAction
+	3,  // 9: opensight.v1.ListActionsResponse.empty_reason:type_name -> opensight.v1.ActionsEmptyReason
+	17, // 10: opensight.v1.ListActionsResponse.checked_at:type_name -> google.protobuf.Timestamp
+	8,  // 11: opensight.v1.ListActionsResponse.categories:type_name -> opensight.v1.ActionCategory
+	7,  // 12: opensight.v1.GetActionResponse.action:type_name -> opensight.v1.ImprovementAction
+	1,  // 13: opensight.v1.SetActionStatusRequest.status:type_name -> opensight.v1.ActionStatus
+	2,  // 14: opensight.v1.SetActionStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	7,  // 15: opensight.v1.SetActionStatusResponse.action:type_name -> opensight.v1.ImprovementAction
+	5,  // 16: opensight.v1.GetChecklistResponse.check_counts:type_name -> opensight.v1.CheckCount
+	6,  // 17: opensight.v1.GetChecklistResponse.groups:type_name -> opensight.v1.CheckGroup
+	17, // 18: opensight.v1.GetChecklistResponse.checked_at:type_name -> google.protobuf.Timestamp
+	9,  // 19: opensight.v1.ImproveService.ListActions:input_type -> opensight.v1.ListActionsRequest
+	11, // 20: opensight.v1.ImproveService.GetAction:input_type -> opensight.v1.GetActionRequest
+	13, // 21: opensight.v1.ImproveService.SetActionStatus:input_type -> opensight.v1.SetActionStatusRequest
+	15, // 22: opensight.v1.ImproveService.GetChecklist:input_type -> opensight.v1.GetChecklistRequest
+	10, // 23: opensight.v1.ImproveService.ListActions:output_type -> opensight.v1.ListActionsResponse
+	12, // 24: opensight.v1.ImproveService.GetAction:output_type -> opensight.v1.GetActionResponse
+	14, // 25: opensight.v1.ImproveService.SetActionStatus:output_type -> opensight.v1.SetActionStatusResponse
+	16, // 26: opensight.v1.ImproveService.GetChecklist:output_type -> opensight.v1.GetChecklistResponse
+	23, // [23:27] is the sub-list for method output_type
+	19, // [19:23] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_improve_proto_init() }

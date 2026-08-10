@@ -71,6 +71,13 @@ func TestCatalogIsWellFormed(t *testing.T) {
 			t.Errorf("check %q declares a fix but no imperative title to show on the finding", c.Key)
 		case c.Informational && len(c.Fix) > 0:
 			t.Errorf("check %q is informational, so it reports a choice and must not prescribe a fix", c.Key)
+		case c.DependsOn == c.Key:
+			t.Errorf("check %q depends on itself, which would fold it out of the queue entirely", c.Key)
+		case c.DependsOn != "" && !seen[c.DependsOn]:
+			// Requiring the parent earlier in the catalog keeps the graph a
+			// forest rooted in checks the queue can actually reach, so no cycle
+			// can silently swallow every finding in a chain.
+			t.Errorf("check %q depends on %q, which must be declared before it", c.Key, c.DependsOn)
 		}
 		seen[c.Key] = true
 	}
@@ -101,11 +108,97 @@ func TestSiteAuditFinderOnlyActsOnFixableFailures(t *testing.T) {
 	}
 }
 
+// TestStructuredDataFailuresBecomeOneAction pins the consolidation and the
+// snippet together, because they are the same promise: a site with no JSON-LD
+// has one job to do, and the action states the exact block to publish rather
+// than the category of thing to publish.
+func TestStructuredDataFailuresBecomeOneAction(t *testing.T) {
+	audit := []CheckResult{
+		{Key: CheckStructuredData, Outcome: CheckFail, Detail: "No page we read publishes a readable application/ld+json block."},
+		{Key: CheckStructuredType, Outcome: CheckFail, Detail: "no type"},
+		{Key: CheckStructuredTelephone, Outcome: CheckFail, Detail: "no phone"},
+		{Key: CheckStructuredAddress, Outcome: CheckFail, Detail: "no address"},
+		{Key: CheckStructuredOpenHours, Outcome: CheckFail, Detail: "no hours"},
+	}
+	profile := SiteProfile{
+		Name: "Roots Advanced Endodontics", Website: "https://rootsendo.sg",
+		Address: "10 Sinaran Drive", City: "Singapore", Country: "SG",
+	}
+	findings, err := siteAuditFinder{}.Find(context.Background(), FinderInput{Audit: audit, Profile: profile}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The telephone check survives on its own: a tel: link fixes it without any
+	// structured data, so it is not entailed by the parent failure.
+	keys := []string{}
+	for _, f := range findings {
+		keys = append(keys, f.Key)
+	}
+	want := []string{SourceSiteAudit + ":" + CheckStructuredData, SourceSiteAudit + ":" + CheckStructuredTelephone}
+	if !slices.Equal(keys, want) {
+		t.Fatalf("got actions %v, want %v", keys, want)
+	}
+
+	steps := strings.Join(findings[0].Steps, "\n")
+	for _, fragment := range []string{`"@context"`, "Roots Advanced Endodontics", "https://rootsendo.sg", "10 Sinaran Drive", "application/ld+json"} {
+		if !strings.Contains(steps, fragment) {
+			t.Errorf("snippet is missing %q:\n%s", fragment, steps)
+		}
+	}
+	// Hours are not in any profile, so the action must ask for them. The address
+	// is, so asking again would be noise.
+	if !strings.Contains(steps, "openingHours") || strings.Contains(steps, "Add address") {
+		t.Errorf("action misreports which fields the profile could not fill:\n%s", steps)
+	}
+	if !strings.Contains(findings[0].Detail, "3 dependent checks") {
+		t.Errorf("detail should account for the folded checks: %q", findings[0].Detail)
+	}
+}
+
+// TestDependentCheckStandsAloneWhenParentPasses is the other half of the fold:
+// a site that publishes JSON-LD but omits one field has real, specific work to
+// do, and folding is conditional on the parent actually having failed.
+func TestDependentCheckStandsAloneWhenParentPasses(t *testing.T) {
+	audit := []CheckResult{
+		{Key: CheckStructuredData, Outcome: CheckPass, Detail: "Found structured data declaring Dentist."},
+		{Key: CheckStructuredAddress, Outcome: CheckFail, Detail: "Structured data includes no postal address."},
+	}
+	findings, err := siteAuditFinder{}.Find(context.Background(), FinderInput{Audit: audit}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 1 || findings[0].Key != SourceSiteAudit+":"+CheckStructuredAddress {
+		t.Fatalf("want the address check as its own action, got %+v", findings)
+	}
+}
+
+// TestStructuredDataActionInventsNothing guards the rule that makes the snippet
+// safe to paste: with no confirmed profile there is no block to offer, and the
+// action falls back to the catalog's generic fix rather than emitting a
+// template full of placeholder values a user might publish unedited.
+func TestStructuredDataActionInventsNothing(t *testing.T) {
+	audit := []CheckResult{{Key: CheckStructuredData, Outcome: CheckFail, Detail: "none"}}
+	findings, err := siteAuditFinder{}.Find(context.Background(), FinderInput{Audit: audit}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check, _ := CheckByKey(CheckStructuredData)
+	if len(findings) != 1 || !slices.Equal(findings[0].Steps, check.Fix) {
+		t.Fatalf("want the catalog fix verbatim, got %+v", findings)
+	}
+}
+
 // TestRankPutsBlockersThenOwnSiteWork pins the triage order the Actions page
 // depends on: nothing outranks a blocker, work on the customer's own site comes
 // before work that depends on a third party accepting a listing however many
 // answers that listing would affect, and reach orders the listings against each
 // other where the comparison is fair.
+//
+// The content entry pins the position that keeps reach from distorting the
+// queue. A writing job carries per-answer reach and a markup fix cannot, so
+// ranking them in one bucket would always bury the cheap certain fix under the
+// expensive uncertain one; separate categories are what make that comparison
+// never happen.
 func TestRankPutsBlockersThenOwnSiteWork(t *testing.T) {
 	findings := []Finding{
 		{Key: "listed-wide", Category: CategoryListings, Reach: 9, Priority: 1},
@@ -113,13 +206,14 @@ func TestRankPutsBlockersThenOwnSiteWork(t *testing.T) {
 		{Key: "blocker", Category: GroupAccess, Blocking: true, Priority: 3},
 		{Key: "listed-narrow", Category: CategoryListings, Reach: 2, Priority: 1},
 		{Key: "structure", Category: GroupStructure, Priority: 3},
+		{Key: "writing", Category: CategoryContent, Reach: 8, Priority: 1},
 	}
 	Rank(findings)
 	got := make([]string, 0, len(findings))
 	for _, f := range findings {
 		got = append(got, f.Key)
 	}
-	want := []string{"blocker", "structure", "details", "listed-wide", "listed-narrow"}
+	want := []string{"blocker", "structure", "details", "writing", "listed-wide", "listed-narrow"}
 	if !slices.Equal(got, want) {
 		t.Errorf("got order %v, want %v", got, want)
 	}
