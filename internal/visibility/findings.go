@@ -38,6 +38,40 @@ type Finding struct {
 	Blocking bool `json:"blocking"`
 	Reach    int  `json:"reach"`
 	Priority int  `json:"priority"`
+	// Comparison is the two sides of the case for the work, for findings that
+	// have both. A site-audit finding leaves it empty.
+	Comparison Comparison `json:"comparison,omitzero"`
+}
+
+// Comparison is why a content finding is worth doing, in the only two pieces of
+// evidence that argue it: what the answer engine actually wrote about a
+// competitor, and what the customer's own site says on the same subject. Both
+// are quotations rather than summaries — the product's claim is that a
+// recommendation went elsewhere, and a quote is the only form of that claim the
+// user can check for themselves.
+type Comparison struct {
+	// Coverage is the model's verdict on the customer's own site: "absent" or
+	// "partial". Anything else is treated as unknown and simply not rendered.
+	Coverage string `json:"coverage,omitempty"`
+	// Cited are passages from monitored answers, each with the source the answer
+	// cited alongside it.
+	Cited []CitedQuote `json:"cited,omitempty"`
+	// Site are passages from the customer's own pages, confirmed to appear in
+	// the crawled text before they are stored.
+	Site []string `json:"site,omitempty"`
+}
+
+// Empty reports whether there is nothing to compare, which is the case for
+// every finding that is not derived from competitor evidence.
+func (c Comparison) Empty() bool {
+	return c.Coverage == "" && len(c.Cited) == 0 && len(c.Site) == 0
+}
+
+// CitedQuote is one passage an answer used to recommend somebody else, and the
+// source it cited for it.
+type CitedQuote struct {
+	Quote  string `json:"quote"`
+	Domain string `json:"domain"`
 }
 
 const (
@@ -322,7 +356,7 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 		}
 	}
 	for _, gap := range analysis.Gaps {
-		out = append(out, competitorContentFinding(gap, inspected, classificationInput.Candidates))
+		out = append(out, competitorContentFinding(gap, inspected, classificationInput.Candidates, in.SiteContent))
 	}
 	return out, nil
 }
@@ -359,36 +393,126 @@ func findingForDomain(evidence *domainEvidence, checked []string) Finding {
 	}
 }
 
-func competitorContentFinding(gap llm.ContentGap, inspected []inspectedDomain, candidates []llm.SourceCandidate) Finding {
+func competitorContentFinding(gap llm.ContentGap, inspected []inspectedDomain, candidates []llm.SourceCandidate, siteContent string) Finding {
 	results := map[string]bool{}
 	prompts := map[string]bool{}
-	domains := map[string]bool{}
 	sources := map[string]bool{}
+	byDomain := map[string][]string{}
+	order := []string{}
 	for _, ref := range gap.Evidence {
 		claim := candidates[ref.CandidateIndex].Claims[ref.ClaimIndex]
+		domain := candidates[ref.CandidateIndex].Domain
 		results[claim.ResultID] = true
 		prompts[claim.PromptID] = true
-		domains[candidates[ref.CandidateIndex].Domain] = true
 		for _, page := range inspected[ref.CandidateIndex].pages {
 			sources[page.URL] = true
 		}
+		if _, seen := byDomain[domain]; !seen {
+			order = append(order, domain)
+		}
+		byDomain[domain] = append(byDomain[domain], claim.Passage)
 	}
-	domainCount := len(domains)
-	detail := fmt.Sprintf("This pattern recurred across %d competitor-owned %s.", domainCount, plural(domainCount, "source", "sources"))
-	if gap.Coverage == "partial" {
-		detail += " Your site touches on the topic, but does not yet make the cited decision factors equally clear."
-	}
+	domainCount := len(order)
 	return Finding{
 		Key: SourceCompetitorContent + ":" + gap.Key, Source: SourceCompetitorContent,
-		Category: CategoryContent, Title: gap.Title,
-		Body: fmt.Sprintf("In %d %s that omitted you, ChatGPT relied on this kind of information when recommending other businesses. %s", len(results), plural(len(results), "answer", "answers"), gap.Reason),
-		Steps: []string{
-			gap.Recommendation,
-			"Publish only facts you can substantiate; do not copy another business's wording or imply unsupported outcomes.",
+		Category: CategoryContent, Title: gap.Title, Body: gap.Reason,
+		Steps:  []string{gap.Recommendation},
+		Detail: fmt.Sprintf("This pattern recurred across %d competitor-owned %s.", domainCount, plural(domainCount, "source", "sources")),
+		Comparison: Comparison{
+			Coverage: gap.Coverage,
+			Cited:    citedQuotes(order, byDomain),
+			Site:     siteQuotes(gap.SiteEvidence, siteContent),
 		},
-		Detail: detail, ResultIDs: mapKeys(results), PromptIDs: mapKeys(prompts), Sources: mapKeys(sources),
+		ResultIDs: mapKeys(results), PromptIDs: mapKeys(prompts), Sources: mapKeys(sources),
 		Reach: len(results), Priority: 1,
 	}
+}
+
+const (
+	// maxCitedQuotes caps the competitor side of a comparison. Three shows the
+	// pattern recurred without turning a card into a transcript, and the full set
+	// of answers is always one click away in the evidence drawer.
+	maxCitedQuotes = 3
+	// maxSiteQuotes caps the customer's own side, which only has to establish
+	// what they already say — one or two passages settle that.
+	maxSiteQuotes = 2
+	// maxQuoteRunes trims a passage that would dominate the card. Citation spans
+	// run to a few hundred characters, so this keeps most of them whole.
+	maxQuoteRunes = 400
+)
+
+// citedQuotes picks the passages to show, taking one domain at a time before
+// taking a second from any of them. A finding whose detail says the pattern
+// recurred across three sources must not then quote the same source three
+// times: breadth is the claim, so breadth is what the evidence shows.
+func citedQuotes(order []string, byDomain map[string][]string) []CitedQuote {
+	out := []CitedQuote{}
+	seen := map[string]bool{}
+	for round := 0; len(out) < maxCitedQuotes; round++ {
+		exhausted := true
+		for _, domain := range order {
+			passages := byDomain[domain]
+			if round >= len(passages) {
+				continue
+			}
+			exhausted = false
+			quote := trimQuote(passages[round])
+			if quote == "" || seen[quote] {
+				continue
+			}
+			seen[quote] = true
+			if out = append(out, CitedQuote{Quote: quote, Domain: domain}); len(out) == maxCitedQuotes {
+				return out
+			}
+		}
+		if exhausted {
+			break
+		}
+	}
+	return out
+}
+
+// siteQuotes keeps only the passages that really do appear in the crawled text.
+// The model is told to copy them exactly, but its output is never validated, and
+// a quote the card attributes to the customer's own page has to be one they can
+// go and find there. Matching ignores case and whitespace because text
+// extraction collapses both.
+func siteQuotes(claimed []string, siteContent string) []string {
+	haystack := normalizeQuote(siteContent)
+	if haystack == "" {
+		return nil
+	}
+	out := []string{}
+	for _, passage := range claimed {
+		normalized := normalizeQuote(passage)
+		if normalized == "" || !strings.Contains(haystack, normalized) {
+			continue
+		}
+		out = append(out, trimQuote(passage))
+		if len(out) == maxSiteQuotes {
+			break
+		}
+	}
+	return out
+}
+
+// trimQuote renders a passage as one line of quotable prose: collapsed
+// whitespace, no leading list marker, and cut on a word boundary if it is long.
+func trimQuote(passage string) string {
+	quote := strings.TrimLeft(strings.Join(strings.Fields(passage), " "), "-*•– ")
+	runes := []rune(quote)
+	if len(runes) <= maxQuoteRunes {
+		return quote
+	}
+	cut := string(runes[:maxQuoteRunes])
+	if i := strings.LastIndex(cut, " "); i > 0 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,;:—-") + "…"
+}
+
+func normalizeQuote(s string) string {
+	return strings.ToLower(strings.Join(strings.Fields(s), " "))
 }
 
 // confirmAbsent reads the cited pages and reports which were readable, whether

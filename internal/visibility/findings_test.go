@@ -9,11 +9,13 @@ import (
 )
 
 type fixedSourceClassifier struct {
-	kind        string
-	owner       string
-	suppressGap bool
-	calls       int
-	in          llm.SourceClassificationInput
+	kind         string
+	owner        string
+	suppressGap  bool
+	coverage     string
+	siteEvidence []string
+	calls        int
+	in           llm.SourceClassificationInput
 }
 
 func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.SourceClassificationInput) (llm.SourceAnalysis, error) {
@@ -39,11 +41,15 @@ func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.Source
 	}
 	analysis := llm.SourceAnalysis{Sources: out, Gaps: []llm.ContentGap{}}
 	if c.kind == llm.SourceCompetitorOwned && !c.suppressGap {
+		coverage := c.coverage
+		if coverage == "" {
+			coverage = "absent"
+		}
 		analysis.Gaps = []llm.ContentGap{{
 			Key: "complex-case-services", Title: "Explain your complex-case services",
 			Reason:         "Your site does not clearly describe these capabilities.",
 			Recommendation: "On your services page, state which complex cases you treat, if offered.",
-			Coverage:       "absent", SiteEvidence: []string{}, Evidence: evidence,
+			Coverage:       coverage, SiteEvidence: c.siteEvidence, Evidence: evidence,
 		}}
 	}
 	return analysis, nil
@@ -84,6 +90,13 @@ func TestCompetitorContentGroupsDomainsByActionableTopic(t *testing.T) {
 	}
 	if len(findings) != 1 || findings[0].Key != "competitor-content:complex-case-services" || findings[0].Reach != 4 || len(findings[0].Sources) != 4 {
 		t.Fatalf("competitor domains were not grouped into one topic finding: %+v", findings)
+	}
+	// Both domains contributed two claims each. The detail says the pattern
+	// recurred across two sources, so the quotes shown must come from both rather
+	// than three from whichever was grouped first.
+	cited := findings[0].Comparison.Cited
+	if len(cited) != 3 || cited[0].Domain == cited[1].Domain {
+		t.Fatalf("cited quotes = %+v, want breadth across domains before depth", cited)
 	}
 }
 
@@ -153,8 +166,47 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 	if strings.Contains(f.Detail, "Rival Clinic offers") || !strings.Contains(f.Detail, "1 competitor-owned source") {
 		t.Errorf("detail should summarize grouped evidence without dumping claims: %q", f.Detail)
 	}
-	if !strings.Contains(strings.Join(f.Steps, " "), "do not copy") || !strings.Contains(strings.Join(f.Steps, " "), "substantiate") {
-		t.Errorf("content action lacks safety constraints: %v", f.Steps)
+	// The body is the model's reason alone. The count it used to be prefixed with
+	// is already carried by Reach and by the cited quotes underneath it.
+	if f.Body != "Your site does not clearly describe these capabilities." {
+		t.Errorf("body = %q, want the model's reason with no restated count", f.Body)
+	}
+	if len(f.Steps) != 1 || f.Steps[0] != "On your services page, state which complex cases you treat, if offered." {
+		t.Errorf("steps = %v, want the recommendation alone", f.Steps)
+	}
+	// The passage a monitored answer used to recommend the competitor is the
+	// evidence the card is built on, so it has to survive into the finding.
+	if len(f.Comparison.Cited) == 0 || f.Comparison.Cited[0].Domain != "www.rival.example" {
+		t.Fatalf("cited answer passages were dropped: %+v", f.Comparison)
+	}
+	if !strings.Contains(f.Comparison.Cited[0].Quote, "Rival Clinic offers microscope-assisted treatment") {
+		t.Errorf("cited quote = %q, want the answer's own wording", f.Comparison.Cited[0].Quote)
+	}
+}
+
+// TestSiteQuotesMustAppearOnTheSite covers the one claim the product makes about
+// the customer's own pages. The model's site evidence is never validated by the
+// llm package, so a quote it invented would otherwise be shown back to the user
+// as something they published.
+func TestSiteQuotesMustAppearOnTheSite(t *testing.T) {
+	classifier := &fixedSourceClassifier{
+		kind: llm.SourceCompetitorOwned, owner: "Rival Clinic", coverage: "partial",
+		siteEvidence: []string{"We treat   COMPLEX cases", "We guarantee a 100% success rate"},
+	}
+	research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{
+		"https://www.rival.example/a": "<h1>Rival Clinic</h1>", "https://www.rival.example/b": "<h1>Rival Clinic</h1>",
+	}}
+	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{
+		Snapshot: linkedSnapshot(), SiteContent: "About us. We treat complex cases every week.", Classifier: classifier,
+	}, research)
+	if err != nil {
+		t.Fatal(err)
+	}
+	site := findings[0].Comparison.Site
+	// The first quote differs from the page only in case and spacing, which text
+	// extraction collapses; the second appears nowhere and must not survive.
+	if len(site) != 1 || site[0] != "We treat COMPLEX cases" {
+		t.Fatalf("site quotes = %v, want only the passage that is really on the site", site)
 	}
 }
 

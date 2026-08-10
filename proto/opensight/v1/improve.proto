@@ -72,6 +72,28 @@ message CheckGroup {
   int32 checks_total = 7;
 }
 
+// CitedQuote is one passage a monitored answer used to recommend somebody else,
+// and the source the answer cited for it.
+message CitedQuote {
+  string quote = 1;
+  string domain = 2;
+}
+
+// ActionComparison is the case for a content action in the only two pieces of
+// evidence that argue it: what answers actually said about competitors, and what
+// the customer's own site says on the same subject. Actions derived from the
+// site audit alone carry none of it.
+message ActionComparison {
+  // coverage is the verdict on the customer's own site: "absent" or "partial".
+  // Any other value is treated as unknown and shown as neither.
+  string coverage = 1;
+  repeated CitedQuote cited = 2;
+  // site holds passages confirmed to appear in the crawled page text before
+  // being stored, so a quote attributed to the user's own site is one they can
+  // go and find there.
+  repeated string site = 3;
+}
+
 // ImprovementAction is one finding as the UI presents it. Go calls it a
 // Finding; the user-facing word is an action.
 message ImprovementAction {
@@ -101,6 +123,7 @@ message ImprovementAction {
   // customer's own site; category_label is the word the user reads.
   string category = 18;
   string category_label = 19;
+  ActionComparison comparison = 20;
 }
 
 // ActionCategory is one entry of the work queue's filter: a kind of change and

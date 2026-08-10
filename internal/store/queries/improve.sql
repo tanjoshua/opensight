@@ -24,12 +24,12 @@ SELECT * FROM site_audits WHERE business_id = @business_id AND account_id = @acc
 -- forward without touching the user's own decision. A DONE finding that comes
 -- back reopens — that single rule is the entire regression story. A DISMISSED
 -- one stays dismissed, which is the entire suppression story.
-INSERT INTO findings (id,account_id,business_id,key,source,category,title,body,steps,detail,result_ids,prompt_ids,sources,blocking,reach,priority)
-VALUES (@id,@account_id,@business_id,@key,@source,@category,@title,@body,@steps,@detail,@result_ids,@prompt_ids,@sources,@blocking,@reach,@priority)
+INSERT INTO findings (id,account_id,business_id,key,source,category,title,body,steps,detail,result_ids,prompt_ids,sources,blocking,reach,priority,comparison)
+VALUES (@id,@account_id,@business_id,@key,@source,@category,@title,@body,@steps,@detail,@result_ids,@prompt_ids,@sources,@blocking,@reach,@priority,@comparison)
 ON CONFLICT (business_id,key) DO UPDATE SET
   source=EXCLUDED.source,category=EXCLUDED.category,title=EXCLUDED.title,body=EXCLUDED.body,steps=EXCLUDED.steps,detail=EXCLUDED.detail,
   result_ids=EXCLUDED.result_ids,prompt_ids=EXCLUDED.prompt_ids,sources=EXCLUDED.sources,
-  blocking=EXCLUDED.blocking,reach=EXCLUDED.reach,priority=EXCLUDED.priority,
+  blocking=EXCLUDED.blocking,reach=EXCLUDED.reach,priority=EXCLUDED.priority,comparison=EXCLUDED.comparison,
   last_seen_at=now(),
   status=CASE WHEN findings.status='DONE' THEN 'OPEN' ELSE findings.status END,
   completed_at=CASE WHEN findings.status='DONE' THEN NULL ELSE findings.completed_at END;

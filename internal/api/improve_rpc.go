@@ -89,8 +89,23 @@ func dismissalFromProto(reason opensightv1.DismissalReason) *string {
 	return nil
 }
 
+// comparisonToProto renders the evidence pair, or nothing at all when the
+// finding has none — an action with an empty comparison must not present the
+// customer's site as silent on a subject nobody compared it against.
+func comparisonToProto(comparison visibility.Comparison) *opensightv1.ActionComparison {
+	if comparison.Empty() {
+		return nil
+	}
+	out := &opensightv1.ActionComparison{Coverage: comparison.Coverage, Site: comparison.Site}
+	for _, quote := range comparison.Cited {
+		out.Cited = append(out.Cited, &opensightv1.CitedQuote{Quote: quote.Quote, Domain: quote.Domain})
+	}
+	return out
+}
+
 func actionToProto(row store.FindingRecord) *opensightv1.ImprovementAction {
 	action := &opensightv1.ImprovementAction{
+		Comparison: comparisonToProto(row.Comparison),
 		Id: row.ID.String(), Key: row.Key, Source: row.Source,
 		Category: row.Category, CategoryLabel: visibility.CategoryLabel(row.Category),
 		Title: row.Title, Body: row.Body, Steps: row.Steps, Detail: row.Detail,

@@ -487,6 +487,129 @@ func (x *CheckGroup) GetChecksTotal() int32 {
 	return 0
 }
 
+// CitedQuote is one passage a monitored answer used to recommend somebody else,
+// and the source the answer cited for it.
+type CitedQuote struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Quote         string                 `protobuf:"bytes,1,opt,name=quote,proto3" json:"quote,omitempty"`
+	Domain        string                 `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CitedQuote) Reset() {
+	*x = CitedQuote{}
+	mi := &file_opensight_v1_improve_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CitedQuote) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CitedQuote) ProtoMessage() {}
+
+func (x *CitedQuote) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_improve_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CitedQuote.ProtoReflect.Descriptor instead.
+func (*CitedQuote) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CitedQuote) GetQuote() string {
+	if x != nil {
+		return x.Quote
+	}
+	return ""
+}
+
+func (x *CitedQuote) GetDomain() string {
+	if x != nil {
+		return x.Domain
+	}
+	return ""
+}
+
+// ActionComparison is the case for a content action in the only two pieces of
+// evidence that argue it: what answers actually said about competitors, and what
+// the customer's own site says on the same subject. Actions derived from the
+// site audit alone carry none of it.
+type ActionComparison struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// coverage is the verdict on the customer's own site: "absent" or "partial".
+	// Any other value is treated as unknown and shown as neither.
+	Coverage string        `protobuf:"bytes,1,opt,name=coverage,proto3" json:"coverage,omitempty"`
+	Cited    []*CitedQuote `protobuf:"bytes,2,rep,name=cited,proto3" json:"cited,omitempty"`
+	// site holds passages confirmed to appear in the crawled page text before
+	// being stored, so a quote attributed to the user's own site is one they can
+	// go and find there.
+	Site          []string `protobuf:"bytes,3,rep,name=site,proto3" json:"site,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActionComparison) Reset() {
+	*x = ActionComparison{}
+	mi := &file_opensight_v1_improve_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActionComparison) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActionComparison) ProtoMessage() {}
+
+func (x *ActionComparison) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_improve_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActionComparison.ProtoReflect.Descriptor instead.
+func (*ActionComparison) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ActionComparison) GetCoverage() string {
+	if x != nil {
+		return x.Coverage
+	}
+	return ""
+}
+
+func (x *ActionComparison) GetCited() []*CitedQuote {
+	if x != nil {
+		return x.Cited
+	}
+	return nil
+}
+
+func (x *ActionComparison) GetSite() []string {
+	if x != nil {
+		return x.Site
+	}
+	return nil
+}
+
 // ImprovementAction is one finding as the UI presents it. Go calls it a
 // Finding; the user-facing word is an action.
 type ImprovementAction struct {
@@ -510,15 +633,16 @@ type ImprovementAction struct {
 	// category is the kind of change the action asks for, and the axis the work
 	// queue filters on. Its key matches the checklist group for work on the
 	// customer's own site; category_label is the word the user reads.
-	Category      string `protobuf:"bytes,18,opt,name=category,proto3" json:"category,omitempty"`
-	CategoryLabel string `protobuf:"bytes,19,opt,name=category_label,json=categoryLabel,proto3" json:"category_label,omitempty"`
+	Category      string            `protobuf:"bytes,18,opt,name=category,proto3" json:"category,omitempty"`
+	CategoryLabel string            `protobuf:"bytes,19,opt,name=category_label,json=categoryLabel,proto3" json:"category_label,omitempty"`
+	Comparison    *ActionComparison `protobuf:"bytes,20,opt,name=comparison,proto3" json:"comparison,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ImprovementAction) Reset() {
 	*x = ImprovementAction{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[3]
+	mi := &file_opensight_v1_improve_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -530,7 +654,7 @@ func (x *ImprovementAction) String() string {
 func (*ImprovementAction) ProtoMessage() {}
 
 func (x *ImprovementAction) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[3]
+	mi := &file_opensight_v1_improve_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -543,7 +667,7 @@ func (x *ImprovementAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImprovementAction.ProtoReflect.Descriptor instead.
 func (*ImprovementAction) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{3}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ImprovementAction) GetId() string {
@@ -672,6 +796,13 @@ func (x *ImprovementAction) GetCategoryLabel() string {
 	return ""
 }
 
+func (x *ImprovementAction) GetComparison() *ActionComparison {
+	if x != nil {
+		return x.Comparison
+	}
+	return nil
+}
+
 // ActionCategory is one entry of the work queue's filter: a kind of change and
 // how much active work currently asks for it. Only categories with active work
 // appear, in catalog order, so the filter never offers an empty bucket and
@@ -687,7 +818,7 @@ type ActionCategory struct {
 
 func (x *ActionCategory) Reset() {
 	*x = ActionCategory{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[4]
+	mi := &file_opensight_v1_improve_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -699,7 +830,7 @@ func (x *ActionCategory) String() string {
 func (*ActionCategory) ProtoMessage() {}
 
 func (x *ActionCategory) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[4]
+	mi := &file_opensight_v1_improve_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -712,7 +843,7 @@ func (x *ActionCategory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionCategory.ProtoReflect.Descriptor instead.
 func (*ActionCategory) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{4}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ActionCategory) GetKey() string {
@@ -745,7 +876,7 @@ type ListActionsRequest struct {
 
 func (x *ListActionsRequest) Reset() {
 	*x = ListActionsRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[5]
+	mi := &file_opensight_v1_improve_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -757,7 +888,7 @@ func (x *ListActionsRequest) String() string {
 func (*ListActionsRequest) ProtoMessage() {}
 
 func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[5]
+	mi := &file_opensight_v1_improve_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -770,7 +901,7 @@ func (x *ListActionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActionsRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{5}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListActionsRequest) GetBusinessId() string {
@@ -796,7 +927,7 @@ type ListActionsResponse struct {
 
 func (x *ListActionsResponse) Reset() {
 	*x = ListActionsResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[6]
+	mi := &file_opensight_v1_improve_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -808,7 +939,7 @@ func (x *ListActionsResponse) String() string {
 func (*ListActionsResponse) ProtoMessage() {}
 
 func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[6]
+	mi := &file_opensight_v1_improve_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,7 +952,7 @@ func (x *ListActionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActionsResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{6}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListActionsResponse) GetActions() []*ImprovementAction {
@@ -868,7 +999,7 @@ type GetActionRequest struct {
 
 func (x *GetActionRequest) Reset() {
 	*x = GetActionRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[7]
+	mi := &file_opensight_v1_improve_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -880,7 +1011,7 @@ func (x *GetActionRequest) String() string {
 func (*GetActionRequest) ProtoMessage() {}
 
 func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[7]
+	mi := &file_opensight_v1_improve_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -893,7 +1024,7 @@ func (x *GetActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionRequest.ProtoReflect.Descriptor instead.
 func (*GetActionRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{7}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetActionRequest) GetActionId() string {
@@ -912,7 +1043,7 @@ type GetActionResponse struct {
 
 func (x *GetActionResponse) Reset() {
 	*x = GetActionResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[8]
+	mi := &file_opensight_v1_improve_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -924,7 +1055,7 @@ func (x *GetActionResponse) String() string {
 func (*GetActionResponse) ProtoMessage() {}
 
 func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[8]
+	mi := &file_opensight_v1_improve_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -937,7 +1068,7 @@ func (x *GetActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionResponse.ProtoReflect.Descriptor instead.
 func (*GetActionResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{8}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetActionResponse) GetAction() *ImprovementAction {
@@ -958,7 +1089,7 @@ type SetActionStatusRequest struct {
 
 func (x *SetActionStatusRequest) Reset() {
 	*x = SetActionStatusRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[9]
+	mi := &file_opensight_v1_improve_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -970,7 +1101,7 @@ func (x *SetActionStatusRequest) String() string {
 func (*SetActionStatusRequest) ProtoMessage() {}
 
 func (x *SetActionStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[9]
+	mi := &file_opensight_v1_improve_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -983,7 +1114,7 @@ func (x *SetActionStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetActionStatusRequest.ProtoReflect.Descriptor instead.
 func (*SetActionStatusRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{9}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SetActionStatusRequest) GetActionId() string {
@@ -1016,7 +1147,7 @@ type SetActionStatusResponse struct {
 
 func (x *SetActionStatusResponse) Reset() {
 	*x = SetActionStatusResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[10]
+	mi := &file_opensight_v1_improve_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1028,7 +1159,7 @@ func (x *SetActionStatusResponse) String() string {
 func (*SetActionStatusResponse) ProtoMessage() {}
 
 func (x *SetActionStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[10]
+	mi := &file_opensight_v1_improve_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1041,7 +1172,7 @@ func (x *SetActionStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetActionStatusResponse.ProtoReflect.Descriptor instead.
 func (*SetActionStatusResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{10}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SetActionStatusResponse) GetAction() *ImprovementAction {
@@ -1060,7 +1191,7 @@ type GetChecklistRequest struct {
 
 func (x *GetChecklistRequest) Reset() {
 	*x = GetChecklistRequest{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[11]
+	mi := &file_opensight_v1_improve_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1072,7 +1203,7 @@ func (x *GetChecklistRequest) String() string {
 func (*GetChecklistRequest) ProtoMessage() {}
 
 func (x *GetChecklistRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[11]
+	mi := &file_opensight_v1_improve_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1085,7 +1216,7 @@ func (x *GetChecklistRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChecklistRequest.ProtoReflect.Descriptor instead.
 func (*GetChecklistRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{11}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetChecklistRequest) GetBusinessId() string {
@@ -1111,7 +1242,7 @@ type GetChecklistResponse struct {
 
 func (x *GetChecklistResponse) Reset() {
 	*x = GetChecklistResponse{}
-	mi := &file_opensight_v1_improve_proto_msgTypes[12]
+	mi := &file_opensight_v1_improve_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1123,7 +1254,7 @@ func (x *GetChecklistResponse) String() string {
 func (*GetChecklistResponse) ProtoMessage() {}
 
 func (x *GetChecklistResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_improve_proto_msgTypes[12]
+	mi := &file_opensight_v1_improve_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1136,7 +1267,7 @@ func (x *GetChecklistResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChecklistResponse.ProtoReflect.Descriptor instead.
 func (*GetChecklistResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{12}
+	return file_opensight_v1_improve_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetChecklistResponse) GetCheckCounts() []*CheckCount {
@@ -1208,7 +1339,15 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"references\x12+\n" +
 	"\x06checks\x18\x05 \x03(\v2\x13.opensight.v1.CheckR\x06checks\x12#\n" +
 	"\rchecks_passed\x18\x06 \x01(\x05R\fchecksPassed\x12!\n" +
-	"\fchecks_total\x18\a \x01(\x05R\vchecksTotal\"\xf5\x04\n" +
+	"\fchecks_total\x18\a \x01(\x05R\vchecksTotal\":\n" +
+	"\n" +
+	"CitedQuote\x12\x14\n" +
+	"\x05quote\x18\x01 \x01(\tR\x05quote\x12\x16\n" +
+	"\x06domain\x18\x02 \x01(\tR\x06domain\"r\n" +
+	"\x10ActionComparison\x12\x1a\n" +
+	"\bcoverage\x18\x01 \x01(\tR\bcoverage\x12.\n" +
+	"\x05cited\x18\x02 \x03(\v2\x18.opensight.v1.CitedQuoteR\x05cited\x12\x12\n" +
+	"\x04site\x18\x03 \x03(\tR\x04site\"\xb5\x05\n" +
 	"\x11ImprovementAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x16\n" +
@@ -1230,7 +1369,10 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\rfirst_seen_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vfirstSeenAt\x12=\n" +
 	"\fcompleted_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12\x1a\n" +
 	"\bcategory\x18\x12 \x01(\tR\bcategory\x12%\n" +
-	"\x0ecategory_label\x18\x13 \x01(\tR\rcategoryLabelJ\x04\b\x11\x10\x12\"N\n" +
+	"\x0ecategory_label\x18\x13 \x01(\tR\rcategoryLabel\x12>\n" +
+	"\n" +
+	"comparison\x18\x14 \x01(\v2\x1e.opensight.v1.ActionComparisonR\n" +
+	"comparisonJ\x04\b\x11\x10\x12\"N\n" +
 	"\x0eActionCategory\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x14\n" +
@@ -1312,7 +1454,7 @@ func file_opensight_v1_improve_proto_rawDescGZIP() []byte {
 }
 
 var file_opensight_v1_improve_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_opensight_v1_improve_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_opensight_v1_improve_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_opensight_v1_improve_proto_goTypes = []any{
 	(CheckOutcome)(0),               // 0: opensight.v1.CheckOutcome
 	(ActionStatus)(0),               // 1: opensight.v1.ActionStatus
@@ -1321,51 +1463,55 @@ var file_opensight_v1_improve_proto_goTypes = []any{
 	(*Check)(nil),                   // 4: opensight.v1.Check
 	(*CheckCount)(nil),              // 5: opensight.v1.CheckCount
 	(*CheckGroup)(nil),              // 6: opensight.v1.CheckGroup
-	(*ImprovementAction)(nil),       // 7: opensight.v1.ImprovementAction
-	(*ActionCategory)(nil),          // 8: opensight.v1.ActionCategory
-	(*ListActionsRequest)(nil),      // 9: opensight.v1.ListActionsRequest
-	(*ListActionsResponse)(nil),     // 10: opensight.v1.ListActionsResponse
-	(*GetActionRequest)(nil),        // 11: opensight.v1.GetActionRequest
-	(*GetActionResponse)(nil),       // 12: opensight.v1.GetActionResponse
-	(*SetActionStatusRequest)(nil),  // 13: opensight.v1.SetActionStatusRequest
-	(*SetActionStatusResponse)(nil), // 14: opensight.v1.SetActionStatusResponse
-	(*GetChecklistRequest)(nil),     // 15: opensight.v1.GetChecklistRequest
-	(*GetChecklistResponse)(nil),    // 16: opensight.v1.GetChecklistResponse
-	(*timestamppb.Timestamp)(nil),   // 17: google.protobuf.Timestamp
+	(*CitedQuote)(nil),              // 7: opensight.v1.CitedQuote
+	(*ActionComparison)(nil),        // 8: opensight.v1.ActionComparison
+	(*ImprovementAction)(nil),       // 9: opensight.v1.ImprovementAction
+	(*ActionCategory)(nil),          // 10: opensight.v1.ActionCategory
+	(*ListActionsRequest)(nil),      // 11: opensight.v1.ListActionsRequest
+	(*ListActionsResponse)(nil),     // 12: opensight.v1.ListActionsResponse
+	(*GetActionRequest)(nil),        // 13: opensight.v1.GetActionRequest
+	(*GetActionResponse)(nil),       // 14: opensight.v1.GetActionResponse
+	(*SetActionStatusRequest)(nil),  // 15: opensight.v1.SetActionStatusRequest
+	(*SetActionStatusResponse)(nil), // 16: opensight.v1.SetActionStatusResponse
+	(*GetChecklistRequest)(nil),     // 17: opensight.v1.GetChecklistRequest
+	(*GetChecklistResponse)(nil),    // 18: opensight.v1.GetChecklistResponse
+	(*timestamppb.Timestamp)(nil),   // 19: google.protobuf.Timestamp
 }
 var file_opensight_v1_improve_proto_depIdxs = []int32{
 	0,  // 0: opensight.v1.Check.outcome:type_name -> opensight.v1.CheckOutcome
 	0,  // 1: opensight.v1.CheckCount.outcome:type_name -> opensight.v1.CheckOutcome
 	4,  // 2: opensight.v1.CheckGroup.checks:type_name -> opensight.v1.Check
-	1,  // 3: opensight.v1.ImprovementAction.status:type_name -> opensight.v1.ActionStatus
-	2,  // 4: opensight.v1.ImprovementAction.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	17, // 5: opensight.v1.ImprovementAction.first_seen_at:type_name -> google.protobuf.Timestamp
-	17, // 6: opensight.v1.ImprovementAction.completed_at:type_name -> google.protobuf.Timestamp
-	7,  // 7: opensight.v1.ListActionsResponse.actions:type_name -> opensight.v1.ImprovementAction
-	7,  // 8: opensight.v1.ListActionsResponse.resolved_actions:type_name -> opensight.v1.ImprovementAction
-	3,  // 9: opensight.v1.ListActionsResponse.empty_reason:type_name -> opensight.v1.ActionsEmptyReason
-	17, // 10: opensight.v1.ListActionsResponse.checked_at:type_name -> google.protobuf.Timestamp
-	8,  // 11: opensight.v1.ListActionsResponse.categories:type_name -> opensight.v1.ActionCategory
-	7,  // 12: opensight.v1.GetActionResponse.action:type_name -> opensight.v1.ImprovementAction
-	1,  // 13: opensight.v1.SetActionStatusRequest.status:type_name -> opensight.v1.ActionStatus
-	2,  // 14: opensight.v1.SetActionStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
-	7,  // 15: opensight.v1.SetActionStatusResponse.action:type_name -> opensight.v1.ImprovementAction
-	5,  // 16: opensight.v1.GetChecklistResponse.check_counts:type_name -> opensight.v1.CheckCount
-	6,  // 17: opensight.v1.GetChecklistResponse.groups:type_name -> opensight.v1.CheckGroup
-	17, // 18: opensight.v1.GetChecklistResponse.checked_at:type_name -> google.protobuf.Timestamp
-	9,  // 19: opensight.v1.ImproveService.ListActions:input_type -> opensight.v1.ListActionsRequest
-	11, // 20: opensight.v1.ImproveService.GetAction:input_type -> opensight.v1.GetActionRequest
-	13, // 21: opensight.v1.ImproveService.SetActionStatus:input_type -> opensight.v1.SetActionStatusRequest
-	15, // 22: opensight.v1.ImproveService.GetChecklist:input_type -> opensight.v1.GetChecklistRequest
-	10, // 23: opensight.v1.ImproveService.ListActions:output_type -> opensight.v1.ListActionsResponse
-	12, // 24: opensight.v1.ImproveService.GetAction:output_type -> opensight.v1.GetActionResponse
-	14, // 25: opensight.v1.ImproveService.SetActionStatus:output_type -> opensight.v1.SetActionStatusResponse
-	16, // 26: opensight.v1.ImproveService.GetChecklist:output_type -> opensight.v1.GetChecklistResponse
-	23, // [23:27] is the sub-list for method output_type
-	19, // [19:23] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	7,  // 3: opensight.v1.ActionComparison.cited:type_name -> opensight.v1.CitedQuote
+	1,  // 4: opensight.v1.ImprovementAction.status:type_name -> opensight.v1.ActionStatus
+	2,  // 5: opensight.v1.ImprovementAction.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	19, // 6: opensight.v1.ImprovementAction.first_seen_at:type_name -> google.protobuf.Timestamp
+	19, // 7: opensight.v1.ImprovementAction.completed_at:type_name -> google.protobuf.Timestamp
+	8,  // 8: opensight.v1.ImprovementAction.comparison:type_name -> opensight.v1.ActionComparison
+	9,  // 9: opensight.v1.ListActionsResponse.actions:type_name -> opensight.v1.ImprovementAction
+	9,  // 10: opensight.v1.ListActionsResponse.resolved_actions:type_name -> opensight.v1.ImprovementAction
+	3,  // 11: opensight.v1.ListActionsResponse.empty_reason:type_name -> opensight.v1.ActionsEmptyReason
+	19, // 12: opensight.v1.ListActionsResponse.checked_at:type_name -> google.protobuf.Timestamp
+	10, // 13: opensight.v1.ListActionsResponse.categories:type_name -> opensight.v1.ActionCategory
+	9,  // 14: opensight.v1.GetActionResponse.action:type_name -> opensight.v1.ImprovementAction
+	1,  // 15: opensight.v1.SetActionStatusRequest.status:type_name -> opensight.v1.ActionStatus
+	2,  // 16: opensight.v1.SetActionStatusRequest.dismissal_reason:type_name -> opensight.v1.DismissalReason
+	9,  // 17: opensight.v1.SetActionStatusResponse.action:type_name -> opensight.v1.ImprovementAction
+	5,  // 18: opensight.v1.GetChecklistResponse.check_counts:type_name -> opensight.v1.CheckCount
+	6,  // 19: opensight.v1.GetChecklistResponse.groups:type_name -> opensight.v1.CheckGroup
+	19, // 20: opensight.v1.GetChecklistResponse.checked_at:type_name -> google.protobuf.Timestamp
+	11, // 21: opensight.v1.ImproveService.ListActions:input_type -> opensight.v1.ListActionsRequest
+	13, // 22: opensight.v1.ImproveService.GetAction:input_type -> opensight.v1.GetActionRequest
+	15, // 23: opensight.v1.ImproveService.SetActionStatus:input_type -> opensight.v1.SetActionStatusRequest
+	17, // 24: opensight.v1.ImproveService.GetChecklist:input_type -> opensight.v1.GetChecklistRequest
+	12, // 25: opensight.v1.ImproveService.ListActions:output_type -> opensight.v1.ListActionsResponse
+	14, // 26: opensight.v1.ImproveService.GetAction:output_type -> opensight.v1.GetActionResponse
+	16, // 27: opensight.v1.ImproveService.SetActionStatus:output_type -> opensight.v1.SetActionStatusResponse
+	18, // 28: opensight.v1.ImproveService.GetChecklist:output_type -> opensight.v1.GetChecklistResponse
+	25, // [25:29] is the sub-list for method output_type
+	21, // [21:25] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_improve_proto_init() }
@@ -1379,7 +1525,7 @@ func file_opensight_v1_improve_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_improve_proto_rawDesc), len(file_opensight_v1_improve_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -53,6 +53,7 @@ type FindingRecord struct {
 	Sources         []string
 	Blocking        bool
 	Reach, Priority int
+	Comparison      visibility.Comparison
 	Status          FindingStatus
 	DismissalReason *string
 	FirstSeenAt     time.Time
@@ -137,6 +138,10 @@ func findingParams(accountID, businessID domain.ID, f visibility.Finding) (store
 	if err != nil {
 		return storesqlc.UpsertFindingParams{}, err
 	}
+	comparison, err := json.Marshal(f.Comparison)
+	if err != nil {
+		return storesqlc.UpsertFindingParams{}, err
+	}
 	id, err := domain.NewID()
 	if err != nil {
 		return storesqlc.UpsertFindingParams{}, err
@@ -158,6 +163,7 @@ func findingParams(accountID, businessID domain.ID, f visibility.Finding) (store
 		Blocking:   f.Blocking,
 		Reach:      int32(f.Reach),
 		Priority:   int32(f.Priority),
+		Comparison: comparison,
 	}, nil
 }
 
@@ -265,6 +271,9 @@ func findingRecord(row storesqlc.Finding) (FindingRecord, error) {
 		CompletedAt: row.CompletedAt, DismissedAt: row.DismissedAt,
 	}
 	if err := json.Unmarshal(row.Steps, &record.Steps); err != nil {
+		return FindingRecord{}, err
+	}
+	if err := json.Unmarshal(row.Comparison, &record.Comparison); err != nil {
 		return FindingRecord{}, err
 	}
 	for _, id := range row.ResultIds {

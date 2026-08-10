@@ -106,6 +106,7 @@ type Finding struct {
 	LastSeenAt      time.Time
 	CompletedAt     *time.Time
 	DismissedAt     *time.Time
+	Comparison      json.RawMessage
 }
 
 type Mention struct {

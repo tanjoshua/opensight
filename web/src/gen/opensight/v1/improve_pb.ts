@@ -12,7 +12,7 @@ import type { Message, UnknownEnum } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/improve.proto.
  */
 export const file_opensight_v1_improve: GenFile = /*@__PURE__*/
-  fileDesc("ChpvcGVuc2lnaHQvdjEvaW1wcm92ZS5wcm90bxIMb3BlbnNpZ2h0LnYxIpwBCgVDaGVjaxILCgNrZXkYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEd2hhdBgDIAEoCRIrCgdvdXRjb21lGAQgASgOMhoub3BlbnNpZ2h0LnYxLkNoZWNrT3V0Y29tZRIVCg1vdXRjb21lX2xhYmVsGAUgASgJEg4KBmRldGFpbBgGIAEoCRIVCg1pbmZvcm1hdGlvbmFsGAcgASgIIkgKCkNoZWNrQ291bnQSKwoHb3V0Y29tZRgBIAEoDjIaLm9wZW5zaWdodC52MS5DaGVja091dGNvbWUSDQoFY291bnQYAiABKAUiowEKCkNoZWNrR3JvdXASCwoDa2V5GAEgASgJEg0KBXRpdGxlGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEhIKCnJlZmVyZW5jZXMYBCADKAkSIwoGY2hlY2tzGAUgAygLMhMub3BlbnNpZ2h0LnYxLkNoZWNrEhUKDWNoZWNrc19wYXNzZWQYBiABKAUSFAoMY2hlY2tzX3RvdGFsGAcgASgFIswDChFJbXByb3ZlbWVudEFjdGlvbhIKCgJpZBgBIAEoCRILCgNrZXkYAiABKAkSDgoGc291cmNlGAMgASgJEg0KBXRpdGxlGAQgASgJEgwKBGJvZHkYBSABKAkSDQoFc3RlcHMYBiADKAkSDgoGZGV0YWlsGAcgASgJEhIKCnJlc3VsdF9pZHMYCCADKAkSEgoKcHJvbXB0X2lkcxgJIAMoCRIPCgdzb3VyY2VzGAogAygJEhAKCGJsb2NraW5nGAsgASgIEg0KBXJlYWNoGAwgASgFEioKBnN0YXR1cxgNIAEoDjIaLm9wZW5zaWdodC52MS5BY3Rpb25TdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgOIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24SMQoNZmlyc3Rfc2Vlbl9hdBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMY29tcGxldGVkX2F0GBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIQCghjYXRlZ29yeRgSIAEoCRIWCg5jYXRlZ29yeV9sYWJlbBgTIAEoCUoECBEQEiI7Cg5BY3Rpb25DYXRlZ29yeRILCgNrZXkYASABKAkSDQoFbGFiZWwYAiABKAkSDQoFY291bnQYAyABKAUiKQoSTGlzdEFjdGlvbnNSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIrYCChNMaXN0QWN0aW9uc1Jlc3BvbnNlEjAKB2FjdGlvbnMYASADKAsyHy5vcGVuc2lnaHQudjEuSW1wcm92ZW1lbnRBY3Rpb24SOQoQcmVzb2x2ZWRfYWN0aW9ucxgDIAMoCzIfLm9wZW5zaWdodC52MS5JbXByb3ZlbWVudEFjdGlvbhI2CgxlbXB0eV9yZWFzb24YBCABKA4yIC5vcGVuc2lnaHQudjEuQWN0aW9uc0VtcHR5UmVhc29uEi4KCmNoZWNrZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKCmNhdGVnb3JpZXMYBiADKAsyHC5vcGVuc2lnaHQudjEuQWN0aW9uQ2F0ZWdvcnlKBAgCEANSEmFkZGl0aW9uYWxfYWN0aW9ucyIlChBHZXRBY3Rpb25SZXF1ZXN0EhEKCWFjdGlvbl9pZBgBIAEoCSJEChFHZXRBY3Rpb25SZXNwb25zZRIvCgZhY3Rpb24YASABKAsyHy5vcGVuc2lnaHQudjEuSW1wcm92ZW1lbnRBY3Rpb24ikAEKFlNldEFjdGlvblN0YXR1c1JlcXVlc3QSEQoJYWN0aW9uX2lkGAEgASgJEioKBnN0YXR1cxgCIAEoDjIaLm9wZW5zaWdodC52MS5BY3Rpb25TdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgDIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24iSgoXU2V0QWN0aW9uU3RhdHVzUmVzcG9uc2USLwoGYWN0aW9uGAEgASgLMh8ub3BlbnNpZ2h0LnYxLkltcHJvdmVtZW50QWN0aW9uIioKE0dldENoZWNrbGlzdFJlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkihgIKFEdldENoZWNrbGlzdFJlc3BvbnNlEi4KDGNoZWNrX2NvdW50cxgEIAMoCzIYLm9wZW5zaWdodC52MS5DaGVja0NvdW50EigKBmdyb3VwcxgFIAMoCzIYLm9wZW5zaWdodC52MS5DaGVja0dyb3VwEi4KCmNoZWNrZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhIKCnBhZ2VzX3JlYWQYByABKAUSDwoHZmFpbHVyZRgIIAEoCRIQCghhc3Nlc3NlZBgJIAEoCEoECAEQAkoECAIQA0oECAMQBFIGY291bnRzUglmcmVzaG5lc3NSCHNlY3Rpb25zKsMBCgxDaGVja091dGNvbWUSHQoZQ0hFQ0tfT1VUQ09NRV9VTlNQRUNJRklFRBAAEhYKEkNIRUNLX09VVENPTUVfUEFTUxABEhYKEkNIRUNLX09VVENPTUVfRkFJTBACEiIKHkNIRUNLX09VVENPTUVfQ09VTERfTk9UX1ZFUklGWRADEiAKHENIRUNLX09VVENPTUVfTk9UX0FQUExJQ0FCTEUQBBIeChpDSEVDS19PVVRDT01FX05PVF9BU1NFU1NFRBAFKnoKDEFjdGlvblN0YXR1cxIdChlBQ1RJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASFgoSQUNUSU9OX1NUQVRVU19PUEVOEAESFgoSQUNUSU9OX1NUQVRVU19ET05FEAISGwoXQUNUSU9OX1NUQVRVU19ESVNNSVNTRUQQAyrgAQoPRGlzbWlzc2FsUmVhc29uEiAKHERJU01JU1NBTF9SRUFTT05fVU5TUEVDSUZJRUQQABIhCh1ESVNNSVNTQUxfUkVBU09OX05PVF9SRUxFVkFOVBABEiEKHURJU01JU1NBTF9SRUFTT05fQUxSRUFEWV9ET05FEAISIwofRElTTUlTU0FMX1JFQVNPTl9OT1RfQUNUSU9OQUJMRRADEiQKIERJU01JU1NBTF9SRUFTT05fVE9PX01VQ0hfRUZGT1JUEAQSGgoWRElTTUlTU0FMX1JFQVNPTl9PVEhFUhAFKosBChJBY3Rpb25zRW1wdHlSZWFzb24SJAogQUNUSU9OU19FTVBUWV9SRUFTT05fVU5TUEVDSUZJRUQQABIkCiBBQ1RJT05TX0VNUFRZX1JFQVNPTl9OT19GSU5ESU5HUxABEikKJUFDVElPTlNfRU1QVFlfUkVBU09OX05PVF9BU1NFU1NFRF9ZRVQQAjLpAgoOSW1wcm92ZVNlcnZpY2USUgoLTGlzdEFjdGlvbnMSIC5vcGVuc2lnaHQudjEuTGlzdEFjdGlvbnNSZXF1ZXN0GiEub3BlbnNpZ2h0LnYxLkxpc3RBY3Rpb25zUmVzcG9uc2USTAoJR2V0QWN0aW9uEh4ub3BlbnNpZ2h0LnYxLkdldEFjdGlvblJlcXVlc3QaHy5vcGVuc2lnaHQudjEuR2V0QWN0aW9uUmVzcG9uc2USXgoPU2V0QWN0aW9uU3RhdHVzEiQub3BlbnNpZ2h0LnYxLlNldEFjdGlvblN0YXR1c1JlcXVlc3QaJS5vcGVuc2lnaHQudjEuU2V0QWN0aW9uU3RhdHVzUmVzcG9uc2USVQoMR2V0Q2hlY2tsaXN0EiEub3BlbnNpZ2h0LnYxLkdldENoZWNrbGlzdFJlcXVlc3QaIi5vcGVuc2lnaHQudjEuR2V0Q2hlY2tsaXN0UmVzcG9uc2VCogEKEGNvbS5vcGVuc2lnaHQudjFCDEltcHJvdmVQcm90b1ABWi9vcGVuc2lnaHQvaW50ZXJuYWwvZ2VuL29wZW5zaWdodC92MTtvcGVuc2lnaHR2MaICA09YWKoCDE9wZW5zaWdodC5WMcoCDE9wZW5zaWdodFxWMeICGE9wZW5zaWdodFxWMVxHUEJNZXRhZGF0YeoCDU9wZW5zaWdodDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChpvcGVuc2lnaHQvdjEvaW1wcm92ZS5wcm90bxIMb3BlbnNpZ2h0LnYxIpwBCgVDaGVjaxILCgNrZXkYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEd2hhdBgDIAEoCRIrCgdvdXRjb21lGAQgASgOMhoub3BlbnNpZ2h0LnYxLkNoZWNrT3V0Y29tZRIVCg1vdXRjb21lX2xhYmVsGAUgASgJEg4KBmRldGFpbBgGIAEoCRIVCg1pbmZvcm1hdGlvbmFsGAcgASgIIkgKCkNoZWNrQ291bnQSKwoHb3V0Y29tZRgBIAEoDjIaLm9wZW5zaWdodC52MS5DaGVja091dGNvbWUSDQoFY291bnQYAiABKAUiowEKCkNoZWNrR3JvdXASCwoDa2V5GAEgASgJEg0KBXRpdGxlGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEhIKCnJlZmVyZW5jZXMYBCADKAkSIwoGY2hlY2tzGAUgAygLMhMub3BlbnNpZ2h0LnYxLkNoZWNrEhUKDWNoZWNrc19wYXNzZWQYBiABKAUSFAoMY2hlY2tzX3RvdGFsGAcgASgFIisKCkNpdGVkUXVvdGUSDQoFcXVvdGUYASABKAkSDgoGZG9tYWluGAIgASgJIlsKEEFjdGlvbkNvbXBhcmlzb24SEAoIY292ZXJhZ2UYASABKAkSJwoFY2l0ZWQYAiADKAsyGC5vcGVuc2lnaHQudjEuQ2l0ZWRRdW90ZRIMCgRzaXRlGAMgAygJIoAEChFJbXByb3ZlbWVudEFjdGlvbhIKCgJpZBgBIAEoCRILCgNrZXkYAiABKAkSDgoGc291cmNlGAMgASgJEg0KBXRpdGxlGAQgASgJEgwKBGJvZHkYBSABKAkSDQoFc3RlcHMYBiADKAkSDgoGZGV0YWlsGAcgASgJEhIKCnJlc3VsdF9pZHMYCCADKAkSEgoKcHJvbXB0X2lkcxgJIAMoCRIPCgdzb3VyY2VzGAogAygJEhAKCGJsb2NraW5nGAsgASgIEg0KBXJlYWNoGAwgASgFEioKBnN0YXR1cxgNIAEoDjIaLm9wZW5zaWdodC52MS5BY3Rpb25TdGF0dXMSNwoQZGlzbWlzc2FsX3JlYXNvbhgOIAEoDjIdLm9wZW5zaWdodC52MS5EaXNtaXNzYWxSZWFzb24SMQoNZmlyc3Rfc2Vlbl9hdBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMY29tcGxldGVkX2F0GBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIQCghjYXRlZ29yeRgSIAEoCRIWCg5jYXRlZ29yeV9sYWJlbBgTIAEoCRIyCgpjb21wYXJpc29uGBQgASgLMh4ub3BlbnNpZ2h0LnYxLkFjdGlvbkNvbXBhcmlzb25KBAgREBIiOwoOQWN0aW9uQ2F0ZWdvcnkSCwoDa2V5GAEgASgJEg0KBWxhYmVsGAIgASgJEg0KBWNvdW50GAMgASgFIikKEkxpc3RBY3Rpb25zUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCSK2AgoTTGlzdEFjdGlvbnNSZXNwb25zZRIwCgdhY3Rpb25zGAEgAygLMh8ub3BlbnNpZ2h0LnYxLkltcHJvdmVtZW50QWN0aW9uEjkKEHJlc29sdmVkX2FjdGlvbnMYAyADKAsyHy5vcGVuc2lnaHQudjEuSW1wcm92ZW1lbnRBY3Rpb24SNgoMZW1wdHlfcmVhc29uGAQgASgOMiAub3BlbnNpZ2h0LnYxLkFjdGlvbnNFbXB0eVJlYXNvbhIuCgpjaGVja2VkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgpjYXRlZ29yaWVzGAYgAygLMhwub3BlbnNpZ2h0LnYxLkFjdGlvbkNhdGVnb3J5SgQIAhADUhJhZGRpdGlvbmFsX2FjdGlvbnMiJQoQR2V0QWN0aW9uUmVxdWVzdBIRCglhY3Rpb25faWQYASABKAkiRAoRR2V0QWN0aW9uUmVzcG9uc2USLwoGYWN0aW9uGAEgASgLMh8ub3BlbnNpZ2h0LnYxLkltcHJvdmVtZW50QWN0aW9uIpABChZTZXRBY3Rpb25TdGF0dXNSZXF1ZXN0EhEKCWFjdGlvbl9pZBgBIAEoCRIqCgZzdGF0dXMYAiABKA4yGi5vcGVuc2lnaHQudjEuQWN0aW9uU3RhdHVzEjcKEGRpc21pc3NhbF9yZWFzb24YAyABKA4yHS5vcGVuc2lnaHQudjEuRGlzbWlzc2FsUmVhc29uIkoKF1NldEFjdGlvblN0YXR1c1Jlc3BvbnNlEi8KBmFjdGlvbhgBIAEoCzIfLm9wZW5zaWdodC52MS5JbXByb3ZlbWVudEFjdGlvbiIqChNHZXRDaGVja2xpc3RSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIoYCChRHZXRDaGVja2xpc3RSZXNwb25zZRIuCgxjaGVja19jb3VudHMYBCADKAsyGC5vcGVuc2lnaHQudjEuQ2hlY2tDb3VudBIoCgZncm91cHMYBSADKAsyGC5vcGVuc2lnaHQudjEuQ2hlY2tHcm91cBIuCgpjaGVja2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpwYWdlc19yZWFkGAcgASgFEg8KB2ZhaWx1cmUYCCABKAkSEAoIYXNzZXNzZWQYCSABKAhKBAgBEAJKBAgCEANKBAgDEARSBmNvdW50c1IJZnJlc2huZXNzUghzZWN0aW9ucyrDAQoMQ2hlY2tPdXRjb21lEh0KGUNIRUNLX09VVENPTUVfVU5TUEVDSUZJRUQQABIWChJDSEVDS19PVVRDT01FX1BBU1MQARIWChJDSEVDS19PVVRDT01FX0ZBSUwQAhIiCh5DSEVDS19PVVRDT01FX0NPVUxEX05PVF9WRVJJRlkQAxIgChxDSEVDS19PVVRDT01FX05PVF9BUFBMSUNBQkxFEAQSHgoaQ0hFQ0tfT1VUQ09NRV9OT1RfQVNTRVNTRUQQBSp6CgxBY3Rpb25TdGF0dXMSHQoZQUNUSU9OX1NUQVRVU19VTlNQRUNJRklFRBAAEhYKEkFDVElPTl9TVEFUVVNfT1BFThABEhYKEkFDVElPTl9TVEFUVVNfRE9ORRACEhsKF0FDVElPTl9TVEFUVVNfRElTTUlTU0VEEAMq4AEKD0Rpc21pc3NhbFJlYXNvbhIgChxESVNNSVNTQUxfUkVBU09OX1VOU1BFQ0lGSUVEEAASIQodRElTTUlTU0FMX1JFQVNPTl9OT1RfUkVMRVZBTlQQARIhCh1ESVNNSVNTQUxfUkVBU09OX0FMUkVBRFlfRE9ORRACEiMKH0RJU01JU1NBTF9SRUFTT05fTk9UX0FDVElPTkFCTEUQAxIkCiBESVNNSVNTQUxfUkVBU09OX1RPT19NVUNIX0VGRk9SVBAEEhoKFkRJU01JU1NBTF9SRUFTT05fT1RIRVIQBSqLAQoSQWN0aW9uc0VtcHR5UmVhc29uEiQKIEFDVElPTlNfRU1QVFlfUkVBU09OX1VOU1BFQ0lGSUVEEAASJAogQUNUSU9OU19FTVBUWV9SRUFTT05fTk9fRklORElOR1MQARIpCiVBQ1RJT05TX0VNUFRZX1JFQVNPTl9OT1RfQVNTRVNTRURfWUVUEAIy6QIKDkltcHJvdmVTZXJ2aWNlElIKC0xpc3RBY3Rpb25zEiAub3BlbnNpZ2h0LnYxLkxpc3RBY3Rpb25zUmVxdWVzdBohLm9wZW5zaWdodC52MS5MaXN0QWN0aW9uc1Jlc3BvbnNlEkwKCUdldEFjdGlvbhIeLm9wZW5zaWdodC52MS5HZXRBY3Rpb25SZXF1ZXN0Gh8ub3BlbnNpZ2h0LnYxLkdldEFjdGlvblJlc3BvbnNlEl4KD1NldEFjdGlvblN0YXR1cxIkLm9wZW5zaWdodC52MS5TZXRBY3Rpb25TdGF0dXNSZXF1ZXN0GiUub3BlbnNpZ2h0LnYxLlNldEFjdGlvblN0YXR1c1Jlc3BvbnNlElUKDEdldENoZWNrbGlzdBIhLm9wZW5zaWdodC52MS5HZXRDaGVja2xpc3RSZXF1ZXN0GiIub3BlbnNpZ2h0LnYxLkdldENoZWNrbGlzdFJlc3BvbnNlQqIBChBjb20ub3BlbnNpZ2h0LnYxQgxJbXByb3ZlUHJvdG9QAVovb3BlbnNpZ2h0L2ludGVybmFsL2dlbi9vcGVuc2lnaHQvdjE7b3BlbnNpZ2h0djGiAgNPWFiqAgxPcGVuc2lnaHQuVjHKAgxPcGVuc2lnaHRcVjHiAhhPcGVuc2lnaHRcVjFcR1BCTWV0YWRhdGHqAg1PcGVuc2lnaHQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * Check is one assertion, joined from the catalog definition (title, what) and
@@ -140,6 +140,70 @@ export const CheckGroupSchema: GenMessage<CheckGroup> = /*@__PURE__*/
   messageDesc(file_opensight_v1_improve, 2);
 
 /**
+ * CitedQuote is one passage a monitored answer used to recommend somebody else,
+ * and the source the answer cited for it.
+ *
+ * @generated from message opensight.v1.CitedQuote
+ */
+export type CitedQuote = Message<"opensight.v1.CitedQuote"> & {
+  /**
+   * @generated from field: string quote = 1;
+   */
+  quote: string;
+
+  /**
+   * @generated from field: string domain = 2;
+   */
+  domain: string;
+};
+
+/**
+ * Describes the message opensight.v1.CitedQuote.
+ * Use `create(CitedQuoteSchema)` to create a new message.
+ */
+export const CitedQuoteSchema: GenMessage<CitedQuote> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_improve, 3);
+
+/**
+ * ActionComparison is the case for a content action in the only two pieces of
+ * evidence that argue it: what answers actually said about competitors, and what
+ * the customer's own site says on the same subject. Actions derived from the
+ * site audit alone carry none of it.
+ *
+ * @generated from message opensight.v1.ActionComparison
+ */
+export type ActionComparison = Message<"opensight.v1.ActionComparison"> & {
+  /**
+   * coverage is the verdict on the customer's own site: "absent" or "partial".
+   * Any other value is treated as unknown and shown as neither.
+   *
+   * @generated from field: string coverage = 1;
+   */
+  coverage: string;
+
+  /**
+   * @generated from field: repeated opensight.v1.CitedQuote cited = 2;
+   */
+  cited: CitedQuote[];
+
+  /**
+   * site holds passages confirmed to appear in the crawled page text before
+   * being stored, so a quote attributed to the user's own site is one they can
+   * go and find there.
+   *
+   * @generated from field: repeated string site = 3;
+   */
+  site: string[];
+};
+
+/**
+ * Describes the message opensight.v1.ActionComparison.
+ * Use `create(ActionComparisonSchema)` to create a new message.
+ */
+export const ActionComparisonSchema: GenMessage<ActionComparison> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_improve, 4);
+
+/**
  * ImprovementAction is one finding as the UI presents it. Go calls it a
  * Finding; the user-facing word is an action.
  *
@@ -239,6 +303,11 @@ export type ImprovementAction = Message<"opensight.v1.ImprovementAction"> & {
    * @generated from field: string category_label = 19;
    */
   categoryLabel: string;
+
+  /**
+   * @generated from field: opensight.v1.ActionComparison comparison = 20;
+   */
+  comparison?: ActionComparison | undefined;
 };
 
 /**
@@ -246,7 +315,7 @@ export type ImprovementAction = Message<"opensight.v1.ImprovementAction"> & {
  * Use `create(ImprovementActionSchema)` to create a new message.
  */
 export const ImprovementActionSchema: GenMessage<ImprovementAction> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 3);
+  messageDesc(file_opensight_v1_improve, 5);
 
 /**
  * ActionCategory is one entry of the work queue's filter: a kind of change and
@@ -278,7 +347,7 @@ export type ActionCategory = Message<"opensight.v1.ActionCategory"> & {
  * Use `create(ActionCategorySchema)` to create a new message.
  */
 export const ActionCategorySchema: GenMessage<ActionCategory> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 4);
+  messageDesc(file_opensight_v1_improve, 6);
 
 /**
  * @generated from message opensight.v1.ListActionsRequest
@@ -295,7 +364,7 @@ export type ListActionsRequest = Message<"opensight.v1.ListActionsRequest"> & {
  * Use `create(ListActionsRequestSchema)` to create a new message.
  */
 export const ListActionsRequestSchema: GenMessage<ListActionsRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 5);
+  messageDesc(file_opensight_v1_improve, 7);
 
 /**
  * @generated from message opensight.v1.ListActionsResponse
@@ -336,7 +405,7 @@ export type ListActionsResponse = Message<"opensight.v1.ListActionsResponse"> & 
  * Use `create(ListActionsResponseSchema)` to create a new message.
  */
 export const ListActionsResponseSchema: GenMessage<ListActionsResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 6);
+  messageDesc(file_opensight_v1_improve, 8);
 
 /**
  * @generated from message opensight.v1.GetActionRequest
@@ -353,7 +422,7 @@ export type GetActionRequest = Message<"opensight.v1.GetActionRequest"> & {
  * Use `create(GetActionRequestSchema)` to create a new message.
  */
 export const GetActionRequestSchema: GenMessage<GetActionRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 7);
+  messageDesc(file_opensight_v1_improve, 9);
 
 /**
  * @generated from message opensight.v1.GetActionResponse
@@ -370,7 +439,7 @@ export type GetActionResponse = Message<"opensight.v1.GetActionResponse"> & {
  * Use `create(GetActionResponseSchema)` to create a new message.
  */
 export const GetActionResponseSchema: GenMessage<GetActionResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 8);
+  messageDesc(file_opensight_v1_improve, 10);
 
 /**
  * @generated from message opensight.v1.SetActionStatusRequest
@@ -397,7 +466,7 @@ export type SetActionStatusRequest = Message<"opensight.v1.SetActionStatusReques
  * Use `create(SetActionStatusRequestSchema)` to create a new message.
  */
 export const SetActionStatusRequestSchema: GenMessage<SetActionStatusRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 9);
+  messageDesc(file_opensight_v1_improve, 11);
 
 /**
  * @generated from message opensight.v1.SetActionStatusResponse
@@ -414,7 +483,7 @@ export type SetActionStatusResponse = Message<"opensight.v1.SetActionStatusRespo
  * Use `create(SetActionStatusResponseSchema)` to create a new message.
  */
 export const SetActionStatusResponseSchema: GenMessage<SetActionStatusResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 10);
+  messageDesc(file_opensight_v1_improve, 12);
 
 /**
  * @generated from message opensight.v1.GetChecklistRequest
@@ -431,7 +500,7 @@ export type GetChecklistRequest = Message<"opensight.v1.GetChecklistRequest"> & 
  * Use `create(GetChecklistRequestSchema)` to create a new message.
  */
 export const GetChecklistRequestSchema: GenMessage<GetChecklistRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 11);
+  messageDesc(file_opensight_v1_improve, 13);
 
 /**
  * @generated from message opensight.v1.GetChecklistResponse
@@ -476,7 +545,7 @@ export type GetChecklistResponse = Message<"opensight.v1.GetChecklistResponse"> 
  * Use `create(GetChecklistResponseSchema)` to create a new message.
  */
 export const GetChecklistResponseSchema: GenMessage<GetChecklistResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_improve, 12);
+  messageDesc(file_opensight_v1_improve, 14);
 
 /**
  * CheckOutcome is the verdict on one site-audit check.

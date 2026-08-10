@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   ExternalLink,
   HelpCircle,
+  Info,
   Lightbulb,
   MinusCircle,
   XCircle,
@@ -107,16 +108,22 @@ function formatDate(value: Parameters<typeof timestampDate>[0] | undefined) {
 // structured-data action puts the JSON-LD to paste there. Rendering it as a
 // code block is the point of generating it: collapsed into the sentence, the
 // indentation and newlines the user has to copy would be lost.
-function ActionStep({ step }: { step: string }) {
+function ActionStep({
+  step,
+  as: Tag = "li",
+}: {
+  step: string
+  as?: "li" | "p"
+}) {
   const split = step.indexOf("\n\n")
-  if (split === -1) return <li>{step}</li>
+  if (split === -1) return <Tag>{step}</Tag>
   return (
-    <li>
+    <Tag>
       {step.slice(0, split)}
       <pre className="mt-2 overflow-x-auto rounded-md border bg-muted p-3 text-xs">
         <code>{step.slice(split + 2)}</code>
       </pre>
-    </li>
+    </Tag>
   )
 }
 
@@ -185,6 +192,10 @@ function CategoryFilter({
 // The sentinel the toggle group uses for "no filter". An empty string cannot be
 // a toggle value, and it is never a real category key.
 const allCategories = "all"
+
+// contentCategory mirrors visibility.CategoryContent. Only these actions ask the
+// user to write something, so only they carry the substantiation note.
+const contentCategory = "content"
 
 export function ActionsPage() {
   const { business, isError, isReady } = useCurrentBusiness()
@@ -328,6 +339,83 @@ function ActionSection({
   )
 }
 
+// hostOf renders a source URL as the domain a reader recognizes. A card lists
+// the pages we read, and five wrapped absolute URLs bury the one fact that
+// identifies them.
+function hostOf(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "")
+  } catch {
+    return url
+  }
+}
+
+// EvidenceComparison is the argument for a content action, side by side: what
+// answers said about competitors, and what the customer's own site says. Both
+// halves are quotations, because the claim being made — that a recommendation
+// went somewhere else over something they do not say — is one the user must be
+// able to check rather than take on trust.
+function EvidenceComparison({
+  comparison,
+  caption,
+}: {
+  comparison: NonNullable<ImprovementAction["comparison"]>
+  caption: string
+}) {
+  if (comparison.cited.length === 0 && comparison.site.length === 0) return null
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <section className="rounded-lg border bg-muted/40 p-3">
+        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          What ChatGPT said instead
+        </h3>
+        <ul className="mt-2 flex flex-col gap-3">
+          {comparison.cited.map((quote) => (
+            <li key={quote.quote}>
+              <blockquote className="border-l-2 pl-3 text-muted-foreground italic">
+                {quote.quote}
+              </blockquote>
+              <p className="mt-1 pl-3 text-xs text-muted-foreground">
+                cited {quote.domain}
+              </p>
+            </li>
+          ))}
+        </ul>
+        {caption && (
+          <p className="mt-3 text-xs text-muted-foreground">{caption}</p>
+        )}
+      </section>
+      <section className="rounded-lg border p-3">
+        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          What your site says
+        </h3>
+        {comparison.site.length > 0 ? (
+          <>
+            <ul className="mt-2 flex flex-col gap-3">
+              {comparison.site.map((quote) => (
+                <li key={quote}>
+                  <blockquote className="border-l-2 pl-3 text-muted-foreground italic">
+                    {quote}
+                  </blockquote>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Found on your site, but without the detail cited alongside it.
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 font-medium">
+            {comparison.coverage === "partial"
+              ? "Covered, but not with the detail cited alongside"
+              : "Nothing on this subject"}
+          </p>
+        )}
+      </section>
+    </div>
+  )
+}
+
 function ActionCard({
   action,
   mutation,
@@ -340,28 +428,39 @@ function ActionCard({
     status: ActionStatus,
     dismissalReason: DismissalReason = DismissalReason.UNSPECIFIED
   ) => mutation.mutate({ actionId: action.id, status, dismissalReason })
+  const hosts = [...new Set(action.sources.map(hostOf))]
 
   return (
     <>
       <Card id={`action-${action.id}`}>
         <CardHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            {action.categoryLabel && (
-              <Badge variant="outline">{action.categoryLabel}</Badge>
-            )}
-            {action.blocking && <Badge variant="destructive">Blocking</Badge>}
-            {action.reach > 0 && (
-              <Badge variant="secondary">
-                {action.reach} affected answer
-                {action.reach === 1 ? "" : "s"}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            {action.blocking && (
+              <Badge variant="destructive" className="text-xs">
+                Blocking
               </Badge>
+            )}
+            {action.categoryLabel && <span>{action.categoryLabel}</span>}
+            {action.reach > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="font-medium text-foreground">
+                  {action.reach} answer{action.reach === 1 ? "" : "s"} affected
+                </span>
+              </>
             )}
           </div>
           <CardTitle>{action.title}</CardTitle>
           <CardDescription>{action.body}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-sm">
-          {action.detail && (
+          {action.comparison && (
+            <EvidenceComparison
+              comparison={action.comparison}
+              caption={action.detail}
+            />
+          )}
+          {!action.comparison && action.detail && (
             <div>
               <h3 className="font-medium">What we found</h3>
               <p className="mt-1 text-muted-foreground">{action.detail}</p>
@@ -369,48 +468,69 @@ function ActionCard({
           )}
           {action.steps.length > 0 && (
             <div>
-              <h3 className="font-medium">What to do</h3>
-              <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-5">
-                {action.steps.map((step) => (
-                  <ActionStep key={step} step={step} />
-                ))}
-              </ol>
+              <h3 className="font-medium">Do this</h3>
+              {action.steps.length === 1 ? (
+                <div className="mt-1 text-muted-foreground">
+                  <ActionStep step={action.steps[0]} as="p" />
+                </div>
+              ) : (
+                <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-5">
+                  {action.steps.map((step) => (
+                    <ActionStep key={step} step={step} />
+                  ))}
+                </ol>
+              )}
+              {/* Substantiation is a constraint on how every website-content
+                  change is written, not a second task. Numbered beside the
+                  recommendation it read as half the work; it stays on the card
+                  so a filtered or deep-linked view never drops it. */}
+              {action.category === contentCategory && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                  Publish only facts you can substantiate. Do not copy another
+                  business&rsquo;s wording or imply outcomes you cannot support.
+                </p>
+              )}
             </div>
           )}
-          {action.sources.length > 0 && (
-            <div>
-              <h3 className="font-medium">Sources checked</h3>
-              <ul className="mt-2 flex flex-col gap-1">
-                {action.sources.map((source) => (
-                  <li key={source}>
-                    <a
-                      className="inline-flex items-center gap-1 break-all text-primary underline"
-                      href={source}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {source} <ExternalLink className="size-3 shrink-0" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {action.resultIds.length > 0 && (
-            <Button
-              className="self-start"
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                setSelectedEvidence(
-                  evidenceSelection(action.resultIds, action.title)
-                )
-              }
-            >
-              View {action.resultIds.length} supporting response
-              {action.resultIds.length === 1 ? "" : "s"}
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {action.resultIds.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setSelectedEvidence(
+                    evidenceSelection(action.resultIds, action.title)
+                  )
+                }
+              >
+                View {action.resultIds.length} answer
+                {action.resultIds.length === 1 ? "" : "s"}
+              </Button>
+            )}
+            {hosts.length > 0 && (
+              <details className="text-xs text-muted-foreground">
+                <summary className="cursor-pointer select-none">
+                  {hosts.slice(0, 2).join(", ")}
+                  {hosts.length > 2 ? ` +${hosts.length - 2}` : ""} checked
+                </summary>
+                <ul className="mt-2 flex flex-col gap-1">
+                  {action.sources.map((source) => (
+                    <li key={source}>
+                      <a
+                        className="inline-flex items-center gap-1 break-all text-primary underline"
+                        href={source}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {source} <ExternalLink className="size-3 shrink-0" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2">
           {action.status === ActionStatus.OPEN && (
