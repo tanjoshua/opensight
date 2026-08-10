@@ -15,7 +15,6 @@ import "./index.css"
 import App from "./App.tsx"
 import { accessDeniedFrom } from "@/api/errors"
 import { transport } from "@/api/transport"
-import { ThemeProvider } from "@/components/theme-provider.tsx"
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 
 // A mutation rejected by the RPC access gate (BILL-6/BILL-10) means the SPA's
@@ -43,9 +42,7 @@ createRoot(document.getElementById("root")!).render(
     <TransportProvider transport={transport}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <ThemeProvider>
-            <App />
-          </ThemeProvider>
+          <App />
         </BrowserRouter>
       </QueryClientProvider>
     </TransportProvider>
