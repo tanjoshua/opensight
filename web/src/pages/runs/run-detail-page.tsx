@@ -1,6 +1,7 @@
-// Run detail (RUNS-5, design 06): a single run's full stage progress plus its
-// response table. Reached by drilling in from the Runs list or a run-scoped
-// deep link (Overview's trend/partial-run links, the Competitors trend click).
+// Run detail (RUNS-5, design 06): a single run's visibility snapshot, its full
+// stage progress, and its response table. Reached by drilling in from the Runs
+// list or a run-scoped deep link (Overview's partial-run link and Run snapshot
+// footer, the Competitors trend click).
 // The run is read out of the already-polling useRuns cache — no GetRun.
 import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { keepPreviousData } from "@tanstack/react-query"
@@ -23,7 +24,9 @@ import { RUN_POLL_INTERVAL_MS, useCurrentBusiness, useRuns } from "@/api/hooks"
 import { ResultStatus, RunStatus } from "@/gen/opensight/v1/common_pb"
 import type { PromptResult } from "@/gen/opensight/v1/result_pb"
 import { listResults } from "@/gen/opensight/v1/result-ResultService_connectquery"
+import { getOverview } from "@/gen/opensight/v1/overview-OverviewService_connectquery"
 import { ResponseDrawer } from "@/components/response-drawer"
+import { RunSnapshot } from "@/components/run-snapshot"
 import { SectionMessage } from "@/components/section-message"
 import {
   evidenceSelection,
@@ -75,6 +78,17 @@ export function RunDetailPage() {
   const runsQuery = useRuns(businessId)
   const run = runsQuery.data?.runs.find((r) => r.id === id)
   const isRunning = run?.status === RunStatus.RUNNING
+
+  // The run's visibility snapshot comes from the Brief's payload, which already
+  // carries a point per analyzed run plus each competitor's matching point —
+  // no per-run RPC, and the cache is usually warm from the Brief.
+  const overviewQuery = useQuery(
+    getOverview,
+    businessId === undefined ? skipToken : { businessId }
+  )
+  const snapshotPoint = overviewQuery.data?.visibility?.trend.find(
+    (point) => point.runId === id
+  )
 
   const resultsQuery = useQuery(
     listResults,
@@ -163,6 +177,29 @@ export function RunDetailPage() {
           Run — {formatRunDate(run.scheduledFor)}
         </h1>
       </div>
+
+      {snapshotPoint && (
+        <section className="flex flex-col gap-3 rounded-lg border p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-heading text-sm font-medium">
+              Visibility snapshot
+            </h2>
+            <span className="text-sm text-muted-foreground">
+              Mentioned in {snapshotPoint.mentioned} of{" "}
+              {snapshotPoint.analyzed} analyzed responses
+            </span>
+          </div>
+          <RunSnapshot
+            point={snapshotPoint}
+            competitors={overviewQuery.data?.topCompetitors ?? []}
+            onOpenResult={(ids, context) =>
+              setSelectedEvidence(
+                evidenceSelection(ids, context ?? "Responses from this run")
+              )
+            }
+          />
+        </section>
+      )}
 
       <div className="rounded-lg border p-4">
         <RunStageStrip

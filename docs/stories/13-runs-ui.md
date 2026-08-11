@@ -88,8 +88,10 @@ Deps: RUNS-3 · Phase 3 · Ref: design 06 (Responses section note, superseded by
 As a clinic user, I want to open a run and see its responses, so drilling from the list to the
 evidence stays one click.
 
-- [x] Route `/runs/:id`: full `RunStageStrip` at top, then today's response table (prompt/status
-      filters kept, run filter dropped since the route scopes it) filtered to that run.
+- [x] Route `/runs/:id`: the run's visibility snapshot at top (shared with the Brief's Run
+      snapshot mode, from the cached `GetOverview` trend point; omitted when unanalyzed), then the
+      full `RunStageStrip`, then today's response table (prompt/status filters kept, run filter
+      dropped since the route scopes it) filtered to that run.
 - [x] Response rows open the existing shared `ResponseDrawer` — unaffected by this epic's changes.
 - [x] Run selected from the already-fetched `ListRuns` cache (RUNS-2) — no per-run fetch.
 

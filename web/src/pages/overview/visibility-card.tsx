@@ -39,7 +39,6 @@ export function VisibilityCard({
   const latestPoint = trend[trend.length - 1]
   const [snapshotRunID, setSnapshotRunID] = useState<string>()
   const [range, setRange] = useState<TrendRange>("last-12")
-  const [selectedTrendRunID, setSelectedTrendRunID] = useState<string>()
   const effectiveRange: TrendRange =
     trend.length <= 12 && range === "last-12" ? "all" : range
   const snapshotPoint =
@@ -53,9 +52,6 @@ export function VisibilityCard({
     effectiveRange === "all"
       ? trend
       : trend.slice(effectiveRange === "last-4" ? -4 : -12)
-  const selectedTrendPoint = visibleTrend.find(
-    (point) => point.runId === selectedTrendRunID
-  )
   const headlinePoint = mode === "snapshot" ? snapshotPoint : latestPoint
 
   const changeMode = (values: string[]) => {
@@ -66,7 +62,6 @@ export function VisibilityCard({
     const next = values[0]
     if (next === "last-4" || next === "last-12" || next === "all") {
       setRange(next)
-      setSelectedTrendRunID(undefined)
     }
   }
 
@@ -144,11 +139,6 @@ export function VisibilityCard({
             competitors={overview.topCompetitors}
             promptChanges={overview.promptChanges}
             runInterval={runInterval}
-            selectedRunID={selectedTrendRunID}
-            onSelectPoint={setSelectedTrendRunID}
-            selectedPoint={selectedTrendPoint}
-            onOpenResult={onOpenResult}
-            onOpenRun={onSelectRun}
           />
         )}
       </CardContent>

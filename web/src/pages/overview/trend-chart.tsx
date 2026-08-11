@@ -6,18 +6,19 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { Link } from "react-router"
 
 import type {
   CompetitorSummary,
   PromptChange,
   VisibilityPoint,
 } from "@/gen/opensight/v1/overview_pb"
+import { useAccountPath } from "@/lib/account-path"
 import { dateMs, formatPercent, longDate, shortDate } from "@/lib/format"
 import { percentYAxisProps, timeXAxisProps } from "@/lib/trend-axis"
 import { withRunGaps } from "@/lib/trend-gaps"
-import { Button } from "@/components/ui/button"
+import { chartConfig, COMPETITOR_COLORS } from "@/lib/chart-series"
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
-import { chartConfig, COMPETITOR_COLORS } from "./shared"
 
 // Cap the competitor lines to the top few so the chart stays legible.
 const MAX_TREND_COMPETITOR_LINES = 2
@@ -49,22 +50,13 @@ export function TrendChart({
   competitors,
   promptChanges,
   runInterval,
-  selectedRunID,
-  onSelectPoint,
-  selectedPoint,
-  onOpenResult,
-  onOpenRun,
 }: {
   trend: VisibilityPoint[]
   competitors: CompetitorSummary[]
   promptChanges: PromptChange[]
   runInterval: string
-  selectedRunID?: string
-  onSelectPoint: (runID: string) => void
-  selectedPoint?: VisibilityPoint
-  onOpenResult: (ids: string[], context?: string) => void
-  onOpenRun: (runID: string) => void
 }) {
+  const path = useAccountPath()
   const competitorSeries: Series[] = competitors
     .filter(
       (competitor) =>
@@ -136,14 +128,6 @@ export function TrendChart({
             accessibilityLayer
             data={chartData}
             margin={{ left: 4, right: 12, top: 8 }}
-            onClick={(state) => {
-              const point = (
-                state as unknown as {
-                  activePayload?: { payload: { point: VisibilityPoint } }[]
-                }
-              ).activePayload?.[0]?.payload.point
-              if (point) onSelectPoint(point.runId)
-            }}
           >
             <CartesianGrid vertical={false} />
             <XAxis {...timeXAxisProps} domain={[minX, maxX]} ticks={xTicks} />
@@ -209,67 +193,20 @@ export function TrendChart({
         </p>
       )}
       {competitorSeries.length > 0 && <SeriesLegend series={series} />}
-      <nav
-        className="flex gap-2 overflow-x-auto pb-1"
-        aria-label="Select visibility point by monitoring run"
-      >
-        {trend.map((point) => (
-          <Button
-            key={point.runId}
-            type="button"
-            size="xs"
-            variant={selectedRunID === point.runId ? "secondary" : "ghost"}
-            className="min-h-11 shrink-0"
-            aria-pressed={selectedRunID === point.runId}
-            onClick={() => onSelectPoint(point.runId)}
-          >
-            {shortDate(dateMs(point.scheduledFor))} ·{" "}
-            {formatPercent(point.percent)}
-          </Button>
-        ))}
-      </nav>
-      {selectedPoint && (
-        <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="font-medium">
-              {longDate(selectedPoint.scheduledFor)} ·{" "}
-              {formatPercent(selectedPoint.percent)}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Mentioned in {selectedPoint.mentioned} of {selectedPoint.analyzed}{" "}
-              analyzed responses
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11"
-              disabled={selectedPoint.resultIds.length === 0}
-              onClick={() =>
-                onOpenResult(
-                  selectedPoint.resultIds,
-                  `Visibility responses from ${longDate(selectedPoint.scheduledFor)}`
-                )
-              }
-            >
-              View responses
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11"
-              onClick={() => onOpenRun(selectedPoint.runId)}
-            >
-              Open run
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* The trend answers "which way is this going"; a single run's numbers and
+          evidence belong to that run, so inspection is one link out to
+          Monitoring history rather than a picker duplicated under the chart. */}
       <p className="text-xs text-muted-foreground">
-        Select a point or dated run to inspect it before opening its evidence.
         {markers.length > 0 &&
-          " Dashed lines mark weeks where the prompt set changed."}
+          "Dashed lines mark weeks where the prompt set changed. "}
+        Inspect a single run in{" "}
+        <Link
+          to={path("/runs")}
+          className="underline underline-offset-4 hover:text-foreground"
+        >
+          Monitoring history
+        </Link>
+        .
       </p>
     </div>
   )

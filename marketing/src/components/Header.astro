@@ -49,7 +49,7 @@ const mobileLinkClass = (path: string) => [
     </nav>
     <div class="hidden items-center gap-4 md:flex">
       <a href="https://dashboard.opensight.app" class="nav-link text-[0.92rem] font-medium">Sign in</a>
-      <a href="https://dashboard.opensight.app/signup" class="button-primary min-h-10 px-4 py-2 text-[0.88rem]">Check my visibility <span aria-hidden="true">↗</span></a>
+      <a href="https://dashboard.opensight.app/signup" class="button-primary min-h-10 px-4 py-2 text-[0.88rem]">Sign up <span aria-hidden="true">↗</span></a>
     </div>
     <button id="nav-toggle" type="button" class="border-line grid size-10 place-items-center rounded-full border bg-white md:hidden" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
       <svg class="nav-open-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 16h14"></path></svg>
@@ -65,7 +65,7 @@ const mobileLinkClass = (path: string) => [
       <a href="/pricing/" class:list={mobileLinkClass("/pricing/")} aria-current={isCurrent("/pricing/") ? "page" : undefined}>Pricing</a>
       <a href="/faq/" class:list={mobileLinkClass("/faq/")} aria-current={isCurrent("/faq/") ? "page" : undefined}>FAQ</a>
       <a href="https://dashboard.opensight.app" class="text-moss rounded-xl px-3 py-3 font-medium no-underline hover:bg-paper">Sign in</a>
-      <a href="https://dashboard.opensight.app/signup" class="button-primary mt-3">Check my visibility <span aria-hidden="true">↗</span></a>
+      <a href="https://dashboard.opensight.app/signup" class="button-primary mt-3">Sign up <span aria-hidden="true">↗</span></a>
     </div>
   </nav>
 </header>
