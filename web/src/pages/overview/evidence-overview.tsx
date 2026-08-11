@@ -37,7 +37,10 @@ export function EvidenceOverview({
       aria-labelledby="evidence-overview-title"
     >
       <div>
-        <h2 id="evidence-overview-title" className="text-xl font-semibold">
+        <h2
+          id="evidence-overview-title"
+          className="font-heading text-xl font-semibold tracking-tight"
+        >
           Explore the evidence
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -211,22 +214,37 @@ function CompetitorRow({
   onClick: () => void
 }) {
   const disabled = competitor.resultIds.length === 0
+  // The share bar is neutral rather than chart-colored: this panel lists the
+  // top five by coverage while the snapshot chart plots only the top three, so
+  // a series color here would imply an identity the chart does not carry.
+  const share = Math.min(100, Math.max(0, competitor.mentionPercent))
   return (
     <Button
       type="button"
       variant="ghost"
       disabled={disabled}
       onClick={onClick}
-      className="h-auto min-h-11 w-full justify-between gap-2 px-2 py-2 text-left whitespace-normal"
+      className="h-auto min-h-11 w-full flex-col items-stretch justify-start gap-1.5 px-2 py-2 text-left whitespace-normal"
     >
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="truncate">{competitor.name}</span>
-        {competitor.status === CompetitorStatus.DISCOVERED && (
-          <Badge variant="outline">discovered</Badge>
-        )}
+      <span className="flex w-full items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate">{competitor.name}</span>
+          {competitor.status === CompetitorStatus.DISCOVERED && (
+            <Badge variant="outline">discovered</Badge>
+          )}
+        </span>
+        <span className="shrink-0 text-muted-foreground tabular-nums">
+          {formatPercent(competitor.mentionPercent)}
+        </span>
       </span>
-      <span className="shrink-0 text-muted-foreground tabular-nums">
-        {formatPercent(competitor.mentionPercent)}
+      <span
+        className="h-1 w-full overflow-hidden rounded-full bg-muted"
+        aria-hidden="true"
+      >
+        <span
+          className="block h-full rounded-full bg-muted-foreground/40"
+          style={{ width: `${share}%` }}
+        />
       </span>
     </Button>
   )

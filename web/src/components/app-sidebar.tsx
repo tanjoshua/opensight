@@ -127,7 +127,7 @@ export function AppSidebar() {
         {me && account?.account && hasMultipleWorkspaces && (
           <div className="flex flex-col gap-1 px-1">
             <span className="px-2 text-xs text-muted-foreground">
-              Workspace
+              Switch workspace
             </span>
             <Select
               items={workspaceItems}
