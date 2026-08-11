@@ -68,10 +68,6 @@
     @apply border-line bg-paper/95 shadow-[0_10px_35px_-30px_rgba(28,25,23,.5)];
   }
 
-  .eyebrow {
-    @apply font-mono text-pine mb-4 text-[0.72rem] font-medium tracking-[0.16em] uppercase;
-  }
-
   .display-title {
     @apply font-display text-ink text-[clamp(2.3rem,5vw,4.65rem)] leading-[1] font-extrabold tracking-[-0.04em];
   }
