@@ -43,7 +43,9 @@ npm run build     # writes the static production site to dist/
 npm run preview   # previews the production build on port 8081
 ```
 
-Astro pre-renders every route to static HTML. The generated `dist/` directory is not committed.
+Astro pre-renders every route to static HTML. The generated `dist/` directory is not committed, so the host must run the build — serving this directory as plain static files publishes nothing but source.
+
+`.nvmrc` pins Node 22, which Astro 5 and Tailwind v4 need. Cloudflare Pages reads it from the root directory, but only for projects created after 2021; older ones ignore it and default to Node 18.17.1, so set a `NODE_VERSION` of `22` there as well.
 
 ## Deploy
 
@@ -51,7 +53,8 @@ Any static host works. This site lives in the `marketing/` subdirectory of the [
 
 1. Cloudflare Pages → Create project → connect the `opensight` repo.
 2. Framework preset: **Astro**. Root directory: `marketing`. Build command: `npm run build`. Output directory: `dist`.
-3. Add `opensight.app` as the custom domain.
+3. Environment variables (Production and Preview): `NODE_VERSION` = `22`.
+4. Add `opensight.app` as the custom domain.
 
 ## Things to update as the product evolves
 
