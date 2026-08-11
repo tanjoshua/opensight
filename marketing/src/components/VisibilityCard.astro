@@ -1,0 +1,98 @@
+---
+// The Brief's visibility card, reproduced from the real app
+// (web/src/pages/overview/visibility-card.tsx and trend-chart.tsx) so the
+// marketing preview and the product stay the same object: 24px white card,
+// "AI visibility" title, the headline percent to one decimal, the snapshot /
+// over-time toggle, and a multi-series linear trend in the app's chart colors.
+import {
+  plot,
+  PREVIEW_DATES,
+  PREVIEW_LATEST_DATE,
+  PREVIEW_LATEST_PERCENT,
+  PREVIEW_SERIES,
+  PREVIEW_TICKS,
+} from "../data/preview";
+
+interface Props {
+  /** Rendered smaller inside the /monitor/ app-chrome mock. */
+  compact?: boolean;
+  /** Extra classes on the card shell, e.g. padding for an overlapping panel. */
+  class?: string;
+}
+
+const { compact = false, class: className = "" } = Astro.props;
+
+// Plot geometry mirrors the app's axes: a 0-100% y-axis with ticks every 25,
+// a true-time x-axis, and straight segments (recharts type="linear").
+const { x, y, path } = plot({ left: 46, right: 490, top: 16, bottom: 176 });
+const series = PREVIEW_SERIES;
+---
+
+<div class:list={["app-card", compact ? "p-4" : "p-5", className]}>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="flex flex-col gap-1">
+      <p class="app-card-title">AI visibility</p>
+      <p
+        class:list={[
+          "font-display font-semibold tracking-tight tabular-nums",
+          compact ? "text-[2.4rem] leading-none" : "text-5xl sm:text-6xl",
+        ]}
+      >
+        {PREVIEW_LATEST_PERCENT}
+      </p>
+      <p class="app-muted text-[0.82rem]">Latest · {PREVIEW_LATEST_DATE}</p>
+    </div>
+    <div class="flex shrink-0 items-center gap-1">
+      <span class="app-toggle app-muted">Run snapshot</span>
+      <span class="app-toggle app-toggle-on">Over time</span>
+    </div>
+  </div>
+
+  <svg
+    viewBox="0 0 520 210"
+    class="mt-4 w-full"
+    fill="none"
+    aria-hidden="true"
+  >
+    <!-- CartesianGrid vertical={false} -->
+    {[0, 25, 50, 75, 100].map((tick) => (
+      <line x1="46" x2="490" y1={y(tick)} y2={y(tick)} stroke="#e7e5e4" stroke-width="1" />
+    ))}
+    {[0, 25, 50, 75, 100].map((tick) => (
+      <text x="38" y={y(tick) + 4} text-anchor="end" fill="#78716c" font-size="11">{tick}%</text>
+    ))}
+    {PREVIEW_TICKS.map((i) => (
+      <text x={x(i)} y="200" text-anchor="middle" fill="#78716c" font-size="11">{PREVIEW_DATES[i]}</text>
+    ))}
+    <!-- Competitors first, then "You" — later marks render on top. -->
+    {series.slice(1).map((s) => (
+      <path d={path(s.values)} stroke={s.color} stroke-width={s.width} stroke-linecap="round" />
+    ))}
+    <path
+      d={path(series[0].values)}
+      stroke={series[0].color}
+      stroke-width={series[0].width}
+      stroke-linecap="round"
+    />
+    {series[0].values.map((value, i) => (
+      <circle cx={x(i)} cy={y(value)} r="3" fill={series[0].color} />
+    ))}
+  </svg>
+
+  <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+    {series.map((s) => (
+      <span class="app-muted flex min-w-0 items-center gap-1.5 text-[0.75rem]">
+        <svg width="18" height="6" aria-hidden="true" class="shrink-0">
+          <line x1="0" y1="3" x2="18" y2="3" stroke={s.color} stroke-width={s.width} />
+        </svg>
+        <span class="truncate">{s.name}</span>
+      </span>
+    ))}
+  </div>
+
+  {!compact && (
+    <p class="app-muted mt-3 text-[0.72rem]">
+      Inspect a single run in <span class="underline underline-offset-4">Monitoring history</span>.
+    </p>
+  )}
+</div>

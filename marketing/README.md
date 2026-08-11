@@ -6,11 +6,13 @@ Marketing site for [opensight.app](https://opensight.app). Astro + Tailwind CSS 
 
 - `/` — homepage: the pitch, with both products as its centrepiece and detail pushed to their pages.
 - `/monitor/` — product page for measurement: 20 questions, weekly runs, competitors, sources, history.
-- `/improve/` — product page for the action queue, the evidence comparison, and the 17-check checklist.
+- `/improve/` — product page for the ranked list of actions, the evidence comparison, and the checklist.
 - `/pricing/` — the single Starter plan (both products) and what happens after signup.
 - `/faq/` — full FAQ.
 
-A page with the animated chat demo needs a `#chat-scenarios` JSON block (see `src/pages/index.astro`).
+A page with the animated chat demo needs a `#chat-scenarios` JSON block (see `src/pages/monitor/index.astro`).
+
+The product previews in `src/components/` (`VisibilityCard.astro`, `BriefPreview.astro`) reproduce the app's real Brief. Their source of truth is `web/src/pages/overview/` — when that page changes, change these too, or the pitch starts showing a product that does not exist.
 
 ## Structure
 
@@ -57,4 +59,5 @@ Any static host works. This site lives in the `marketing/` subdirectory of the [
 - **Contact email**: `hello@opensight.app` in the footer.
 - **Testimonial**: intentionally omitted for v1; add a section between "Every number has a receipt" and the final CTA once a real quote exists.
 - **Copy discipline**: the pages claim only what the shipped product does (ChatGPT only, weekly runs, same-day first run, no score or grade, no causal claims), and deliberately state no fixed counts — no prompt quota, check total, or category count — so the copy survives the product growing. Keep it that way; numbers belong in the app, not the pitch.
+- **Copy boundaries**: the pitch does not enumerate the individual checks the audit runs, and does not characterise competing products. Describe what a category covers, not the checks inside it.
 - **Concision**: every section has to earn its screen. Prefer cutting to adding — the pitch is clearer short, and filler reads as padding rather than proof.

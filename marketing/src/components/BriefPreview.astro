@@ -1,0 +1,50 @@
+---
+// Homepage hero visual: a close-up of the Brief — the visibility card with the
+// "Competitors appearing" evidence panel offset beneath it. Both reproduce the
+// real app (web/src/pages/overview/), so the pitch shows the product a
+// customer actually gets rather than an illustration of it.
+import VisibilityCard from "./VisibilityCard.astro";
+
+// Named generically on purpose: the preview has to read as "your business" to a
+// clinic, a contractor and a studio alike, not as one worked example.
+const competitors = [
+  { name: "Competitor A", percent: "44.0%", discovered: true },
+  { name: "Competitor B", percent: "27.0%", discovered: false },
+  { name: "Competitor C", percent: "19.0%", discovered: true },
+];
+---
+
+<figure
+  class="relative m-0"
+  aria-label="The OpenSight Brief: an AI visibility card showing 58.0% for the latest weekly run, a nine-week trend rising from 15.0% to 58.0% while two competitors decline, and a panel ranking the competitors appearing in the same answers."
+>
+  <div class="drop-shadow-[0_35px_60px_rgba(28,25,23,.16)]">
+    {/* Extra bottom padding leaves the overlapping panel empty card to sit on. */}
+    <VisibilityCard class="lg:pb-20" />
+  </div>
+
+  <div
+    class="app-card mt-4 p-5 drop-shadow-[0_25px_45px_rgba(28,25,23,.13)] lg:-mt-16 lg:ml-auto lg:w-[86%] lg:translate-x-6"
+  >
+    <p class="app-card-title">Competitors appearing</p>
+    <p class="app-muted mt-0.5 text-[0.82rem]">
+      Ranked by coverage across analyzed responses
+    </p>
+    <div class="mt-3 flex flex-col">
+      {
+        competitors.map((competitor) => (
+          <div class="app-row">
+            <span class="flex min-w-0 items-center gap-2">
+              <span class="truncate">{competitor.name}</span>
+              {competitor.discovered && <span class="app-badge app-muted">discovered</span>}
+            </span>
+            <span class="app-muted shrink-0 tabular-nums">{competitor.percent}</span>
+          </div>
+        ))
+      }
+    </div>
+    <p class="border-line app-muted mt-3 flex items-center gap-1 border-t pt-3 text-[0.82rem]">
+      3 discovered to review <span aria-hidden="true">→</span>
+    </p>
+  </div>
+</figure>

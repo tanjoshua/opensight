@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Improve — fix what keeps you out of AI answers | OpenSight" description="OpenSight Improve audits your site and reads the answers you were left out of, then gives you a ranked queue of concrete work — each action carrying the quoted evidence that argues for it." ogDescription="A ranked queue of evidence-backed actions, plus a full site checklist on every run. No scores, no grades.">
+<BaseLayout title="Improve — fix what keeps you out of AI answers | OpenSight" description="OpenSight Improve audits your website and reads the answers that recommended somebody else, then gives you a ranked list of what to change — with the evidence behind each one." ogDescription="A ranked list of what to fix, backed by evidence, plus a full site checklist on every run. No scores, no grades.">
 <main>
   <section class="relative overflow-hidden pt-14 pb-20 md:pt-20 md:pb-24">
     <div class="grid-field pointer-events-none absolute inset-0" aria-hidden="true"></div>
@@ -11,10 +11,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <div class="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr]">
         <div class="relative z-10">
           <span class="product-tag border-line text-pine mb-6 w-fit bg-white"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V7"/><path d="m6 13 6-6 6 6"/></svg>Improve</span>
-          <h1 class="display-title max-w-[15ch] text-[clamp(2.3rem,4.4vw,3.9rem)]">Stop guessing why the answer went elsewhere.</h1>
-          <p class="text-moss mt-6 max-w-[34rem] text-[1.08rem] leading-relaxed md:text-[1.18rem]">Every run audits your website and reads the answers you were left out of, then hands you a ranked queue of specific work — each action carrying the quoted evidence that argues for it.</p>
+          <h1 class="display-title max-w-[15ch] text-[clamp(2.3rem,4.4vw,3.9rem)]">Fix what keeps you out of ChatGPT’s answers.</h1>
+          <p class="text-moss mt-6 max-w-[34rem] text-[1.08rem] leading-relaxed md:text-[1.18rem]">Every week, OpenSight audits your website and reads the answers that recommended somebody else — then gives you a ranked list of what to change, with the evidence behind each one.</p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <a href="https://dashboard.opensight.app/signup" class="button-primary">Get my action queue <span aria-hidden="true">↗</span></a>
+            <a href="https://dashboard.opensight.app/signup" class="button-primary">See what to fix <span aria-hidden="true">↗</span></a>
             <a href="/monitor/" class="button-ghost">See Monitor <span aria-hidden="true">→</span></a>
           </div>
           <p class="text-moss mt-4 text-[0.84rem]">Included in the S$50/month plan, with Monitor.</p>
@@ -58,19 +58,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <div class="reveal grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
         <div>
           <p class="eyebrow">Where actions come from</p>
-          <h2 class="section-title max-w-[13ch]">Nothing we can’t point at.</h2>
+          <h2 class="section-title max-w-[13ch]">Built from your site and your answers.</h2>
         </div>
         <div class="max-w-[42rem] lg:pt-10">
-          <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Most “AI SEO” advice is the same checklist handed to everyone.</p>
-          <p class="text-moss mt-5 text-lg">Improve reads two things you actually own the outcome of: your website, and the answers where a customer was recommended somebody else.</p>
+          <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Every action is specific to your business.</p>
+          <p class="text-moss mt-5 text-lg">Improve reads two things that are yours alone: your website, and the answers where a customer was recommended somebody else. Nothing on the list comes from anywhere but those.</p>
         </div>
       </div>
 
       <div class="mt-12 grid gap-4 lg:grid-cols-2">
         <article class="reveal panel p-7 md:p-9">
           <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Your site</p>
-          <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">A deterministic audit, run every week.</h3>
-          <p class="text-moss mt-4">Reachability, crawler access, indexing directives, sitemaps, canonicals, titles, and the structured data that states who and where you are. A failed check that has a fix becomes an action.</p>
+          <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">A full technical audit, run every week.</h3>
+          <p class="text-moss mt-4">Whether an AI crawler can reach your pages, read them, and work out who and where you are. Every finding is a real state of your site, checked directly — and anything failing that has a fix becomes an action.</p>
         </article>
         <article class="reveal panel bg-white p-7 md:p-9">
           <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Your answers</p>
@@ -83,9 +83,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   <section class="site-shell py-24 md:py-32">
     <div class="reveal max-w-[42rem]">
-      <p class="eyebrow">The comparison</p>
+      <p class="eyebrow">Content gaps</p>
       <h2 class="section-title max-w-[16ch]">What they say. What you don’t.</h2>
-      <p class="text-moss mt-6 text-lg">The claim behind a content action is that a recommendation went elsewhere over something you never said. A summary of that claim is unverifiable, so Improve quotes both sides.</p>
+      <p class="text-moss mt-6 text-lg">When a recommendation goes elsewhere over something your site never says, you should be able to check that for yourself. So Improve quotes both sides — their words, next to yours.</p>
     </div>
 
     <div class="reveal panel mt-12 overflow-hidden">
@@ -102,11 +102,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
             <div class="grid gap-3">
               <figure class="quote-card m-0">
                 <blockquote class="text-[0.94rem] leading-relaxed">“Most root canals here are completed in a single 90-minute appointment.”</blockquote>
-                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · clinicgeek.com</figcaption>
+                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · COMPETITOR A · /root-canal</figcaption>
               </figure>
               <figure class="quote-card m-0">
                 <blockquote class="text-[0.94rem] leading-relaxed">“Single-visit endodontics for most cases, with same-week appointments.”</blockquote>
-                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · marlowedental.sg</figcaption>
+                <figcaption class="text-moss mt-3 font-mono text-[0.62rem]">CITED · COMPETITOR B · /services</figcaption>
               </figure>
             </div>
           </div>
@@ -133,8 +133,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <div class="site-shell grid items-center gap-12 py-20 md:py-24 lg:grid-cols-[1fr_1fr] lg:gap-20">
       <div class="reveal">
         <p class="eyebrow">Ready to hand off</p>
-        <h2 class="font-display text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">Most of this is edits to a codebase.</h2>
-        <p class="text-moss mt-5">So every action copies itself as text — the finding, the evidence, the steps and the sources it was read from — ready to paste into your developer’s inbox or straight into a coding agent. Nothing is added that is not on the card.</p>
+        <h2 class="font-display text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">You don’t have to do the work yourself.</h2>
+        <p class="text-moss mt-5">Most of these are website changes. Every action copies as plain text — the finding, the evidence, the steps and the sources it was read from — ready to send to whoever runs your site, or to paste straight into a coding agent. Nothing is added that is not on the card.</p>
       </div>
       <div class="reveal border-line rounded-xl border bg-white p-5 font-mono text-[0.78rem] leading-relaxed md:p-6">
         <p class="text-moss"># Your services page tells crawlers not to index it</p>
@@ -149,9 +149,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <div class="reveal flex flex-col justify-between gap-6 md:flex-row md:items-end">
       <div>
         <p class="eyebrow">The visibility checklist</p>
-        <h2 class="section-title max-w-[15ch]">Every check. Every run. Nothing hidden.</h2>
+        <h2 class="section-title max-w-[16ch]">Every check, every run — including the ones you passed.</h2>
       </div>
-      <p class="text-moss max-w-[27rem]">The queue shows what to do. The checklist shows everything that was examined — including what passed — with the exact evidence behind each verdict.</p>
+      <p class="text-moss max-w-[27rem]">The list of actions shows what to do next. The checklist shows everything that was examined — including what passed — with the exact evidence behind each verdict, in plain language.</p>
     </div>
 
     <div class="mt-12 grid gap-4 lg:grid-cols-3">
@@ -160,13 +160,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="font-display font-bold">Access</p>
           <span class="text-moss font-mono text-[0.65rem]">1 to fix</span>
         </div>
-        <div class="mt-2">
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Your website is reachable</span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>No login wall in the way</span></div>
-          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Pages allow indexing<span class="text-moss block text-[0.8rem]">2 of the 6 pages read carry a noindex directive.</span></span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>OpenAI’s search crawler is allowed</span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-moss">i</span><span>Model-training crawler<span class="text-moss block text-[0.8rem]">Blocked — a legitimate choice, not a shortfall.</span></span></div>
-        </div>
+        <p class="text-moss mt-4">Whether an AI crawler can reach your pages at all, and whether anything on your site is telling it to stay away.</p>
       </article>
 
       <article class="reveal panel p-6 md:p-7">
@@ -174,13 +168,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="font-display font-bold">Structure</p>
           <span class="text-moss font-mono text-[0.65rem]">2 to fix</span>
         </div>
-        <div class="mt-2">
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>A sitemap is published</span></div>
-          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>robots.txt points to the sitemap</span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Pages declare a canonical URL</span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Business name in the homepage title</span></div>
-          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Every page has a meta description</span></div>
-        </div>
+        <p class="text-moss mt-4">Whether the pages it does reach are laid out so a machine can find them and understand what each one is for.</p>
       </article>
 
       <article class="reveal panel p-6 md:p-7">
@@ -188,13 +176,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="font-display font-bold">Identity</p>
           <span class="text-moss font-mono text-[0.65rem]">3 to fix</span>
         </div>
-        <div class="mt-2">
-          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>Structured data is published<span class="text-moss block text-[0.8rem]">No JSON-LD found on any page read.</span></span></div>
-          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>It declares a business type</span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>A phone number machines can read</span></div>
-          <div class="check-row"><span class="check-mark bg-white text-miss ring-1 ring-miss/30">✕</span><span>A postal address is published</span></div>
-          <div class="check-row"><span class="check-mark bg-paper text-pine">✓</span><span>Opening hours are published</span></div>
-        </div>
+        <p class="text-moss mt-4">Whether your site states who you are, what you do and where you are in a form a model can read without guessing.</p>
       </article>
     </div>
   </section>
@@ -229,9 +211,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <div class="relative">
         <p class="eyebrow">Start with the evidence</p>
         <h2 class="section-title mx-auto max-w-[18ch]">Find out what is keeping you out of the answer.</h2>
-        <p class="text-moss mx-auto mt-5 max-w-[34rem]">Your first site audit and action queue arrive with your first <a href="/monitor/" class="text-pine underline underline-offset-4">monitoring</a> run — the same day you sign up.</p>
+        <p class="text-moss mx-auto mt-5 max-w-[34rem]">Your first site audit and your first list of actions arrive with your first <a href="/monitor/" class="text-pine underline underline-offset-4">monitoring</a> run — the same day you sign up.</p>
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <a href="https://dashboard.opensight.app/signup" class="button-primary">Get my action queue <span aria-hidden="true">↗</span></a>
+          <a href="https://dashboard.opensight.app/signup" class="button-primary">See what to fix <span aria-hidden="true">↗</span></a>
           <a href="/pricing/" class="button-ghost">See pricing</a>
         </div>
       </div>

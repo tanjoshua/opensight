@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import VisibilityCard from "../../components/VisibilityCard.astro";
 ---
 
 <BaseLayout title="Monitor — track your business in ChatGPT answers | OpenSight" description="OpenSight Monitor runs real customer questions against ChatGPT every week and shows where you appear, who is recommended instead, which sources are cited, and how you are described." ogDescription="Real customer questions, run weekly, with every raw answer stored behind every number.">
@@ -20,66 +21,54 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <p class="text-moss mt-4 text-[0.84rem]">Included in the S$50/month plan, with Improve.</p>
         </div>
 
-        <div class="relative mx-auto w-full max-w-[680px]" aria-label="OpenSight brief showing visibility, competitors, and repeated themes.">
-          <div class="noise border-line overflow-hidden rounded-2xl border bg-white shadow-[0_35px_90px_-42px_rgba(28,25,23,.38)]">
-            <div class="border-line flex items-center justify-between border-b bg-white px-4 py-3">
-              <div class="flex items-center gap-3">
-                <span class="logo-mark size-6 rounded-md" aria-hidden="true"></span>
-                <span class="font-display text-sm font-bold">OpenSight</span>
-              </div>
-              <div class="flex items-center gap-1.5" aria-hidden="true"><span class="bg-line size-2 rounded-full"></span><span class="bg-line size-2 rounded-full"></span><span class="bg-pine/70 size-2 rounded-full"></span></div>
-            </div>
-            <div class="grid min-h-[430px] sm:grid-cols-[9.5rem_1fr]">
-              <aside class="border-line hidden border-r bg-stone-100 p-3 sm:block" aria-hidden="true">
-                <p class="font-mono text-moss px-2 py-2 text-[0.56rem] tracking-wider uppercase">CoolWorks Aircon</p>
-                <div class="bg-pine mt-2 rounded-lg px-3 py-2 text-xs font-semibold text-white">Brief</div>
-                <div class="text-moss px-3 py-2 text-xs">Questions</div>
-                <div class="text-moss px-3 py-2 text-xs">Competitors</div>
-                <div class="text-moss px-3 py-2 text-xs">History</div>
-                <div class="text-moss px-3 py-2 text-xs">Improve</div>
+        <div class="relative mx-auto w-full max-w-[680px]" aria-label="The OpenSight Brief inside the app: a sidebar grouping Monitor and Improve, the visibility card at 60.0% with its weekly trend, and the recurring themes found across analyzed responses.">
+          <div class="border-line overflow-hidden rounded-2xl border bg-paper shadow-[0_35px_90px_-42px_rgba(28,25,23,.38)]">
+            <div class="grid sm:grid-cols-[10.5rem_1fr]">
+              <aside class="border-line hidden border-r p-2 sm:block" aria-hidden="true">
+                <div class="flex items-center gap-2 px-2 py-1.5">
+                  <span class="logo-mark size-4" aria-hidden="true"></span>
+                  <span class="font-display text-[0.82rem] font-semibold tracking-tight">OpenSight</span>
+                </div>
+                <div class="mt-1 flex items-center gap-2 px-2 py-1.5">
+                  <span class="grid size-6 shrink-0 place-items-center rounded-lg bg-stone-100">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="app-muted block text-[0.58rem]">Business</span>
+                    <span class="block truncate text-[0.7rem] font-medium">Your business</span>
+                  </span>
+                </div>
+                <p class="app-muted px-2 pt-3 pb-1 text-[0.6rem]">Monitor</p>
+                <div class="rounded-lg bg-stone-100 px-2 py-1.5 text-[0.72rem] font-medium">Brief</div>
+                <div class="app-muted px-2 py-1.5 text-[0.72rem]">Questions</div>
+                <div class="app-muted px-2 py-1.5 text-[0.72rem]">Competitors</div>
+                <div class="app-muted px-2 py-1.5 text-[0.72rem]">Monitoring history</div>
+                <p class="app-muted px-2 pt-3 pb-1 text-[0.6rem]">Improve</p>
+                <div class="app-muted px-2 py-1.5 text-[0.72rem]">Next actions</div>
+                <div class="app-muted px-2 py-1.5 text-[0.72rem]">Visibility checklist</div>
               </aside>
-              <div class="p-5 sm:p-6">
-                <div class="mb-6 flex items-start justify-between gap-4">
-                  <div>
-                    <p class="stat-label">Weekly brief · 20 Jul</p>
-                    <h2 class="font-display mt-1 text-xl font-bold tracking-tight">Your AI visibility</h2>
-                  </div>
-                  <span class="border-line rounded-full border bg-white px-2.5 py-1 font-mono text-[0.58rem]">ChatGPT</span>
+
+              <div class="min-w-0">
+                <div class="border-line flex h-10 items-center justify-between border-b px-3" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-moss"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+                  <span class="app-badge app-muted">Run in progress</span>
                 </div>
-                <div class="grid gap-3 sm:grid-cols-[1.2fr_.8fr]">
-                  <div class="border-line rounded-xl border bg-white p-4">
-                    <div class="flex items-start justify-between">
-                      <div>
-                        <p class="stat-label">Visibility</p>
-                        <strong class="font-display mt-1 block text-4xl font-extrabold tracking-tight">60<span class="text-moss text-base font-normal">%</span></strong>
-                      </div>
-                      <span class="bg-paper text-pine rounded-full px-2 py-1 text-[0.65rem] font-semibold">↑ 15 pts</span>
+                <div class="p-4">
+                  <p class="font-display text-[1.05rem] font-semibold tracking-tight">Your visibility brief</p>
+                  <p class="app-muted text-[0.72rem]">Your latest AI visibility signals and what changed.</p>
+
+                  <div class="mt-3">
+                    <VisibilityCard compact />
+                  </div>
+
+                  <div class="app-card mt-3 p-4">
+                    <p class="app-card-title text-[0.9rem]">Common themes</p>
+                    <p class="app-muted mt-0.5 text-[0.72rem]">Keywords recurring across analyzed responses</p>
+                    <div class="mt-2 flex flex-col text-[0.78rem]">
+                      <span class="app-row min-h-7"><span class="truncate">transparent pricing</span><span class="app-muted shrink-0 tabular-nums">9 responses</span></span>
+                      <span class="app-row min-h-7"><span class="truncate">same-day service</span><span class="app-muted shrink-0 tabular-nums">6 responses</span></span>
+                      <span class="app-row min-h-7"><span class="truncate">punctual technicians</span><span class="app-muted shrink-0 tabular-nums">4 responses</span></span>
                     </div>
-                    <svg viewBox="0 0 280 95" class="mt-3 w-full" aria-hidden="true" fill="none">
-                      <defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#292524" stop-opacity=".16"/><stop offset="1" stop-color="#292524" stop-opacity="0"/></linearGradient></defs>
-                      <path d="M3 78 C38 72 55 74 82 62 S128 68 156 48 S198 44 224 29 S256 25 277 12 L277 93 L3 93Z" fill="url(#area)"/>
-                      <path d="M3 78 C38 72 55 74 82 62 S128 68 156 48 S198 44 224 29 S256 25 277 12" stroke="#292524" stroke-width="3" stroke-linecap="round"/>
-                      <circle cx="277" cy="12" r="5" fill="#fafaf9" stroke="#292524" stroke-width="3"/>
-                    </svg>
-                  </div>
-                  <div class="bg-pinedeep rounded-xl p-4 text-white">
-                    <p class="font-mono text-[0.58rem] tracking-wider text-white/60 uppercase">Newly visible</p>
-                    <p class="font-display mt-3 text-lg leading-tight font-bold">Three questions now name you.</p>
-                    <p class="mt-3 text-[0.68rem] leading-relaxed text-white/65">Two more still go to AirCare SG.</p>
-                  </div>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div class="border-line rounded-xl border bg-white p-4">
-                    <div class="mb-3 flex items-center justify-between"><p class="stat-label">Competitors</p><span class="text-moss text-[0.6rem]">share of answers</span></div>
-                    <div class="space-y-2 text-[0.7rem]">
-                      <div class="grid grid-cols-[5.5rem_1fr_2rem] items-center gap-2"><b class="truncate">You</b><span class="bg-line h-1.5 rounded-full"><span class="bg-pine block h-full w-[60%] rounded-full"></span></span><b>60%</b></div>
-                      <div class="text-moss grid grid-cols-[5.5rem_1fr_2rem] items-center gap-2"><span class="truncate">AirCare SG</span><span class="bg-line h-1.5 rounded-full"><span class="block h-full w-[45%] rounded-full bg-stone-400"></span></span><span>45%</span></div>
-                      <div class="text-moss grid grid-cols-[5.5rem_1fr_2rem] items-center gap-2"><span class="truncate">Breeze</span><span class="bg-line h-1.5 rounded-full"><span class="block h-full w-[30%] rounded-full bg-stone-400"></span></span><span>30%</span></div>
-                    </div>
-                  </div>
-                  <div class="border-line rounded-xl border bg-white p-4">
-                    <p class="stat-label mb-3">What AI repeats</p>
-                    <div class="flex flex-wrap gap-1.5 text-[0.67rem]"><span class="bg-paper text-pine rounded-full px-2 py-1">transparent pricing</span><span class="bg-paper rounded-full px-2 py-1">responsive</span><span class="bg-paper rounded-full px-2 py-1">punctual</span></div>
                   </div>
                 </div>
               </div>
@@ -111,21 +100,21 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <div class="divide-line divide-y">
           <div class="flex flex-wrap items-center gap-3 px-5 py-4 md:px-7">
             <span class="bg-paper text-pine rounded-full px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Mentioned · 1st</span>
-            <span class="flex-1 text-[0.97rem]">Best aircon servicing for a condo in Bukit Timah?</span>
+            <span class="flex-1 text-[0.97rem]">Who’s reliable for a same-day emergency callout?</span>
           </div>
           <div class="flex flex-wrap items-center gap-3 px-5 py-4 md:px-7">
             <span class="bg-paper text-pine rounded-full px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Mentioned · 3rd</span>
-            <span class="flex-1 text-[0.97rem]">Who does honest aircon chemical wash pricing?</span>
+            <span class="flex-1 text-[0.97rem]">Who’s upfront about pricing before starting the work?</span>
           </div>
           <div class="flex flex-wrap items-center gap-3 bg-paper px-5 py-4 md:px-7">
             <span class="text-miss rounded-full bg-white px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Absent</span>
-            <span class="flex-1 text-[0.97rem]">Which aircon company handles same-day emergency repair?</span>
-            <span class="text-moss font-mono text-[0.7rem]">AirCare SG won it</span>
+            <span class="flex-1 text-[0.97rem]">Who can take on a whole-building job, not a single unit?</span>
+            <span class="text-moss font-mono text-[0.7rem]">Competitor A won it</span>
           </div>
           <div class="flex flex-wrap items-center gap-3 bg-paper px-5 py-4 md:px-7">
             <span class="text-miss rounded-full bg-white px-2.5 py-1 font-mono text-[0.6rem] tracking-wider uppercase">Absent</span>
-            <span class="flex-1 text-[0.97rem]">Aircon servicing contract for a whole condo block?</span>
-            <span class="text-moss font-mono text-[0.7rem]">Breeze won it</span>
+            <span class="flex-1 text-[0.97rem]">Who’s worth paying more for on a complicated job?</span>
+            <span class="text-moss font-mono text-[0.7rem]">Competitor B won it</span>
           </div>
         </div>
       </div>
@@ -151,7 +140,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       </article>
       <article class="reveal border-line border-t p-7 md:border-t-0 md:border-r md:p-9">
         <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">03 · Sources</p>
-        <div class="mt-9 grid gap-3 text-sm"><div class="border-line flex justify-between border-b pb-2"><span>homeservices.sg</span><b>14 answers</b></div><div class="border-line flex justify-between border-b pb-2"><span>reddit.com</span><b>9 answers</b></div><div class="flex justify-between"><span>coolworks.sg</span><b>5 answers</b></div></div>
+        <div class="mt-9 grid gap-3 text-sm"><div class="border-line flex justify-between border-b pb-2"><span>reddit.com</span><b>14 answers</b></div><div class="border-line flex justify-between border-b pb-2"><span>facebook.com</span><b>9 answers</b></div><div class="flex justify-between"><span>yoursite.com</span><b>5 answers</b></div></div>
         <p class="text-moss mt-6 max-w-[28rem] text-sm">The domains and exact pages shaping recommendations in your market — and whether each one mentions you or somebody else.</p>
       </article>
       <article class="reveal border-line border-t bg-stone-100 p-7 md:border-t-0 md:p-9">
@@ -209,18 +198,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 [
   {
     "q": "Who does a reliable aircon chemical wash in Singapore?",
-    "a": "For chemical washes and regular servicing, <span class=\"mention\">CoolWorks Aircon</span> is frequently recommended for transparent pricing. AirCare SG and Breeze Solutions also come up.",
-    "cites": ["homeservices.sg", "reddit.com", "coolworks.sg"]
+    "a": "For chemical washes and regular servicing, <span class=\"mention\">your business</span> is frequently recommended for transparent pricing. Competitor A and Competitor B also come up.",
+    "cites": ["reddit.com", "facebook.com", "yoursite.com"]
   },
   {
     "q": "Which interior designer is good for a 4-room HDB?",
-    "a": "<span class=\"mention\">Studio Hale</span> is often named for practical HDB renovations on a budget. Forma Interiors and Atelier Nine are also mentioned.",
-    "cites": ["renoguide.sg", "reddit.com", "studiohale.sg"]
+    "a": "<span class=\"mention\">Your business</span> is often named for practical HDB renovations on a budget. Competitor A and Competitor C are also mentioned.",
+    "cites": ["google.com", "reddit.com", "yoursite.com"]
   },
   {
     "q": "Who’s a good root canal specialist near Orchard?",
-    "a": "For complex root canal work, <span class=\"mention\">Arden Endodontics</span> is frequently recommended. Marlowe Dental and Northpoint Endo also come up.",
-    "cites": ["clinicgeek.com", "reddit.com", "ardenendo.sg"]
+    "a": "For complex root canal work, <span class=\"mention\">your business</span> is frequently recommended. Competitor B and Competitor C also come up.",
+    "cites": ["reddit.com", "yoursite.com", "google.com"]
   }
 ]
 </script>

@@ -10,6 +10,13 @@
   --color-line: #e7e5e4;
   --color-miss: #c84b3a;
 
+  /* The app's chart series colors (web/src/index.css --chart-1..4), so the
+     product previews plot the same lines a customer actually sees. */
+  --color-series-you: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+  --color-series-4: #eda100;
+
   --font-display: "Bricolage Grotesque", system-ui, sans-serif;
   --font-body: "Instrument Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -123,16 +130,39 @@
     @apply border-line rounded-2xl border bg-white;
   }
 
+  /* Product previews reproduce the app's real chrome rather than the site's
+     own panels: 24px white cards with a hairline ring, stone-500 secondary
+     text, and pill toggles (web/src/components/ui/card.tsx, button.tsx). */
+  .app-card {
+    @apply rounded-3xl bg-white ring-1 ring-ink/5;
+  }
+
+  .app-card-title {
+    @apply font-display text-ink text-base font-medium;
+  }
+
+  .app-muted {
+    @apply text-stone-500;
+  }
+
+  .app-row {
+    @apply flex min-h-9 items-center justify-between gap-3 rounded-2xl px-2 py-1.5 text-[0.9rem];
+  }
+
+  .app-toggle {
+    @apply rounded-2xl px-3 py-1.5 text-[0.82rem] whitespace-nowrap;
+  }
+
+  .app-toggle-on {
+    @apply text-ink bg-stone-100 font-medium;
+  }
+
+  .app-badge {
+    @apply border-line inline-flex h-5 shrink-0 items-center rounded-2xl border px-2 text-[0.68rem] font-medium;
+  }
+
   .stat-label {
     @apply font-mono text-moss text-[0.6rem] tracking-[0.12em] uppercase;
-  }
-
-  .check-row {
-    @apply border-line flex items-start gap-3 border-b py-3 text-[0.93rem] last:border-b-0;
-  }
-
-  .check-mark {
-    @apply mt-0.5 grid size-5 shrink-0 place-items-center rounded-full text-[0.62rem] font-bold;
   }
 
   .quote-card {
@@ -154,14 +184,6 @@
       linear-gradient(90deg, rgba(41, 37, 36, 0.04) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: linear-gradient(to bottom, black 4%, transparent 82%);
-  }
-
-  .metric-rule {
-    @apply border-line border-t pt-4;
-  }
-
-  .feature-index {
-    @apply font-mono text-moss text-[0.65rem] tracking-[0.12em] uppercase;
   }
 
   .footer-link {

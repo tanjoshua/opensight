@@ -1,5 +1,16 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import BriefPreview from "../components/BriefPreview.astro";
+import {
+  plot,
+  PREVIEW_LATEST_DATE,
+  PREVIEW_LATEST_PERCENT,
+  PREVIEW_SERIES,
+} from "../data/preview";
+
+// Axis-less version of the hero chart for the Monitor product card, drawn from
+// the same sample so the two can never quote different numbers.
+const mini = plot({ left: 6, right: 274, top: 8, bottom: 62 });
 ---
 
 <BaseLayout title="AI visibility for local businesses — OpenSight" description="OpenSight measures how ChatGPT answers about your business, then shows you exactly what to change to appear in more answers." ogDescription="Measure how AI answers about your business. Fix what keeps you out of the answer. Evidence for every claim.">
@@ -8,7 +19,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <div class="grid-field pointer-events-none absolute inset-0" aria-hidden="true"></div>
     <div class="bg-line/70 pointer-events-none absolute -top-32 -right-40 size-[32rem] rounded-full blur-[110px]" aria-hidden="true"></div>
     <div class="site-shell relative">
-      <div class="grid items-center gap-14 lg:grid-cols-[1.05fr_.95fr]">
+      <div class="grid items-center gap-14 lg:grid-cols-[1fr_1.02fr]">
         <div class="relative z-10">
           <p class="text-moss mb-6 flex items-center gap-2 font-mono text-[0.68rem] tracking-[0.09em] uppercase">
             <span class="bg-pine size-1.5 rounded-full"></span>
@@ -23,20 +34,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <p class="text-moss mt-4 text-[0.84rem]">Two-minute setup · First results the same day · S$50/month</p>
         </div>
 
-        <div class="relative mx-auto w-full max-w-[540px]">
-          <div class="noise border-line overflow-hidden rounded-2xl border bg-white shadow-[0_35px_90px_-42px_rgba(28,25,23,.38)]" aria-label="An example ChatGPT answer with the monitored business highlighted and its cited sources listed.">
-            <div class="border-line flex items-center justify-between border-b bg-stone-100 px-4 py-3">
-              <span class="stat-label">A customer asks ChatGPT</span>
-              <span class="border-line rounded-full border bg-white px-2.5 py-1 font-mono text-[0.58rem]">LIVE EXAMPLE</span>
-            </div>
-            <div class="min-h-[14rem] p-5 sm:p-7">
-              <p id="q-preview" class="font-display text-[1.15rem] leading-snug font-bold"><span id="q-text"></span><span class="caret" aria-hidden="true"></span></p>
-              <div class="mt-5 opacity-0 transition-opacity duration-500" id="a-block">
-                <p class="text-moss text-[0.97rem]" id="a-text"></p>
-                <div class="mt-5 flex flex-wrap gap-1.5" id="a-cites"></div>
-              </div>
-            </div>
-          </div>
+        <div class="relative mx-auto w-full max-w-[560px]">
+          <BriefPreview />
         </div>
       </div>
     </div>
@@ -59,18 +58,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <p class="text-moss mt-4">Real customer questions, run against ChatGPT every week, with every raw answer kept.</p>
 
           <div class="border-line mt-8 rounded-xl border bg-paper p-5">
-            <div class="flex items-start justify-between">
-              <div>
-                <span class="stat-label">Visibility</span>
-                <strong class="font-display mt-1 block text-4xl font-extrabold tracking-tight">60<span class="text-moss text-base font-normal">%</span></strong>
-              </div>
-              <span class="text-pine rounded-full bg-white px-2 py-1 text-[0.65rem] font-semibold">↑ 15 pts</span>
-            </div>
-            <svg viewBox="0 0 280 80" class="mt-3 w-full" aria-hidden="true" fill="none">
-              <defs><linearGradient id="area-home" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#292524" stop-opacity=".16"/><stop offset="1" stop-color="#292524" stop-opacity="0"/></linearGradient></defs>
-              <path d="M3 66 C38 60 55 62 82 52 S128 57 156 40 S198 36 224 24 S256 21 277 10 L277 78 L3 78Z" fill="url(#area-home)"/>
-              <path d="M3 66 C38 60 55 62 82 52 S128 57 156 40 S198 36 224 24 S256 21 277 10" stroke="#292524" stroke-width="3" stroke-linecap="round"/>
-              <circle cx="277" cy="10" r="5" fill="#fafaf9" stroke="#292524" stroke-width="3"/>
+            <p class="app-card-title">AI visibility</p>
+            <p class="font-display mt-1 text-4xl font-semibold tracking-tight tabular-nums">{PREVIEW_LATEST_PERCENT}</p>
+            <p class="app-muted text-[0.78rem]">Latest · {PREVIEW_LATEST_DATE}</p>
+            <svg viewBox="0 0 280 70" class="mt-3 w-full" aria-hidden="true" fill="none">
+              {PREVIEW_SERIES.slice(1).map((s) => (
+                <path d={mini.path(s.values)} stroke={s.color} stroke-width={s.width} stroke-linecap="round"/>
+              ))}
+              <path d={mini.path(PREVIEW_SERIES[0].values)} stroke={PREVIEW_SERIES[0].color} stroke-width={PREVIEW_SERIES[0].width} stroke-linecap="round"/>
+              {PREVIEW_SERIES[0].values.map((value, i) => (
+                <circle cx={mini.x(i)} cy={mini.y(value)} r="2.5" fill={PREVIEW_SERIES[0].color} />
+              ))}
             </svg>
           </div>
 
@@ -86,8 +84,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <div class="absolute -right-24 -bottom-28 size-72 rounded-full bg-white/5 blur-2xl" aria-hidden="true"></div>
           <div class="relative flex flex-1 flex-col">
             <span class="product-tag w-fit border-white/20 text-white/85"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V7"/><path d="m6 13 6-6 6 6"/></svg>Improve</span>
-            <h3 class="font-display mt-6 text-[1.75rem] leading-tight font-bold tracking-[-0.025em] md:text-[2rem]">Stop guessing why the answer went elsewhere.</h3>
-            <p class="mt-4 text-white/70">Every run audits your site and reads the answers you were left out of, then ranks the work that follows.</p>
+            <h3 class="font-display mt-6 text-[1.75rem] leading-tight font-bold tracking-[-0.025em] md:text-[2rem]">Fix what keeps you out of the answer.</h3>
+            <p class="mt-4 text-white/70">Every week, it audits your site and reads the answers that named somebody else, then ranks what to change.</p>
 
             <div class="mt-8 rounded-xl bg-white p-5 text-ink">
               <div class="text-moss flex flex-wrap items-center gap-2 font-mono text-[0.58rem] tracking-wider uppercase">
@@ -147,9 +145,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <figcaption class="border-line text-moss flex flex-wrap justify-between gap-2 border-b pb-4 font-mono text-[0.65rem]"><span>20 JUL 2026 · 09:14 SGT</span><span>MODEL RECORDED: GPT-5</span></figcaption>
         <blockquote class="mt-6">
           <p class="font-display text-xl leading-snug font-bold">“Which aircon servicing company in Singapore is reliable for condos?”</p>
-          <p class="text-moss mt-5">For regular servicing and chemical washes, <mark>CoolWorks Aircon</mark> is frequently recommended for its transparent pricing. AirCare SG and Breeze Solutions also come up in customer discussions…</p>
+          <p class="text-moss mt-5">For regular servicing and chemical washes, <mark>your business</mark> is frequently recommended for its transparent pricing. Competitor A and Competitor B also come up in customer discussions…</p>
         </blockquote>
-        <p class="text-moss mt-6 font-mono text-[0.65rem]">CITED · homeservices.sg · coolworks.sg · reddit.com</p>
+        <p class="text-moss mt-6 font-mono text-[0.65rem]">CITED · reddit.com · facebook.com · yoursite.com</p>
       </figure>
     </div>
   </section>
@@ -169,24 +167,4 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
   </section>
 </main>
-
-<script is:inline type="application/json" id="chat-scenarios">
-[
-  {
-    "q": "Who does a reliable aircon chemical wash in Singapore?",
-    "a": "For chemical washes and regular servicing, <span class=\"mention\">CoolWorks Aircon</span> is frequently recommended for transparent pricing. AirCare SG and Breeze Solutions also come up.",
-    "cites": ["homeservices.sg", "reddit.com", "coolworks.sg"]
-  },
-  {
-    "q": "Which interior designer is good for a 4-room HDB?",
-    "a": "<span class=\"mention\">Studio Hale</span> is often named for practical HDB renovations on a budget. Forma Interiors and Atelier Nine are also mentioned.",
-    "cites": ["renoguide.sg", "reddit.com", "studiohale.sg"]
-  },
-  {
-    "q": "Who’s a good root canal specialist near Orchard?",
-    "a": "For complex root canal work, <span class=\"mention\">Arden Endodontics</span> is frequently recommended. Marlowe Dental and Northpoint Endo also come up.",
-    "cites": ["clinicgeek.com", "reddit.com", "ardenendo.sg"]
-  }
-]
-</script>
 </BaseLayout>
