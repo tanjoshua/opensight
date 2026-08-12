@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Improve — show up in more AI answers | OpenSight" description="OpenSight Improve audits your website and reads the answers that recommended somebody else, then gives you a ranked list of what to change — with the evidence behind each one." ogDescription="A ranked list of what to fix, backed by evidence, plus a full site checklist on every run. No scores, no grades.">
+<BaseLayout title="Improve — show up in more AI answers | OpenSight" description="OpenSight Improve audits your website and reads the answers that recommended somebody else, then gives you a ranked list of what to change — with the evidence behind each one." ogDescription="A ranked list of what to fix, backed by evidence you can check yourself, plus a full site audit on every run.">
 <main>
   <section class="relative overflow-hidden pt-14 pb-20 md:pt-20 md:pb-24">
     <div class="grid-field pointer-events-none absolute inset-0" aria-hidden="true"></div>
@@ -58,8 +58,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <div class="reveal grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
         <h2 class="section-title max-w-[13ch]">Built from your site and your answers.</h2>
         <div class="max-w-[42rem] lg:pt-10">
-          <p class="font-display text-[1.35rem] leading-snug font-semibold tracking-[-0.02em] md:text-[1.6rem]">Every action is specific to your business.</p>
-          <p class="text-moss mt-5 text-lg">Improve reads two things that are yours alone: your website, and the answers where a customer was recommended somebody else. Nothing on the list comes from anywhere but those.</p>
+          <p class="text-moss text-lg">Improve reads two things that are yours alone: your website, and the answers where a customer was recommended somebody else. Nothing on the list comes from anywhere but those.</p>
         </div>
       </div>
 
@@ -67,7 +66,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <article class="reveal panel p-7 md:p-9">
           <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Your site</p>
           <h3 class="font-display mt-8 text-2xl leading-tight font-bold tracking-tight">A full technical audit, run every week.</h3>
-          <p class="text-moss mt-4">Whether an AI crawler can reach your pages, read them, and work out who and where you are. Every finding is a real state of your site, checked directly — and anything failing that has a fix becomes an action.</p>
+          <p class="text-moss mt-4">Whether an AI crawler can reach your pages, read them, and work out who and where you are. Every check is a real state of your site, and you see all of them with their evidence — including the ones you passed. Anything failing that has a fix becomes an action.</p>
         </article>
         <article class="reveal panel bg-white p-7 md:p-9">
           <p class="font-mono text-pine text-[0.66rem] tracking-wider uppercase">Your answers</p>
@@ -81,7 +80,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   <section class="site-shell py-24 md:py-32">
     <div class="reveal max-w-[42rem]">
       <h2 class="section-title max-w-[16ch]">What they say. What you don’t.</h2>
-      <p class="text-moss mt-6 text-lg">When a recommendation goes elsewhere over something your site never says, you should be able to check that for yourself. So Improve quotes both sides — their words, next to yours.</p>
+      <p class="text-moss mt-6 text-lg">When a recommendation goes elsewhere over something your site never says, Improve quotes both sides — the cited pages’ words, next to yours — so you can judge the gap for yourself.</p>
     </div>
 
     <div class="reveal panel mt-12 overflow-hidden">
@@ -119,65 +118,27 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <div class="border-line mt-8 rounded-xl border bg-paper p-5">
           <p class="stat-label">What to do</p>
           <p class="mt-2 text-[0.96rem]">If single-visit treatment is something you offer, say so on the services page in those words, with the typical appointment length.</p>
-          <p class="text-moss mt-4 text-[0.82rem] italic">Publish only what is true of your practice. OpenSight never asks you to copy a competitor or claim an outcome you cannot support.</p>
+          <p class="text-moss mt-4 text-[0.82rem] italic">Publish only what is true of your practice — never a claim you cannot support.</p>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="border-line border-y bg-stone-100">
-    <div class="site-shell grid items-center gap-12 py-20 md:py-24 lg:grid-cols-[1fr_1fr] lg:gap-20">
-      <div class="reveal">
-        <h2 class="font-display text-3xl leading-tight font-bold tracking-[-0.03em] md:text-4xl">You don’t have to do the work yourself.</h2>
-        <p class="text-moss mt-5">Most of these are website changes. Every action copies as plain text — the finding, the evidence, the steps and the sources it was read from — ready to send to whoever runs your site, or to paste straight into a coding agent. Nothing is added that is not on the card.</p>
-      </div>
-      <div class="reveal border-line rounded-xl border bg-white p-5 font-mono text-[0.78rem] leading-relaxed md:p-6">
-        <p class="text-moss"># Your services page tells crawlers not to index it</p>
-        <p class="mt-2">**Category:** Website access · **Affects:** every answer</p>
-        <p class="mt-2">## Steps</p>
-        <p>1. Remove the `robots` meta tag from /services…</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="site-shell py-24 md:py-32" id="checklist">
-    <div class="reveal flex flex-col justify-between gap-6 md:flex-row md:items-end">
-      <h2 class="section-title max-w-[16ch]">Every check, every run — including the ones you passed.</h2>
-      <p class="text-moss max-w-[27rem]">The list of actions shows what to do next. The checklist shows everything that was examined — including what passed — with the exact evidence behind each verdict, in plain language.</p>
-    </div>
-
-    <div class="mt-12 grid gap-4 lg:grid-cols-3">
-      <article class="reveal panel p-6 md:p-7">
-        <div class="border-line flex items-center justify-between border-b pb-4">
-          <p class="font-display font-bold">Access</p>
-          <span class="text-moss font-mono text-[0.65rem]">1 to fix</span>
-        </div>
-        <p class="text-moss mt-4">Whether an AI crawler can reach your pages at all, and whether anything on your site is telling it to stay away.</p>
-      </article>
-
-      <article class="reveal panel p-6 md:p-7">
-        <div class="border-line flex items-center justify-between border-b pb-4">
-          <p class="font-display font-bold">Structure</p>
-          <span class="text-moss font-mono text-[0.65rem]">2 to fix</span>
-        </div>
-        <p class="text-moss mt-4">Whether the pages it does reach are laid out so a machine can find them and understand what each one is for.</p>
-      </article>
-
-      <article class="reveal panel p-6 md:p-7">
-        <div class="border-line flex items-center justify-between border-b pb-4">
-          <p class="font-display font-bold">Identity</p>
-          <span class="text-moss font-mono text-[0.65rem]">3 to fix</span>
-        </div>
-        <p class="text-moss mt-4">Whether your site states who you are, what you do and where you are in a form a model can read without guessing.</p>
-      </article>
     </div>
   </section>
 
   <section class="bg-pinedeep noise text-white">
-    <div class="site-shell py-24 md:py-32">
-      <div class="reveal max-w-[46rem]">
-        <h2 class="font-display text-[clamp(1.9rem,3.8vw,3.2rem)] leading-[1.05] font-bold tracking-[-0.035em]">No score. No grade. No credit we didn’t earn.</h2>
-        <p class="mt-6 text-lg text-white/68">Whether a change moved a recommendation is a question nobody can answer honestly from one week of data, so Improve does not answer it. It will confirm that an issue is no longer found. It will never tell you that its advice caused your visibility to rise.</p>
+    <div class="site-shell grid items-center gap-14 py-24 md:py-32 lg:grid-cols-2 lg:gap-20">
+      <div class="reveal">
+        <h2 class="font-display text-[clamp(1.9rem,3.8vw,3.2rem)] leading-[1.05] font-bold tracking-[-0.035em]">You don’t have to do the work yourself.</h2>
+        <p class="mt-6 max-w-[34rem] text-lg text-white/68">Every action copies as plain text — the finding, the evidence, the steps, and the sources it was read from. Send it to whoever runs your site, or paste it straight into a coding agent.</p>
+      </div>
+
+      <div class="reveal relative mx-auto w-full max-w-[520px]">
+        <div class="border-line text-ink rounded-2xl border bg-white p-5 font-mono text-[0.78rem] leading-relaxed shadow-[0_35px_80px_-30px_rgba(0,0,0,.5)] md:p-6">
+          <p class="text-moss"># Your services page tells crawlers not to index it</p>
+          <p class="mt-2">**Category:** Website access · **Affects:** every answer</p>
+          <p class="mt-3">A `noindex` directive was found on 2 of the 6 pages read.</p>
+          <p class="mt-3">## Steps</p>
+          <p>1. Remove the `robots` meta tag from /services…</p>
+        </div>
       </div>
     </div>
   </section>
