@@ -31,7 +31,7 @@ import { ListSkeleton } from "@/components/list-skeleton"
 import { PageHeader } from "@/components/page-header"
 import { ResponseDrawer } from "@/components/response-drawer"
 import { SectionMessage } from "@/components/section-message"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -506,35 +506,32 @@ function ActionCard({
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-5 text-sm">
-          <p className="max-w-[70ch] leading-relaxed">{action.body}</p>
+          <p className="leading-relaxed">{action.body}</p>
           {!action.comparison && action.detail && (
             <div>
               <h3 className="font-medium">What we found</h3>
-              <p className="mt-1 max-w-[70ch] leading-relaxed">
-                {action.detail}
-              </p>
+              <p className="mt-1 leading-relaxed">{action.detail}</p>
             </div>
           )}
           {action.steps.length > 0 && (
             <div>
               <h3 className="font-medium">Do this</h3>
               {action.steps.length === 1 ? (
-                <div className="mt-1 max-w-[70ch] leading-relaxed">
+                <div className="mt-1 leading-relaxed">
                   <ActionStep step={action.steps[0]} as="p" />
                 </div>
               ) : (
-                <ol className="mt-2 flex max-w-[70ch] list-decimal flex-col gap-1.5 pl-5 leading-relaxed">
+                <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-5 leading-relaxed">
                   {action.steps.map((step) => (
                     <ActionStep key={step} step={step} />
                   ))}
                 </ol>
               )}
               {action.category === contentCategory && (
-                <Alert role="note" className="mt-3 max-w-[70ch]">
-                  <Info aria-hidden />
-                  <AlertTitle>Keep claims factual</AlertTitle>
-                  <AlertDescription>{substantiationNote}</AlertDescription>
-                </Alert>
+                <p className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
+                  <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+                  {substantiationNote}
+                </p>
               )}
             </div>
           )}
