@@ -59,6 +59,7 @@ Any static host works. This site lives in the `marketing/` subdirectory of the [
 ## Things to update as the product evolves
 
 - **App URLs**: all CTAs point at `https://dashboard.opensight.app/signup` and sign-in at `https://dashboard.opensight.app` — adjust if the app lives elsewhere.
+- **Price**: the amount appears once, in the plan card on `/pricing/`. Every other page says "one plan" and links here, so changing the price is a one-line edit. Keep it that way — do not reintroduce the number in hero copy, CTAs, or meta descriptions.
 - **Contact email**: `hello@opensight.app` in the footer.
 - **Testimonial**: intentionally omitted for v1; add a section between "Every number has a receipt" and the final CTA once a real quote exists.
 - **Copy discipline**: the pages claim only what the shipped product does (ChatGPT only, weekly runs, same-day first run, no score or grade, no causal claims), and deliberately state no fixed counts — no prompt quota, check total, or category count — so the copy survives the product growing. Keep it that way; numbers belong in the app, not the pitch.
