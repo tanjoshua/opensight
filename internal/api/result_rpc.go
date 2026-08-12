@@ -169,6 +169,7 @@ func (s *Server) ListResults(ctx context.Context, req *connect.Request[opensight
 	for _, item := range results {
 		row := promptResultToProto(item.PromptResult)
 		row.Unanalyzed = isUnanalyzed(item.Status, item.Analyzed)
+		row.Mentioned = mentionedOrNil(item)
 		row.Prompt = &opensightv1.PromptRef{Id: item.PromptID.String(), Text: item.PromptText}
 		resp.Results = append(resp.Results, row)
 	}
@@ -215,4 +216,15 @@ func (s *Server) GetResult(ctx context.Context, req *connect.Request[opensightv1
 // analysis row. Failed results are never flagged this way — they show an error.
 func isUnanalyzed(status store.ResultStatus, analyzed bool) bool {
 	return status == store.ResultStatusSucceeded && !analyzed
+}
+
+// mentionedOrNil carries the self-mention verdict only for results that have
+// one. An unanalyzed or failed result reads SelfMentioned=false in SQL simply
+// because it has no mentions rows yet, which must not be published as an
+// analyzed "not mentioned" (05's soft-failure posture).
+func mentionedOrNil(item store.ResultListItem) *bool {
+	if !item.Analyzed || item.Status != store.ResultStatusSucceeded {
+		return nil
+	}
+	return &item.SelfMentioned
 }

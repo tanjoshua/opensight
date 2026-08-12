@@ -85,7 +85,8 @@ ORDER BY c.cite_order,c.id;
 -- name: ListResults :many
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at,p.text AS prompt_text,
- EXISTS(SELECT 1 FROM result_analyses ra WHERE ra.prompt_result_id=pr.id) AS analyzed
+ EXISTS(SELECT 1 FROM result_analyses ra WHERE ra.prompt_result_id=pr.id) AS analyzed,
+ EXISTS(SELECT 1 FROM mentions m WHERE m.prompt_result_id=pr.id AND m.subject='self') AS self_mentioned
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id
 JOIN prompts p ON p.id=pr.prompt_id AND p.business_id=r.business_id
 WHERE r.business_id = @business_id

@@ -567,7 +567,13 @@ type PromptResult struct {
 	Run *Run `protobuf:"bytes,14,opt,name=run,proto3" json:"run,omitempty"`
 	// analysis is populated on detail view only, and only when the result was
 	// analyzed.
-	Analysis      *ResultAnalysis `protobuf:"bytes,15,opt,name=analysis,proto3" json:"analysis,omitempty"`
+	Analysis *ResultAnalysis `protobuf:"bytes,15,opt,name=analysis,proto3" json:"analysis,omitempty"`
+	// mentioned is the analysis's self-mention verdict, carried on list views so
+	// the Questions page's run strip can mark each run mentioned/absent without
+	// a GetResult per run. Absent means "no verdict": the result failed, is not
+	// yet analyzed, or the caller does not populate it (GetResult) — which is
+	// distinct from an analyzed false.
+	Mentioned     *bool `protobuf:"varint,16,opt,name=mentioned,proto3,oneof" json:"mentioned,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -705,6 +711,13 @@ func (x *PromptResult) GetAnalysis() *ResultAnalysis {
 		return x.Analysis
 	}
 	return nil
+}
+
+func (x *PromptResult) GetMentioned() bool {
+	if x != nil && x.Mentioned != nil {
+		return *x.Mentioned
+	}
+	return false
 }
 
 type ListRunsRequest struct {
@@ -1114,7 +1127,7 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"\bkeywords\x18\x02 \x03(\tR\bkeywords\x12\x1a\n" +
 	"\bexcerpts\x18\x03 \x03(\tR\bexcerpts\x127\n" +
 	"\bmentions\x18\x04 \x03(\v2\x1b.opensight.v1.ResultMentionR\bmentions\x12:\n" +
-	"\tcitations\x18\x05 \x03(\v2\x1c.opensight.v1.ResultCitationR\tcitations\"\x89\x05\n" +
+	"\tcitations\x18\x05 \x03(\v2\x1c.opensight.v1.ResultCitationR\tcitations\"\xba\x05\n" +
 	"\fPromptResult\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
@@ -1133,10 +1146,13 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"unanalyzed\x12/\n" +
 	"\x06prompt\x18\r \x01(\v2\x17.opensight.v1.PromptRefR\x06prompt\x12#\n" +
 	"\x03run\x18\x0e \x01(\v2\x11.opensight.v1.RunR\x03run\x128\n" +
-	"\banalysis\x18\x0f \x01(\v2\x1c.opensight.v1.ResultAnalysisR\banalysisB\b\n" +
+	"\banalysis\x18\x0f \x01(\v2\x1c.opensight.v1.ResultAnalysisR\banalysis\x12!\n" +
+	"\tmentioned\x18\x10 \x01(\bH\x03R\tmentioned\x88\x01\x01B\b\n" +
 	"\x06_modelB\x10\n" +
 	"\x0e_response_textB\b\n" +
-	"\x06_error\"2\n" +
+	"\x06_errorB\f\n" +
+	"\n" +
+	"_mentioned\"2\n" +
 	"\x0fListRunsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
 	"businessId\"u\n" +

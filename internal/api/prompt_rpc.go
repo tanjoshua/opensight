@@ -135,6 +135,7 @@ func (s *Server) GetPrompt(ctx context.Context, req *connect.Request[opensightv1
 	for _, item := range results {
 		row := promptResultToProto(item.PromptResult)
 		row.Unanalyzed = isUnanalyzed(item.Status, item.Analyzed)
+		row.Mentioned = mentionedOrNil(item)
 		// Prompt/Run/Analysis are left nil: the response already carries
 		// the prompt once, at the top level.
 		resp.Results = append(resp.Results, row)

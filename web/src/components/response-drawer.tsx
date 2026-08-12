@@ -1,7 +1,13 @@
 import { skipToken, useQuery } from "@connectrpc/connect-query"
 import { timestampDate, type Timestamp } from "@bufbuild/protobuf/wkt"
 import { type ReactNode, useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight, ExternalLink, FileJson } from "lucide-react"
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  FileJson,
+} from "lucide-react"
 import { Link } from "react-router"
 import { useAccountPath } from "@/lib/account-path"
 
@@ -18,12 +24,9 @@ import {
   ResultStatus,
   Sentiment,
 } from "@/gen/opensight/v1/common_pb"
-import type {
-  ResultAnalysis,
-  ResultCitation,
-  ResultMention,
-} from "@/gen/opensight/v1/result_pb"
+import type { ResultAnalysis } from "@/gen/opensight/v1/result_pb"
 import { getResult } from "@/gen/opensight/v1/result-ResultService_connectquery"
+import { AnswerText } from "@/components/answer-text"
 import {
   dedupeResultIds,
   type EvidenceSelection,
@@ -184,10 +187,22 @@ function ResponseDrawerContent({
                 />
               )}
 
-              <DetailSection title="Prompt">
+              <DetailSection title="Question">
                 <p className="text-sm whitespace-pre-wrap">
                   {result.prompt?.text ?? result.promptId}
                 </p>
+                {/* The drawer is for inspecting one response from somewhere
+                    else in the app. Reading the whole answer, or comparing it
+                    across runs, belongs on the question page. */}
+                <Link
+                  to={path(
+                    `/prompts/${result.promptId}?run=${encodeURIComponent(result.runId)}`
+                  )}
+                  className="inline-flex w-fit items-center gap-1 text-sm font-medium underline underline-offset-4"
+                >
+                  Open full answer
+                  <ArrowRight className="size-3.5" />
+                </Link>
               </DetailSection>
 
               <Separator />
@@ -280,64 +295,6 @@ function DetailSection({
   )
 }
 
-function AnswerText({
-  text,
-  analysis,
-}: {
-  text: string
-  analysis: ResultAnalysis | undefined
-}) {
-  const segments = buildAnswerSegments(text, analysis)
-  return (
-    <p className="text-sm leading-6 whitespace-pre-wrap">
-      {segments.map((segment, index) => {
-        const node =
-          segment.text.length === 0 ? null : segment.mentions.length > 0 ? (
-            <mark
-              key={`text-${index}`}
-              className={mentionHighlightClass(segment.mentions)}
-              title={mentionTitle(segment.mentions)}
-            >
-              {segment.text}
-            </mark>
-          ) : segment.cited ? (
-            <span
-              key={`text-${index}`}
-              className="border-b border-dotted border-primary/60"
-            >
-              {segment.text}
-            </span>
-          ) : (
-            <span key={`text-${index}`}>{segment.text}</span>
-          )
-        return (
-          <span key={index}>
-            {node}
-            {segment.markers.map((citation) => (
-              <CitationMarker key={citation.citeOrder} citation={citation} />
-            ))}
-          </span>
-        )
-      })}
-    </p>
-  )
-}
-
-function CitationMarker({ citation }: { citation: ResultCitation }) {
-  const label = citation.citeOrder + 1
-  return (
-    <sup className="ms-0.5 align-super text-[0.65rem] leading-none">
-      <a
-        href={`#citation-${citation.citeOrder}`}
-        className="rounded-sm bg-secondary px-1 py-0.5 font-medium text-secondary-foreground no-underline ring-1 ring-border hover:bg-muted"
-        title={citation.title ?? citation.domain}
-      >
-        {label}
-      </a>
-    </sup>
-  )
-}
-
 function AnalysisSection({
   analysis,
   unanalyzed,
@@ -371,17 +328,22 @@ function AnalysisSection({
       }
     >
       <div className="flex flex-col gap-4">
+        {/* Keywords are extracted phrases, not tags — long enough to overflow a
+            non-wrapping Badge, so they are listed rather than pilled. */}
         <EvidenceGroup title="Keywords">
           {analysis.keywords.length === 0 ? (
             <EmptyEvidence>No keywords detected.</EmptyEvidence>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
+            <ul className="flex flex-col gap-1.5">
               {analysis.keywords.map((keyword) => (
-                <Badge key={keyword} variant="secondary">
+                <li
+                  key={keyword}
+                  className="border-s-2 border-border ps-3 text-sm leading-6 text-muted-foreground"
+                >
                   {keyword}
-                </Badge>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </EvidenceGroup>
 
@@ -504,177 +466,6 @@ function EvidenceGroup({
 
 function EmptyEvidence({ children }: { children: ReactNode }) {
   return <p className="text-sm text-muted-foreground">{children}</p>
-}
-
-interface AnswerSegment {
-  text: string
-  mentions: ResultMention[]
-  cited: boolean
-  markers: ResultCitation[]
-}
-
-interface MentionRange {
-  start: number
-  end: number
-  mention: ResultMention
-}
-
-interface CitationRange {
-  start: number
-  end: number
-  citation: ResultCitation
-}
-
-function buildAnswerSegments(
-  text: string,
-  analysis: ResultAnalysis | undefined
-): AnswerSegment[] {
-  const mentions = mentionRanges(text, analysis?.mentions ?? [])
-  const citations = citationRanges(text, analysis?.citations ?? [])
-  const boundaries = new Set<number>([0, text.length])
-  for (const range of mentions) {
-    boundaries.add(range.start)
-    boundaries.add(range.end)
-  }
-  for (const range of citations) {
-    boundaries.add(range.start)
-    boundaries.add(range.end)
-  }
-
-  const ordered = [...boundaries].sort((a, b) => a - b)
-  const markersByEnd = new Map<number, ResultCitation[]>()
-  for (const range of citations) {
-    const markers = markersByEnd.get(range.end) ?? []
-    markers.push(range.citation)
-    markersByEnd.set(range.end, markers)
-  }
-
-  const segments: AnswerSegment[] = []
-  for (let i = 0; i < ordered.length - 1; i++) {
-    const start = ordered[i]
-    const end = ordered[i + 1]
-    if (start === end) continue
-    segments.push({
-      text: text.slice(start, end),
-      mentions: mentions
-        .filter((range) => start >= range.start && start < range.end)
-        .map((range) => range.mention),
-      cited: citations.some(
-        (range) => start >= range.start && start < range.end
-      ),
-      markers: markersByEnd.get(end)?.sort(byCiteOrder) ?? [],
-    })
-  }
-
-  if (segments.length === 0) {
-    const trailingMarkers = markersByEnd.get(text.length) ?? []
-    return [
-      {
-        text,
-        mentions: [],
-        cited: false,
-        markers: trailingMarkers.sort(byCiteOrder),
-      },
-    ]
-  }
-  return segments
-}
-
-function mentionRanges(
-  text: string,
-  mentions: ResultMention[]
-): MentionRange[] {
-  const ranges: MentionRange[] = []
-  for (const mention of mentions) {
-    const range =
-      findTextRange(text, mention.verbatimName) ??
-      findTextRange(text, mention.excerpt)
-    if (range !== null) {
-      ranges.push({ ...range, mention })
-    }
-  }
-  return ranges
-    .filter((range) => range.end > range.start)
-    .sort((a, b) => a.start - b.start || a.end - b.end)
-}
-
-function citationRanges(
-  text: string,
-  citations: ResultCitation[]
-): CitationRange[] {
-  const ranges: CitationRange[] = []
-  for (const citation of citations) {
-    if (citation.span === undefined) continue
-    const start = citation.span.start
-    const end = citation.span.end
-    if (start < 0 || end <= start || start >= text.length) continue
-    ranges.push({
-      start,
-      end: Math.min(end, text.length),
-      citation,
-    })
-  }
-  return ranges.sort(
-    (a, b) => a.start - b.start || byCiteOrder(a.citation, b.citation)
-  )
-}
-
-function findTextRange(
-  text: string,
-  needle: string
-): { start: number; end: number } | null {
-  const clean = needle.trim()
-  if (clean.length === 0) return null
-
-  const direct = text.indexOf(clean)
-  if (direct >= 0) return { start: direct, end: direct + clean.length }
-
-  const lowerText = text.toLowerCase()
-  const lowerClean = clean.toLowerCase()
-  const insensitive = lowerText.indexOf(lowerClean)
-  if (insensitive >= 0) {
-    return { start: insensitive, end: insensitive + clean.length }
-  }
-
-  const chunks = clean
-    .split(/(?:\.{3}|…)/)
-    .map((chunk) => chunk.trim())
-    .filter((chunk) => chunk.length >= 3)
-  if (chunks.length < 2) return null
-
-  let cursor = 0
-  let start = -1
-  let end = -1
-  for (const chunk of chunks) {
-    const found = lowerText.indexOf(chunk.toLowerCase(), cursor)
-    if (found < 0) return null
-    if (start < 0) start = found
-    end = found + chunk.length
-    cursor = end
-  }
-  return start >= 0 && end > start ? { start, end } : null
-}
-
-function byCiteOrder(a: ResultCitation, b: ResultCitation): number {
-  return a.citeOrder - b.citeOrder
-}
-
-function mentionHighlightClass(mentions: ResultMention[]): string {
-  const subjects = new Set(mentions.map((mention) => mention.subject))
-  if (subjects.size > 1) {
-    return "rounded-sm bg-sky-100 px-0.5 text-sky-950 ring-1 ring-sky-200 dark:bg-sky-500/20 dark:text-sky-50 dark:ring-sky-500/30"
-  }
-  if (subjects.has(MentionSubject.SELF)) {
-    return "rounded-sm bg-emerald-100 px-0.5 text-emerald-950 ring-1 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-50 dark:ring-emerald-500/30"
-  }
-  return "rounded-sm bg-amber-100 px-0.5 text-amber-950 ring-1 ring-amber-200 dark:bg-amber-500/20 dark:text-amber-50 dark:ring-amber-500/30"
-}
-
-function mentionTitle(mentions: ResultMention[]): string {
-  const labels = [
-    ...new Set(mentions.map((mention) => mentionSubjectLabel(mention.subject))),
-  ]
-  return `${labels.join(" and ")} mention${labels.length === 1 ? "" : "s"}`
 }
 
 function sentimentVariant(

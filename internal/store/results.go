@@ -76,10 +76,15 @@ type CreateResultParams struct {
 // text (design 06 Phase 1 — the list is unreadable without the question asked).
 // Analyzed is true when the result has a result_analyses row; a succeeded result
 // without one is the "not yet analyzed" badge state (design 06).
+// SelfMentioned reports whether the analysis found a self mention. It is only
+// meaningful when Analyzed — an unanalyzed result has no mentions rows yet, so
+// it reads false for the same reason a genuinely absent business does, and
+// callers must gate on Analyzed before showing it.
 type ResultListItem struct {
 	PromptResult
-	PromptText string
-	Analyzed   bool
+	PromptText    string
+	Analyzed      bool
+	SelfMentioned bool
 }
 
 // ResultFilter narrows ListResults. All predicates are optional; Limit/Offset
@@ -365,6 +370,7 @@ func (s *Store) ListResults(ctx context.Context, accountID, businessID domain.ID
 			PromptResult: resultFromFields(row.ID, row.RunID, row.PromptID, row.Status, row.Model,
 				row.Request, row.RawResponse, row.ResponseText, row.Error, row.RequestedAt, row.CompletedAt),
 			PromptText: row.PromptText, Analyzed: row.Analyzed,
+			SelfMentioned: row.SelfMentioned,
 		}
 		results = append(results, item)
 	}

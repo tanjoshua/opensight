@@ -375,7 +375,8 @@ func (q *Queries) ListResultMentions(ctx context.Context, arg ListResultMentions
 const listResults = `-- name: ListResults :many
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at,p.text AS prompt_text,
- EXISTS(SELECT 1 FROM result_analyses ra WHERE ra.prompt_result_id=pr.id) AS analyzed
+ EXISTS(SELECT 1 FROM result_analyses ra WHERE ra.prompt_result_id=pr.id) AS analyzed,
+ EXISTS(SELECT 1 FROM mentions m WHERE m.prompt_result_id=pr.id AND m.subject='self') AS self_mentioned
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id
 JOIN prompts p ON p.id=pr.prompt_id AND p.business_id=r.business_id
 WHERE r.business_id = $1
@@ -402,19 +403,20 @@ type ListResultsParams struct {
 }
 
 type ListResultsRow struct {
-	ID           uuid.UUID
-	RunID        uuid.UUID
-	PromptID     uuid.UUID
-	Status       string
-	Model        *string
-	Request      json.RawMessage
-	RawResponse  *json.RawMessage
-	ResponseText *string
-	Error        *string
-	RequestedAt  time.Time
-	CompletedAt  time.Time
-	PromptText   string
-	Analyzed     bool
+	ID            uuid.UUID
+	RunID         uuid.UUID
+	PromptID      uuid.UUID
+	Status        string
+	Model         *string
+	Request       json.RawMessage
+	RawResponse   *json.RawMessage
+	ResponseText  *string
+	Error         *string
+	RequestedAt   time.Time
+	CompletedAt   time.Time
+	PromptText    string
+	Analyzed      bool
+	SelfMentioned bool
 }
 
 func (q *Queries) ListResults(ctx context.Context, arg ListResultsParams) ([]ListResultsRow, error) {
@@ -449,6 +451,7 @@ func (q *Queries) ListResults(ctx context.Context, arg ListResultsParams) ([]Lis
 			&i.CompletedAt,
 			&i.PromptText,
 			&i.Analyzed,
+			&i.SelfMentioned,
 		); err != nil {
 			return nil, err
 		}

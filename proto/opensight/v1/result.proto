@@ -107,6 +107,12 @@ message PromptResult {
   // analysis is populated on detail view only, and only when the result was
   // analyzed.
   ResultAnalysis analysis = 15;
+  // mentioned is the analysis's self-mention verdict, carried on list views so
+  // the Questions page's run strip can mark each run mentioned/absent without
+  // a GetResult per run. Absent means "no verdict": the result failed, is not
+  // yet analyzed, or the caller does not populate it (GetResult) — which is
+  // distinct from an analyzed false.
+  optional bool mentioned = 16;
 }
 
 message ListRunsRequest {

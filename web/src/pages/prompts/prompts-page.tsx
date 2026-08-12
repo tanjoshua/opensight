@@ -1,7 +1,7 @@
-// Prompts section (INS-2, design 06): the active-prompt table — mentioned?,
-// mention order, sentiment, and a spark-trend across runs. Every stat opens the
-// Response drawer via its result_id (every number is a door); a row click drills
-// into the prompt's detail and lineage.
+// Questions section (INS-2, design 06): the active-question table — mentioned?,
+// mention order, sentiment, and a spark-trend across runs. Every stat is a door
+// to its evidence, and here the evidence is the answer itself: stats open the
+// question's reading view, and each spark dot opens it at that run.
 import {
   createConnectQueryKey,
   skipToken,
@@ -28,12 +28,7 @@ import {
 import { ListSkeleton } from "@/components/list-skeleton"
 import { PromptConfirmDialog } from "@/components/prompt-confirm-dialog"
 import { PageHeader } from "@/components/page-header"
-import { ResponseDrawer } from "@/components/response-drawer"
 import { SectionMessage } from "@/components/section-message"
-import {
-  evidenceSelection,
-  type EvidenceSelection,
-} from "@/components/evidence-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -60,7 +55,6 @@ export function PromptsPage() {
     listPrompts,
     business === undefined ? skipToken : { businessId: business.id }
   )
-  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()
   const [addOpen, setAddOpen] = useState(false)
   const addPromptMutation = useMutation(addPrompt, {
     onSuccess: () => {
@@ -147,13 +141,8 @@ export function PromptsPage() {
               key={prompt.id}
               prompt={prompt}
               onNavigate={() => navigate(`/prompts/${prompt.id}`)}
-              onOpenResult={(resultId) =>
-                setSelectedEvidence(
-                  evidenceSelection(
-                    [resultId],
-                    "Latest response for this question"
-                  )
-                )
+              onOpenRun={(runId) =>
+                navigate(`/prompts/${prompt.id}?run=${encodeURIComponent(runId)}`)
               }
             />
           ))}
@@ -187,12 +176,9 @@ export function PromptsPage() {
                   key={prompt.id}
                   prompt={prompt}
                   onNavigate={() => navigate(`/prompts/${prompt.id}`)}
-                  onOpenResult={(resultId) =>
-                    setSelectedEvidence(
-                      evidenceSelection(
-                        [resultId],
-                        "Latest response for this question"
-                      )
+                  onOpenRun={(runId) =>
+                    navigate(
+                      `/prompts/${prompt.id}?run=${encodeURIComponent(runId)}`
                     )
                   }
                 />
@@ -201,13 +187,6 @@ export function PromptsPage() {
           </TableBody>
         </Table>
       </div>
-
-      <ResponseDrawer
-        evidence={selectedEvidence}
-        onOpenChange={(open) => {
-          if (!open) setSelectedEvidence(undefined)
-        }}
-      />
     </div>
   )
 }
@@ -215,11 +194,11 @@ export function PromptsPage() {
 function PromptMobileCard({
   prompt,
   onNavigate,
-  onOpenResult,
+  onOpenRun,
 }: {
   prompt: PromptSummary
   onNavigate: () => void
-  onOpenResult: (resultID: string) => void
+  onOpenRun: (runID: string) => void
 }) {
   const measured = prompt.latestResultId !== undefined
   return (
@@ -271,32 +250,20 @@ function PromptMobileCard({
             </span>
             <Sparkline
               trend={prompt.trend}
-              onOpenResult={onOpenResult}
+              onOpenRun={onOpenRun}
               largeTargets
             />
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex-wrap gap-2">
-        {measured && (
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => {
-              if (prompt.latestResultId) onOpenResult(prompt.latestResultId)
-            }}
-          >
-            View latest response
-          </Button>
-        )}
+      <CardFooter>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           className="min-h-11"
           onClick={onNavigate}
         >
-          View question details
+          {measured ? "Read the latest answer" : "View question"}
         </Button>
       </CardFooter>
     </Card>
@@ -306,19 +273,16 @@ function PromptMobileCard({
 function PromptRow({
   prompt,
   onNavigate,
-  onOpenResult,
+  onOpenRun,
 }: {
   prompt: PromptSummary
   onNavigate: () => void
-  onOpenResult: (resultID: string) => void
+  onOpenRun: (runID: string) => void
 }) {
   // latest_result_id absent means "not yet measured" — no analyzed result
   // exists, which is distinct from "measured, not mentioned" and has no door
   // to open.
   const measured = prompt.latestResultId !== undefined
-  const openLatest = () => {
-    if (prompt.latestResultId) onOpenResult(prompt.latestResultId)
-  }
 
   return (
     <TableRow className="cursor-pointer" onClick={onNavigate}>
@@ -329,7 +293,7 @@ function PromptRow({
         {!measured ? (
           <span className="text-sm text-muted-foreground">Not measured</span>
         ) : (
-          <StatButton onClick={openLatest} label="Open the latest response">
+          <StatButton onClick={onNavigate} label="Read the latest answer">
             <Badge variant={prompt.mentioned ? "secondary" : "outline"}>
               {prompt.mentioned ? "Yes" : "No"}
             </Badge>
@@ -340,7 +304,7 @@ function PromptRow({
         {prompt.order === undefined ? (
           <span className="text-muted-foreground">—</span>
         ) : (
-          <StatButton onClick={openLatest} label="Open the latest response">
+          <StatButton onClick={onNavigate} label="Read the latest answer">
             {ordinal(prompt.order)}
           </StatButton>
         )}
@@ -349,7 +313,7 @@ function PromptRow({
         {prompt.sentiment === Sentiment.UNSPECIFIED ? (
           <span className="text-muted-foreground">—</span>
         ) : (
-          <StatButton onClick={openLatest} label="Open the latest response">
+          <StatButton onClick={onNavigate} label="Read the latest answer">
             <span className="capitalize">
               {sentimentLabel(prompt.sentiment)}
             </span>
@@ -357,7 +321,7 @@ function PromptRow({
         )}
       </TableCell>
       <TableCell>
-        <Sparkline trend={prompt.trend} onOpenResult={onOpenResult} />
+        <Sparkline trend={prompt.trend} onOpenRun={onOpenRun} />
       </TableCell>
     </TableRow>
   )
@@ -390,16 +354,16 @@ function StatButton({
 }
 
 // The spark-trend is a small run of dots, one per run oldest-first: a filled dot
-// where the business was mentioned, a hollow ring where it wasn't. Each dot is a
-// door to that run's response. A single run renders as one labeled dot rather
+// where the business was mentioned, a hollow ring where it wasn't. Each dot
+// opens the question's reading view at that run. A single run renders as one labeled dot rather
 // than a degenerate line, matching the Overview trend's single-point posture.
 function Sparkline({
   trend,
-  onOpenResult,
+  onOpenRun,
   largeTargets = false,
 }: {
   trend: PromptTrendPoint[]
-  onOpenResult: (resultID: string) => void
+  onOpenRun: (runID: string) => void
   largeTargets?: boolean
 }) {
   if (trend.length === 0) {
@@ -424,7 +388,7 @@ function Sparkline({
           }
           onClick={(event) => {
             event.stopPropagation()
-            onOpenResult(point.resultId)
+            onOpenRun(point.runId)
           }}
         >
           <span

@@ -21,10 +21,11 @@ Deps: MET-2, WEB-4 · Phase 2 · Ref: design 06 (Overview, Degraded states), PRD
 As a clinic user, I want the 20 prompts with their latest results and trends, so that I can see where I appear and where I'm absent.
 
 - [x] Table of active prompts: mentioned?, mention order, sentiment, sparkline across runs.
-- [x] Row click → prompt detail with full history; retired prompts reachable via lineage ("replaced X on date").
-- [x] Presence/absence and all numbers open the Response drawer.
+- [x] Row click → the question's reading view; retired prompts reachable via lineage ("replaced X on date").
+- [x] Presence/absence and all numbers open that question's answer; spark dots open it at their own run.
+- [x] The question page reads the answer beside a sticky analysis rail, selects runs from a dated strip, and keeps the selection in `?run=`.
 
-Deps: MET-3, WEB-4 · Phase 2 · Ref: design 06 (Prompts), PRD §6 Visibility
+Deps: MET-3, WEB-4 · Phase 2 · Ref: design 06 (Questions, Question), PRD §6 Visibility
 
 ## INS-3 — Competitors page (read + compare)
 
