@@ -921,8 +921,11 @@ type ListActionsResponse struct {
 	EmptyReason     ActionsEmptyReason     `protobuf:"varint,4,opt,name=empty_reason,json=emptyReason,proto3,enum=opensight.v1.ActionsEmptyReason" json:"empty_reason,omitempty"`
 	CheckedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=checked_at,json=checkedAt,proto3" json:"checked_at,omitempty"`
 	Categories      []*ActionCategory      `protobuf:"bytes,6,rep,name=categories,proto3" json:"categories,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// improve_pending is true while monitoring, response analysis, or the
+	// Improve assessment can still publish newer actions.
+	ImprovePending bool `protobuf:"varint,7,opt,name=improve_pending,json=improvePending,proto3" json:"improve_pending,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ListActionsResponse) Reset() {
@@ -988,6 +991,13 @@ func (x *ListActionsResponse) GetCategories() []*ActionCategory {
 		return x.Categories
 	}
 	return nil
+}
+
+func (x *ListActionsResponse) GetImprovePending() bool {
+	if x != nil {
+		return x.ImprovePending
+	}
+	return false
 }
 
 type GetActionRequest struct {
@@ -1234,10 +1244,12 @@ type GetChecklistResponse struct {
 	PagesRead   int32                  `protobuf:"varint,7,opt,name=pages_read,json=pagesRead,proto3" json:"pages_read,omitempty"`
 	// failure is set when the site could not be crawled at all, in which case
 	// every check reports as could-not-verify rather than as a shortfall.
-	Failure       string `protobuf:"bytes,8,opt,name=failure,proto3" json:"failure,omitempty"`
-	Assessed      bool   `protobuf:"varint,9,opt,name=assessed,proto3" json:"assessed,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Failure  string `protobuf:"bytes,8,opt,name=failure,proto3" json:"failure,omitempty"`
+	Assessed bool   `protobuf:"varint,9,opt,name=assessed,proto3" json:"assessed,omitempty"`
+	// improve_pending has the same meaning as on ListActionsResponse.
+	ImprovePending bool `protobuf:"varint,10,opt,name=improve_pending,json=improvePending,proto3" json:"improve_pending,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *GetChecklistResponse) Reset() {
@@ -1312,6 +1324,13 @@ func (x *GetChecklistResponse) GetAssessed() bool {
 	return false
 }
 
+func (x *GetChecklistResponse) GetImprovePending() bool {
+	if x != nil {
+		return x.ImprovePending
+	}
+	return false
+}
+
 var File_opensight_v1_improve_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_improve_proto_rawDesc = "" +
@@ -1379,7 +1398,7 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\x05count\x18\x03 \x01(\x05R\x05count\"5\n" +
 	"\x12ListActionsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"\xf4\x02\n" +
+	"businessId\"\x9d\x03\n" +
 	"\x13ListActionsResponse\x129\n" +
 	"\aactions\x18\x01 \x03(\v2\x1f.opensight.v1.ImprovementActionR\aactions\x12J\n" +
 	"\x10resolved_actions\x18\x03 \x03(\v2\x1f.opensight.v1.ImprovementActionR\x0fresolvedActions\x12C\n" +
@@ -1388,7 +1407,8 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"checked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x12<\n" +
 	"\n" +
 	"categories\x18\x06 \x03(\v2\x1c.opensight.v1.ActionCategoryR\n" +
-	"categoriesJ\x04\b\x02\x10\x03R\x12additional_actions\"/\n" +
+	"categories\x12'\n" +
+	"\x0fimprove_pending\x18\a \x01(\bR\x0eimprovePendingJ\x04\b\x02\x10\x03R\x12additional_actions\"/\n" +
 	"\x10GetActionRequest\x12\x1b\n" +
 	"\taction_id\x18\x01 \x01(\tR\bactionId\"L\n" +
 	"\x11GetActionResponse\x127\n" +
@@ -1401,7 +1421,7 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\x06action\x18\x01 \x01(\v2\x1f.opensight.v1.ImprovementActionR\x06action\"6\n" +
 	"\x13GetChecklistRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"\xc4\x02\n" +
+	"businessId\"\xed\x02\n" +
 	"\x14GetChecklistResponse\x12;\n" +
 	"\fcheck_counts\x18\x04 \x03(\v2\x18.opensight.v1.CheckCountR\vcheckCounts\x120\n" +
 	"\x06groups\x18\x05 \x03(\v2\x18.opensight.v1.CheckGroupR\x06groups\x129\n" +
@@ -1410,7 +1430,9 @@ const file_opensight_v1_improve_proto_rawDesc = "" +
 	"\n" +
 	"pages_read\x18\a \x01(\x05R\tpagesRead\x12\x18\n" +
 	"\afailure\x18\b \x01(\tR\afailure\x12\x1a\n" +
-	"\bassessed\x18\t \x01(\bR\bassessedJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\x06countsR\tfreshnessR\bsections*\xc3\x01\n" +
+	"\bassessed\x18\t \x01(\bR\bassessed\x12'\n" +
+	"\x0fimprove_pending\x18\n" +
+	" \x01(\bR\x0eimprovePendingJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\x06countsR\tfreshnessR\bsections*\xc3\x01\n" +
 	"\fCheckOutcome\x12\x1d\n" +
 	"\x19CHECK_OUTCOME_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12CHECK_OUTCOME_PASS\x10\x01\x12\x16\n" +

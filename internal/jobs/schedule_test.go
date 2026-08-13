@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 	"testing"
 	"time"
@@ -53,6 +54,21 @@ func TestAnalysisAndAssessmentCanRunAgainAfterCompletion(t *testing.T) {
 	} {
 		if slices.Contains(states, rivertype.JobStateCompleted) {
 			t.Errorf("%s uniqueness includes completed jobs; manual reanalysis would not enqueue", name)
+		}
+	}
+}
+
+func TestAnalysisAndAssessmentArgsUseStableJSONNames(t *testing.T) {
+	for name, args := range map[string]river.JobArgs{
+		"analysis":   AnalyzeArgs{},
+		"assessment": AssessArgs{},
+	} {
+		raw, err := json.Marshal(args)
+		if err != nil {
+			t.Fatalf("marshal %s args: %v", name, err)
+		}
+		if got, want := string(raw), `{"account_id":"00000000-0000-0000-0000-000000000000","business_id":"00000000-0000-0000-0000-000000000000","run_id":"00000000-0000-0000-0000-000000000000"}`; got != want {
+			t.Errorf("%s args = %s, want %s", name, got, want)
 		}
 	}
 }

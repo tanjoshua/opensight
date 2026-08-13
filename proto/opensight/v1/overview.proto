@@ -75,6 +75,9 @@ message GetOverviewResponse {
   int32 discovered_total = 6;
   // latest_run is absent before the first run exists.
   Run latest_run = 7;
+  // visibility_pending is true while monitoring or response analysis can still
+  // publish a newer visibility brief. Improve assessment work is independent.
+  bool visibility_pending = 8;
 }
 
 service OverviewService {

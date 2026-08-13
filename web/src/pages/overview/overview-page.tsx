@@ -41,14 +41,14 @@ export function OverviewPage() {
   const { business, isError, isReady } = useCurrentBusiness()
   const { plan } = usePlan()
   const navigate = useAccountNavigate()
-  // Overview polls off its own latest_run rather than the runs list, but with
-  // the shared poll-while-running cadence (first-run-in-progress, design 06).
+  // The API's readiness flag covers both the pre-run queue gap and response
+  // analysis, then turns off before the independent Improve assessment ends.
   const overview = useQuery(
     getOverview,
     business === undefined ? skipToken : { businessId: business.id },
     {
       refetchInterval: pollWhileRunning(
-        (data: Overview) => data.latestRun?.status === RunStatus.RUNNING
+        (data: Overview) => data.visibilityPending
       ),
     }
   )

@@ -16,13 +16,14 @@ import {
   HelpCircle,
   Info,
   Lightbulb,
+  LoaderCircle,
   MinusCircle,
   XCircle,
 } from "lucide-react"
 import { useSearchParams } from "react-router"
 import { useEffect, useState } from "react"
 
-import { useCurrentBusiness } from "@/api/hooks"
+import { pollWhileRunning, useCurrentBusiness } from "@/api/hooks"
 import {
   evidenceSelection,
   type EvidenceSelection,
@@ -203,7 +204,10 @@ export function ActionsPage() {
   const { business, isError, isReady } = useCurrentBusiness()
   const query = useQuery(
     listActions,
-    business ? { businessId: business.id } : skipToken
+    business ? { businessId: business.id } : skipToken,
+    {
+      refetchInterval: pollWhileRunning((data) => data.improvePending),
+    }
   )
   const mutation = useActionMutation(business?.id)
   const [params, setParams] = useSearchParams()
@@ -262,6 +266,9 @@ export function ActionsPage() {
           Evidence checked {formatDate(query.data.checkedAt)}
         </p>
       )}
+      {query.data.improvePending && query.data.checkedAt && (
+        <ImproveRefreshAlert />
+      )}
       <CategoryFilter
         categories={categories}
         category={category}
@@ -275,7 +282,15 @@ export function ActionsPage() {
             mutation={mutation}
           />
         )}
-      {active.length === 0 ? (
+      {active.length === 0 &&
+      query.data.improvePending &&
+      !query.data.checkedAt ? (
+        <SectionMessage
+          icon={LoaderCircle}
+          title="Finding your next actions"
+          description="Your first visibility check, site audit, and evidence review are still running."
+        />
+      ) : active.length === 0 ? (
         <EmptyActions reason={query.data.emptyReason} />
       ) : (
         // One ranked list. The page header already names the queue, so an
@@ -753,7 +768,10 @@ export function ChecklistPage() {
   const { business, isError, isReady } = useCurrentBusiness()
   const query = useQuery(
     getChecklist,
-    business ? { businessId: business.id } : skipToken
+    business ? { businessId: business.id } : skipToken,
+    {
+      refetchInterval: pollWhileRunning((data) => data.improvePending),
+    }
   )
 
   if (isError || query.isError)
@@ -778,10 +796,14 @@ export function ChecklistPage() {
       {!query.data.assessed && (
         <Alert>
           <AlertDescription>
-            The first site audit has not completed yet. The full checklist is
-            shown below so you can see what will be tested.
+            {query.data.improvePending
+              ? "The first site audit is still running. The full checklist is shown below so you can see what is being tested."
+              : "The first site audit has not completed yet. The full checklist is shown below so you can see what will be tested."}
           </AlertDescription>
         </Alert>
+      )}
+      {query.data.assessed && query.data.improvePending && (
+        <ImproveRefreshAlert />
       )}
       {query.data.failure && (
         <Alert>
@@ -801,5 +823,17 @@ export function ChecklistPage() {
         <CheckGroupCard key={group.key} group={group} />
       ))}
     </div>
+  )
+}
+
+function ImproveRefreshAlert() {
+  return (
+    <Alert>
+      <LoaderCircle className="animate-spin" />
+      <AlertDescription>
+        Checking the latest site and answer evidence. Previous results remain
+        visible until the refresh completes.
+      </AlertDescription>
+    </Alert>
   )
 }

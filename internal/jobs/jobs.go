@@ -82,14 +82,22 @@ func (MonitorArgs) InsertOpts() river.InsertOpts {
 	return river.InsertOpts{Queue: QueueMonitoring, MaxAttempts: 3, UniqueOpts: river.UniqueOpts{ByArgs: true}}
 }
 
-type AnalyzeArgs struct{ AccountID, BusinessID, RunID domain.ID }
+type AnalyzeArgs struct {
+	AccountID  domain.ID `json:"account_id"`
+	BusinessID domain.ID `json:"business_id"`
+	RunID      domain.ID `json:"run_id"`
+}
 
 func (AnalyzeArgs) Kind() string { return "opensight_analyze" }
 func (AnalyzeArgs) InsertOpts() river.InsertOpts {
 	return river.InsertOpts{Queue: QueueAnalysis, MaxAttempts: 3, UniqueOpts: river.UniqueOpts{ByArgs: true, ByState: []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStatePending, rivertype.JobStateRetryable, rivertype.JobStateRunning, rivertype.JobStateScheduled}}}
 }
 
-type AssessArgs struct{ AccountID, BusinessID, RunID domain.ID }
+type AssessArgs struct {
+	AccountID  domain.ID `json:"account_id"`
+	BusinessID domain.ID `json:"business_id"`
+	RunID      domain.ID `json:"run_id"`
+}
 
 func (AssessArgs) Kind() string { return "opensight_assess" }
 func (AssessArgs) InsertOpts() river.InsertOpts {
