@@ -22,7 +22,6 @@ import (
 	"github.com/stripe/stripe-go/v86/webhook"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.temporal.io/sdk/client"
 )
 
 const webhookTestSecret = "whsec_integration_test"
@@ -54,69 +53,6 @@ func (p *webhookProvider) setStatus(customerID, status string) {
 	sub := p.subscriptions[customerID]
 	sub.Status = status
 	p.subscriptions[customerID] = sub
-}
-
-type fakeTemporalClient struct {
-	client.Client
-	schedule   *fakeScheduleClient
-	started    []client.StartWorkflowOptions
-	terminated []string
-}
-
-func (f *fakeTemporalClient) ExecuteWorkflow(_ context.Context, opts client.StartWorkflowOptions, _ interface{}, _ ...interface{}) (client.WorkflowRun, error) {
-	f.started = append(f.started, opts)
-	return nil, nil
-}
-
-func (f *fakeTemporalClient) TerminateWorkflow(_ context.Context, workflowID, _ string, _ string, _ ...interface{}) error {
-	f.terminated = append(f.terminated, workflowID)
-	return nil
-}
-
-func (f *fakeTemporalClient) ScheduleClient() client.ScheduleClient {
-	if f.schedule == nil {
-		f.schedule = &fakeScheduleClient{}
-	}
-	return f.schedule
-}
-
-type fakeScheduleClient struct {
-	client.ScheduleClient
-	pauses   []string
-	unpauses []string
-	paused   map[string]bool
-}
-
-func (f *fakeScheduleClient) GetHandle(_ context.Context, scheduleID string) client.ScheduleHandle {
-	if f.paused == nil {
-		f.paused = make(map[string]bool)
-	}
-	return &fakeScheduleHandle{id: scheduleID, client: f}
-}
-
-type fakeScheduleHandle struct {
-	client.ScheduleHandle
-	id     string
-	client *fakeScheduleClient
-}
-
-func (f *fakeScheduleHandle) Describe(context.Context) (*client.ScheduleDescription, error) {
-	return &client.ScheduleDescription{
-		Schedule: client.Schedule{State: &client.ScheduleState{Paused: f.client.paused[f.id]}},
-		Info:     client.ScheduleInfo{NextActionTimes: []time.Time{}},
-	}, nil
-}
-
-func (f *fakeScheduleHandle) Pause(context.Context, client.SchedulePauseOptions) error {
-	f.client.pauses = append(f.client.pauses, f.id)
-	f.client.paused[f.id] = true
-	return nil
-}
-
-func (f *fakeScheduleHandle) Unpause(context.Context, client.ScheduleUnpauseOptions) error {
-	f.client.unpauses = append(f.client.unpauses, f.id)
-	f.client.paused[f.id] = false
-	return nil
 }
 
 // mustDomainID generates a fresh UUIDv7, the shape accounts.id/businesses.id
@@ -210,9 +146,7 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	provider := newWebhookProvider(customerID)
 	provider.setStatus(customerID, "canceled")
 
-	temporal := &fakeTemporalClient{}
-	monitoring := reconcile.NewMonitoring(businesses, temporal)
-	reconciler := reconcile.New(subscriptions, provider, monitoring, subscriptions, nil)
+	reconciler := reconcile.New(subscriptions, provider, nil, subscriptions, nil)
 
 	srv := New(Deps{
 		Reconciler: reconciler,
@@ -238,9 +172,6 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	if sub.StripeStatus == nil || *sub.StripeStatus != "canceled" {
 		t.Fatalf("stripe_status after deleted delivery = %v, want canceled", sub.StripeStatus)
 	}
-	if len(temporal.schedule.pauses) != 1 {
-		t.Fatalf("pauses after deleted delivery = %v, want exactly 1", temporal.schedule.pauses)
-	}
 
 	// Second delivery: a stale customer.subscription.updated claiming
 	// "active" in its own payload. The stub's real state is still canceled
@@ -261,13 +192,6 @@ func TestStripeWebhookOutOfOrderDeliveryCannotResurrect(t *testing.T) {
 	}
 	if sub.StripeStatus == nil || *sub.StripeStatus != "canceled" {
 		t.Fatalf("stripe_status after stale updated delivery = %v, want still canceled (not resurrected)", sub.StripeStatus)
-	}
-
-	if len(temporal.schedule.pauses) != 1 {
-		t.Fatalf("pauses across both deliveries = %v, want exactly 1 (not paused twice)", temporal.schedule.pauses)
-	}
-	if len(temporal.schedule.unpauses) != 0 {
-		t.Fatalf("unpauses across both deliveries = %v, want 0 (the stale update must not resume monitoring)", temporal.schedule.unpauses)
 	}
 
 }
@@ -341,7 +265,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	runs := store.New(pool)
 	run, err := runs.UpsertRun(ctx, accountID, store.UpsertRunParams{
 		BusinessID: businessID, Platform: store.PlatformChatGPT, Trigger: store.RunTriggerInitial,
-		ScheduledFor: activatedAt, WorkflowID: "wf_" + businessID.String(), ExpectedResults: 1,
+		ScheduledFor: activatedAt, JobID: 105, ExpectedResults: 1,
 	})
 	if err != nil {
 		t.Fatalf("seed run: %v", err)
@@ -349,9 +273,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 
 	provider := newWebhookProvider(customerID)
 
-	temporal := &fakeTemporalClient{}
-	monitoring := reconcile.NewMonitoring(businesses, temporal)
-	reconciler := reconcile.New(subscriptions, provider, monitoring, subscriptions, nil)
+	reconciler := reconcile.New(subscriptions, provider, nil, subscriptions, nil)
 
 	srv := New(Deps{
 		Reconciler: reconciler,
@@ -406,9 +328,6 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 		t.Fatalf("deleted delivery status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
 
-	if len(temporal.schedule.pauses) != 1 {
-		t.Fatalf("pauses after deleted delivery = %v, want exactly 1", temporal.schedule.pauses)
-	}
 	sub, err := subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
 		t.Fatalf("GetByAccount after deleted delivery: %v", err)
@@ -438,9 +357,6 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 		t.Fatalf("updated delivery status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
 
-	if len(temporal.schedule.unpauses) != 1 {
-		t.Fatalf("unpauses after updated delivery = %v, want exactly 1", temporal.schedule.unpauses)
-	}
 	sub, err = subscriptions.GetByAccount(ctx, accountID)
 	if err != nil {
 		t.Fatalf("GetByAccount after updated delivery: %v", err)

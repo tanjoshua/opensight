@@ -17,7 +17,7 @@ import (
 // record (migration 00010, design 08 Schema). One row per account, created at
 // signup with every Stripe column null.
 type Subscription struct {
-	AccountID             domain.ID
+	AccountID            domain.ID
 	PlanCode             string
 	StripeCustomerID     *string
 	StripeSubscriptionID *string
@@ -67,7 +67,7 @@ func billingStateFromRow(comped bool, stripeSubscriptionID, stripeStatus *string
 // deliberately explicit (not a partial/patch shape) so a partial write can
 // never silently null a Stripe column out from under a concurrent reconcile.
 type UpsertSubscriptionParams struct {
-	AccountID             domain.ID
+	AccountID            domain.ID
 	PlanCode             string
 	StripeCustomerID     *string
 	StripeSubscriptionID *string

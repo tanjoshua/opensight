@@ -7,7 +7,7 @@ GOLANGCI ?= $(shell command -v golangci-lint 2>/dev/null || echo ./bin/golangci-
 # from the dev database so a test run can't disturb local data.
 TEST_DATABASE_URL ?= postgres://opensight:opensight@localhost:5432/opensight_test?sslmode=disable
 
-.PHONY: build test test-integration lint proto sqlc check-sql up down dev-stack dev-stack-down dev-stack-reset dev-serve dev-work seed-dev clear-db test-db infra-provision infra-deploy infra-secrets infra-tunnel
+.PHONY: build test test-integration lint proto sqlc check-sql up down dev-stack dev-stack-down dev-stack-reset dev-serve seed-dev clear-db test-db infra-provision infra-deploy infra-secrets
 
 build:
 	go build -o $(BIN) ./cmd/opensight
@@ -22,6 +22,8 @@ test-integration:
 	DATABASE_URL="$(TEST_DATABASE_URL)" go run ./cmd/opensight migrate
 	OPENSIGHT_STORE_TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		go test -count=1 ./internal/store/... ./internal/workflows/... ./internal/metrics/... ./internal/api/... ./internal/billing/...
+	OPENSIGHT_STORE_TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
+		go test -count=1 ./internal/jobs/...
 
 # Drops and recreates the integration-test database in the dev Postgres container.
 test-db:
@@ -73,15 +75,12 @@ dev-stack-reset:
 dev-serve:
 	go tool air -c .air.serve.toml
 
-dev-work:
-	go tool air -c .air.work.toml
-
 # EMAIL=you@gmail.com make seed-dev  (or set OPENSIGHT_DEV_EMAIL)
 seed-dev:
 	go run ./cmd/opensight seed dev $(if $(EMAIL),--email $(EMAIL),)
 
 # Drops and recreates the opensight app database, then reapplies migrations.
-# Leaves containers running and doesn't touch Temporal's databases.
+# Leaves the PostgreSQL container running.
 clear-db:
 	docker compose -f compose.dev.yml exec -T postgres psql -U opensight -d postgres \
 		-c "DROP DATABASE IF EXISTS opensight WITH (FORCE);" \
@@ -101,8 +100,3 @@ infra-deploy:
 # Edit the encrypted production secrets file in $EDITOR.
 infra-secrets:
 	sops infra/inventory/group_vars/opensight/secrets.sops.yml
-
-# Temporal UI is bound to 127.0.0.1:8233 on the VPS (not public); tunnel to it.
-infra-tunnel:
-	ssh -N -L 8233:127.0.0.1:8233 $$(cd infra && ansible-inventory --host vps | \
-		python3 -c "import json,sys; d=json.load(sys.stdin); print(f'{d.get(\"ansible_user\",\"deploy\")}@{d[\"ansible_host\"]}')")

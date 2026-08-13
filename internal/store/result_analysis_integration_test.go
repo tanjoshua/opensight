@@ -13,7 +13,7 @@ import (
 // resultAnalysisFixture is the plan/account/business/prompt/run scaffolding the
 // MET-5 read-path tests share; each test inserts its own prompt_results on top.
 type resultAnalysisFixture struct {
-	accountID   domain.ID
+	accountID  domain.ID
 	businessID domain.ID
 	promptID   domain.ID
 	promptID2  domain.ID
@@ -24,7 +24,7 @@ func seedResultAnalysisBusiness(t *testing.T, db *pgxpool.Pool, ctx context.Cont
 	t.Helper()
 
 	fx := resultAnalysisFixture{
-		accountID:   mustNewID(t),
+		accountID:  mustNewID(t),
 		businessID: mustNewID(t),
 		promptID:   mustNewID(t),
 		promptID2:  mustNewID(t),
@@ -66,8 +66,8 @@ func seedResultAnalysisBusiness(t *testing.T, db *pgxpool.Pool, ctx context.Cont
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", fx.promptID, fx.businessID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'cheapest clinic near me', 'active')", fx.promptID2, fx.businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'result-analysis-workflow', now(), now())`, fx.runID, fx.businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 402, now(), now())`, fx.runID, fx.businessID)
 
 	return fx
 }

@@ -12,7 +12,6 @@ import (
 	"opensight/internal/store"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.temporal.io/sdk/testsuite"
 )
 
 // countingRunner wraps a PromptRunner and records how many times RunPrompt was
@@ -41,7 +40,7 @@ func (nonRetryableRunner) RunPrompt(context.Context, llm.PromptRequest) (llm.Pro
 func TestActivitiesAgainstPostgres(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
-		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run activity integration tests")
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run operation integration tests")
 	}
 
 	ctx := context.Background()
@@ -64,10 +63,10 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID)
 	})
 
-	insertAccount(t, db, ctx, accountID, "Activities Account")
+	insertAccount(t, db, ctx, accountID, "Operations Account")
 	mustExec(t, db, ctx, `
 		INSERT INTO businesses (id, account_id, status, name, category, location, activated_at)
-		VALUES ($1, $2, 'active', 'Activities Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, accountID)
+		VALUES ($1, $2, 'active', 'Operations Clinic', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 
 	repository := store.New(db)
@@ -78,7 +77,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			Platform:     store.PlatformChatGPT,
 			ScheduledFor: date,
 			Trigger:      store.RunTriggerScheduled,
-			WorkflowID:   RunWorkflowID(businessID, store.PlatformChatGPT, date),
+			JobID:        1,
 		}
 	}
 
@@ -87,7 +86,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stub runner: %v", err)
 		}
-		acts := &Activities{Store: repository, Runner: stub}
+		acts := &Operations{Store: repository, Runner: stub}
 		date := time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC)
 
 		first, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -123,7 +122,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 			t.Fatalf("stub runner: %v", err)
 		}
 		runner := &countingRunner{inner: stub}
-		acts := &Activities{Store: repository, Runner: runner}
+		acts := &Operations{Store: repository, Runner: runner}
 		date := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -132,9 +131,9 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		}
 		in := ExecutePromptInput{
 			AccountID: spec.AccountID,
-			RunID:    spec.RunID,
-			Prompt:   spec.Prompts[0],
-			Location: spec.Location,
+			RunID:     spec.RunID,
+			Prompt:    spec.Prompts[0],
+			Location:  spec.Location,
 		}
 
 		first, err := acts.ExecutePrompt(ctx, in)
@@ -157,7 +156,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 	})
 
 	t.Run("ExecutePrompt records terminal failure and returns nil", func(t *testing.T) {
-		acts := &Activities{Store: repository, Runner: nonRetryableRunner{}}
+		acts := &Operations{Store: repository, Runner: nonRetryableRunner{}}
 		date := time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -166,24 +165,16 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		}
 		in := ExecutePromptInput{
 			AccountID: spec.AccountID,
-			RunID:    spec.RunID,
-			Prompt:   spec.Prompts[0],
-			Location: spec.Location,
+			RunID:     spec.RunID,
+			Prompt:    spec.Prompts[0],
+			Location:  spec.Location,
 		}
 
-		// Run through a real activity context so activity.GetInfo(ctx).Attempt
+		// Run through a real operation context so operation.GetInfo(ctx).Attempt
 		// resolves (attempt 1; non-retryable makes it terminal regardless).
-		var ts testsuite.WorkflowTestSuite
-		env := ts.NewTestActivityEnvironment()
-		env.RegisterActivity(acts.ExecutePrompt)
-
-		val, err := env.ExecuteActivity(acts.ExecutePrompt, in)
+		out, err := acts.ExecutePrompt(ctx, in)
 		if err != nil {
 			t.Fatalf("ExecutePrompt returned error, want nil for a recorded terminal failure: %v", err)
-		}
-		var out ExecutePromptOutput
-		if err := val.Get(&out); err != nil {
-			t.Fatalf("decode output: %v", err)
 		}
 		if out.Status != store.ResultStatusFailed {
 			t.Fatalf("status = %q, want failed", out.Status)
@@ -203,7 +194,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stub runner: %v", err)
 		}
-		acts := &Activities{Store: repository, Runner: stub}
+		acts := &Operations{Store: repository, Runner: stub}
 		date := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
 
 		spec, err := acts.LoadRunSpec(ctx, loadInput(date))
@@ -216,7 +207,7 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		// "none -> failed"), not completed.
 		run, err := acts.FinalizeRun(ctx, FinalizeRunInput{
 			AccountID: spec.AccountID,
-			RunID:    spec.RunID,
+			RunID:     spec.RunID,
 		})
 		if err != nil {
 			t.Fatalf("FinalizeRun: %v", err)

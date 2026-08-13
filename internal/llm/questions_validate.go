@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// MaxQuestionsAttempts is the in-activity validation-retry budget, the same
+// MaxQuestionsAttempts is the synchronous operation's validation-retry budget, the same
 // "retry once with the validation errors appended" posture as
 // MaxProposeProfileAttempts.
 const MaxQuestionsAttempts = 2

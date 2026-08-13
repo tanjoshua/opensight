@@ -62,6 +62,27 @@ func (s *Store) withTx(ctx context.Context, fn func(*storesqlc.Queries) error) e
 	return nil
 }
 
+// Transact exposes the process's transaction boundary to application services
+// that must atomically combine store writes with River InsertTx calls.
+func (s *Store) Transact(ctx context.Context, fn func(pgx.Tx) error) error {
+	var db beginner = s.db
+	if conn, ok := ctx.Value(connectionContextKey{}).(*pgxpool.Conn); ok {
+		db = conn
+	}
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := fn(tx); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+	return nil
+}
+
 // WithLock serializes work across app instances behind a Postgres advisory
 // lock. The callback receives a context pinned to the session that owns the
 // lock, so every query and transaction inside it uses that same connection.

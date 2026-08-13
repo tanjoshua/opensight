@@ -22,7 +22,7 @@ type Plan struct {
 	Name string
 	// PromptLimit bounds the account's active prompts (design 02).
 	PromptLimit int
-	// RunInterval drives the Temporal Schedule spec (design 04). A plain string,
+	// RunInterval drives the River Schedule spec (design 04). A plain string,
 	// not an enum: the domain of valid intervals lives in the catalog, not the
 	// wire format.
 	RunInterval string

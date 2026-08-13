@@ -19,9 +19,6 @@ app_image_tag: main
 ghcr_username: tanjoshua
 
 # --- Versions (kept in lockstep with compose.dev.yml) ---
-temporal_version: "1.31"
-temporal_admintools_version: "1.31"
-temporal_ui_version: "2.52.1"
 
 # --- Host ---
 deploy_user: deploy

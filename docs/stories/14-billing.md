@@ -86,7 +86,7 @@ As the operator, I want an unentitled run to cost nothing even if every other ga
 - [x] The skip is legible as a skip, not as a failure, wherever runs are observed.
 - [x] A run already in flight when access drops is allowed to finish — the period was paid for, and a killed run leaves a partial history.
 
-Deps: BILL-5, BILL-6 · Phase 4 · Ref: design 08 (Enforcement gate 3), 04 (RunWorkflow)
+Deps: BILL-5, BILL-6 · Phase 4 · Ref: design 08 (Enforcement gate 3), 04 (monitoring job)
 
 ## BILL-8 — Customer Portal
 

@@ -9,7 +9,6 @@ import (
 	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
-	"go.temporal.io/api/serviceerror"
 )
 
 // rpcError is the single translation from an internal error to a
@@ -37,11 +36,6 @@ func (s *Server) rpcError(op string, err error) *connect.Error {
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("an account must have at least one owner"))
 	case errors.Is(err, store.ErrInvalidActionTransition):
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("action status transition is not allowed"))
-	}
-
-	var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted
-	if errors.As(err, &alreadyStarted) {
-		return connect.NewError(connect.CodeAlreadyExists, errors.New("profile generation is already in progress"))
 	}
 
 	return s.rpcInternal(op, err)

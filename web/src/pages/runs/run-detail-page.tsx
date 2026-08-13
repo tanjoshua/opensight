@@ -213,7 +213,7 @@ export function RunDetailPage() {
           <summary className="cursor-pointer select-none">
             Technical details
           </summary>
-          <div className="mt-1">Workflow ID: {run.workflowId}</div>
+          <div className="mt-1">Job ID: {run.jobId.toString()}</div>
         </details>
       </div>
 

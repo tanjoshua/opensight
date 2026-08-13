@@ -17,7 +17,7 @@ message Run {
   // scheduled_for is a date (YYYY-MM-DD), not a Timestamp.
   string scheduled_for = 5;
   RunStatus status = 6;
-  string workflow_id = 7;
+  int64 job_id = 7;
   google.protobuf.Timestamp started_at = 8;
   google.protobuf.Timestamp completed_at = 9;
   google.protobuf.Timestamp analysis_completed_at = 10;
@@ -122,7 +122,7 @@ message ListRunsRequest {
 message ListRunsResponse {
   repeated Run runs = 1;
   // next_run_at is the next scheduled run's fire time, best-effort: unset
-  // when the schedule is missing or Temporal is unreachable, never an error.
+  // derived from the durable weekly schedule when monitoring is entitled.
   google.protobuf.Timestamp next_run_at = 2;
 }
 

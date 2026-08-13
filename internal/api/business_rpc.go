@@ -11,14 +11,12 @@ import (
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/jobs"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-	"opensight/internal/workflows"
 
 	connect "connectrpc.com/connect"
-	enumspb "go.temporal.io/api/enums/v1"
-	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/sdk/client"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -29,7 +27,7 @@ const (
 
 var _ opensightv1connect.BusinessServiceHandler = (*Server)(nil)
 
-// CreateBusiness inserts a draft business and starts GenerateProfileWorkflow
+// CreateBusiness inserts a draft business and starts GenerateProfileWorker
 // (design 03).
 func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensightv1.CreateBusinessRequest]) (*connect.Response[opensightv1.CreateBusinessResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "create business")
@@ -56,9 +54,9 @@ func (s *Server) CreateBusiness(ctx context.Context, req *connect.Request[opensi
 		return nil, s.rpcInternal("create business: insert", err)
 	}
 
-	if err := s.startGeneration(ctx, su.AccountID, business.ID, name, website); err != nil {
+	if _, err := s.startGeneration(ctx, su.AccountID, business.ID, name, website, false); err != nil {
 		// The draft row survives (no compensation): it is recoverable via /me,
-		// and GetProposal reports "failed" since no workflow is running.
+		// and GetProposal reports "failed" because no generation job is running.
 		return nil, s.rpcInternal("create business: start generation", err)
 	}
 
@@ -224,9 +222,16 @@ func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensight
 		return nil, s.rpcError("get proposal", err)
 	}
 
-	status, stage, err := s.generationStatus(ctx, businessID)
+	business, err := s.store.GetBusiness(ctx, su.AccountID, businessID)
 	if err != nil {
-		return nil, s.rpcInternal("get proposal: describe generation", err)
+		return nil, s.rpcError("get proposal", err)
+	}
+	status, stage := proposalStatusFailed, ""
+	if business.GenerationStatus != nil {
+		status = *business.GenerationStatus
+	}
+	if business.GenerationStage != nil {
+		stage = *business.GenerationStage
 	}
 	return connect.NewResponse(&opensightv1.GetProposalResponse{State: &opensightv1.ProposalState{
 		Status: proposalStatusToProto(status),
@@ -265,23 +270,18 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 		}
 	}
 
-	// Editing the website is available while generation is in flight. Stop the
-	// old run before starting the replacement under the same deterministic ID.
-	// Closed or just-finished runs cannot be terminated and need no action.
-	if err := s.temporal.TerminateWorkflow(ctx, workflows.GenerateProfileWorkflowID(businessID), "", "research inputs changed"); err != nil {
-		var notFound *serviceerror.NotFound
-		var failedPrecondition *serviceerror.FailedPrecondition
-		if !errors.As(err, &notFound) && !errors.As(err, &failedPrecondition) {
-			return nil, s.rpcInternal("regen proposal: stop current generation", err)
-		}
+	var oldJobID int64
+	if business.GenerationJobID != nil {
+		oldJobID = *business.GenerationJobID
 	}
 
-	if err := s.store.DiscardPending(ctx, su.AccountID, businessID); err != nil {
-		return nil, s.rpcInternal("regen proposal: discard pending", err)
-	}
-
-	if err := s.startGeneration(ctx, su.AccountID, businessID, business.Name, websiteOrEmpty(business.Website)); err != nil {
+	if _, err := s.startGeneration(ctx, su.AccountID, businessID, business.Name, websiteOrEmpty(business.Website), true); err != nil {
 		return nil, s.rpcError("regen proposal: start generation", err)
+	}
+	if oldJobID > 0 {
+		if _, err := s.jobs.JobCancel(ctx, oldJobID); err != nil {
+			return nil, s.rpcInternal("regen proposal: cancel old generation", err)
+		}
 	}
 	return connect.NewResponse(&opensightv1.RegenerateProposalResponse{State: &opensightv1.ProposalState{
 		Status: opensightv1.ProposalStatus_PROPOSAL_STATUS_GENERATING,
@@ -290,13 +290,8 @@ func (s *Server) RegenerateProposal(ctx context.Context, req *connect.Request[op
 
 // ApplyProposal is the apply transaction plus first run (design 03
 // "Review and apply"): it takes the final user-edited payload verbatim, activates
-// the business and inserts its prompts in one DB transaction (the only path that
-// writes profile values to businesses), then creates the weekly monitoring
-// Schedule and triggers the first run now with trigger=initial. The DB tx and
-// the Temporal calls are not atomic with each other (design 03): if the tx
-// commits but a Temporal call fails, the business is active and a client retry
-// gets FailedPrecondition (ErrBusinessNotDraft) — an accepted MVP gap,
-// mitigated by the idempotent schedule/run creation for any manual recovery.
+// the business, inserts its prompts, and inserts the first monitoring job in one
+// PostgreSQL transaction. A failure rolls back both activation and enqueueing.
 func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensightv1.ApplyProposalRequest]) (*connect.Response[opensightv1.ApplyProposalResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "apply business")
 	if cerr != nil {
@@ -344,7 +339,7 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 	}
 
 	now := nowUTC()
-	result, err := s.store.Apply(ctx, store.ApplyProposalParams{
+	params := store.ApplyProposalParams{
 		AccountID:   su.AccountID,
 		BusinessID:  businessID,
 		Name:        payload.Profile.Name,
@@ -354,35 +349,19 @@ func (s *Server) ApplyProposal(ctx context.Context, req *connect.Request[opensig
 		Location:    location,
 		PromptTexts: promptTexts,
 		ActivatedAt: now,
+	}
+	var result store.ApplyProposalResult
+	err = s.store.Transact(ctx, func(tx pgx.Tx) error {
+		scheduledFor := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		if _, err := s.jobs.InsertTx(ctx, tx, jobs.MonitorArgs{BusinessID: businessID, Platform: store.PlatformChatGPT, ScheduledFor: scheduledFor, Trigger: store.RunTriggerInitial}, nil); err != nil {
+			return err
+		}
+		var err error
+		result, err = s.store.ApplyTx(ctx, tx, params)
+		return err
 	})
 	if err != nil {
-		return nil, s.rpcError("apply business: apply proposal", err)
-	}
-
-	if _, err := workflows.CreateMonitorSchedule(ctx, s.temporal, workflows.CreateScheduleParams{
-		BusinessID:  businessID,
-		Platform:    store.PlatformChatGPT,
-		RunInterval: plan.RunInterval,
-		TaskQueue:   s.temporalTaskQueue,
-	}); err != nil {
-		return nil, s.rpcInternal("apply business: create schedule", err)
-	}
-
-	scheduledFor := workflows.TruncateToDay(now)
-	workflowID := workflows.RunWorkflowID(businessID, store.PlatformChatGPT, scheduledFor)
-	if _, err := s.temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: s.temporalTaskQueue,
-	}, workflows.RunWorkflow, workflows.RunWorkflowInput{
-		BusinessID:   businessID,
-		Platform:     store.PlatformChatGPT,
-		ScheduledFor: scheduledFor,
-		Trigger:      store.RunTriggerInitial,
-	}); err != nil {
-		var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted
-		if !errors.As(err, &alreadyStarted) {
-			return nil, s.rpcInternal("apply business: start first run", err)
-		}
+		return nil, s.rpcError("apply business: activate and enqueue", err)
 	}
 
 	return connect.NewResponse(&opensightv1.ApplyProposalResponse{Business: &opensightv1.BusinessSummary{
@@ -426,6 +405,9 @@ func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[ope
 		return nil, s.rpcInternal("generate questions: resolve plan", err)
 	}
 
+	if err := s.limiter.Acquire(ctx); err != nil {
+		return nil, s.rpcInternal("generate questions: wait for capacity", err)
+	}
 	result, err := llm.GenerateQuestionsWithRetry(ctx, s.questions, llm.QuestionsInput{
 		Name:        profile.Name,
 		Aliases:     profile.Aliases,
@@ -434,6 +416,7 @@ func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[ope
 		City:        profile.Location.City,
 		PromptLimit: plan.PromptLimit,
 	})
+	s.limiter.Release()
 	if err != nil {
 		return nil, s.rpcInternal("generate questions: run", err)
 	}
@@ -449,62 +432,33 @@ func (s *Server) GenerateQuestions(ctx context.Context, req *connect.Request[ope
 	return connect.NewResponse(&opensightv1.GenerateQuestionsResponse{Prompts: prompts}), nil
 }
 
-// startGeneration starts GenerateProfileWorkflow under the deterministic
-// per-business workflow id, so a regen while a prior run is still open surfaces
-// as WorkflowExecutionAlreadyStarted (CodeAlreadyExists) rather than a
-// duplicate run.
-func (s *Server) startGeneration(ctx context.Context, accountID, businessID domain.ID, name, website string) error {
-	_, err := s.temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-		ID:        workflows.GenerateProfileWorkflowID(businessID),
-		TaskQueue: s.temporalTaskQueue,
-	}, workflows.GenerateProfileWorkflow, workflows.GenerateProfileWorkflowInput{
-		AccountID:  accountID,
-		BusinessID: businessID,
-		Name:       name,
-		Website:    website,
-	})
-	return err
-}
-
-// generationStatus maps the business's GenerateProfileWorkflow execution state
-// to a proposal status when there is no pending proposal row. A not-found
-// workflow (never started or history expired) and any terminal state both mean
-// failed; only a running workflow means generating. For a running workflow it
-// also queries the workflow's current stage; any query error degrades to an
-// empty stage (still generating) rather than failing the poll — a briefly
-// unavailable worker, a pre-deploy run without the handler, or a Describe/Query
-// race on a just-closed workflow must not break status reporting.
-func (s *Server) generationStatus(ctx context.Context, businessID domain.ID) (status, stage string, err error) {
-	workflowID := workflows.GenerateProfileWorkflowID(businessID)
-	desc, err := s.temporal.DescribeWorkflowExecution(ctx, workflowID, "")
+// startGeneration atomically inserts a profile job and installs its generation
+// token. That token fences every earlier job from writing a stale proposal.
+func (s *Server) startGeneration(ctx context.Context, accountID, businessID domain.ID, name, website string, discardPending bool) (int64, error) {
+	generationID, err := domain.NewID()
 	if err != nil {
-		var notFound *serviceerror.NotFound
-		if errors.As(err, &notFound) {
-			return proposalStatusFailed, "", nil
+		return 0, err
+	}
+	var jobID int64
+	err = s.store.Transact(ctx, func(tx pgx.Tx) error {
+		inserted, err := s.jobs.InsertTx(ctx, tx, jobs.GenerateProfileArgs{AccountID: accountID, BusinessID: businessID, GenerationID: generationID, Name: name, Website: website}, nil)
+		if err != nil {
+			return err
 		}
-		return "", "", err
-	}
-	if desc.GetWorkflowExecutionInfo().GetStatus() != enumspb.WORKFLOW_EXECUTION_STATUS_RUNNING {
-		return proposalStatusFailed, "", nil
-	}
-	return proposalStatusGenerating, s.generationStage(ctx, workflowID), nil
-}
-
-// generationStage queries the running workflow for its current stage, returning
-// an empty string on any error (see generationStatus). The query is given a
-// short deadline so a slow or unreachable worker cannot stall the poll.
-func (s *Server) generationStage(ctx context.Context, workflowID string) string {
-	qctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-	resp, err := s.temporal.QueryWorkflow(qctx, workflowID, "", workflows.GenerationStageQuery)
-	if err != nil {
-		return ""
-	}
-	var stage string
-	if err := resp.Get(&stage); err != nil {
-		return ""
-	}
-	return stage
+		jobID = inserted.Job.ID
+		var websitePtr *string
+		if strings.TrimSpace(website) != "" {
+			websitePtr = &website
+		}
+		if err := s.store.InstallGeneration(ctx, tx, accountID, businessID, generationID, jobID, websitePtr); err != nil {
+			return err
+		}
+		if discardPending {
+			return s.store.DiscardPendingTx(ctx, tx, accountID, businessID)
+		}
+		return nil
+	})
+	return jobID, err
 }
 
 func websiteOrEmpty(website *string) string {

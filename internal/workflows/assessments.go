@@ -15,37 +15,12 @@ import (
 	"opensight/internal/llm"
 	"opensight/internal/store"
 	"opensight/internal/visibility"
-
-	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 )
 
-// The assessment activities are budgeted from the work they can actually do,
-// not from one shared number. Both crawls issue their requests serially with
-// each request capped at fetchSiteTimeout, so a request count times that cap is
-// a real bound rather than a guess — and raising a request budget raises the
-// matching timeout with it.
-const (
-	// siteAuditTimeout bounds one RunSiteAudit attempt. Unlike FetchSite, the
-	// audit crawl puts no deadline on the crawl as a whole, so its worst case is
-	// every request it may make: the page budget plus robots.txt.
-	siteAuditTimeout = (fetchSiteMaxRequests + 1) * fetchSiteTimeout
-
-	// sourceClassificationAllowance is the share of a RunFinders attempt left for
-	// the batched classification call and its validation retry. Nothing enforces
-	// it on its own; it is the headroom findersTimeout adds on top of research so
-	// a slow model call is not charged against the fetch budget.
-	sourceClassificationAllowance = 3 * time.Minute
-
-	// findersTimeout bounds one RunFinders attempt: a fully spent research budget
-	// of serial fetches, plus the classification call.
-	findersTimeout = visibility.ResearchURLBudget*fetchSiteTimeout + sourceClassificationAllowance
-)
-
-type AssessmentWorkflowInput struct{ AccountID, BusinessID, RunID domain.ID }
+type AssessmentInput struct{ AccountID, BusinessID, RunID domain.ID }
 
 // SiteAuditResult is what one crawl of the business site yields. The bounded
-// page text crosses the activity boundary because finders compare cited
+// page text is carried into finders because they compare cited
 // competitor evidence with what the customer already publishes before asking
 // them to add anything.
 type SiteAuditResult struct {
@@ -57,9 +32,9 @@ type SiteAuditResult struct {
 }
 
 // RunSiteAudit crawls the site once and evaluates the whole check catalog. A
-// crawl that fails is a successful activity with every check unverifiable — a
+// crawl that fails is a represented result with every check unverifiable — a
 // site we could not read is a fact about the site, not an error in the run.
-func (a *Activities) RunSiteAudit(ctx context.Context, in AssessmentWorkflowInput) (SiteAuditResult, error) {
+func (a *Operations) RunSiteAudit(ctx context.Context, in AssessmentInput) (SiteAuditResult, error) {
 	business, err := a.Store.GetBusiness(ctx, in.AccountID, in.BusinessID)
 	if err != nil {
 		return SiteAuditResult{}, err
@@ -98,7 +73,7 @@ func siteProfile(business store.Business) visibility.SiteProfile {
 }
 
 type FindImprovementsInput struct {
-	AssessmentWorkflowInput
+	AssessmentInput
 	Audit SiteAuditResult
 }
 
@@ -108,9 +83,13 @@ type FindImprovementsInput struct {
 //
 // The budget is built here and so is per attempt, not per run: a retried attempt
 // starts with a full allowance and re-reads pages the failed attempt already
-// read. That is the honest cost of retrying an activity that caches nothing, and
-// it is why RunFinders is given fewer attempts than the crawl beside it.
-func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) ([]visibility.Finding, error) {
+// read. That is the honest cost of retrying an operation that caches nothing, and
+// it is why the assessment job has a bounded retry budget.
+func (a *Operations) RunFinders(ctx context.Context, in FindImprovementsInput) ([]visibility.Finding, error) {
+	if err := a.Limiter.Acquire(ctx); err != nil {
+		return nil, err
+	}
+	defer a.Limiter.Release()
 	snapshot, err := a.Store.LoadMonitoringSnapshot(ctx, in.AccountID, in.BusinessID)
 	if err != nil {
 		return nil, err
@@ -146,7 +125,7 @@ func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) (
 		findings, err := finder.Find(ctx, input, research)
 		if err != nil {
 			if errors.Is(err, llm.ErrSourceClassificationValidation) {
-				return nil, temporal.NewNonRetryableApplicationError("classify citation sources", "InvalidSourceClassification", err)
+				return nil, NewPermanentError("classify citation sources", "InvalidSourceClassification", err)
 			}
 			return nil, fmt.Errorf("finder %s: %w", finder.Key(), err)
 		}
@@ -157,12 +136,12 @@ func (a *Activities) RunFinders(ctx context.Context, in FindImprovementsInput) (
 }
 
 type PublishImproveRunInput struct {
-	AssessmentWorkflowInput
+	AssessmentInput
 	Audit    SiteAuditResult
 	Findings []visibility.Finding
 }
 
-func (a *Activities) PublishImproveRun(ctx context.Context, in PublishImproveRunInput) error {
+func (a *Operations) PublishImproveRun(ctx context.Context, in PublishImproveRunInput) error {
 	return a.Store.PublishImproveRun(ctx, in.AccountID, in.BusinessID, store.ImproveRun{
 		RunID:     in.RunID,
 		PagesRead: in.Audit.PagesRead,
@@ -172,55 +151,8 @@ func (a *Activities) PublishImproveRun(ctx context.Context, in PublishImproveRun
 	})
 }
 
-// AssessmentWorkflow audits the site, derives findings from it and the answer
-// corpus, and publishes both as one unit.
-//
-// There is no partial-failure handling by design: an activity that fails fails
-// the run, and the previously published audit and findings stay current. Half of
-// this week's advice mixed with half of last week's would be harder to reason
-// about than simply showing last week's until the next run succeeds.
-func AssessmentWorkflow(ctx workflow.Context, in AssessmentWorkflowInput) error {
-	// Each activity gets its own budget: one shared number can only ever fit the
-	// smallest of the three.
-	auditCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		// The crawl buys no model tokens, so a full three attempts stays cheap.
-		StartToCloseTimeout: siteAuditTimeout,
-		RetryPolicy:         &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 3},
-	})
-
-	var audit SiteAuditResult
-	if err := workflow.ExecuteActivity(auditCtx, acts.RunSiteAudit, in).Get(ctx, &audit); err != nil {
-		return err
-	}
-
-	findersCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: findersTimeout,
-		// An attempt re-fetches every research page and re-pays for the
-		// classification call from scratch, so attempts are expensive in a way
-		// the crawl's are not. One retry covers a transient database or model
-		// blip; past that, leaving the previous findings current is already the
-		// designed outcome rather than a failure worth paying for again.
-		RetryPolicy: &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 2},
-	})
-
-	var findings []visibility.Finding
-	if err := workflow.ExecuteActivity(findersCtx, acts.RunFinders, FindImprovementsInput{
-		AssessmentWorkflowInput: in, Audit: audit,
-	}).Get(ctx, &findings); err != nil {
-		return err
-	}
-
-	// One transaction, and the unique monitoring-run constraint makes a repeat
-	// publication a no-op, so retrying it freely is safe.
-	publishCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: time.Minute,
-		RetryPolicy:         &temporal.RetryPolicy{InitialInterval: 5 * time.Second, MaximumAttempts: 3},
-	})
-	return workflow.ExecuteActivity(publishCtx, acts.PublishImproveRun, PublishImproveRunInput{
-		AssessmentWorkflowInput: in, Audit: audit, Findings: findings,
-	}).Get(ctx, nil)
-}
-
+// Publishing is atomic: any error leaves the previously published audit and
+// findings current instead of mixing results from different runs.
 // robotsReport is one inspection of robots.txt: the verdict for every crawler
 // the checklist reports on, whether a file exists at all, and the sitemaps it
 // declares.

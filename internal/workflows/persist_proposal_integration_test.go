@@ -11,15 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TestPersistProposalIdempotent proves PersistProposal survives Temporal's
-// at-least-once activity execution: a second call for the same business (as
+// TestPersistProposalIdempotent proves PersistProposal survives River's
+// at-least-once operation execution: a second call for the same business (as
 // happens when a first attempt committed but its ack was lost) reuses the
 // existing pending row rather than erroring on the one-pending-per-business
 // unique index.
 func TestPersistProposalIdempotent(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
-		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run activity integration tests")
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run operation integration tests")
 	}
 
 	ctx := context.Background()
@@ -41,9 +41,9 @@ func TestPersistProposalIdempotent(t *testing.T) {
 	insertAccount(t, db, ctx, accountID, "Persist Account")
 	mustExec(t, db, ctx, "INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Persist Clinic')", businessID, accountID)
 
-	acts := &Activities{Store: store.New(db)}
+	acts := &Operations{Store: store.New(db)}
 	in := PersistProposalInput{
-		AccountID:   accountID,
+		AccountID:  accountID,
 		BusinessID: businessID,
 		Payload:    llm.ProposalPayload{LowConfidence: true},
 	}

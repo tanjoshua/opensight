@@ -49,11 +49,11 @@ func TestCitationSourcesGroupAndGate(t *testing.T) {
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'excluded prompt', 'active')", p3, businessID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'foreign prompt text', 'active')", foreignPrompt, otherBusinessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-cite-a', now(), now())`, runA, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 101, now(), now())`, runA, businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-cite-b', now())`, runB, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 102, now())`, runB, businessID)
 
 	succeeded := func(id, runID, promptID domain.ID) {
 		mustExec(t, db, ctx, `

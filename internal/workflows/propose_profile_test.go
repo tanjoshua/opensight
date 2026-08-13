@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"opensight/internal/llm"
-
-	"go.temporal.io/sdk/temporal"
 )
 
 // proposeRunner is a ProposeProfileRunner test double returning a canned result
@@ -55,11 +53,11 @@ func TestProposeProfileBadInputNonRetryable(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := &proposeRunner{}
-			a := &Activities{Proposer: runner}
+			a := &Operations{Proposer: runner}
 			_, err := a.ProposeProfile(context.Background(), tc.in)
-			var appErr *temporal.ApplicationError
-			if !errors.As(err, &appErr) || !appErr.NonRetryable() {
-				t.Fatalf("want non-retryable ApplicationError, got %T: %v", err, err)
+			var appErr *PermanentError
+			if !errors.As(err, &appErr) {
+				t.Fatalf("want PermanentError, got %T: %v", err, err)
 			}
 			if runner.called {
 				t.Fatal("runner should not be called for bad input")
@@ -69,30 +67,30 @@ func TestProposeProfileBadInputNonRetryable(t *testing.T) {
 }
 
 func TestProposeProfileRunnerErrorPropagates(t *testing.T) {
-	// A transient runner error propagates unchanged for Temporal's default retry.
+	// A transient runner error propagates unchanged for River's default retry.
 	transient := errors.New("openai: status 503")
-	a := &Activities{Proposer: &proposeRunner{err: transient}}
+	a := &Operations{Proposer: &proposeRunner{err: transient}}
 	_, err := a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic"})
 	if !errors.Is(err, transient) {
 		t.Fatalf("want transient error propagated, got %v", err)
 	}
-	var appErr *temporal.ApplicationError
-	if errors.As(err, &appErr) && appErr.NonRetryable() {
+	var appErr *PermanentError
+	if errors.As(err, &appErr) {
 		t.Fatal("transient error must not be wrapped non-retryable")
 	}
 
-	// A runner error marked non-retryable becomes a non-retryable activity error.
+	// A runner error marked non-retryable becomes a non-retryable operation error.
 	refused := errors.Join(errors.New("refused"), llm.ErrNonRetryable)
-	a = &Activities{Proposer: &proposeRunner{err: refused}}
+	a = &Operations{Proposer: &proposeRunner{err: refused}}
 	_, err = a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Clinic"})
-	if !errors.As(err, &appErr) || !appErr.NonRetryable() {
-		t.Fatalf("want non-retryable ApplicationError for refusal, got %T: %v", err, err)
+	if !errors.As(err, &appErr) {
+		t.Fatalf("want PermanentError for refusal, got %T: %v", err, err)
 	}
 }
 
 func TestProposeProfileHappyPath(t *testing.T) {
 	runner := &proposeRunner{result: llm.ProposeProfileRunResult{RawJSON: validProposalJSON(t), Model: "gpt-x"}}
-	a := &Activities{Proposer: runner}
+	a := &Operations{Proposer: runner}
 	out, err := a.ProposeProfile(context.Background(), ProposeProfileInput{Name: "Novena Ortho Clinic"})
 	if err != nil {
 		t.Fatalf("ProposeProfile: %v", err)

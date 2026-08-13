@@ -46,17 +46,21 @@ type AnalyzedResult struct {
 }
 
 type Business struct {
-	ID          uuid.UUID
-	AccountID   uuid.UUID
-	Status      string
-	Name        string
-	Website     *string
-	Aliases     []string
-	Category    *string
-	Services    json.RawMessage
-	Location    *json.RawMessage
-	CreatedAt   time.Time
-	ActivatedAt *time.Time
+	ID               uuid.UUID
+	AccountID        uuid.UUID
+	Status           string
+	Name             string
+	Website          *string
+	Aliases          []string
+	Category         *string
+	Services         json.RawMessage
+	Location         *json.RawMessage
+	CreatedAt        time.Time
+	ActivatedAt      *time.Time
+	GenerationID     *uuid.UUID
+	GenerationJobID  *int64
+	GenerationStatus *string
+	GenerationStage  *string
 }
 
 type Citation struct {
@@ -132,11 +136,11 @@ type MonitoringRun struct {
 	Trigger             string
 	ScheduledFor        time.Time
 	Status              string
-	WorkflowID          string
 	StartedAt           time.Time
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
 	ExpectedResults     *int32
+	JobID               int64
 }
 
 type ProfileProposal struct {

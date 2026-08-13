@@ -52,7 +52,7 @@ func TestFindingLifecycleAcrossRuns(t *testing.T) {
 		runNumber++
 		runID := mustNewID(t)
 		scheduled := time.Date(2026, 1, 1+runNumber, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
-		mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled',$3,'completed',$4,now(),now())", runID, businessID, scheduled, "improve-"+runID.String())
+		mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled',$3,'completed',$4,now(),now())", runID, businessID, scheduled, int64(600+runNumber))
 		run.RunID = runID
 		if err := s.PublishImproveRun(ctx, accountID, businessID, run); err != nil {
 			t.Fatal(err)
@@ -161,7 +161,7 @@ func TestFindingLifecycleAcrossRuns(t *testing.T) {
 	}
 	before := len(rows)
 	lastRun := mustNewID(t)
-	mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled','2026-06-01','completed',$3,now(),now())", lastRun, businessID, "improve-"+lastRun.String())
+	mustExec(t, db, ctx, "INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,completed_at,analysis_completed_at) VALUES ($1,$2,'chatgpt','scheduled','2026-06-01','completed',$3,now(),now())", lastRun, businessID, int64(699))
 	for range 2 {
 		if err := s.PublishImproveRun(ctx, accountID, businessID, ImproveRun{RunID: lastRun, PagesRead: 3, Findings: []visibility.Finding{blocked}}); err != nil {
 			t.Fatal(err)

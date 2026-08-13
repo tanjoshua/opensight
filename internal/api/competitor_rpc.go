@@ -101,7 +101,7 @@ func (s *Server) AddCompetitor(ctx context.Context, req *connect.Request[opensig
 	}
 
 	record, err := s.store.CreateManual(ctx, store.CreateManualCompetitorParams{
-		AccountID:   su.AccountID,
+		AccountID:  su.AccountID,
 		BusinessID: businessID,
 		Name:       req.Msg.Name,
 		Aliases:    req.Msg.Aliases,
@@ -142,7 +142,7 @@ func (s *Server) SetCompetitorStatus(ctx context.Context, req *connect.Request[o
 	}
 
 	record, err := s.store.SetStatus(ctx, store.SetCompetitorStatusParams{
-		AccountID:     su.AccountID,
+		AccountID:    su.AccountID,
 		CompetitorID: competitorID,
 		Status:       status,
 	})
@@ -228,7 +228,7 @@ func (s *Server) UpdateCompetitorAliases(ctx context.Context, req *connect.Reque
 	}
 
 	record, err := s.store.UpdateAliases(ctx, store.UpdateCompetitorAliasesParams{
-		AccountID:     su.AccountID,
+		AccountID:    su.AccountID,
 		CompetitorID: competitorID,
 		Aliases:      aliases,
 	})

@@ -22,7 +22,7 @@ import (
 // by these deletes.
 //
 // The insert/upsert surface (result_analyses, citations, competitors, mentions
-// writes) lives in the workflow activities, not here.
+// writes) lives in the application operations, not here.
 
 // CitationWrite is one citation row for SaveResultAnalysis, already normalized
 // (URL cleaned, domain extracted) and ordered by first appearance. TextStart and
@@ -207,25 +207,25 @@ func (s *Store) DeleteRunMentions(ctx context.Context, accountID, runID domain.I
 	return nil
 }
 
-// AnalyzeRunSpec is what AnalyzeRun needs to fan out: the run's owning
+// AnalysisJobSpec is what the analysis job needs to fan out: the run's owning
 // business and its succeeded result ids in first-appearance order. An empty
 // ResultIDs slice is valid — a run whose prompts all failed has nothing to
 // analyze, which is not an error.
-type AnalyzeRunSpec struct {
+type AnalysisJobSpec struct {
 	BusinessID domain.ID
 	ResultIDs  []domain.ID
 }
 
-// LoadAnalyzeRunSpec resolves a run's business and its succeeded result ids for
-// the AnalyzeRun workflow. It is account-scoped: a missing or
+// LoadAnalysisJobSpec resolves a run's business and its succeeded result ids for
+// the analysis job. It is account-scoped: a missing or
 // cross-account run returns ErrNotFound before any result rows are read, so a
 // bad run id never leaks another account's results.
-func (s *Store) LoadAnalyzeRunSpec(ctx context.Context, accountID, runID domain.ID) (AnalyzeRunSpec, error) {
+func (s *Store) LoadAnalysisJobSpec(ctx context.Context, accountID, runID domain.ID) (AnalysisJobSpec, error) {
 	if err := validateUUIDv7("account id", accountID); err != nil {
-		return AnalyzeRunSpec{}, err
+		return AnalysisJobSpec{}, err
 	}
 	if err := validateUUIDv7("run id", runID); err != nil {
-		return AnalyzeRunSpec{}, err
+		return AnalysisJobSpec{}, err
 	}
 
 	businessID, err := s.q(ctx).RunBusinessOwned(ctx, storesqlc.RunBusinessOwnedParams{
@@ -233,16 +233,16 @@ func (s *Store) LoadAnalyzeRunSpec(ctx context.Context, accountID, runID domain.
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return AnalyzeRunSpec{}, ErrNotFound
+			return AnalysisJobSpec{}, ErrNotFound
 		}
-		return AnalyzeRunSpec{}, fmt.Errorf("resolve run business: %w", err)
+		return AnalysisJobSpec{}, fmt.Errorf("resolve run business: %w", err)
 	}
 
 	resultIDs, err := s.q(ctx).ListSucceededResultIDs(ctx, runID)
 	if err != nil {
-		return AnalyzeRunSpec{}, fmt.Errorf("list succeeded results: %w", err)
+		return AnalysisJobSpec{}, fmt.Errorf("list succeeded results: %w", err)
 	}
-	return AnalyzeRunSpec{BusinessID: businessID, ResultIDs: resultIDs}, nil
+	return AnalysisJobSpec{BusinessID: businessID, ResultIDs: resultIDs}, nil
 }
 
 // DiscoveredCompetitor is one still-unmatched name reconcile mints as a new

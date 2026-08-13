@@ -54,7 +54,7 @@ func (f *fakeMatcher) RunMatch(_ context.Context, in llm.MatchInput) (llm.MatchR
 func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
-		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run activity integration tests")
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run operation integration tests")
 	}
 
 	ctx := context.Background()
@@ -91,8 +91,8 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	// completed_at must be set: the analysis_completed_at CHECK forbids stamping
 	// analysis before the run is marked complete (FinalizeRun sets it in prod).
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'reconcile-wf', now())`, runID, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 201, now())`, runID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
 		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, '{"id":"r"}'::jsonb,
@@ -111,7 +111,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 
 	analysisStore := store.New(db)
 	matcher := &fakeMatcher{matchNameToCompetitor: map[string]string{"Bravo Klinik": "Bravo Clinic"}}
-	acts := &Activities{Store: analysisStore, Matcher: matcher}
+	acts := &Operations{Store: analysisStore, Matcher: matcher}
 
 	in := ReconcileEntitiesInput{
 		AccountID:  accountID,

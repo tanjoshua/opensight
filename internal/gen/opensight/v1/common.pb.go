@@ -591,7 +591,7 @@ func (CitationSubject) EnumDescriptor() ([]byte, []int) {
 	return file_opensight_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
-// ProposalStatus is the onboarding profile-proposal workflow status. It is
+// ProposalStatus is the persisted onboarding profile-generation status. It is
 // distinct from the store's pending/applied/discarded lifecycle, which is a
 // persistence detail never exposed over the API.
 type ProposalStatus int32
@@ -646,7 +646,7 @@ func (ProposalStatus) EnumDescriptor() ([]byte, []int) {
 	return file_opensight_v1_common_proto_rawDescGZIP(), []int{11}
 }
 
-// GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+// GenerationStage is the profile-generation job's current stage, polled while a
 // proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
 // case (e.g. a stage query that failed or timed out).
 type GenerationStage int32

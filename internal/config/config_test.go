@@ -20,14 +20,8 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.DBMaxOpenConns != defaultDBMaxOpenConns {
 		t.Errorf("DBMaxOpenConns = %d, want %d", cfg.DBMaxOpenConns, defaultDBMaxOpenConns)
 	}
-	if cfg.TemporalAddress != defaultTemporalAddress {
-		t.Errorf("TemporalAddress = %q, want %q", cfg.TemporalAddress, defaultTemporalAddress)
-	}
-	if cfg.TemporalNamespace != defaultTemporalNamespace {
-		t.Errorf("TemporalNamespace = %q, want %q", cfg.TemporalNamespace, defaultTemporalNamespace)
-	}
-	if cfg.TemporalTaskQueue != defaultTemporalTaskQueue {
-		t.Errorf("TemporalTaskQueue = %q, want %q", cfg.TemporalTaskQueue, defaultTemporalTaskQueue)
+	if cfg.LLMConcurrency != defaultLLMConcurrency {
+		t.Errorf("LLMConcurrency = %d, want %d", cfg.LLMConcurrency, defaultLLMConcurrency)
 	}
 	if cfg.OpenAIAPIKey != "" {
 		t.Errorf("OpenAIAPIKey = %q, want empty", cfg.OpenAIAPIKey)
@@ -61,14 +55,11 @@ func TestLoadOverrides(t *testing.T) {
 		"HTTP_ADDR":              ":9090",
 		"DATABASE_URL":           "postgres://example",
 		"APP_DB_MAX_OPEN_CONNS":  "12",
-		"TEMPORAL_ADDRESS":       "temporal.example:7233",
-		"TEMPORAL_NAMESPACE":     "opensight-dev",
-		"TEMPORAL_TASK_QUEUE":    "opensight-test",
 		"OPENAI_API_KEY":         "sk-test",
 		"OPENAI_RESPONSES_MODEL": "gpt-5.6-luna",
 		"OPENAI_ANALYSIS_MODEL":  "gpt-5.6-luna",
 		"PROMPT_RUNNER_MODE":     "replay",
-		"PROMPT_CONCURRENCY":     "4",
+		"LLM_CONCURRENCY":        "4",
 	}
 
 	cfg, err := LoadFromEnv(func(key string) string { return env[key] })
@@ -88,15 +79,6 @@ func TestLoadOverrides(t *testing.T) {
 	if cfg.DBMaxOpenConns != 12 {
 		t.Errorf("DBMaxOpenConns = %d", cfg.DBMaxOpenConns)
 	}
-	if cfg.TemporalAddress != "temporal.example:7233" {
-		t.Errorf("TemporalAddress = %q", cfg.TemporalAddress)
-	}
-	if cfg.TemporalNamespace != "opensight-dev" {
-		t.Errorf("TemporalNamespace = %q", cfg.TemporalNamespace)
-	}
-	if cfg.TemporalTaskQueue != "opensight-test" {
-		t.Errorf("TemporalTaskQueue = %q", cfg.TemporalTaskQueue)
-	}
 	if cfg.OpenAIAPIKey != "sk-test" {
 		t.Errorf("OpenAIAPIKey = %q", cfg.OpenAIAPIKey)
 	}
@@ -109,8 +91,8 @@ func TestLoadOverrides(t *testing.T) {
 	if cfg.PromptRunnerMode != PromptRunnerReplay {
 		t.Errorf("PromptRunnerMode = %q", cfg.PromptRunnerMode)
 	}
-	if cfg.PromptConcurrency != 4 {
-		t.Errorf("PromptConcurrency = %d", cfg.PromptConcurrency)
+	if cfg.LLMConcurrency != 4 {
+		t.Errorf("LLMConcurrency = %d", cfg.LLMConcurrency)
 	}
 }
 
@@ -123,10 +105,10 @@ func TestLoadRejectsInvalidPromptRunnerMode(t *testing.T) {
 }
 
 func TestLoadRejectsInvalidPositiveInt(t *testing.T) {
-	env := map[string]string{"PROMPT_CONCURRENCY": "0"}
+	env := map[string]string{"LLM_CONCURRENCY": "0"}
 
 	if _, err := LoadFromEnv(func(key string) string { return env[key] }); err == nil {
-		t.Fatal("expected zero PROMPT_CONCURRENCY to return error")
+		t.Fatal("expected zero LLM_CONCURRENCY to return error")
 	}
 }
 

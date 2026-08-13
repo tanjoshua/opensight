@@ -83,6 +83,42 @@ func (s *Store) CreatePending(ctx context.Context, accountID, businessID domain.
 	return proposal, nil
 }
 
+// CreatePendingFenced persists only when generationID is still installed on
+// the draft business. A superseded job returns (zero, false, nil).
+func (s *Store) CreatePendingFenced(ctx context.Context, accountID, businessID, generationID domain.ID, payload json.RawMessage) (ProfileProposal, bool, error) {
+	if len(payload) == 0 {
+		return ProfileProposal{}, false, errors.New("proposal payload is required")
+	}
+	id, err := domain.NewID()
+	if err != nil {
+		return ProfileProposal{}, false, err
+	}
+	proposal := ProfileProposal{ID: id, BusinessID: businessID, Payload: payload, Status: ProfileProposalStatusPending}
+	current := false
+	err = s.withTx(ctx, func(q *storesqlc.Queries) error {
+		if err := businessOwned(ctx, q, accountID, businessID); err != nil {
+			return err
+		}
+		ok, err := q.GenerationIsCurrent(ctx, storesqlc.GenerationIsCurrentParams{BusinessID: businessID, GenerationID: &generationID})
+		if err != nil {
+			return fmt.Errorf("check generation fence: %w", err)
+		}
+		if !ok {
+			return nil
+		}
+		current = true
+		proposal.CreatedAt, err = q.InsertPendingProposal(ctx, storesqlc.InsertPendingProposalParams{ID: id, BusinessID: businessID, Payload: payload})
+		if err != nil && isConstraintViolation(err, pendingProposalConstraint) {
+			return ErrPendingProposalExists
+		}
+		return err
+	})
+	if err != nil {
+		return ProfileProposal{}, false, err
+	}
+	return proposal, current, nil
+}
+
 // GetPending returns the business's pending proposal. It enters through the
 // account-checked business lookup; a missing or cross-account business, or a
 // business with no pending proposal, returns ErrNotFound.
@@ -113,14 +149,25 @@ func (s *Store) GetPending(ctx context.Context, accountID, businessID domain.ID)
 // the update; a missing or cross-account business returns ErrNotFound.
 func (s *Store) DiscardPending(ctx context.Context, accountID, businessID domain.ID) error {
 	return s.withTx(ctx, func(q *storesqlc.Queries) error {
-		if err := businessOwned(ctx, q, accountID, businessID); err != nil {
-			return err
-		}
-		if err := q.DiscardPendingProposal(ctx, businessID); err != nil {
-			return fmt.Errorf("discard pending proposal: %w", err)
-		}
-		return nil
+		return discardPending(ctx, q, accountID, businessID)
 	})
+}
+
+// DiscardPendingTx is DiscardPending on a caller-owned transaction. It lets
+// regeneration discard the old proposal in the same commit that installs the
+// replacement generation token and River job.
+func (s *Store) DiscardPendingTx(ctx context.Context, tx pgx.Tx, accountID, businessID domain.ID) error {
+	return discardPending(ctx, storesqlc.New(tx), accountID, businessID)
+}
+
+func discardPending(ctx context.Context, q *storesqlc.Queries, accountID, businessID domain.ID) error {
+	if err := businessOwned(ctx, q, accountID, businessID); err != nil {
+		return err
+	}
+	if err := q.DiscardPendingProposal(ctx, businessID); err != nil {
+		return fmt.Errorf("discard pending proposal: %w", err)
+	}
+	return nil
 }
 
 func isConstraintViolation(err error, constraint string) bool {

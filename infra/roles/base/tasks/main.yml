@@ -2,7 +2,7 @@
 # Bare Ubuntu -> hardened host: patched, UTC, a non-root `deploy` user with
 # key-only SSH, UFW default-deny with only 22/80/443 open (80/443 further
 # restricted to Cloudflare, since dashboard.opensight.app is proxied through
-# it), and a swapfile — cheap insurance for Temporal on a 4GB box.
+# it), and a swapfile — cheap insurance for a small production host.
 
 - name: Update apt cache
   ansible.builtin.apt:

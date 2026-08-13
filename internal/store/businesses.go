@@ -28,17 +28,21 @@ const (
 // Business is a persisted business row (migration 00003). account_id is the
 // tenancy anchor every deeper table scopes through.
 type Business struct {
-	ID          domain.ID
-	AccountID   domain.ID
-	Status      BusinessStatus
-	Name        string
-	Website     *string
-	Aliases     []string
-	Category    *string
-	Services    json.RawMessage
-	Location    json.RawMessage
-	CreatedAt   time.Time
-	ActivatedAt *time.Time
+	ID               domain.ID
+	AccountID        domain.ID
+	Status           BusinessStatus
+	Name             string
+	Website          *string
+	Aliases          []string
+	Category         *string
+	Services         json.RawMessage
+	Location         json.RawMessage
+	CreatedAt        time.Time
+	ActivatedAt      *time.Time
+	GenerationID     *domain.ID
+	GenerationJobID  *int64
+	GenerationStatus *string
+	GenerationStage  *string
 }
 
 // CreateBusinessParams are the inputs for creating a business. AccountID is
@@ -227,7 +231,7 @@ func (s *Store) ListBusinesses(ctx context.Context, accountID domain.ID) ([]Busi
 // ResolveAccountID returns only the business's account id. It is the sole
 // account-unscoped business lookup in the package: the store-layer analogue of
 // session->account resolution, used once by callers without ambient account
-// context (Temporal activities via LoadRunSpec, CLI) to bootstrap the account
+// context (River activities via LoadRunSpec, CLI) to bootstrap the account
 // before every subsequent call uses the normal account-checked methods
 // (design 02). A missing business returns ErrNotFound.
 func (s *Store) ResolveAccountID(ctx context.Context, businessID domain.ID) (domain.ID, error) {
@@ -251,6 +255,8 @@ func businessFromSQLC(row storesqlc.Business) Business {
 		ID: row.ID, AccountID: row.AccountID, Status: BusinessStatus(row.Status), Name: row.Name,
 		Website: row.Website, Aliases: row.Aliases, Category: row.Category, Services: row.Services,
 		Location: location, CreatedAt: row.CreatedAt, ActivatedAt: row.ActivatedAt,
+		GenerationID: row.GenerationID, GenerationJobID: row.GenerationJobID,
+		GenerationStatus: row.GenerationStatus, GenerationStage: row.GenerationStage,
 	}
 }
 

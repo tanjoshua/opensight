@@ -8,7 +8,7 @@ Backups, the restore drill, and the Phase-1 internal checkpoint. Phase 1 — the
 
 As the operator, I want nightly encrypted offsite backups of both databases and the env file, so that the VPS is not a single point of data loss.
 
-- [ ] Nightly `pg_dump` of `opensight` **and** `temporal` databases (the latter holds all schedules and in-flight state).
+- [ ] Nightly `pg_dump` of `opensight` **and** `river` databases (the latter holds all schedules and in-flight state).
 - [ ] restic encrypted repository → offsite (Hetzner Storage Box or Backblaze B2); `.env` included in the set.
 - [ ] Backup job failure is visible (non-zero exit logged loudly; check documented in ops runbook).
 
@@ -18,7 +18,7 @@ Deps: FND-5 · Phase 1 · Ref: design 07 (Backups and recovery)
 
 As the operator, I want a proven restore on a scratch VPS, so that the backup is a backup and not a hope.
 
-- [ ] On a scratch VPS: restore last night's dump, `docker compose up`, app serves, login works, schedules resume in Temporal.
+- [ ] On a scratch VPS: restore the `opensight` dump, deploy, app serves, login works, River resumes durable jobs.
 - [ ] Drill steps written down as a runbook (`docs/ops/restore.md`).
 - [ ] RPO ≤24h accepted; re-executed week is safe via idempotency keys (verified conceptually against RUN-3).
 
@@ -31,6 +31,6 @@ As the operator, I want a real business running weekly on production with result
 - [ ] Test account + owner membership created (AUTH-2); an internal test business + prompts seeded and schedule created (RUN-5); first run triggered and completed against the real OpenAI API.
 - [ ] Logging in shows the run's responses in the Responses section.
 - [ ] OpenAI dashboard budget cap confirmed set; cost query (RUN-6) run against the first real week.
-- [ ] Backups landing offsite (OPS-1); Sentry receiving from prod; Temporal UI reachable via SSH tunnel; ops runbook covers: check runs weekly, deploy, restore.
+- [ ] Backups landing offsite (OPS-1); Sentry receiving from prod; ops runbook covers: check runs weekly, deploy, restore.
 
 Deps: OPS-1, RUN-5, WEB-4, AUTH-4 · Phase 1 · Ref: stories README (Phase 1 checkpoint)

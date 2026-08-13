@@ -924,9 +924,9 @@ func (x *GetProposalResponse) GetState() *ProposalState {
 	return nil
 }
 
-// RegenerateProposalRequest starts an OpenAI-spending workflow. Its dedup key
-// is the deterministic Temporal workflow ID
-// (GenerateProfileWorkflowID(business_id)), not this RPC being marked
+// RegenerateProposalRequest starts an OpenAI-spending River job. Its dedup key
+// is the durable onboarding generation identifier
+// (the draft business's generation token), not this RPC being marked
 // side-effect-free — this RPC must never be declared safe for a GET-style
 // retry.
 type RegenerateProposalRequest struct {

@@ -85,7 +85,7 @@ func runToProto(run store.Run) *opensightv1.Run {
 		Trigger:             runTriggerToProto(run.Trigger),
 		ScheduledFor:        run.ScheduledFor.Format(time.DateOnly),
 		Status:              runStatusToProto(run.Status),
-		WorkflowId:          run.WorkflowID,
+		JobId:               run.JobID,
 		StartedAt:           timestamppb.New(run.StartedAt),
 		CompletedAt:         timestampOrNil(run.CompletedAt),
 		AnalysisCompletedAt: timestampOrNil(run.AnalysisCompletedAt),
@@ -168,7 +168,7 @@ func resultCitationSubjectToProto(s string) opensightv1.CitationSubject {
 
 // citationSpansToProto returns the response's url_citation annotation spans
 // in first-appearance (StartIndex-ascending) order — the same order
-// cite_order was assigned in (workflows.buildCitationWrites). A malformed or
+// cite_order was assigned by the analysis operation. A malformed or
 // empty raw_response yields no spans.
 func citationSpansToProto(rawResponse json.RawMessage) []*opensightv1.CitationSpan {
 	annotations, err := llm.ParseCitationAnnotations(rawResponse)

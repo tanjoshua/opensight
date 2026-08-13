@@ -73,7 +73,7 @@ type Reconciler struct {
 // call sites don't have to pass it and tests can substitute a fixed clock.
 // monitoring may be nil (a nil-tolerant seam): apply then writes the row and
 // skips the schedule gate entirely, which is what lets billing_rpc_test.go's
-// checkout-funnel tests build a Reconciler with no Temporal client in scope.
+// checkout-funnel tests build a Reconciler with no scheduler dependency.
 // locks may likewise be nil in tests that do not exercise concurrency.
 // All five parameters are distinct types, so there is no positional-swap
 // hazard at call sites.

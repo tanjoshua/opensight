@@ -62,8 +62,8 @@ func TestCompetitorStoreAccountScopingAndHistoryPreservation(t *testing.T) {
 		INSERT INTO prompts (id, business_id, text, status)
 		VALUES ($1, $2, 'best clinic', 'active')`, promptID, businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'completed', 'competitor-history', now(), now())`, runID, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'completed', 403, now(), now())`, runID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
 		VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}', '{}', 'text', now(), now())`, resultID, runID, promptID)

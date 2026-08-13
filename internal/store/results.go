@@ -17,7 +17,7 @@ import (
 
 // ErrDuplicateResult is returned when a prompt result already exists for a
 // (run, prompt) pair. The store never silently absorbs the conflict: the
-// ExecutePrompt activity's retry path re-gets the existing row on this error.
+// ExecutePrompt's retry path re-gets the existing row on this error.
 var ErrDuplicateResult = errors.New("prompt result already exists for run and prompt")
 
 // ResultStatus is the persisted outcome of a single prompt call.
@@ -250,7 +250,7 @@ func (s *Store) GetResultDetail(ctx context.Context, accountID, resultID domain.
 			row.RawResponse, row.ResponseText, row.Error, row.RequestedAt, row.CompletedAt),
 		BusinessID: row.BusinessID,
 		Run: runFromFields(row.RunID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
-			row.RunStatus, row.WorkflowID, row.StartedAt, row.RunCompletedAt, row.AnalysisCompletedAt, nil),
+			row.RunStatus, row.JobID, row.StartedAt, row.RunCompletedAt, row.AnalysisCompletedAt, nil),
 		Prompt: Prompt{ID: row.PromptID, BusinessID: row.BusinessID, Text: row.Text},
 	}
 	return detail, nil

@@ -14,12 +14,13 @@ import (
 	"opensight/internal/billing"
 	"opensight/internal/config"
 	"opensight/internal/domain"
+	"opensight/internal/jobs"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-	"opensight/internal/workflows"
 
 	"github.com/google/uuid"
-	"go.temporal.io/sdk/client"
+	river "github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"gopkg.in/yaml.v3"
 )
 
@@ -218,39 +219,20 @@ func createBusinessCLI(ctx context.Context, cfg config.Config, opts businessCrea
 		}
 	}
 
-	temporalClient, err := dialTemporal(ctx, cfg)
+	riverClient, err := river.NewClient(riverpgxv5.New(db), &river.Config{})
 	if err != nil {
-		return err
+		return fmt.Errorf("build river client: %w", err)
 	}
-	defer temporalClient.Close()
-
-	scheduleID, err := workflows.CreateMonitorSchedule(ctx, temporalClient, workflows.CreateScheduleParams{
-		BusinessID:  business.ID,
-		Platform:    store.PlatformChatGPT,
-		RunInterval: plan.RunInterval,
-		TaskQueue:   cfg.TemporalTaskQueue,
-	})
+	scheduledFor := time.Date(activatedAt.Year(), activatedAt.Month(), activatedAt.Day(), 0, 0, 0, 0, time.UTC)
+	inserted, err := riverClient.Insert(ctx, jobs.MonitorArgs{BusinessID: business.ID, Platform: store.PlatformChatGPT, ScheduledFor: scheduledFor, Trigger: store.RunTriggerInitial}, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("enqueue first run: %w", err)
 	}
-
-	scheduledFor := workflows.TruncateToDay(activatedAt)
-	workflowID := workflows.RunWorkflowID(business.ID, store.PlatformChatGPT, scheduledFor)
-	if _, err := temporalClient.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: cfg.TemporalTaskQueue,
-	}, workflows.RunWorkflow, workflows.RunWorkflowInput{
-		BusinessID:   business.ID,
-		Platform:     store.PlatformChatGPT,
-		ScheduledFor: scheduledFor,
-		Trigger:      store.RunTriggerInitial,
-	}); err != nil {
-		return fmt.Errorf("start first run: %w", err)
-	}
+	nextRunAt := jobs.NextWeeklySlot(business.ID, activatedAt)
 
 	_, err = fmt.Fprintf(out,
-		"created business\naccount_id=%s\nbusiness_id=%s\nprompts=%d\nrun_interval=%s\nschedule_id=%s\nfirst_run_workflow_id=%s\n",
-		opts.AccountID, business.ID, len(opts.Spec.Prompts), plan.RunInterval, scheduleID, workflowID,
+		"created business\naccount_id=%s\nbusiness_id=%s\nprompts=%d\nrun_interval=%s\ninitial_job_id=%d\nnext_run_at=%s\n",
+		opts.AccountID, business.ID, len(opts.Spec.Prompts), plan.RunInterval, inserted.Job.ID, nextRunAt.Format(time.RFC3339),
 	)
 	return err
 }

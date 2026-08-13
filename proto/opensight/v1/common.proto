@@ -124,7 +124,7 @@ enum CitationSubject {
   CITATION_SUBJECT_UNKNOWN = 4;
 }
 
-// ProposalStatus is the onboarding profile-proposal workflow status. It is
+// ProposalStatus is the persisted onboarding profile-generation status. It is
 // distinct from the store's pending/applied/discarded lifecycle, which is a
 // persistence detail never exposed over the API.
 enum ProposalStatus {
@@ -134,7 +134,7 @@ enum ProposalStatus {
   PROPOSAL_STATUS_FAILED = 3;
 }
 
-// GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+// GenerationStage is the profile-generation job's current stage, polled while a
 // proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
 // case (e.g. a stage query that failed or timed out).
 enum GenerationStage {

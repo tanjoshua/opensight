@@ -1,74 +1,24 @@
 ---
-# Render config -> pull -> migrate -> up -> verify (design 07 "Deployment").
-# Every docker/compose invocation here runs as root (play-level become: true
-# in deploy.yml) rather than relying on the `deploy` user's docker-group
-# membership taking effect mid-play — simpler than reasoning about a fresh
-# login shell within the same SSH connection.
-
-- name: Ensure OpenSight directories exist
+- name: Ensure OpenSight directory exists
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ opensight_dir }}"
     state: directory
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0755"
+
+- name: Render application files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ opensight_dir }}/{{ item.dest }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "{{ item.mode }}"
   loop:
-    - "{{ opensight_dir }}"
-    - "{{ opensight_dir }}/postgres-init"
-    - "{{ opensight_dir }}/temporal-scripts"
-    - "{{ opensight_dir }}/temporal-dynamicconfig"
+    - { src: env.j2, dest: .env, mode: "0600" }
+    - { src: compose.yml.j2, dest: compose.yml, mode: "0644" }
+    - { src: Caddyfile.j2, dest: Caddyfile, mode: "0644" }
 
-- name: Render .env
-  ansible.builtin.template:
-    src: env.j2
-    dest: "{{ opensight_dir }}/.env"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0600"
-
-- name: Render compose.yml
-  ansible.builtin.template:
-    src: compose.yml.j2
-    dest: "{{ opensight_dir }}/compose.yml"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0644"
-
-- name: Render Caddyfile
-  ansible.builtin.template:
-    src: Caddyfile.j2
-    dest: "{{ opensight_dir }}/Caddyfile"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0644"
-
-# Reused as-is from the repo rather than rewritten (design decision).
-- name: Copy Postgres init SQL (creates the temporal / temporal_visibility databases)
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../docker/postgres/init/001-create-databases.sql"
-    dest: "{{ opensight_dir }}/postgres-init/001-create-databases.sql"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0644"
-
-- name: Copy Temporal bootstrap scripts
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../docker/temporal/scripts/"
-    dest: "{{ opensight_dir }}/temporal-scripts/"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0755"
-
-- name: Copy production Temporal dynamic config
-  ansible.builtin.copy:
-    src: production-sql.yaml
-    dest: "{{ opensight_dir }}/temporal-dynamicconfig/production-sql.yaml"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0644"
-
-# The GHCR package is private, so the box needs to authenticate to pull it.
-# no_log hides the PAT from the play recap either way.
 - name: Log in to GHCR
   ansible.builtin.shell:
     cmd: "echo {{ ghcr_pat | quote }} | docker login ghcr.io -u {{ ghcr_username }} --password-stdin"
@@ -81,45 +31,20 @@
     chdir: "{{ opensight_dir }}"
   changed_when: true
 
-# --wait (Compose v2.20+, installed via Docker's own apt repo in the docker
-# role) blocks until postgres is healthy and temporal is running (which
-# itself waits on temporal-schema completing, via depends_on). It must NOT
-# include temporal-namespace: --wait treats a one-shot container exiting —
-# even successfully — as a failure, since it's no longer "running".
-- name: Bring up Postgres and Temporal
+- name: Bring up PostgreSQL
   ansible.builtin.command:
-    cmd: docker compose up -d --wait postgres temporal
+    cmd: docker compose up -d --wait postgres
     chdir: "{{ opensight_dir }}"
   changed_when: true
 
-# Not --wait, for the reason above; the retrying check below confirms
-# completion instead of racing or failing on a clean exit.
-- name: Run the Temporal namespace bootstrap
+- name: Stop the app before database migrations
   ansible.builtin.command:
-    cmd: docker compose up -d temporal-namespace
+    cmd: docker compose stop app
     chdir: "{{ opensight_dir }}"
   changed_when: true
+  failed_when: false
 
-- name: Verify the Temporal namespace bootstrap exited successfully
-  ansible.builtin.shell:
-    cmd: set -o pipefail && docker compose ps -a temporal-namespace | grep -q "Exited (0)"
-    chdir: "{{ opensight_dir }}"
-    executable: /bin/bash
-  changed_when: false
-  register: namespace_bootstrap
-  until: namespace_bootstrap.rc == 0
-  retries: 10
-  delay: 2
-
-# Explicit and separate: cmd/opensight/main.go deliberately never migrates on
-# serve/work startup, so a bad migration can't crash-loop the API.
-- name: Stop the API and worker before database migrations
-  ansible.builtin.command:
-    cmd: docker compose stop app worker
-    chdir: "{{ opensight_dir }}"
-  changed_when: true
-
-- name: Run database migrations
+- name: Run application and River migrations
   ansible.builtin.command:
     cmd: docker compose run --rm app migrate
     chdir: "{{ opensight_dir }}"

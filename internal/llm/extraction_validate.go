@@ -9,9 +9,8 @@ import (
 	"unicode"
 )
 
-// MaxExtractionAttempts is the in-activity validation-retry budget (design 05:
-// "one retry"), separate from and orthogonal to Temporal's own
-// ActivityOptions.RetryPolicy (sized by the workflow that wires this in).
+// MaxExtractionAttempts is the operation's validation-retry budget (design 05:
+// "one retry"), independent of the River analysis job retry budget.
 const MaxExtractionAttempts = 2
 
 var (
@@ -73,7 +72,7 @@ func isVerbatimSubstring(needle, normalizedHaystack string) bool {
 // (defense in depth against schema-enforcement drift); and the output citation
 // URL set must exactly match the response's annotation URL set (fabricated or
 // omitted URLs are errors). It returns one human-readable message per violation;
-// an empty result means valid. It is pure — no store or activity dependency.
+// an empty result means valid. It is pure and has no store dependency.
 func ValidateExtraction(out ExtractionOutput, responseText string, annotations []CitationAnnotation) []string {
 	normalized := normalizeForVerbatimCheck(responseText)
 	var errs []string
@@ -203,14 +202,14 @@ type ExtractionAttemptResult struct {
 // ExtractWithRetry runs the extraction call, decodes and validates the output,
 // and retries once with the validation errors appended to the model (design
 // 05's "one retry with validation errors appended") if validation fails. It is
-// the single shared path used by both the AnalyzeResult activity and the
+// the single shared path used by both the AnalyzeResult operation and the
 // quality-gate test driver, so a fix or regression in one is visible in both.
 func ExtractWithRetry(ctx context.Context, runner ExtractionRunner, in ExtractionInput, responseText string, annotations []CitationAnnotation) (ExtractionAttemptResult, error) {
 	for attempt := 0; attempt < MaxExtractionAttempts; attempt++ {
 		res, err := runner.RunExtraction(ctx, in)
 		if err != nil {
 			// A hard extractor error (transport, provider failure) is the
-			// caller's to retry (e.g. Temporal), not this loop's.
+			// caller's to retry (e.g. River), not this loop's.
 			return ExtractionAttemptResult{}, err
 		}
 

@@ -12,7 +12,7 @@ import (
 // insertAccount inserts a account row plus its comped starter subscription — the
 // fixture every workflows integration test needs for a valid account now that
 // entitlements live in the billing catalog rather than a seeded plans row
-// (BILL-1). These tests exercise workflow activities, not billing logic;
+// (BILL-1). These tests exercise job operations, not billing logic;
 // comped=true on the starter plan is a valid account for all of them.
 func insertAccount(t *testing.T, db *pgxpool.Pool, ctx context.Context, accountID domain.ID, name string) {
 	t.Helper()

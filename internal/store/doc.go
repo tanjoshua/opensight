@@ -14,6 +14,6 @@
 // so the layer is never a cross-account existence oracle. The sole
 // account-unscoped business query is ResolveAccountID, the
 // context-establishing bootstrap that callers without ambient account context
-// (Temporal activities, CLI) use once before switching to the account-checked
+// (River activities, CLI) use once before switching to the account-checked
 // repositories.
 package store

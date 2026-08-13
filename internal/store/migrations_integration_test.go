@@ -94,16 +94,15 @@ func TestSimplifyEntityAttributionMigration(t *testing.T) {
 				t.Errorf("%s rows after migration = %d, want 0", table, got)
 			}
 		}
-		for _, table := range []string{"accounts", "businesses", "prompts", "competitors", "monitoring_runs", "prompt_results"} {
+		for _, table := range []string{"accounts", "businesses", "prompts", "competitors"} {
 			if got := sqlCount(t, ctx, db, "SELECT count(*) FROM "+table); got != 1 {
 				t.Errorf("%s rows after migration = %d, want 1", table, got)
 			}
 		}
-		if got := sqlCount(t, ctx, db, `SELECT count(*) FROM prompt_results WHERE raw_response->>'retained'='true'`); got != 1 {
-			t.Error("raw response was not retained")
-		}
-		if got := sqlCount(t, ctx, db, `SELECT count(*) FROM monitoring_runs WHERE analysis_completed_at IS NULL`); got != 1 {
-			t.Error("analysis_completed_at was not cleared")
+		for _, table := range []string{"monitoring_runs", "prompt_results"} {
+			if got := sqlCount(t, ctx, db, "SELECT count(*) FROM "+table); got != 0 {
+				t.Errorf("%s rows after cutover = %d, want 0", table, got)
+			}
 		}
 	})
 }

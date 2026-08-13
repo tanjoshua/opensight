@@ -1,24 +1,24 @@
 # Design 05 — Analysis Pipeline
 
-Depends on: [02 Data Model](02-data-model.md) (`result_analyses`, `mentions`, `citations`, `competitors`), [04 Monitoring](04-monitoring.md) (`AnalyzeRun` child workflow)
+Depends on: [02 Data Model](02-data-model.md) (`result_analyses`, `mentions`, `citations`, `competitors`), [04 Monitoring](04-monitoring.md)
 
 ## Shape
 
-`AnalyzeRun` is the child workflow started by `RunWorkflow` after prompt execution. It runs in two phases — parallel extraction, then a single serial reconcile — because entity matching and competitor creation must not race across concurrent activities:
+The analysis River job is inserted after monitoring finalizes. It runs in two phases — parallel extraction, then a single serial reconcile — because entity matching and competitor creation must not race across concurrent operations:
 
 ```
-AnalyzeRun(runID)
+analysis job(runID)
  ├─ AnalyzeResult ×N   parallel (~4), one per succeeded prompt_result
  │                     LLM extraction → writes result_analyses + citations,
  │                     returns ordered entity list (verbatim names)
- └─ ReconcileEntities  single activity, serial:
+ └─ ReconcileEntities  single operation, serial:
                        match names → competitors, create 'discovered' rows,
                        write all mentions for the run
 ```
 
-Analysis is **derived and rebuildable** (02): both phases overwrite their own outputs idempotently — `AnalyzeResult` upserts by `prompt_result_id`; `ReconcileEntities` deletes-and-rewrites the run's mention rows in one transaction. Failed analysis never touches the raw results, and `ReanalyzeRun` (manual trigger, or after an extraction-prompt improvement) is the same workflow pointed at an old run. There is no separate `ReanalyzeRun` workflow function: `AnalyzeRun` takes `{AccountID, RunID}`, so re-analysis is just `AnalyzeRun` started directly from the Temporal CLI/UI (`temporal workflow start --type AnalyzeRun --workflow-id analyze-<run-id> --input '{"AccountID":"…","RunID":"…"}'`).
+Analysis is **derived and rebuildable**: extraction upserts by `prompt_result_id`, reconcile deletes and rewrites a run's mentions atomically, and raw results are never modified. Manual re-analysis inserts the same analysis job through `opensight run reanalyze --account <id> --run <id>`; duplicate live jobs are suppressed while completed jobs may be rerun.
 
-`RunWorkflow` runs `FinalizeRun` **before** starting the `AnalyzeRun` child: `monitoring_runs`' CHECK forbids stamping `analysis_completed_at` unless `completed_at` is already set, and the failure posture is that a run reaches its terminal status independently of analysis — analysis merely decorates it, or fails and leaves it flagged for re-analysis.
+The monitoring job runs `FinalizeRun` **before** inserting the analysis job: `monitoring_runs`' CHECK forbids stamping `analysis_completed_at` unless `completed_at` is already set, and the failure posture is that a run reaches its terminal status independently of analysis — analysis merely decorates it, or fails and leaves it available for re-analysis.
 
 ## Phase 1 — AnalyzeResult (per response)
 
@@ -66,7 +66,7 @@ Rules encoded in the extraction prompt:
 
 Entity attribution comes directly from the same extraction call's evidence-bearing links; there is no positional fallback. Each citation's computed evidence span is supplied to the model. Validation requires exact citation occurrence coverage, `cite_order` and URL agreement, unique in-range entity indexes, verbatim references and passages, a reference matching the selected entity (including genuine response shorthand or acronyms), and a passage contained by that occurrence's citation evidence span. A passage may use a pronoun when the relationship is clear, but its separate reference must still be a real name or shorthand from the response. Invalid output retries once through the normal extraction retry path. An uncertain relationship produces no link.
 
-Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **no mention facts**; those come exclusively from phase 2 into `mentions` (02). If reconcile later demotes the model's `is_target` judgment, the stored sentiment simply never surfaces, since metrics gate on `mentions`. Returns the entity list with its model-supplied citation orders to the workflow for phase 2.
+Writes: `result_analyses` (sentiment, keywords, excerpts) and `citations` — **no mention facts**; those come exclusively from phase 2 into `mentions` (02). If reconcile later demotes the model's `is_target` judgment, the stored sentiment simply never surfaces, since metrics gate on `mentions`. Returns the entity list with its model-supplied citation orders to the reconcile phase for phase 2.
 
 ## Phase 2 — ReconcileEntities (per run)
 
@@ -86,16 +86,11 @@ Known limitation, accepted: despite the LLM pass, some real-world businesses wil
 ## Cost and failure posture
 
 - ~22 mini-model calls per run (20 extractions + 1 reconcile matching call + retry slack): well under $0.05/run — negligible next to execution (04).
-- Per-result extraction failure after retries → that result simply has no `result_analyses` row and is excluded from visibility math entirely (commit step above); the UI badges it. `ReanalyzeRun` picks up stragglers.
-- `AnalyzeRun` failure does not fail the parent run (04): raw responses are already viewable.
+- Per-result extraction failure after retries → that result simply has no `result_analyses` row and is excluded from visibility math entirely (commit step above); the UI badges it. `opensight run reanalyze` picks up stragglers.
+- analysis job failure does not fail the parent run (04): raw responses are already viewable.
 
 ## Where the extraction prompt lives
 
 Extraction and competitor matching use strict structured outputs through the official OpenAI Go SDK. Their prompts state only semantic rules the schemas cannot encode: organization-only extraction, exact evidence quotes, citation-subject evidence, and conservative identity matching.
 
 The extraction prompt text, its JSON schema, and its version live together in code (`internal/llm`), not in config. `ExtractionPromptVersion` is a Go `int` constant co-located with the prompt; a prompt or schema change and its version bump are one commit. Each analyzed row records that version as `result_analyses.extraction_version`, so a later pass can target "re-analyze everything below version N" after an extraction-prompt improvement.
-
-## Open questions (owned by later increments)
-
-- **06**: how discovered competitors are presented for track/dismiss triage; unanalyzed-result display.
-- **07**: spend alerting shared with execution.

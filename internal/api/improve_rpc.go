@@ -106,7 +106,7 @@ func comparisonToProto(comparison visibility.Comparison) *opensightv1.ActionComp
 func actionToProto(row store.FindingRecord) *opensightv1.ImprovementAction {
 	action := &opensightv1.ImprovementAction{
 		Comparison: comparisonToProto(row.Comparison),
-		Id: row.ID.String(), Key: row.Key, Source: row.Source,
+		Id:         row.ID.String(), Key: row.Key, Source: row.Source,
 		Category: row.Category, CategoryLabel: visibility.CategoryLabel(row.Category),
 		Title: row.Title, Body: row.Body, Steps: row.Steps, Detail: row.Detail,
 		ResultIds: idsToStrings(row.ResultIDs), PromptIds: idsToStrings(row.PromptIDs),

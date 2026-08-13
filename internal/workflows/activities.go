@@ -11,26 +11,21 @@ import (
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-
-	"go.temporal.io/sdk/temporal"
 )
 
-// Activities holds the dependencies for RunWorkflow's activities. Its methods
-// are registered on the worker off a real instance; the workflow refers to them
-// by function value for name resolution (see run_workflow.go). Construct it
-// with a struct literal naming only the fields a given caller needs — tests
-// exercising one activity leave the rest at their nil zero value instead of
-// padding a long positional constructor call.
-type Activities struct {
+// Operations holds dependencies for the idempotent application operations
+// invoked by River workers. Focused callers can leave unrelated fields unset.
+type Operations struct {
 	Store            *store.Store
 	Runner           llm.PromptRunner
 	Extractor        llm.ExtractionRunner
 	Matcher          llm.MatchRunner
 	Proposer         llm.ProposeProfileRunner
 	SourceClassifier llm.SourceClassifier
+	Limiter          *llm.Limiter
 }
 
-// PromptSnapshot is one active prompt captured at run start. The workflow
+// PromptSnapshot is one active prompt captured at run start. The monitor job
 // snapshots these so a mid-run prompt replacement can't produce a half-and-half
 // run (design 04).
 type PromptSnapshot struct {
@@ -56,7 +51,7 @@ type CheckRunAccessInput struct {
 // CheckRunAccessOutput carries the resolved account and its access, so a caller
 // that skips the run still has the account id for logging without a second
 // lookup. Access is the string form (billing.Access.String()) rather than the
-// int, so the value is legible in Temporal history and workflow results —
+// int, so the value is legible in River job records —
 // AccessNever is the zero value of the int, which would otherwise read as
 // "unset" rather than "never paid".
 type CheckRunAccessOutput struct {
@@ -65,17 +60,17 @@ type CheckRunAccessOutput struct {
 }
 
 // CheckRunAccess is design 08's gate 3, the authoritative spend backstop:
-// RunWorkflow calls this before LoadRunSpec (the only monitoring_runs writer)
+// The monitor worker calls this before LoadRunSpec (the only monitoring_runs writer)
 // and before any prompt executes, so a account without full access costs
 // nothing — no run row, no prompt, no analysis. Gates 1 (RPC) and 2 (schedule
 // pause) both depend on a webhook that can be delayed or dropped; this one
 // recomputes access fresh against the current time on every run start, so a
 // missed webhook can never turn into spend.
-func (a *Activities) CheckRunAccess(ctx context.Context, in CheckRunAccessInput) (CheckRunAccessOutput, error) {
+func (a *Operations) CheckRunAccess(ctx context.Context, in CheckRunAccessInput) (CheckRunAccessOutput, error) {
 	accountID, err := a.Store.ResolveAccountID(ctx, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return CheckRunAccessOutput{}, temporal.NewNonRetryableApplicationError(
+			return CheckRunAccessOutput{}, NewPermanentError(
 				"resolve account for business", "BadBusinessData", err)
 		}
 		return CheckRunAccessOutput{}, err
@@ -88,7 +83,7 @@ func (a *Activities) CheckRunAccess(ctx context.Context, in CheckRunAccessInput)
 			// (design 08); a miss is a bug, not a normal skip. Non-retryable so
 			// it surfaces rather than retrying forever, and it still spends
 			// nothing.
-			return CheckRunAccessOutput{}, temporal.NewNonRetryableApplicationError(
+			return CheckRunAccessOutput{}, NewPermanentError(
 				"load subscription for account", "BadBillingData", err)
 		}
 		return CheckRunAccessOutput{}, err
@@ -104,7 +99,7 @@ type LoadRunSpecInput struct {
 	Platform     string
 	ScheduledFor time.Time
 	Trigger      store.RunTrigger
-	WorkflowID   string
+	JobID        int64
 }
 
 // LoadRunSpec resolves the account, validates business data, snapshots active
@@ -114,12 +109,12 @@ type LoadRunSpecInput struct {
 // Bad business data (missing/cross-account business, invalid location) is
 // non-retryable: it won't fix itself on retry, and failing before UpsertRun
 // avoids leaving a stuck running row for a data problem. Transient DB errors
-// return the plain error so Temporal retries.
-func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunSpec, error) {
+// return the plain error so River retries.
+func (a *Operations) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunSpec, error) {
 	accountID, err := a.Store.ResolveAccountID(ctx, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return RunSpec{}, temporal.NewNonRetryableApplicationError(
+			return RunSpec{}, NewPermanentError(
 				"resolve account for business", "BadBusinessData", err)
 		}
 		return RunSpec{}, err
@@ -128,7 +123,7 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 	business, err := a.Store.GetBusiness(ctx, accountID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return RunSpec{}, temporal.NewNonRetryableApplicationError(
+			return RunSpec{}, NewPermanentError(
 				"load business", "BadBusinessData", err)
 		}
 		return RunSpec{}, err
@@ -138,14 +133,14 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 	if err != nil {
 		// An invalid or missing location is a profile error, not a transient
 		// failure — fail before creating the run row.
-		return RunSpec{}, temporal.NewNonRetryableApplicationError(
+		return RunSpec{}, NewPermanentError(
 			"invalid business location", "BadBusinessData", err)
 	}
 
 	prompts, err := a.Store.ListActivePrompts(ctx, accountID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return RunSpec{}, temporal.NewNonRetryableApplicationError(
+			return RunSpec{}, NewPermanentError(
 				"list active prompts", "BadBusinessData", err)
 		}
 		return RunSpec{}, err
@@ -161,7 +156,7 @@ func (a *Activities) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 		Platform:        in.Platform,
 		Trigger:         in.Trigger,
 		ScheduledFor:    in.ScheduledFor,
-		WorkflowID:      in.WorkflowID,
+		JobID:           in.JobID,
 		ExpectedResults: len(prompts),
 	})
 	if err != nil {
@@ -186,7 +181,7 @@ type FinalizeRunInput struct {
 // FinalizeRun sets the run's terminal status from its succeeded result count
 // against the run's stored expected_results. It is a pure recomputation, safe
 // to retry.
-func (a *Activities) FinalizeRun(ctx context.Context, in FinalizeRunInput) (store.Run, error) {
+func (a *Operations) FinalizeRun(ctx context.Context, in FinalizeRunInput) (store.Run, error) {
 	return a.Store.FinalizeRun(ctx, in.AccountID, in.RunID)
 }
 
@@ -203,20 +198,20 @@ type PersistProposalOutput struct {
 	ProposalID domain.ID
 }
 
-// PersistProposal writes GenerateProfileWorkflow's output as the business's
+// PersistProposal writes generated profile output as the business's
 // pending proposal. This is the only write in the generation path, and it never
 // touches businesses columns (design 02/03 invariant: only apply writes profile
 // values to businesses).
 //
-// It is idempotent against Temporal's at-least-once activity execution: if a
+// It is idempotent against River's at-least-once job execution: if a
 // prior attempt's insert committed but its ack was lost, the retry hits the
 // partial-unique-index violation (ErrPendingProposalExists) and reuses that row
 // instead of erroring. A missing/cross-account business or an empty payload is
 // bad input and non-retryable.
-func (a *Activities) PersistProposal(ctx context.Context, in PersistProposalInput) (PersistProposalOutput, error) {
+func (a *Operations) PersistProposal(ctx context.Context, in PersistProposalInput) (PersistProposalOutput, error) {
 	raw, err := json.Marshal(in.Payload)
 	if err != nil {
-		return PersistProposalOutput{}, temporal.NewNonRetryableApplicationError(
+		return PersistProposalOutput{}, NewPermanentError(
 			"marshal proposal payload", "BadPayload", err)
 	}
 
@@ -230,7 +225,7 @@ func (a *Activities) PersistProposal(ctx context.Context, in PersistProposalInpu
 			return PersistProposalOutput{ProposalID: existing.ID}, nil
 		}
 		if errors.Is(err, store.ErrNotFound) {
-			return PersistProposalOutput{}, temporal.NewNonRetryableApplicationError(
+			return PersistProposalOutput{}, NewPermanentError(
 				"persist proposal for business", "BadBusinessData", err)
 		}
 		return PersistProposalOutput{}, err

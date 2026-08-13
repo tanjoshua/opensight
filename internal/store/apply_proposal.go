@@ -22,7 +22,7 @@ var ErrBusinessNotDraft = errors.New("business is not in draft status")
 // business is activated (design 03, "Review and apply"). Nil Services default to
 // an empty JSON array, mirroring CreateBusinessParams.
 type ApplyProposalParams struct {
-	AccountID    domain.ID
+	AccountID   domain.ID
 	BusinessID  domain.ID
 	Name        string
 	Aliases     []string
@@ -63,6 +63,12 @@ func (s *Store) Apply(ctx context.Context, params ApplyProposalParams) (ApplyPro
 	return result, nil
 }
 
+// ApplyTx is Apply on a caller-owned transaction, used to make activation and
+// the initial River monitoring job one commit.
+func (s *Store) ApplyTx(ctx context.Context, tx pgx.Tx, params ApplyProposalParams) (ApplyProposalResult, error) {
+	return applyProposalInTx(ctx, storesqlc.New(tx), params)
+}
+
 func applyProposalInTx(ctx context.Context, q *storesqlc.Queries, params ApplyProposalParams) (ApplyProposalResult, error) {
 	params, err := normalizeApplyProposalParams(params)
 	if err != nil {
@@ -95,7 +101,7 @@ func applyProposalInTx(ctx context.Context, q *storesqlc.Queries, params ApplyPr
 	prompts := make([]Prompt, 0, len(params.PromptTexts))
 	for _, text := range params.PromptTexts {
 		prompt, err := createActivePromptInTx(ctx, q, CreateActivePromptParams{
-			AccountID:   params.AccountID,
+			AccountID:  params.AccountID,
 			BusinessID: params.BusinessID,
 			Text:       text,
 		})

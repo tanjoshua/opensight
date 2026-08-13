@@ -121,8 +121,8 @@ func newOpenAIResponsesClient(cfg OpenAIConfig, modelError string) (openAIRespon
 		option.WithAPIKey(apiKey),
 		option.WithBaseURL(baseURL),
 		option.WithHTTPClient(openAIHTTPClient{base: httpClient}),
-		// Temporal owns activity retries. An SDK retry here would multiply calls
-		// and make the activity-level retry policy inaccurate.
+		// Callers own retries. An SDK retry here would multiply model calls
+		// and make operation-level budgets inaccurate.
 		option.WithMaxRetries(0),
 	)
 	return openAIResponsesClient{client: &client, model: model}, nil
@@ -210,7 +210,7 @@ type openAIResponseCapture struct {
 // openAIHTTPClient reads and caps the provider response before the SDK decoder
 // sees it, then replaces the body so the SDK can continue normally. Capture
 // state is request-scoped through the context, so one shared SDK client remains
-// safe for concurrent activity calls.
+// safe for concurrent operation calls.
 type openAIHTTPClient struct {
 	base *http.Client
 }

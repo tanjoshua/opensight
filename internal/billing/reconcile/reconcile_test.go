@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var errBoom = errors.New("boom")
+
 // fakeSubs is a recording fake over subscriptionStore, good enough for apply
 // to run against with no database: Upsert overwrites the held row in full,
 // same as the real store, so GetByAccount/GetByCustomer on the same fake see
@@ -39,7 +41,7 @@ func (f *fakeSubs) Upsert(_ context.Context, params store.UpsertSubscriptionPara
 		return f.upsertErr
 	}
 	f.sub = store.Subscription{
-		AccountID:             params.AccountID,
+		AccountID:            params.AccountID,
 		PlanCode:             params.PlanCode,
 		Comped:               params.Comped,
 		StripeCustomerID:     params.StripeCustomerID,
@@ -66,7 +68,7 @@ func (f *fakeProvider) GetSubscriptionForCustomer(context.Context, string) (bill
 
 // monitoringCall records one Reconciler -> monitoringGate.Set invocation.
 type monitoringCall struct {
-	accountID  domain.ID
+	accountID domain.ID
 	platforms []string
 	enabled   bool
 }
@@ -232,7 +234,7 @@ func TestMonitoringFailureIsRetryable(t *testing.T) {
 // TestNilMonitoringIsNoOp covers the AC that reconcile tolerates a nil
 // monitoring seam: an access-crossing reconcile still writes the row and
 // returns no error with monitoring nil (BILL-4's checkout-funnel tests build
-// Reconcilers with no Temporal client in scope).
+// Reconcilers with no scheduler dependency).
 func TestNilMonitoringIsNoOp(t *testing.T) {
 	accountID := testAccountID(t)
 	customerID := "cus_1"

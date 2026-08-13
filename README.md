@@ -1,6 +1,6 @@
 # OpenSight
 
-Go application with an embedded React/Vite UI, backed by Postgres and Temporal. The static marketing site lives in `marketing/` and is deployed separately.
+Go application with an embedded React/Vite UI, backed by Postgres and River. The static marketing site lives in `marketing/` and is deployed separately.
 
 ## Local setup
 
@@ -25,7 +25,7 @@ Put the webhook signing secret printed by Stripe into `STRIPE_WEBHOOK_SECRET`, t
 make up
 ```
 
-This starts Postgres, Temporal, the API, worker, app UI, and marketing site, and applies database migrations. The command prints local URLs when everything is ready. Press `Ctrl+C` to stop native processes; run `make down` to stop Docker services.
+This starts PostgreSQL, applies application and River migrations, and runs the unified app, app UI, and marketing site. The command prints local URLs when everything is ready. Press `Ctrl+C` to stop native processes; run `make down` to stop Docker services.
 
 For a ready-to-use local account, seed a comped account for your own Google identity:
 
@@ -40,7 +40,7 @@ Sign in with that Google account at `http://localhost:5173/login` and complete o
 Run commands from source as shown below. Against a built or production deployment, invoke the same arguments with its binary instead, for example `/opensight migrate` or `docker compose exec app /opensight migrate`. Commands act on the environment supplied to that process; verify `DATABASE_URL` and Stripe configuration before running them in production.
 
 ```sh
-# Apply pending database migrations. Serve and work do not migrate automatically.
+# Apply pending application and River migrations. Serve does not migrate automatically.
 go run ./cmd/opensight migrate
 
 # Create an operator-provisioned account.
@@ -53,10 +53,15 @@ go run ./cmd/opensight account member add \
   --email owner@example.com \
   --role owner
 
-# Create an active business from YAML/JSON, schedule monitoring, and trigger its first run.
+# Create an active business from YAML/JSON and enqueue its first monitoring run.
 go run ./cmd/opensight business create \
   --account <account_id> \
   --file path/to/business.yaml
+
+# Re-run analysis and assessment for an existing raw run without re-executing prompts.
+go run ./cmd/opensight run reanalyze \
+  --account <account_id> \
+  --run <run_id>
 
 # Apply the repository-owned settings to STRIPE_PORTAL_CONFIGURATION_ID.
 go run ./cmd/opensight stripe portal-config

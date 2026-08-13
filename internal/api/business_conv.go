@@ -6,7 +6,6 @@ import (
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-	"opensight/internal/workflows"
 )
 
 // businessToProfile decodes a store.Business's raw services/location JSONB
@@ -175,13 +174,13 @@ func proposalStatusToProto(status string) opensightv1.ProposalStatus {
 	}
 }
 
-// generationStageToProto maps GenerateProfileWorkflow's stage strings
-// (internal/workflows) to the generated proto enum.
+// generationStageToProto maps GenerateProfileWorker's stage strings
+// (the background operation package) to the generated proto enum.
 func generationStageToProto(stage string) opensightv1.GenerationStage {
 	switch stage {
-	case workflows.GenerationStageFetchingSite:
+	case store.GenerationStageFetchingSite:
 		return opensightv1.GenerationStage_GENERATION_STAGE_FETCHING_SITE
-	case workflows.GenerationStageDrafting:
+	case store.GenerationStageDrafting:
 		return opensightv1.GenerationStage_GENERATION_STAGE_DRAFTING
 	default:
 		return opensightv1.GenerationStage_GENERATION_STAGE_UNSPECIFIED

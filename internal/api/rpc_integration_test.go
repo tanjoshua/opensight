@@ -221,9 +221,9 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 		}
 	}
 
-	temporal := &fakeTemporalClient{}
+	jobClient := &fakeJobClient{}
 	repository := store.New(db)
-	srv := New(Deps{Store: repository, Temporal: temporal, TemporalTaskQueue: "api-integration"})
+	srv := New(Deps{Store: repository, Jobs: jobClient, Limiter: llm.NewLimiter(2)})
 	session := withSessionUser(ctx, store.SessionUser{
 		UserID: mustDomainID(t), AccountID: accountID, Email: "api@example.com",
 		AccountName: "API Account", ExpiresAt: time.Now().Add(time.Hour),
@@ -234,8 +234,8 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateBusiness: %v", err)
 	}
-	if len(temporal.started) != 1 || temporal.started[0].TaskQueue != "api-integration" {
-		t.Fatalf("started workflows = %+v, want one on api-integration", temporal.started)
+	if len(jobClient.inserted) != 1 {
+		t.Fatalf("inserted jobs = %d, want one", len(jobClient.inserted))
 	}
 	businessID, err := uuid.Parse(created.Msg.GetBusiness().GetId())
 	if err != nil {
@@ -257,8 +257,8 @@ func TestBusinessRPCUsesConcreteStore(t *testing.T) {
 	if err != nil || got.Website == nil || *got.Website != website {
 		t.Fatalf("business after website correction = %+v, err=%v", got, err)
 	}
-	if len(temporal.terminated) != 1 || len(temporal.started) != 2 {
-		t.Fatalf("generation replacements: terminated=%v started=%d, want one termination and two total starts", temporal.terminated, len(temporal.started))
+	if len(jobClient.cancelled) != 1 || len(jobClient.inserted) != 2 {
+		t.Fatalf("generation replacements: cancelled=%v inserted=%d", jobClient.cancelled, len(jobClient.inserted))
 	}
 
 	otherSession := withSessionUser(ctx, store.SessionUser{AccountID: otherAccountID, PlanCode: billing.Starter.Code})
@@ -290,7 +290,7 @@ func TestGenerateQuestionsAgainstPostgres(t *testing.T) {
 		t.Fatalf("NewStubQuestionsRunner: %v", err)
 	}
 	repository := store.New(db)
-	srv := New(Deps{Store: repository, Temporal: &fakeTemporalClient{}, TemporalTaskQueue: "api-integration", Questions: questions})
+	srv := New(Deps{Store: repository, Jobs: &fakeJobClient{}, Limiter: llm.NewLimiter(2), Questions: questions})
 	session := withSessionUser(ctx, store.SessionUser{
 		UserID: mustDomainID(t), AccountID: accountID, Email: "questions@example.com",
 		AccountName: "Questions Account", ExpiresAt: time.Now().Add(time.Hour),
@@ -338,7 +338,7 @@ func TestGenerateQuestionsAgainstPostgres(t *testing.T) {
 
 	// An activated business refuses GenerateQuestions: it is a draft-only RPC.
 	// Activation is forced directly rather than through ApplyProposal, whose
-	// Temporal schedule/run side effects are out of scope for this test.
+	// River schedule/run side effects are out of scope for this test.
 	if _, err := db.Exec(ctx,
 		"UPDATE businesses SET status = 'active', activated_at = now(), category = 'dental clinic', location = '{\"country\":\"SG\"}'::jsonb WHERE id = $1",
 		businessUUID); err != nil {

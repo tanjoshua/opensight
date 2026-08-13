@@ -85,7 +85,7 @@ func (s *Server) AddPrompt(ctx context.Context, req *connect.Request[opensightv1
 	}
 
 	prompt, err := s.store.CreateActivePrompt(ctx, store.CreateActivePromptParams{
-		AccountID:   su.AccountID,
+		AccountID:  su.AccountID,
 		BusinessID: businessID,
 		Text:       req.Msg.Text,
 	})
@@ -165,7 +165,7 @@ func (s *Server) ReplacePrompt(ctx context.Context, req *connect.Request[opensig
 	}
 
 	prompt, err := s.store.ReplacePrompt(ctx, store.ReplacePromptParams{
-		AccountID:    su.AccountID,
+		AccountID:   su.AccountID,
 		OldPromptID: promptID,
 		Text:        req.Msg.Text,
 	})

@@ -1,10 +1,5 @@
-{# Rendered to {{ opensight_dir }}/compose.yml. Mirrors compose.dev.yml's
-   service shapes (same images, same Temporal bootstrap) with the production
-   differences called out in infra/README.md: no published Postgres/Temporal
-   ports, caddy as the only public listener, and app/worker split out of one
-   image via command override. #}
-# Managed by Ansible (infra/roles/app/templates/compose.yml.j2). Do not edit
-# by hand — changes are overwritten on the next `make infra-deploy`.
+# Managed by Ansible. OpenSight runs as one app process backed by PostgreSQL;
+# Caddy is the only public listener.
 services:
   caddy:
     image: caddy:2-alpine
@@ -27,20 +22,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      temporal:
-        condition: service_started
-
-  worker:
-    image: {{ app_image_repo }}:{{ app_image_tag }}
-    restart: unless-stopped
-    command: ["work"]
-    env_file:
-      - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      temporal:
-        condition: service_started
 
   postgres:
     image: postgres:17-alpine
@@ -49,84 +30,13 @@ services:
       POSTGRES_USER: opensight
       POSTGRES_PASSWORD: "{{ postgres_password }}"
       POSTGRES_DB: opensight
-    command:
-      - postgres
-      - -c
-      - max_connections=80
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U opensight -d opensight"]
       interval: 5s
       timeout: 5s
       retries: 12
-    # Internal only, unlike compose.dev.yml — no published port in production.
-
-  temporal:
-    image: temporalio/server:{{ temporal_version }}
-    restart: unless-stopped
-    depends_on:
-      temporal-schema:
-        condition: service_completed_successfully
-    environment:
-      DB: postgres12
-      DB_PORT: "5432"
-      POSTGRES_SEEDS: postgres
-      POSTGRES_USER: opensight
-      POSTGRES_PWD: "{{ postgres_password }}"
-      DBNAME: temporal
-      VISIBILITY_DBNAME: temporal_visibility
-      BIND_ON_IP: 0.0.0.0
-      DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/config/dynamicconfig/production-sql.yaml
-      SQL_MAX_CONNS: "15"
-      SQL_MAX_IDLE_CONNS: "5"
-      SQL_VIS_MAX_CONNS: "5"
-      SQL_VIS_MAX_IDLE_CONNS: "2"
-    volumes:
-      - ./temporal-dynamicconfig:/etc/temporal/config/dynamicconfig:ro
-    # Internal only — no published port in production.
-
-  temporal-schema:
-    image: temporalio/admin-tools:{{ temporal_admintools_version }}
-    restart: "no"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "/temporal/setup-postgres.sh"]
-    environment:
-      SQL_HOST: postgres
-      SQL_PORT: "5432"
-      SQL_USER: opensight
-      SQL_PASSWORD: "{{ postgres_password }}"
-    volumes:
-      - ./temporal-scripts:/temporal:ro
-
-  temporal-namespace:
-    image: temporalio/admin-tools:{{ temporal_admintools_version }}
-    restart: "no"
-    depends_on:
-      temporal:
-        condition: service_started
-    entrypoint: ["/bin/sh", "/temporal/create-namespace.sh"]
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      TEMPORAL_NAMESPACE: default
-    volumes:
-      - ./temporal-scripts:/temporal:ro
-
-  temporal-ui:
-    image: temporalio/ui:{{ temporal_ui_version }}
-    restart: unless-stopped
-    depends_on:
-      temporal-namespace:
-        condition: service_completed_successfully
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      TEMPORAL_UI_PORT: "8080"
-    ports:
-      # Not public — reached via `make infra-tunnel` (SSH tunnel), per design 07.
-      - "127.0.0.1:8233:8080"
 
 volumes:
   postgres-data:

@@ -1,7 +1,7 @@
 // Pure derivation of a run's user-facing progress (RUNS-3, design 04): a
 // four-stage strip — Preparing, Asking ChatGPT, Analyzing, Done — computed
 // from the counts ListRuns/GetOverview already carry on Run, never from
-// Temporal workflow history (which stays an ops-only surface). This is the
+// Queue internals (which stay an ops-only surface). This is the
 // one place a stage gets derived; Overview, the Runs list rows and the run
 // detail page all call it so they can't disagree.
 import { RunStatus } from "@/gen/opensight/v1/common_pb"
@@ -137,8 +137,8 @@ function buildStages(
 
   // Terminal run: Preparing always completed. Asking carries a warning when
   // the run didn't fully succeed (partial/failed) — that's a real, known-bad
-  // outcome. Analyzing is different: FinalizeRun runs before AnalyzeRun (see
-  // run_workflow.go), so every healthy run sits with analysisCompletedAt
+  // outcome. Analyzing is different: FinalizeRun runs before analysis job (see
+  // internal/jobs), so every healthy run sits with analysisCompletedAt
   // unset for the entire — often multi-minute, 20-prompt — window while
   // analysis is still in flight. There's no field distinguishing "still
   // analyzing" from "analysis actually failed/flagged for re-analysis"

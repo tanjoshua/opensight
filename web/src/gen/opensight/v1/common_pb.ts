@@ -554,7 +554,7 @@ export const CitationSubjectSchema: GenEnum<CitationSubject> = /*@__PURE__*/
   enumDesc(file_opensight_v1_common, 10);
 
 /**
- * ProposalStatus is the onboarding profile-proposal workflow status. It is
+ * ProposalStatus is the persisted onboarding profile-generation status. It is
  * distinct from the store's pending/applied/discarded lifecycle, which is a
  * persistence detail never exposed over the API.
  *
@@ -583,7 +583,7 @@ export const ProposalStatus = {
 } as const;
 
 /**
- * ProposalStatus is the onboarding profile-proposal workflow status. It is
+ * ProposalStatus is the persisted onboarding profile-generation status. It is
  * distinct from the store's pending/applied/discarded lifecycle, which is a
  * persistence detail never exposed over the API.
  *
@@ -598,7 +598,7 @@ export const ProposalStatusSchema: GenEnum<ProposalStatus> = /*@__PURE__*/
   enumDesc(file_opensight_v1_common, 11);
 
 /**
- * GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+ * GenerationStage is the profile-generation job's current stage, polled while a
  * proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
  * case (e.g. a stage query that failed or timed out).
  *
@@ -622,7 +622,7 @@ export const GenerationStage = {
 } as const;
 
 /**
- * GenerationStage is GenerateProfileWorkflow's current stage, polled while a
+ * GenerationStage is the profile-generation job's current stage, polled while a
  * proposal is generating. UNSPECIFIED covers today's degraded/unknown ""
  * case (e.g. a stage query that failed or timed out).
  *

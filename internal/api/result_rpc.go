@@ -2,14 +2,14 @@ package api
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
+	"opensight/internal/billing"
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/jobs"
 	"opensight/internal/store"
-	"opensight/internal/workflows"
 
 	connect "connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -59,33 +59,28 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 		}
 		resp.Runs = append(resp.Runs, row)
 	}
-	resp.NextRunAt = s.nextRunAt(ctx, businessID)
+	resp.NextRunAt = s.nextRunAt(ctx, su.AccountID, businessID)
 	return connect.NewResponse(resp), nil
 }
 
 // nextRunAt looks up the business's monitoring Schedule for its next fire
-// time. It is best-effort: a nil temporal client (handler unit
-// tests that don't wire one), a missing schedule, or an unreachable Temporal
+// time. It is best-effort: a nil river client (handler unit
+// tests that don't wire one), a missing schedule, or an unreachable River
 // all return nil rather than failing the ListRuns request — this is a "next
 // run" hint, not a correctness-critical field. Given a short deadline so a
-// slow or unreachable Temporal cannot stall the poll, and logged at Warn
+// slow or unreachable River cannot stall the poll, and logged at Warn
 // (not s.rpcError, which implies a failed request) on error.
-func (s *Server) nextRunAt(ctx context.Context, businessID domain.ID) *timestamppb.Timestamp {
-	if s.temporal == nil {
+func (s *Server) nextRunAt(ctx context.Context, accountID, businessID domain.ID) *timestamppb.Timestamp {
+	business, err := s.store.GetBusiness(ctx, accountID, businessID)
+	if err != nil || business.Status != store.BusinessStatusActive {
 		return nil
 	}
-	qctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-	scheduleID := workflows.ScheduleID(businessID, store.PlatformChatGPT)
-	desc, err := s.temporal.ScheduleClient().GetHandle(qctx, scheduleID).Describe(qctx)
-	if err != nil {
-		slog.Warn("api: list runs: describe schedule", "error", err)
+	sub, err := s.store.GetByAccount(ctx, accountID)
+	if err != nil || !billing.DeriveAccess(sub.AccessState(), time.Now().UTC()).Active() {
 		return nil
 	}
-	if len(desc.Info.NextActionTimes) == 0 {
-		return nil
-	}
-	return timestamppb.New(desc.Info.NextActionTimes[0])
+	next := jobs.NextWeeklySlot(businessID, time.Now().UTC())
+	return timestamppb.New(next)
 }
 
 // resultFilterFromProto parses ListResultsRequest into a store.ResultFilter

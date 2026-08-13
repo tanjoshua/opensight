@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// MaxProposeProfileAttempts is the in-activity validation-retry budget (design
-// 03 step 3: "retry once with the validation errors appended"), separate from
-// and orthogonal to Temporal's own ActivityOptions.RetryPolicy.
+// MaxProposeProfileAttempts is the operation's validation-retry budget (design
+// 03 step 3: "retry once with the validation errors appended"), independent of
+// River's coarse job retry budget.
 const MaxProposeProfileAttempts = 2
 
 // DecodeProposalPayload repairs the known double-escaped-unicode model artifact
@@ -64,7 +64,7 @@ type ProposeProfileAttemptResult struct {
 // ProposeWithRetry runs the proposal call, decodes and validates the output, and
 // retries once with the validation errors appended to the model (design 03's
 // "retry once with the validation errors appended") if validation fails. It
-// mirrors ExtractWithRetry: a hard runner error is the caller's/Temporal's to
+// mirrors ExtractWithRetry: a hard runner error is the caller's/River's to
 // retry; a decode failure folds into the validation errors as a
 // self-correctable message.
 func ProposeWithRetry(ctx context.Context, runner ProposeProfileRunner, in ProposeProfileInput) (ProposeProfileAttemptResult, error) {

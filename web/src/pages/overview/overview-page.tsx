@@ -238,7 +238,7 @@ function NoDataState({ overview }: { overview: Overview }) {
     )
   }
   // One view for the whole pipeline. FinalizeRun sets the run's terminal status
-  // before the AnalyzeRun child finishes (see run_workflow.go), so the run stops
+  // before the analysis job finishes (see internal/jobs), so the run stops
   // being RUNNING while analysis is still in flight — branching on status here
   // would swap the user to a different component mid-pipeline. The stage strip
   // already renders that state as an active Analyzing step, so keep it mounted

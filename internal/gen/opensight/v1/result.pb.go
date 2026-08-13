@@ -35,7 +35,7 @@ type Run struct {
 	// scheduled_for is a date (YYYY-MM-DD), not a Timestamp.
 	ScheduledFor        string                 `protobuf:"bytes,5,opt,name=scheduled_for,json=scheduledFor,proto3" json:"scheduled_for,omitempty"`
 	Status              RunStatus              `protobuf:"varint,6,opt,name=status,proto3,enum=opensight.v1.RunStatus" json:"status,omitempty"`
-	WorkflowId          string                 `protobuf:"bytes,7,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	JobId               int64                  `protobuf:"varint,7,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	StartedAt           *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
 	CompletedAt         *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	AnalysisCompletedAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=analysis_completed_at,json=analysisCompletedAt,proto3" json:"analysis_completed_at,omitempty"`
@@ -128,11 +128,11 @@ func (x *Run) GetStatus() RunStatus {
 	return RunStatus_RUN_STATUS_UNSPECIFIED
 }
 
-func (x *Run) GetWorkflowId() string {
+func (x *Run) GetJobId() int64 {
 	if x != nil {
-		return x.WorkflowId
+		return x.JobId
 	}
-	return ""
+	return 0
 }
 
 func (x *Run) GetStartedAt() *timestamppb.Timestamp {
@@ -768,7 +768,7 @@ type ListRunsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Runs  []*Run                 `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
 	// next_run_at is the next scheduled run's fire time, best-effort: unset
-	// when the schedule is missing or Temporal is unreachable, never an error.
+	// derived from the durable weekly schedule when monitoring is entitled.
 	NextRunAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=next_run_at,json=nextRunAt,proto3" json:"next_run_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1075,7 +1075,7 @@ var File_opensight_v1_result_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_result_proto_rawDesc = "" +
 	"\n" +
-	"\x19opensight/v1/result.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19opensight/v1/common.proto\"\xbf\x05\n" +
+	"\x19opensight/v1/result.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19opensight/v1/common.proto\"\xb5\x05\n" +
 	"\x03Run\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vbusiness_id\x18\x02 \x01(\tR\n" +
@@ -1083,9 +1083,8 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x122\n" +
 	"\atrigger\x18\x04 \x01(\x0e2\x18.opensight.v1.RunTriggerR\atrigger\x12#\n" +
 	"\rscheduled_for\x18\x05 \x01(\tR\fscheduledFor\x12/\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x17.opensight.v1.RunStatusR\x06status\x12\x1f\n" +
-	"\vworkflow_id\x18\a \x01(\tR\n" +
-	"workflowId\x129\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x17.opensight.v1.RunStatusR\x06status\x12\x15\n" +
+	"\x06job_id\x18\a \x01(\x03R\x05jobId\x129\n" +
 	"\n" +
 	"started_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
 	"\fcompleted_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12N\n" +

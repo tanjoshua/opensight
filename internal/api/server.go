@@ -17,9 +17,9 @@ import (
 	"opensight/internal/store"
 
 	"github.com/go-chi/chi/v5"
-	"go.temporal.io/api/workflowservice/v1"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/converter"
+	"github.com/jackc/pgx/v5"
+	river "github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 )
 
 // defaultSessionTTL is the absolute session lifetime (design 07 auth plan:
@@ -41,18 +41,13 @@ type billingProvider interface {
 	GetPrice(ctx context.Context, priceID string) (billing.Price, error)
 }
 
-// temporalClient is the narrow slice of client.Client the API server needs:
-// start GenerateProfileWorkflow/RunWorkflow, describe generation status, query
-// the current generation stage, and (via ScheduleClient) create the monitoring
-// Schedule on apply. Like billingProvider it stays a seam: dispatching a
-// workflow is an out-of-process side effect tests must observe without a
-// Temporal server.
-type temporalClient interface {
-	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
-	TerminateWorkflow(ctx context.Context, workflowID, runID, reason string, details ...interface{}) error
-	DescribeWorkflowExecution(ctx context.Context, workflowID, runID string) (*workflowservice.DescribeWorkflowExecutionResponse, error)
-	QueryWorkflow(ctx context.Context, workflowID, runID, queryType string, args ...interface{}) (converter.EncodedValue, error)
-	ScheduleClient() client.ScheduleClient
+// jobClient is the narrow River surface needed for transactional insertion and
+// onboarding cancellation. Keeping it narrow makes these effects observable in
+// API tests without a running River client.
+type jobClient interface {
+	Insert(context.Context, river.JobArgs, *river.InsertOpts) (*rivertype.JobInsertResult, error)
+	InsertTx(context.Context, pgx.Tx, river.JobArgs, *river.InsertOpts) (*rivertype.JobInsertResult, error)
+	JobCancel(context.Context, int64) (*rivertype.JobRow, error)
 }
 
 // Server holds the API dependencies and configuration.
@@ -62,13 +57,12 @@ type Server struct {
 	// against a real test database rather than a fake.
 	store   *store.Store
 	metrics *metrics.Metrics
-	// temporal and temporalTaskQueue drive onboarding: create a draft business
-	// and start GenerateProfileWorkflow, poll its status, and regenerate.
-	temporal          temporalClient
-	temporalTaskQueue string
+	// jobs drives transactional onboarding and initial monitoring enqueueing.
+	jobs    jobClient
+	limiter *llm.Limiter
 	// questions runs GenerateQuestions' on-demand customer-question call
-	// (design 03): a synchronous RPC, not a Temporal activity, so the runner
-	// lives on the API server rather than workflows.Activities.
+	// (design 03): a synchronous RPC, not a River operation, so the runner
+	// lives on the API server rather than the background operation set.
 	questions llm.QuestionsRunner
 	// secureCookies gates the Secure cookie attribute. It is false only in dev
 	// (local dev is plain HTTP); prod runs behind Caddy TLS.
@@ -101,13 +95,13 @@ type Server struct {
 }
 
 // Deps are api.New's dependencies. A struct rather than a positional argument
-// list: there are many of them, and adjacent same-typed fields (temporalTaskQueue, appBaseURL) can silently swap at a
-// positional call site.
+// list: there are many of them, and adjacent same-typed fields can silently swap
+// at a positional call site.
 type Deps struct {
-	Store             *store.Store
-	Metrics           *metrics.Metrics
-	Temporal          client.Client
-	TemporalTaskQueue string
+	Store   *store.Store
+	Metrics *metrics.Metrics
+	Jobs    jobClient
+	Limiter *llm.Limiter
 	// Questions backs GenerateQuestions. See Server.questions.
 	Questions     llm.QuestionsRunner
 	SecureCookies bool
@@ -133,8 +127,8 @@ func New(d Deps) *Server {
 	s := &Server{
 		store:                       d.Store,
 		metrics:                     d.Metrics,
-		temporal:                    d.Temporal,
-		temporalTaskQueue:           d.TemporalTaskQueue,
+		jobs:                        d.Jobs,
+		limiter:                     d.Limiter,
 		questions:                   d.Questions,
 		secureCookies:               d.SecureCookies,
 		sessionTTL:                  defaultSessionTTL,

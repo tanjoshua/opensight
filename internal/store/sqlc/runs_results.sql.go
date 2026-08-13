@@ -21,7 +21,7 @@ SET status=CASE WHEN sub.succeeded=0 THEN 'failed'
 FROM businesses b,(SELECT count(*) FILTER (WHERE status='succeeded') AS succeeded,count(*) AS total
   FROM prompt_results WHERE run_id = $1) sub
 WHERE r.id = $1 AND r.business_id=b.id AND b.account_id = $2
-RETURNING r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.workflow_id,
+RETURNING r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.job_id,
  r.started_at,r.completed_at,r.analysis_completed_at,r.expected_results
 `
 
@@ -30,9 +30,23 @@ type FinalizeRunParams struct {
 	AccountID uuid.UUID
 }
 
-func (q *Queries) FinalizeRun(ctx context.Context, arg FinalizeRunParams) (MonitoringRun, error) {
+type FinalizeRunRow struct {
+	ID                  uuid.UUID
+	BusinessID          uuid.UUID
+	Platform            string
+	Trigger             string
+	ScheduledFor        time.Time
+	Status              string
+	JobID               int64
+	StartedAt           time.Time
+	CompletedAt         *time.Time
+	AnalysisCompletedAt *time.Time
+	ExpectedResults     *int32
+}
+
+func (q *Queries) FinalizeRun(ctx context.Context, arg FinalizeRunParams) (FinalizeRunRow, error) {
 	row := q.db.QueryRow(ctx, finalizeRun, arg.ID, arg.AccountID)
-	var i MonitoringRun
+	var i FinalizeRunRow
 	err := row.Scan(
 		&i.ID,
 		&i.BusinessID,
@@ -40,7 +54,7 @@ func (q *Queries) FinalizeRun(ctx context.Context, arg FinalizeRunParams) (Monit
 		&i.Trigger,
 		&i.ScheduledFor,
 		&i.Status,
-		&i.WorkflowID,
+		&i.JobID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.AnalysisCompletedAt,
@@ -139,7 +153,7 @@ func (q *Queries) GetResultByRunAndPrompt(ctx context.Context, arg GetResultByRu
 const getResultDetail = `-- name: GetResultDetail :one
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at,p.text,r.business_id,r.platform,r.trigger,r.scheduled_for,
- r.status AS run_status,r.workflow_id,r.started_at,r.completed_at AS run_completed_at,r.analysis_completed_at
+ r.status AS run_status,r.job_id,r.started_at,r.completed_at AS run_completed_at,r.analysis_completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
 JOIN prompts p ON p.id=pr.prompt_id AND p.business_id=r.business_id
 WHERE pr.id = $1 AND b.account_id = $2
@@ -168,7 +182,7 @@ type GetResultDetailRow struct {
 	Trigger             string
 	ScheduledFor        time.Time
 	RunStatus           string
-	WorkflowID          string
+	JobID               int64
 	StartedAt           time.Time
 	RunCompletedAt      *time.Time
 	AnalysisCompletedAt *time.Time
@@ -195,7 +209,7 @@ func (q *Queries) GetResultDetail(ctx context.Context, arg GetResultDetailParams
 		&i.Trigger,
 		&i.ScheduledFor,
 		&i.RunStatus,
-		&i.WorkflowID,
+		&i.JobID,
 		&i.StartedAt,
 		&i.RunCompletedAt,
 		&i.AnalysisCompletedAt,
@@ -252,7 +266,7 @@ func (q *Queries) InsertResult(ctx context.Context, arg InsertResultParams) (Ins
 }
 
 const insertRunOnConflictNothing = `-- name: InsertRunOnConflictNothing :exec
-INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,expected_results)
+INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,expected_results)
 VALUES ($1,$2,$3,$4,$5,'running',$6,$7)
 ON CONFLICT (business_id,platform,scheduled_for) DO NOTHING
 `
@@ -263,7 +277,7 @@ type InsertRunOnConflictNothingParams struct {
 	Platform        string
 	Trigger         string
 	ScheduledFor    time.Time
-	WorkflowID      string
+	JobID           int64
 	ExpectedResults *int32
 }
 
@@ -274,7 +288,7 @@ func (q *Queries) InsertRunOnConflictNothing(ctx context.Context, arg InsertRunO
 		arg.Platform,
 		arg.Trigger,
 		arg.ScheduledFor,
-		arg.WorkflowID,
+		arg.JobID,
 		arg.ExpectedResults,
 	)
 	return err
@@ -464,7 +478,7 @@ func (q *Queries) ListResults(ctx context.Context, arg ListResultsParams) ([]Lis
 }
 
 const listRuns = `-- name: ListRuns :many
-SELECT r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.workflow_id,
+SELECT r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.job_id,
  r.started_at,r.completed_at,r.analysis_completed_at,r.expected_results,
  c.succeeded,c.failed,c.analyzed
 FROM monitoring_runs r
@@ -483,7 +497,7 @@ type ListRunsRow struct {
 	Trigger             string
 	ScheduledFor        time.Time
 	Status              string
-	WorkflowID          string
+	JobID               int64
 	StartedAt           time.Time
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
@@ -509,7 +523,7 @@ func (q *Queries) ListRuns(ctx context.Context, businessID uuid.UUID) ([]ListRun
 			&i.Trigger,
 			&i.ScheduledFor,
 			&i.Status,
-			&i.WorkflowID,
+			&i.JobID,
 			&i.StartedAt,
 			&i.CompletedAt,
 			&i.AnalysisCompletedAt,
@@ -549,7 +563,7 @@ func (q *Queries) RunPromptOwned(ctx context.Context, arg RunPromptOwnedParams) 
 }
 
 const selectRunByKey = `-- name: SelectRunByKey :one
-SELECT id,business_id,platform,trigger,scheduled_for,status,workflow_id,started_at,completed_at,analysis_completed_at,expected_results
+SELECT id,business_id,platform,trigger,scheduled_for,status,job_id,started_at,completed_at,analysis_completed_at,expected_results
 FROM monitoring_runs WHERE business_id=$1 AND platform=$2 AND scheduled_for=$3
 `
 
@@ -559,9 +573,23 @@ type SelectRunByKeyParams struct {
 	ScheduledFor time.Time
 }
 
-func (q *Queries) SelectRunByKey(ctx context.Context, arg SelectRunByKeyParams) (MonitoringRun, error) {
+type SelectRunByKeyRow struct {
+	ID                  uuid.UUID
+	BusinessID          uuid.UUID
+	Platform            string
+	Trigger             string
+	ScheduledFor        time.Time
+	Status              string
+	JobID               int64
+	StartedAt           time.Time
+	CompletedAt         *time.Time
+	AnalysisCompletedAt *time.Time
+	ExpectedResults     *int32
+}
+
+func (q *Queries) SelectRunByKey(ctx context.Context, arg SelectRunByKeyParams) (SelectRunByKeyRow, error) {
 	row := q.db.QueryRow(ctx, selectRunByKey, arg.BusinessID, arg.Platform, arg.ScheduledFor)
-	var i MonitoringRun
+	var i SelectRunByKeyRow
 	err := row.Scan(
 		&i.ID,
 		&i.BusinessID,
@@ -569,7 +597,7 @@ func (q *Queries) SelectRunByKey(ctx context.Context, arg SelectRunByKeyParams) 
 		&i.Trigger,
 		&i.ScheduledFor,
 		&i.Status,
-		&i.WorkflowID,
+		&i.JobID,
 		&i.StartedAt,
 		&i.CompletedAt,
 		&i.AnalysisCompletedAt,

@@ -1,131 +1,43 @@
-# Design 01 — Architecture Overview
+# Design 01 — Architecture
 
 Depends on: [PRD](../prd.md)
 
-## Goals and constraints
-
-- Solo builder/operator: minimize moving parts and ops burden. Prefer boring, managed, one-binary-where-possible.
-- **Low running cost**: target a single modest VPS for the whole stack until revenue justifies more.
-- Multi-account SaaS from day one: a global user identity may hold a different role in each account.
-- MVP scale envelope: Starter plan = 20 prompts × 1 run/week per account. Even at 500 accounts that is ~10k LLM calls/week — load is trivial; the design optimizes for **correctness, auditability, and iteration speed**, not throughput.
-- Every user-facing metric must link back to a stored raw response (PRD §6), so raw data retention is a first-class concern.
-
-## Decision summary
-
-| # | Decision | Choice |
-|---|----------|--------|
-| D1 | ChatGPT data source | OpenAI Responses API + `web_search` tool |
-| D2 | Backend | Go monolith (API server + Temporal worker) |
-| D3 | Frontend | React SPA (Vite), talks to Go API |
-| D4 | Database | PostgreSQL — single instance, `account_id` scoping |
-| D5 | Orchestration | Temporal, **self-hosted single node** on the VPS |
-| D6 | Analysis LLM | OpenAI (structured outputs) for MVP — one vendor, one key; keep behind an interface |
-| D7 | Repo layout | Monorepo |
-| D8 | Deployment | Single VPS, Docker Compose |
-| D9 | Billing | Stripe Checkout + Customer Portal; entitlements as a code catalog (08) |
-
-## D1 — ChatGPT data source
-
-We use the OpenAI Responses API with the `web_search` tool as a **proxy for consumer ChatGPT**. It is ToS-compliant, stable, and returns citations natively (URL annotations), which maps directly to the PRD's citation-source feature.
-
-Honest limitation, to be reflected in product copy: results approximate, but are not identical to, what a logged-in chatgpt.com user sees (no memory/personalization, possibly different model routing). We record the exact model ID with every run (PRD §5 requires it) so results stay interpretable as models change.
-
-Production Responses calls use the official `github.com/openai/openai-go/v3` SDK through one shared client adapter. The adapter applies API key, base URL and HTTP client configuration, forces `store: false`, preserves the exact marshalled request and raw response where the data model requires them, and disables SDK retries so Temporal activity policies remain the single retry owner. Executors remain behind Go interfaces (`PromptRunner` and the analysis/onboarding runner interfaces), so future platforms (Gemini, Perplexity — PRD §9) are additive, not rewrites.
-
-## D2/D3 — Application shape
+OpenSight is one Go process (`opensight serve`) with an embedded React SPA. It serves HTTP and runs River OSS workers against the same PostgreSQL database. OpenAI Responses supplies monitoring and analysis data; Stripe owns billing; Caddy terminates TLS.
 
 ```mermaid
 flowchart LR
-    U[Browser<br/>React SPA] -->|HTTPS/JSON| API[Go API server]
-    API --> PG[(PostgreSQL)]
-    API -->|start workflows,<br/>signals, queries| T[Temporal]
-    T --> W[Go Temporal worker]
-    W -->|activities| PG
-    W -->|prompt execution +<br/>analysis| OAI[OpenAI API]
-    W -->|onboarding scrape| WEB[Business website]
+  Browser --> App[Go app: HTTP + River workers]
+  App --> PG[(PostgreSQL: product data + river_job)]
+  App --> OpenAI
+  App --> Web[Business sites]
+  Caddy --> App
 ```
 
-One Go module, two run modes (`serve` and `work`) from the same binary — deployable as one process in dev, two containers in prod. Shared domain and persistence packages; no internal RPC between API and worker — they share the database and communicate through Temporal.
+PostgreSQL is the durable source of truth. River supplies job persistence, dispatch, retries, uniqueness, and cancellation in the application database; it is not a separate service. Application migrations run first and River's bundled migrations run second through `opensight migrate`.
 
-- **API server**: Protobuf schema + Connect RPC over HTTP/1.1 (chi router mounts the generated handlers at `/rpc`), auth middleware, account membership and role enforcement. Connect serves its own JSON/binary protocol directly — no separate gRPC proxy or Envoy sidecar — so this keeps the same single-binary, same-origin deployment shape as a hand-rolled REST API would have.
-- **Worker**: hosts all Temporal workflows/activities: onboarding profile generation, weekly monitoring runs, analysis.
-- **Frontend**: Vite + React + TypeScript SPA. Five sections per PRD §7. Served as static files from the Go binary (no separate web server to run).
+The production job package has five coarse jobs:
 
-## D4 — Data storage
+- scheduler sweep;
+- onboarding profile generation;
+- monitoring;
+- analysis;
+- assessment publication.
 
-A single Postgres instance holds everything, as three databases:
+Coarse jobs recover through idempotent database checkpoints. Monitoring records one immutable result per prompt, analysis overwrites rebuildable derived rows, and assessment publishes the new audit/findings atomically. One process-wide `LLM_CONCURRENCY` limiter, default `2`, covers both jobs and synchronous question generation.
 
-- `opensight` — application data: accounts, global users and memberships, business profiles, prompts (with replacement lineage), runs, raw responses, mentions, citations, competitors.
-- `temporal` — Temporal's core persistence store (see D5).
-- `temporal_visibility` — Temporal's visibility persistence store.
+`serve` starts River before accepting HTTP. Shutdown stops HTTP, stops job fetching, allows a 30-second soft drain, then cancels remaining job contexts so River can retry them after restart. Multiple identical app instances remain possible because River coordinates work in PostgreSQL.
 
-Sharing one instance is a deliberate cost call: Temporal's "dedicated persistence" guidance targets high-throughput clusters, not thousands of activities/week. Guardrails: cap Temporal's connection pool (~20) and size `max_connections` for both consumers; check Temporal's Postgres compatibility before major PG upgrades. If it ever hurts, migration is dump/restore of the `temporal` database to a new instance — no code changes.
+Production is a single OVHcloud VPS running `app`, PostgreSQL, and Caddy with Docker Compose. Backups cover the `opensight` database, which includes both product and River state.
 
-Raw LLM responses are stored as `jsonb`/text in Postgres rather than object storage — at ~20 responses/account/week the volume is small, and keeping raw + derived data in one place makes "every metric links to the response" trivial (joins, not cross-store lookups).
-
-Account isolation uses a shared schema and `account_id` ownership, enforced in the repository layer (not RLS, for MVP simplicity). Users are global identities; `account_memberships` assigns `owner`, `admin`, `member`, or `viewer` independently in each account. Membership grants access to every business in an account until business-specific access is needed.
-
-The application opens one `pgxpool.Pool` per process and shares it across every
-repository and metrics reader. SQL lives in `internal/store/queries/` and is
-compiled by sqlc into `internal/store/sqlc/`; repository/domain APIs remain the
-boundary seen by API and workflow code. Transactions bind the generated query
-set to `pgx.Tx`. Session advisory locks pin a pool connection for the whole
-callback, including any repository transaction started inside it. The only
-standard-library SQL connection is Goose's private, short-lived migration
-adapter.
-
-## D5 — Temporal usage
-
-Temporal is the backbone for everything asynchronous:
-
-- **Weekly monitoring**: one Temporal Schedule per business → `WeeklyRunWorkflow` fans out 20 `ExecutePrompt` activities with per-activity retries; partial failure yields per-prompt run status (PRD §5) instead of an all-or-nothing batch.
-- **Onboarding**: `GenerateProfileWorkflow` (scrape site → LLM proposal → persist as draft for user review).
-- **Analysis**: runs as a second phase of the weekly workflow (mentions, sentiment, keywords, competitors), so a failed analysis can retry without re-spending prompt executions.
-
-### Hosting: self-hosted single node
-
-Temporal Cloud's ~$100+/month floor is not justified at MVP scale. We run the Temporal server as a **single Docker container backed by the shared Postgres instance**, with schemas initialized explicitly by a one-shot `temporalio/admin-tools` container, plus the Temporal UI container for debugging. At our load (thousands of activity executions/week) this comfortably fits in ~1GB of RAM alongside the app.
-
-Accepted trade-offs, all acceptable for a weekly-cadence product:
-
-- We own upgrades (pin versions, upgrade deliberately).
-- If the VPS is down, schedules pause and fire when it returns — a late weekly run is invisible to users.
-- The `temporal` database must be included in backups with the same rigor as the app database: it holds all schedules and in-flight workflow state.
-
-Migration path to Temporal Cloud later is configuration (endpoint + mTLS certs), not code.
-
-## D7 — Repo layout
+Repository layout:
 
 ```
-opensight/
-├── cmd/opensight/        # single binary: serve | work | migrate
-├── internal/
-│   ├── api/              # HTTP handlers, middleware, Google OAuth
-│   ├── domain/           # core types, business logic
-│   ├── store/            # Postgres repositories, sqlc queries, migrations
-│   ├── workflows/        # Temporal workflows + activities
-│   └── llm/              # PromptRunner + analysis interfaces, OpenAI impl
-├── web/                  # Vite + React SPA
-└── docs/
+cmd/opensight/       CLI and unified server
+internal/api/        Connect RPC and HTTP
+internal/jobs/       River args, schedules, and workers
+internal/store/      PostgreSQL repositories and migrations
+internal/workflows/  idempotent application operations used by jobs
+internal/llm/        provider adapters and shared limiter
+web/                 embedded React SPA
+infra/               Ansible and production Compose
 ```
-
-## D8 — Deployment
-
-A single **OVHcloud VPS** (Singapore region — matches the SGD/Singapore business context, design 08), minimum **4GB RAM**, running Docker Compose: `app` (serve), `worker` (work), `postgres`, `temporal`, `temporal-ui`, and Caddy for TLS. Total footprint fits ~4GB. The Compose setup is provider-agnostic, so this is reversible — moving providers or rebuilding the box is a re-run of the Ansible playbooks in `infra/` (FND-5), not a rewrite. Nightly `pg_dump` of both databases shipped off-box. Remaining details (backup destination, secrets) land in the cross-cutting doc.
-
-## D9 — Billing
-
-Self-serve signup takes payment before the first LLM call: Stripe Checkout for subscription creation, Customer Portal for cancellation, card updates and invoices, webhooks for state. No payment UI, stored card data or PCI surface is ours. Entitlements (prompt limit, run interval, platforms) live in a **code catalog**, not a database table — the limit and the Stripe Price it is sold against must be deployed as one unit. The database holds only Stripe state, one row per account. Full design in [08 Billing](08-billing.md).
-
-Because payment precedes every prompt execution, profile generation and analysis call, there is no free-spend surface and no in-app spend circuit breaker to build (07's OpenAI budget cap remains the backstop against our own bugs).
-
-## Out of scope for MVP (explicit)
-
-- Platforms beyond ChatGPT; daily monitoring; alerts (PRD §9).
-- RLS / per-account databases; business-specific ACLs; horizontal scaling concerns.
-
-## Open questions (owned by later increments)
-
-- **02 Data model**: exact prompt-replacement lineage model; mention/citation schemas.
-- **03 Onboarding**: how the site scrape works (fetch + LLM vs. search-augmented); draft/confirm state machine ("confirmed values are never auto-overwritten").
-- **07 Cross-cutting**: auth provider (managed vs. hand-rolled sessions), VPS provider, backup destination, secrets, observability.

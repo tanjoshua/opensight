@@ -26,9 +26,12 @@ func (q *Queries) AcquireAdvisoryLock(ctx context.Context, hashtextextended stri
 const activateBusiness = `-- name: ActivateBusiness :one
 UPDATE businesses
 SET name = $2, aliases = $3, category = $4, services = $5, location = $6,
-    status = 'active', activated_at = $7
+    status = 'active', activated_at = $7,
+    generation_id = NULL, generation_job_id = NULL,
+    generation_status = NULL, generation_stage = NULL
 WHERE id = $1
-RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage
 `
 
 type ActivateBusinessParams struct {
@@ -64,6 +67,10 @@ func (q *Queries) ActivateBusiness(ctx context.Context, arg ActivateBusinessPara
 		&i.Location,
 		&i.CreatedAt,
 		&i.ActivatedAt,
+		&i.GenerationID,
+		&i.GenerationJobID,
+		&i.GenerationStatus,
+		&i.GenerationStage,
 	)
 	return i, err
 }
@@ -149,6 +156,46 @@ WHERE business_id=$1 AND status='pending'
 func (q *Queries) DiscardPendingProposal(ctx context.Context, businessID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, discardPendingProposal, businessID)
 	return err
+}
+
+const finishBusinessGeneration = `-- name: FinishBusinessGeneration :execrows
+UPDATE businesses SET generation_status = $1, generation_stage = NULL
+WHERE id = $2 AND generation_id = $3
+  AND status = 'draft' AND generation_status = 'generating'
+`
+
+type FinishBusinessGenerationParams struct {
+	Status       *string
+	BusinessID   uuid.UUID
+	GenerationID *uuid.UUID
+}
+
+func (q *Queries) FinishBusinessGeneration(ctx context.Context, arg FinishBusinessGenerationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, finishBusinessGeneration, arg.Status, arg.BusinessID, arg.GenerationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const generationIsCurrent = `-- name: GenerationIsCurrent :one
+SELECT EXISTS(
+  SELECT 1 FROM businesses
+  WHERE id = $1 AND generation_id = $2
+    AND status = 'draft' AND generation_status = 'generating'
+)
+`
+
+type GenerationIsCurrentParams struct {
+	BusinessID   uuid.UUID
+	GenerationID *uuid.UUID
+}
+
+func (q *Queries) GenerationIsCurrent(ctx context.Context, arg GenerationIsCurrentParams) (bool, error) {
+	row := q.db.QueryRow(ctx, generationIsCurrent, arg.BusinessID, arg.GenerationID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const getAccountByID = `-- name: GetAccountByID :one
@@ -241,7 +288,8 @@ func (q *Queries) GetAccountMembership(ctx context.Context, arg GetAccountMember
 }
 
 const getBusiness = `-- name: GetBusiness :one
-SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+       generation_id, generation_job_id, generation_status, generation_stage
 FROM businesses WHERE id = $1 AND account_id = $2
 `
 
@@ -265,6 +313,10 @@ func (q *Queries) GetBusiness(ctx context.Context, arg GetBusinessParams) (Busin
 		&i.Location,
 		&i.CreatedAt,
 		&i.ActivatedAt,
+		&i.GenerationID,
+		&i.GenerationJobID,
+		&i.GenerationStatus,
+		&i.GenerationStage,
 	)
 	return i, err
 }
@@ -589,6 +641,38 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (time.Ti
 	return created_at, err
 }
 
+const installBusinessGeneration = `-- name: InstallBusinessGeneration :one
+UPDATE businesses
+SET website = $1,
+    generation_id = $2,
+    generation_job_id = $3,
+    generation_status = 'generating',
+    generation_stage = 'fetching_site'
+WHERE id = $4 AND account_id = $5 AND status = 'draft'
+RETURNING generation_job_id
+`
+
+type InstallBusinessGenerationParams struct {
+	Website         *string
+	GenerationID    *uuid.UUID
+	GenerationJobID *int64
+	BusinessID      uuid.UUID
+	AccountID       uuid.UUID
+}
+
+func (q *Queries) InstallBusinessGeneration(ctx context.Context, arg InstallBusinessGenerationParams) (*int64, error) {
+	row := q.db.QueryRow(ctx, installBusinessGeneration,
+		arg.Website,
+		arg.GenerationID,
+		arg.GenerationJobID,
+		arg.BusinessID,
+		arg.AccountID,
+	)
+	var generation_job_id *int64
+	err := row.Scan(&generation_job_id)
+	return generation_job_id, err
+}
+
 const listAccountMembers = `-- name: ListAccountMembers :many
 SELECT u.id AS user_id, u.email, u.google_sub, am.role, am.created_at
 FROM account_memberships am JOIN users u ON u.id = am.user_id
@@ -711,7 +795,8 @@ func (q *Queries) ListActivePrompts(ctx context.Context, businessID uuid.UUID) (
 }
 
 const listBusinesses = `-- name: ListBusinesses :many
-SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+       generation_id, generation_job_id, generation_status, generation_stage
 FROM businesses WHERE account_id = $1 ORDER BY created_at
 `
 
@@ -736,6 +821,58 @@ func (q *Queries) ListBusinesses(ctx context.Context, accountID uuid.UUID) ([]Bu
 			&i.Location,
 			&i.CreatedAt,
 			&i.ActivatedAt,
+			&i.GenerationID,
+			&i.GenerationJobID,
+			&i.GenerationStatus,
+			&i.GenerationStage,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMonitoringCandidates = `-- name: ListMonitoringCandidates :many
+SELECT b.id, b.account_id, b.activated_at, s.plan_code, s.comped,
+       s.stripe_subscription_id, s.stripe_status, s.past_due_since
+FROM businesses b
+JOIN subscriptions s ON s.account_id = b.account_id
+WHERE b.status = 'active' AND b.activated_at IS NOT NULL
+`
+
+type ListMonitoringCandidatesRow struct {
+	ID                   uuid.UUID
+	AccountID            uuid.UUID
+	ActivatedAt          *time.Time
+	PlanCode             string
+	Comped               bool
+	StripeSubscriptionID *string
+	StripeStatus         *string
+	PastDueSince         *time.Time
+}
+
+func (q *Queries) ListMonitoringCandidates(ctx context.Context) ([]ListMonitoringCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, listMonitoringCandidates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMonitoringCandidatesRow
+	for rows.Next() {
+		var i ListMonitoringCandidatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.ActivatedAt,
+			&i.PlanCode,
+			&i.Comped,
+			&i.StripeSubscriptionID,
+			&i.StripeStatus,
+			&i.PastDueSince,
 		); err != nil {
 			return nil, err
 		}
@@ -941,7 +1078,8 @@ SET name = CASE WHEN $1::bool THEN $2 ELSE name END,
     services = CASE WHEN $9::bool THEN $10::jsonb ELSE services END,
     location = CASE WHEN $11::bool THEN $12::jsonb ELSE location END
 WHERE id = $13 AND account_id = $14 AND status = 'active'
-RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage
 `
 
 type UpdateActiveBusinessProfileParams struct {
@@ -991,15 +1129,40 @@ func (q *Queries) UpdateActiveBusinessProfile(ctx context.Context, arg UpdateAct
 		&i.Location,
 		&i.CreatedAt,
 		&i.ActivatedAt,
+		&i.GenerationID,
+		&i.GenerationJobID,
+		&i.GenerationStatus,
+		&i.GenerationStage,
 	)
 	return i, err
+}
+
+const updateBusinessGenerationStage = `-- name: UpdateBusinessGenerationStage :execrows
+UPDATE businesses SET generation_stage = $1
+WHERE id = $2 AND generation_id = $3
+  AND status = 'draft' AND generation_status = 'generating'
+`
+
+type UpdateBusinessGenerationStageParams struct {
+	Stage        *string
+	BusinessID   uuid.UUID
+	GenerationID *uuid.UUID
+}
+
+func (q *Queries) UpdateBusinessGenerationStage(ctx context.Context, arg UpdateBusinessGenerationStageParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateBusinessGenerationStage, arg.Stage, arg.BusinessID, arg.GenerationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateDraftBusinessWebsite = `-- name: UpdateDraftBusinessWebsite :one
 UPDATE businesses
 SET website = $1
 WHERE id = $2 AND account_id = $3 AND status = 'draft'
-RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage
 `
 
 type UpdateDraftBusinessWebsiteParams struct {
@@ -1023,6 +1186,10 @@ func (q *Queries) UpdateDraftBusinessWebsite(ctx context.Context, arg UpdateDraf
 		&i.Location,
 		&i.CreatedAt,
 		&i.ActivatedAt,
+		&i.GenerationID,
+		&i.GenerationJobID,
+		&i.GenerationStatus,
+		&i.GenerationStage,
 	)
 	return i, err
 }

@@ -20,7 +20,6 @@ import (
 
 	"opensight/internal/visibility"
 
-	"go.temporal.io/sdk/temporal"
 	"golang.org/x/net/html"
 	"golang.org/x/net/publicsuffix"
 )
@@ -109,7 +108,7 @@ type FetchSiteInput struct {
 }
 
 // FetchSiteOutput is the stripped, capped site context used by later onboarding
-// proposal activities.
+// proposal operations.
 type FetchSiteOutput struct {
 	Text string   `json:"text"`
 	URLs []string `json:"urls"`
@@ -159,7 +158,7 @@ type fetchedBody struct {
 
 // FetchSite reads a clinic website with SSRF protections and returns stripped,
 // bounded text for onboarding profile generation.
-func (a *Activities) FetchSite(ctx context.Context, in FetchSiteInput) (FetchSiteOutput, error) {
+func (a *Operations) FetchSite(ctx context.Context, in FetchSiteInput) (FetchSiteOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, fetchSiteTimeout)
 	defer cancel()
 
@@ -169,7 +168,7 @@ func (a *Activities) FetchSite(ctx context.Context, in FetchSiteInput) (FetchSit
 	out, err := fetcher.Fetch(ctx, in)
 	if err != nil {
 		if errors.Is(err, errUnsafeFetchURL) || errors.Is(err, errNoUsableContent) {
-			return FetchSiteOutput{}, temporal.NewNonRetryableApplicationError(
+			return FetchSiteOutput{}, NewPermanentError(
 				"fetch site", "BadWebsite", err)
 		}
 		return FetchSiteOutput{}, err

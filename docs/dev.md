@@ -1,164 +1,83 @@
-# Local Development
+# Development
 
-## Infrastructure
+## Local stack
 
-Start the full local stack:
+`make up` starts PostgreSQL in Docker, applies application and River migrations, then runs the unified Go app with reload plus Vite and the marketing server. It waits for `/healthz` and prints local links. `Ctrl+C` stops native processes; `make down` stops PostgreSQL.
 
-```sh
-make up
-```
-
-`make up` starts Postgres, Temporal, and Temporal UI in Docker, waits for
-Postgres and the Temporal namespace bootstrap, runs `opensight migrate`, then
-starts the Go API and worker with reload. It checks `/healthz` before reporting
-the API as healthy and prints service links. When the frontend lands, the same
-command also starts the Vite dev server on `http://127.0.0.1:5173` and prints
-its link if `web/package.json` exists. Press `Ctrl+C` to stop the native dev
-processes; Docker infrastructure stays up.
-
-Seed the local login account after the database is running and migrated —
-sign-in is Google-only (design 07 "Auth and accounts"), so this needs a real
-Google account address:
+For a local login, configure a Google OAuth web client with `http://localhost:5173/auth/google/callback`, then seed a comped account:
 
 ```sh
 EMAIL=you@gmail.com make seed-dev
-# or: export OPENSIGHT_DEV_EMAIL=you@gmail.com once, then just `make seed-dev`
 ```
 
-Then sign in with that Google account at `http://localhost:5173/login` and
-complete the normal onboarding flow. The command is idempotent and does not
-create a business, prompts, or monitoring results.
+The command is idempotent and deliberately does not create a business or results; complete normal onboarding in the UI.
 
-Signing in locally needs a real Google OAuth client: create one in Google
-Cloud Console (Web application), add
-`http://localhost:5173/auth/google/callback` as an authorized redirect URI,
-and put `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `.env` (see
-`.env.example`).
-
-Start Postgres, Temporal, and Temporal UI:
+Lower-level commands:
 
 ```sh
-make dev-stack
-```
-
-Services:
-
-- Postgres: `localhost:5432`
-- Temporal: `localhost:7233`
-- Temporal UI: `http://localhost:8233`
-
-The Postgres container creates the `opensight`, `temporal`, and `temporal_visibility` databases. A one-shot Temporal admin-tools service applies Temporal schemas before the server starts. Temporal is capped at 20 active Postgres connections across persistence and visibility pools.
-
-`make up` service link defaults can be overridden with `HTTP_ADDR`,
-`TEMPORAL_UI_URL`, `FRONTEND_HOST`, and `FRONTEND_PORT`.
-
-Stop Docker infrastructure:
-
-```sh
+make dev-stack       # PostgreSQL only
+make dev-serve       # unified app with reload
 make down
+make dev-stack-reset # remove local Docker data
 ```
 
-Reset local Docker data:
-
-```sh
-make dev-stack-reset
-```
-
-## Native Go
-
-Run the API with reload:
-
-```sh
-go tool air -c .air.serve.toml
-```
-
-Run the worker with reload:
-
-```sh
-go tool air -c .air.work.toml
-```
-
-Without reload:
-
-```sh
-go run ./cmd/opensight serve
-go run ./cmd/opensight work
-go run ./cmd/opensight migrate
-```
-
-`opensight migrate` applies embedded goose migrations against `DATABASE_URL` and exits. The API and worker do not run migrations on startup; run the command explicitly after changing schema or during deploy.
-
-Create an invite-only account:
-
-```sh
-go run ./cmd/opensight account create --name "Acme Clinic"
-go run ./cmd/opensight account member add --account <account_id> --email owner@example.com --role owner
-```
-
-`account member add` creates or reuses a global user with no Google identity;
-the person's first sign-in with that email at `/login` links it. No invitation
-email or acceptance step is involved.
+The server starts River before HTTP. There is no worker command, local worker reload process, queue UI, or queue-specific database.
 
 ## Tests
 
-`make test` runs the unit suite; it needs no infrastructure.
-
-The DB-backed tests in `internal/store`, `internal/workflows`, and `internal/metrics` skip themselves unless `OPENSIGHT_STORE_TEST_DATABASE_URL` is set. They run against their own `opensight_test` database so a test run can't disturb local data:
-
 ```sh
-make test-db           # drop and recreate opensight_test (needs make dev-stack)
-make test-integration  # migrate opensight_test, then run the DB-backed tests
+make test
+make lint
+make check-sql
 ```
 
-`make test-integration` migrates first, so it is safe to re-run; `make test-db` is only needed the first time or to reset. Override the target database with `TEST_DATABASE_URL=<dsn>`. CI runs both targets against a Postgres service container.
+Database-backed tests use an isolated database:
 
-## Protobuf / Connect RPC codegen
+```sh
+make test-db
+make test-integration
+```
 
-The API contract is defined in `proto/opensight/v1/*.proto` and compiled with [buf](https://buf.build). After changing any `.proto` file, regenerate:
+`make test-db` drops and recreates only `opensight_test`. `make test-integration` applies Goose and River migrations, runs the store/API/metrics/operation suites, then runs River integration separately so account-count-sensitive tests do not share concurrent fixtures. Override the database with `TEST_DATABASE_URL=<dsn>`.
+
+## Generated code
+
+The protobuf contract lives in `proto/opensight/v1`. After changing it:
 
 ```sh
 make proto
 ```
 
-This runs `buf format -w`, `buf lint`, then `buf generate`, which writes Go structs + Connect handler interfaces to `internal/gen/opensight/v1/` and TypeScript messages + connect-query method descriptors to `web/src/gen/opensight/v1/`. Two of the four codegen plugins (`protoc-gen-es`, `protoc-gen-connect-query`) are npm-hosted binaries resolved from `web/node_modules/.bin`, so `npm install` in `web/` must have been run at least once before `make proto` will work.
+This formats, lints, and generates committed Go and TypeScript code. The npm-hosted plugins require `npm ci` in `web/` first.
 
-Regenerate database queries after changing a catalog or migration:
+After changing migrations or SQL catalogs:
 
-```bash
+```sh
 make sqlc
 make check-sql
 ```
 
-Production queries and metrics share `internal/store/queries/` and generate to
-`internal/store/sqlc/`, using the embedded Goose migrations as the schema
-source. `make check-sql` keeps SQL literals out of production Go. Integration
-tests are exempt: they share one pgx pool with the stores they exercise and run
-their fixture and assertion SQL inline, so the SQL is readable where it is used.
+CI regenerates both surfaces and rejects drift.
 
-All generated output is committed — CI re-runs `make proto` and `make sqlc`
-and fails the build on any diff, so checked-in generated code cannot drift from
-its protobuf schemas, migrations, or query catalogs.
+## Frontend
 
-## Config
+```sh
+cd web
+npm run typecheck
+npm run lint
+npm run build
+```
 
-Runtime config is env-driven with development-safe defaults:
+## Runtime configuration
 
-- `OPENSIGHT_ENV` defaults to `dev`; when it is `dev`, session cookies are set without the `Secure` attribute so login works over plain-HTTP local dev (prod runs behind Caddy TLS, where `Secure` is set)
-- `HTTP_ADDR` defaults to `:8080`
-- `DATABASE_URL` defaults to `postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable`
-- `APP_DB_MAX_OPEN_CONNS` defaults to `10`
-- `TEMPORAL_ADDRESS` defaults to `localhost:7233`
-- `TEMPORAL_NAMESPACE` defaults to `default`
-- `TEMPORAL_TASK_QUEUE` defaults to `opensight`
-- `PROMPT_RUNNER_MODE` defaults to `stub`; valid values are `stub`, `replay`, `openai`
-- `OPENAI_RESPONSES_MODEL` defaults to `chat-latest`
-- `OPENAI_ANALYSIS_MODEL` defaults to `gpt-5.6-luna`
-- `OPENAI_ONBOARDING_MODEL` defaults to `gpt-5.6-terra` (quality-sensitive business-profile research, design 03)
-- `OPENAI_QUESTIONS_MODEL` defaults to `gpt-5.6-terra` — a one-time, quality-sensitive generation pass whose questions become the ongoing measurement instrument (design 03)
-- `PROMPT_CONCURRENCY` defaults to `2`
-- `APP_BASE_URL` has no default and must be an absolute `http`/`https` URL; local `.env` should set `http://localhost:5173`
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PORTAL_CONFIGURATION_ID` have no default and are required by `opensight serve`; other commands validate only the settings they use
+- `OPENSIGHT_ENV=dev`
+- `HTTP_ADDR=:8080`
+- `DATABASE_URL=postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable`
+- `APP_DB_MAX_OPEN_CONNS=10`
+- `PROMPT_RUNNER_MODE=stub` (`stub`, `replay`, or `openai`)
+- `LLM_CONCURRENCY=2`, shared by jobs and synchronous question generation
+- model variables in `internal/config`
 
-Local development should use `stub` or `replay` unless a story explicitly requires a real OpenAI smoke test. For a low-cost real test, set `PROMPT_RUNNER_MODE=openai` and override `OPENAI_RESPONSES_MODEL` to a cheaper web-search-capable model. `OPENAI_API_KEY` has no default and must stay in local uncommitted env only.
+OpenAI mode requires `OPENAI_API_KEY`. `serve` also requires the Stripe, Google OAuth, and `APP_BASE_URL` values documented in `.env.example`. Local development should use `stub` or `replay` unless a real provider smoke test is intentional.
 
-The serving path always uses Stripe. For local development, run `stripe sandbox create`, provision one Portal Configuration in that sandbox, and put its `bpc_...` id in `.env` as `STRIPE_PORTAL_CONFIGURATION_ID`. Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_STARTER_MONTHLY`, and `APP_BASE_URL`, then run `opensight stripe portal-config` to apply the repo-owned settings to that exact configuration. Forward webhooks with `stripe listen --forward-to localhost:8080/webhooks/stripe` and set its signing secret as `STRIPE_WEBHOOK_SECRET`. Automated tests still use the injected in-memory provider and make no network calls. Production authenticates with a restricted key (`rk_`), never a secret key — see the go-live checklist in design 08.
+Queue inspection uses structured app logs and the `river_job` query in [Design 04](design/04-monitoring.md). There is no dashboard service.

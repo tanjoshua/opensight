@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"go.temporal.io/sdk/temporal"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -425,16 +423,13 @@ func TestSiteFetcherRefusesRedirectToPrivateAddress(t *testing.T) {
 }
 
 func TestFetchSiteClassifiesBadWebsiteAsNonRetryable(t *testing.T) {
-	_, err := (&Activities{}).FetchSite(context.Background(), FetchSiteInput{Website: "http://127.0.0.1"})
+	_, err := (&Operations{}).FetchSite(context.Background(), FetchSiteInput{Website: "http://127.0.0.1"})
 	if err == nil {
 		t.Fatal("FetchSite returned nil, want non-retryable application error")
 	}
-	var appErr *temporal.ApplicationError
+	var appErr *PermanentError
 	if !errors.As(err, &appErr) {
-		t.Fatalf("error type = %T, want *temporal.ApplicationError", err)
-	}
-	if !appErr.NonRetryable() {
-		t.Fatalf("NonRetryable = false, want true")
+		t.Fatalf("error type = %T, want *PermanentError", err)
 	}
 }
 

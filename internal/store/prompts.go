@@ -48,7 +48,7 @@ type Prompt struct {
 // validated against the business's owner.
 type CreateActivePromptParams struct {
 	ID               domain.ID
-	AccountID         domain.ID
+	AccountID        domain.ID
 	BusinessID       domain.ID
 	Text             string
 	ReplacesPromptID *domain.ID
@@ -58,7 +58,7 @@ type CreateActivePromptParams struct {
 // old prompt and insert a new active one that records replaces_prompt_id. Text
 // is immutable, so an edit is expressed as a replace with the new text.
 type ReplacePromptParams struct {
-	AccountID    domain.ID
+	AccountID   domain.ID
 	OldPromptID domain.ID
 	Text        string
 }
@@ -128,7 +128,7 @@ func replacePromptInTx(ctx context.Context, q *storesqlc.Queries, params Replace
 	}
 
 	return createActivePromptInTx(ctx, q, CreateActivePromptParams{
-		AccountID:         params.AccountID,
+		AccountID:        params.AccountID,
 		BusinessID:       old.BusinessID,
 		Text:             params.Text,
 		ReplacesPromptID: &old.ID,

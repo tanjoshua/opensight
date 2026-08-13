@@ -56,8 +56,8 @@ func TestAnalysisSchemaWipeAndRebuild(t *testing.T) {
 		VALUES ($1, $2, 'active', 'Analysis Clinic', 'clinic', '{"country":"SG"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic near me', 'active')", promptID, businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'analysis-workflow', now())`, runID, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 401, now())`, runID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
 		VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{"model":"gpt-5-mini"}'::jsonb, '{"id":"resp_1"}'::jsonb, 'Analysis Clinic and Rival Clinic are options.')`, resultID, runID, promptID)

@@ -25,7 +25,7 @@ type ExtractionInput struct {
 }
 
 // ExtractionRunResult is the raw output of one extraction call. The model's JSON
-// text is left unmarshalled for the workflow activity to decode and validate —
+// text is left unmarshalled for the analysis operation to decode and validate —
 // the same split as PromptRunResult vs ExecutePrompt.
 type ExtractionRunResult struct {
 	RawJSON json.RawMessage // the model's structured-output JSON text

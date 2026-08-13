@@ -245,7 +245,9 @@ func (s *Server) resolveOrCreateGoogleUser(ctx context.Context, identity googleI
 	}
 
 	if u, err := s.store.GetUserByEmail(ctx, identity.Email); err == nil {
-		if err := s.linkGoogleSubIfUnset(ctx, u, identity.Sub); err != nil { return domain.ID{}, err }
+		if err := s.linkGoogleSubIfUnset(ctx, u, identity.Sub); err != nil {
+			return domain.ID{}, err
+		}
 		return u.UserID, s.ensureGoogleUserHasAccount(ctx, u.UserID, identity.Email)
 	} else if !errors.Is(err, store.ErrNotFound) {
 		return domain.ID{}, err
@@ -260,7 +262,7 @@ func (s *Server) resolveOrCreateGoogleUser(ctx context.Context, identity googleI
 		return domain.ID{}, err
 	}
 	_, user, err := s.store.CreateAccount(ctx, store.CreateAccountParams{
-		AccountID:  accountID,
+		AccountID: accountID,
 		UserID:    userID,
 		Email:     identity.Email,
 		GoogleSub: identity.Sub,
@@ -283,7 +285,9 @@ func (s *Server) resolveOrCreateGoogleUser(ctx context.Context, identity googleI
 
 func (s *Server) linkGoogleSubIfUnset(ctx context.Context, u store.UserIdentity, sub string) error {
 	if u.GoogleSub != nil {
-		if *u.GoogleSub != sub { return errors.New("email is already linked to a different Google identity") }
+		if *u.GoogleSub != sub {
+			return errors.New("email is already linked to a different Google identity")
+		}
 		return nil
 	}
 	return s.store.SetUserGoogleSub(ctx, u.UserID, sub)
@@ -291,8 +295,12 @@ func (s *Server) linkGoogleSubIfUnset(ctx context.Context, u store.UserIdentity,
 
 func (s *Server) ensureGoogleUserHasAccount(ctx context.Context, userID domain.ID, email string) error {
 	memberships, err := s.store.ListAccountMemberships(ctx, userID)
-	if err != nil { return err }
-	if len(memberships) > 0 { return nil }
+	if err != nil {
+		return err
+	}
+	if len(memberships) > 0 {
+		return nil
+	}
 	local, _, _ := strings.Cut(email, "@")
 	_, err = s.store.CreateNamedAccount(ctx, userID, local)
 	return err

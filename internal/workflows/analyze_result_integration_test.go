@@ -11,7 +11,6 @@ import (
 	"opensight/internal/store"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.temporal.io/sdk/testsuite"
 )
 
 // fakeExtractor returns a fixed extraction payload and counts invocations, so
@@ -51,7 +50,7 @@ const (
 func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
 	if dbURL == "" {
-		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run activity integration tests")
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run operation integration tests")
 	}
 
 	ctx := context.Background()
@@ -84,8 +83,8 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		VALUES ($1, $2, 'active', 'Atlas Dental', 'clinic', '{"country":"SG","city":"Singapore"}'::jsonb, now())`, businessID, accountID)
 	mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status) VALUES ($1, $2, 'best clinic for braces', 'active')", promptID, businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'analyze-wf', now())`, runID, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 202, now())`, runID, businessID)
 	mustExec(t, db, ctx, `
 		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text)
 		VALUES ($1, $2, $3, 'succeeded', 'gpt-5', '{"model":"gpt-5"}'::jsonb, $4::jsonb, $5)`, resultID, runID, promptID, analyzeRawResponse, analyzeResponseText)
@@ -94,7 +93,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 
 	t.Run("writes analysis and citations, always re-extracts", func(t *testing.T) {
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
-		acts := &Activities{Store: store, Extractor: extractor}
+		acts := &Operations{Store: store, Extractor: extractor}
 
 		out, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
 		if err != nil {
@@ -158,7 +157,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 
 	t.Run("cross-account result is ErrNotFound", func(t *testing.T) {
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
-		acts := &Activities{Store: store, Extractor: extractor}
+		acts := &Operations{Store: store, Extractor: extractor}
 
 		_, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: mustID(t), ResultID: resultID})
 		if err == nil {
@@ -175,21 +174,13 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 		mustExec(t, db, ctx, "DELETE FROM result_analyses WHERE prompt_result_id = $1", resultID)
 
 		extractor := &fakeExtractor{rawJSON: json.RawMessage(invalidExtraction)}
-		acts := &Activities{Store: store, Extractor: extractor}
+		acts := &Operations{Store: store, Extractor: extractor}
 
-		// The flagged path calls activity.GetLogger, so run it through a real
-		// activity context (as the ExecutePrompt terminal-failure test does).
-		var ts testsuite.WorkflowTestSuite
-		env := ts.NewTestActivityEnvironment()
-		env.RegisterActivity(acts.AnalyzeResult)
-
-		val, err := env.ExecuteActivity(acts.AnalyzeResult, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
+		// The flagged path calls operation.GetLogger, so run it through a real
+		// operation context (as the ExecutePrompt terminal-failure test does).
+		out, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
 		if err != nil {
 			t.Fatalf("AnalyzeResult returned error, want nil for a flagged result: %v", err)
-		}
-		var out AnalyzeResultOutput
-		if err := val.Get(&out); err != nil {
-			t.Fatalf("decode output: %v", err)
 		}
 		if out.Analyzed {
 			t.Fatal("Analyzed = true, want false for a validation-failing output")
@@ -209,7 +200,7 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 	t.Run("reanalysis failure clears a prior successful analysis", func(t *testing.T) {
 		// Seed a successful analysis first, as if from an earlier extraction_version.
 		validExtractor := &fakeExtractor{rawJSON: json.RawMessage(validExtraction)}
-		acts := &Activities{Store: store, Extractor: validExtractor}
+		acts := &Operations{Store: store, Extractor: validExtractor}
 		if _, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID}); err != nil {
 			t.Fatalf("seed AnalyzeResult: %v", err)
 		}
@@ -217,21 +208,13 @@ func TestAnalyzeResultAgainstPostgres(t *testing.T) {
 			t.Fatalf("seeded citations = %d, want 1", got)
 		}
 
-		// A ReanalyzeRun-style re-run whose new extraction attempt fails must not
+		// A manual reanalysis-style re-run whose new extraction attempt fails must not
 		// leave the prior row's stale sentiment/keywords counting toward metrics.
 		invalidExtractor := &fakeExtractor{rawJSON: json.RawMessage(invalidExtraction)}
-		acts = &Activities{Store: store, Extractor: invalidExtractor}
-		var ts testsuite.WorkflowTestSuite
-		env := ts.NewTestActivityEnvironment()
-		env.RegisterActivity(acts.AnalyzeResult)
-
-		val, err := env.ExecuteActivity(acts.AnalyzeResult, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
+		acts = &Operations{Store: store, Extractor: invalidExtractor}
+		out, err := acts.AnalyzeResult(ctx, AnalyzeResultInput{AccountID: accountID, ResultID: resultID})
 		if err != nil {
 			t.Fatalf("AnalyzeResult returned error, want nil for a flagged reanalysis: %v", err)
-		}
-		var out AnalyzeResultOutput
-		if err := val.Get(&out); err != nil {
-			t.Fatalf("decode output: %v", err)
 		}
 		if out.Analyzed {
 			t.Fatal("Analyzed = true, want false for a validation-failing reanalysis")

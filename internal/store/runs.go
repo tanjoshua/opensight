@@ -51,7 +51,7 @@ type Run struct {
 	Trigger             RunTrigger
 	ScheduledFor        time.Time
 	Status              RunStatus
-	WorkflowID          string
+	JobID               int64
 	StartedAt           time.Time
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
@@ -68,7 +68,7 @@ type UpsertRunParams struct {
 	Platform        string
 	Trigger         RunTrigger
 	ScheduledFor    time.Time
-	WorkflowID      string
+	JobID           int64
 	ExpectedResults int
 }
 
@@ -97,7 +97,7 @@ func (s *Store) UpsertRun(ctx context.Context, accountID domain.ID, params Upser
 		if err := q.InsertRunOnConflictNothing(ctx, storesqlc.InsertRunOnConflictNothingParams{
 			ID: params.ID, BusinessID: params.BusinessID, Platform: params.Platform,
 			Trigger: string(params.Trigger), ScheduledFor: params.ScheduledFor,
-			WorkflowID: params.WorkflowID, ExpectedResults: &expected,
+			JobID: params.JobID, ExpectedResults: &expected,
 		}); err != nil {
 			return fmt.Errorf("insert monitoring run: %w", err)
 		}
@@ -107,7 +107,8 @@ func (s *Store) UpsertRun(ctx context.Context, accountID domain.ID, params Upser
 		if err != nil {
 			return fmt.Errorf("read back monitoring run: %w", err)
 		}
-		run = runFromSQLC(row)
+		run = runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
+			row.Status, row.JobID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults)
 		return nil
 	})
 	if err != nil {
@@ -118,7 +119,7 @@ func (s *Store) UpsertRun(ctx context.Context, accountID domain.ID, params Upser
 
 // FinalizeRun sets the run's terminal status from its succeeded result count
 // against the run's stored expected_results (the prompt-snapshot size, so a
-// prompt whose activity never wrote a row still counts against completion).
+// prompt whose execution never wrote a row still counts against completion).
 // It is account-scoped and safe under retry. A missing or cross-account run
 // returns ErrNotFound.
 func (s *Store) FinalizeRun(ctx context.Context, accountID, runID domain.ID) (Run, error) {
@@ -130,7 +131,8 @@ func (s *Store) FinalizeRun(ctx context.Context, accountID, runID domain.ID) (Ru
 		}
 		return Run{}, fmt.Errorf("finalize run: %w", err)
 	}
-	return runFromSQLC(row), nil
+	return runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
+		row.Status, row.JobID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults), nil
 }
 
 // RunListItem is a run plus its per-run result counts, shaped like
@@ -161,19 +163,14 @@ func (s *Store) ListRuns(ctx context.Context, accountID, businessID domain.ID) (
 	runs := make([]RunListItem, 0, len(rows))
 	for _, row := range rows {
 		item := RunListItem{Run: runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
-			row.Status, row.WorkflowID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults),
+			row.Status, row.JobID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults),
 			SucceededResults: int(row.Succeeded), FailedResults: int(row.Failed), AnalyzedResults: int(row.Analyzed)}
 		runs = append(runs, item)
 	}
 	return runs, nil
 }
 
-func runFromSQLC(row storesqlc.MonitoringRun) Run {
-	return runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
-		row.Status, row.WorkflowID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults)
-}
-
-func runFromFields(id, businessID domain.ID, platform, trigger string, scheduled time.Time, status, workflowID string,
+func runFromFields(id, businessID domain.ID, platform, trigger string, scheduled time.Time, status string, jobID int64,
 	started time.Time, completed, analysisCompleted *time.Time, expected *int32) Run {
 	var expectedResults *int
 	if expected != nil {
@@ -181,7 +178,7 @@ func runFromFields(id, businessID domain.ID, platform, trigger string, scheduled
 		expectedResults = &v
 	}
 	return Run{ID: id, BusinessID: businessID, Platform: platform, Trigger: RunTrigger(trigger),
-		ScheduledFor: scheduled, Status: RunStatus(status), WorkflowID: workflowID, StartedAt: started,
+		ScheduledFor: scheduled, Status: RunStatus(status), JobID: jobID, StartedAt: started,
 		CompletedAt: completed, AnalysisCompletedAt: analysisCompleted, ExpectedResults: expectedResults}
 }
 
@@ -210,8 +207,8 @@ func normalizeUpsertRunParams(params UpsertRunParams) (UpsertRunParams, error) {
 	if params.ScheduledFor.IsZero() {
 		return UpsertRunParams{}, errors.New("run scheduled_for is required")
 	}
-	if strings.TrimSpace(params.WorkflowID) == "" {
-		return UpsertRunParams{}, errors.New("run workflow_id is required")
+	if params.JobID < 1 {
+		return UpsertRunParams{}, errors.New("run job_id must be positive")
 	}
 	if params.ExpectedResults < 0 {
 		return UpsertRunParams{}, errors.New("run expected_results must not be negative")

@@ -399,8 +399,8 @@ function ProposalFlow({
   )
 }
 
-// GENERATION_STEPS mirrors GenerateProfileWorkflow's stage order
-// (internal/workflows/generate_profile.go). PersistProposal is folded into
+// GENERATION_STEPS mirrors profile-generation job's stage order
+// (internal/jobs/jobs.go). Proposal persistence is folded into
 // "drafting"; there is no terminal step because a ready proposal immediately
 // swaps this screen for the review screen.
 const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
@@ -412,10 +412,10 @@ const GENERATION_STEPS: { stage: GenerationStage; label: string }[] = [
 ]
 
 // GenerationProgress renders the live, stage-driven step list while the
-// workflow generates. The current step comes from the polled stage; an absent
-// stage (just-started run, pre-deploy workflow, or a degraded stage query)
+// job generates. The current step comes from the polled stage; an absent
+// stage (just-started run, pre-deploy job, or a degraded stage query)
 // falls back to step 1. The only motion tied to progress is the real polled
-// stage — completed steps get a checkmark that transitions in as the workflow
+// stage — completed steps get a checkmark that transitions in as the job
 // advances.
 function GenerationProgress({
   stage,

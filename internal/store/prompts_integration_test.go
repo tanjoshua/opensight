@@ -20,7 +20,7 @@ func fillActivePrompts(t *testing.T, ctx context.Context, promptStore *Store, ac
 	t.Helper()
 	for i := 0; i < n; i++ {
 		if _, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-			AccountID:   accountID,
+			AccountID:  accountID,
 			BusinessID: businessID,
 			Text:       fmt.Sprintf("filler prompt %d", i),
 		}); err != nil {
@@ -63,7 +63,7 @@ func TestPromptStoreCreateActivePromptHonorsPlanLimit(t *testing.T) {
 	fillActivePrompts(t, ctx, promptStore, accountID, businessID, billing.Starter.PromptLimit)
 
 	_, err = promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-		AccountID:   accountID,
+		AccountID:  accountID,
 		BusinessID: businessID,
 		Text:       "where should I book a clinic appointment",
 	})
@@ -120,7 +120,7 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 	// frees its slot before the insert counts (at the limit boundary).
 	fillActivePrompts(t, ctx, promptStore, accountID, businessID, billing.Starter.PromptLimit-1)
 	original, err := promptStore.CreateActivePrompt(ctx, CreateActivePromptParams{
-		AccountID:   accountID,
+		AccountID:  accountID,
 		BusinessID: businessID,
 		Text:       "best clinic near me",
 	})
@@ -129,7 +129,7 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 	}
 
 	replacement, err := promptStore.ReplacePrompt(ctx, ReplacePromptParams{
-		AccountID:    accountID,
+		AccountID:   accountID,
 		OldPromptID: original.ID,
 		Text:        "top rated clinic nearby",
 	})
@@ -153,7 +153,7 @@ func TestPromptStoreReplacePrompt(t *testing.T) {
 
 	// Replacing the now-retired original is rejected.
 	if _, err := promptStore.ReplacePrompt(ctx, ReplacePromptParams{
-		AccountID:    accountID,
+		AccountID:   accountID,
 		OldPromptID: original.ID,
 		Text:        "another prompt",
 	}); !errors.Is(err, ErrPromptNotActive) {

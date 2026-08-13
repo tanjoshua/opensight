@@ -48,7 +48,7 @@ schema is complete and reviewable before any server code changes.
       `CompetitorSource`, `Sentiment`, `MentionSubject`, `MatchMethod`, `CitationSubject`,
       `GenerationStage`) — values read from `internal/store`/its migrations, not from frontend
       string literals. `ProposalStatus` (`generating`/`ready`/`failed`) is the one exception: it is
-      workflow-derived in `internal/api/businesses.go`, not `internal/store`'s
+      job-derived in `internal/api/businesses.go`, not `internal/store`'s
       `ProfileProposalStatus` (`pending`/`applied`/`discarded`), which is never exposed over the API.
 - [x] `UpdateBusinessRequest`/`UpdateCompetitorAliasesRequest` use `optional` scalars and the
       `StringList` message wrapper so omitted/null/empty PATCH semantics (design 06 Setup notes)
@@ -88,8 +88,7 @@ real service, so that the remaining services are a mechanical repeat of a proven
       sentinels `AuthService` actually reaches — no/expired session → `CodeUnauthenticated`
       (+ a `Set-Cookie` clear via `Meta()`), else `CodeInternal` (real error to `slog`, generic
       message to the client, no `Meta`/details — never an oracle). `store.ErrNotFound`,
-      `ErrBusinessNotDraft`, `ErrPromptNotActive`, `ErrPromptLimitExceeded`,
-      `WorkflowExecutionAlreadyStarted` aren't reachable from AuthService; RPC-4/5/6 each extend this
+      `ErrBusinessNotDraft`, `ErrPromptNotActive`, and `ErrPromptLimitExceeded` aren't reachable from AuthService; RPC-4/5/6 each extend this
       same switch with the sentinel they introduce, rather than this story writing untested branches
       for stores it doesn't call.
 - [x] `AuthService` (`Login`, `Logout`, `GetMe`) implemented in a new `internal/api/auth_rpc.go`; the

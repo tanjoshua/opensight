@@ -39,7 +39,7 @@ the call site so a test reads top to bottom without a catalog lookup.
 
 ## Local development
 
-- `make up`: Postgres + Temporal (+ UI) run in Docker, migrations run once, and the Go API/worker run natively with `air`; the script waits for `/healthz`, prints service links, then reports the API healthy. When the frontend is present, Vite also runs natively on a strict local port and proxies `/rpc`.
+- `make up`: PostgreSQL runs in Docker; migrations run once; the unified Go app runs natively with `air`; Vite and the marketing server run when present.
 - `docker compose -f compose.dev.yml up`: still available for infrastructure-only debugging.
 - **`PromptRunner` stub mode** (env-selected): development and tests must not spend OpenAI money or wait on real searches. Two flavors: `stub` (canned, deterministic fixtures — a fake clinic-recommendation response with citations) and `replay` (recorded real `raw_response` payloads checked into `testdata/`). The analysis pipeline (05) develops almost entirely against replay data — real responses, zero cost, deterministic tests.
 - **Stripe sandbox locally** (08): the serving path always uses Stripe, so local development exercises the real Checkout, Portal and webhook boundary with `stripe sandbox create` plus `stripe listen --forward-to localhost:8080/webhooks/stripe`. Automated tests use narrow package-local fakes and never call Stripe.
@@ -49,11 +49,11 @@ the call site so a test reads top to bottom without a catalog lookup.
 
 - Git repo (private, GitHub).
 - CI (GitHub Actions): test + lint + build a single multi-stage Docker image (Go binary with embedded SPA) pushed to GHCR. CI re-runs `make proto` and `make sqlc`, runs the SQL-boundary check, and fails on any diff, so committed protobuf, Connect, and query code cannot drift from their schemas and catalogs.
-- Deploy = Ansible (`infra/deploy.yml`, `make infra-deploy`, FND-5): render `.env`/`compose.yml`/`Caddyfile` from SOPS-encrypted config → `docker login ghcr.io` → `docker compose pull` → bring up `postgres`/`temporal` and wait for the Temporal namespace bootstrap → **stop `app` and `worker`** → **`docker compose run --rm app migrate`**, explicit and separate from `serve`/`work` startup → `docker compose up -d` for the full stack → verify `/healthz`. Stopping both application processes before migrations makes incompatible schema changes safe; Postgres and Temporal remain up. No orchestrator, no blue/green; seconds of downtime at deploy is acceptable for this product. Compose stack per 01-D8: `app`, `worker`, `postgres`, `temporal`, `temporal-ui` (bound to localhost only, reached via SSH tunnel), `caddy` (auto-HTTPS). Rollback is redeploying a pinned CI-built image tag when schema-compatible; migrations whose down direction would discard multi-account memberships require restoring the pre-migration backup. Provisioning a fresh VPS (`infra/provision.yml`, `make infra-provision`) is a separate, idempotent, re-runnable playbook — full runbook in `infra/README.md`.
+- Deploy = Ansible: render configuration, pull images, start PostgreSQL, stop `app`, run `docker compose run --rm app migrate`, start `app` and Caddy, then verify `/healthz`. The stack is `app`, `postgres`, and `caddy`.
 
 ## Backups and recovery
 
-- Nightly `pg_dump` of `opensight` + `temporal` databases → **restic** encrypted repository → offsite (OVH Object Storage or Backblaze B2; both are ~single-digit €/month at this volume — within budget).
+- Nightly `pg_dump` of the single `opensight` database includes product and River state, encrypted by restic and shipped offsite.
 - The `.env` file is included in the restic set (it's the only non-reproducible thing outside Postgres).
 - **Restore drill is part of MVP acceptance**: on a scratch VPS, restore last night's dump, `docker compose up`, confirm the app serves and schedules resume. An untested backup is a hope, not a backup. Recovery point of ≤24h is fine — worst case a week's run re-executes (idempotency keys make that safe, 04).
 
@@ -63,8 +63,8 @@ Kept deliberately minimal for MVP:
 
 - **Errors**: Sentry free tier for Go + React (or self-hosted GlitchTip later if cost/data-locality demands; free tier is within budget policy).
 - **Logs**: structured `slog` JSON to stdout → `docker logs` with rotation. No Loki/ELK; grep is fine at this scale.
-- **Workflow debugging**: Temporal UI (that's what it's in the stack for). Stuck or silently failing weekly runs surface here and in `monitoring_runs.status` — checked manually; no external uptime/dead-man's-switch service in MVP.
-- **Improve health**: the current `site_audits` row records crawl failure and pages read, while Temporal exposes finder or publication failures. These join the same manual weekly check — no separate dashboard or alerting.
+- **Queue debugging**: structured logs plus the `river_job` query in design 04; no dashboard service.
+- **Improve health**: `site_audits` records crawl health; failed assessment jobs remain visible in `river_job` and structured logs.
 - **Spend guardrail**: the OpenAI dashboard monthly budget cap on the project-scoped key is the hard backstop — no in-app circuit breaker. The per-account cost query (04) still exists for unit economics, run ad hoc.
 
 ## Data protection (light-touch, noted not lawyered)

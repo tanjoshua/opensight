@@ -10,7 +10,7 @@ As a clinic user, I want to edit or replace prompts with an unskippable warning,
 
 - [x] `POST /businesses/:id/prompts` (409 at `plan.prompt_limit`); `POST /prompts/:id/replace` requires `{text, confirmed: true}` — retire old + insert new with `replaces_prompt_id` (text immutable; edit and replace are the same operation).
 - [x] Modal states exactly: "history for the old prompt stays viewable; the new prompt starts a fresh trend"; API rejects without `confirmed: true`.
-- [x] Replacement takes effect next run (workflow snapshots at start); new prompt = new trend series in all charts.
+- [x] Replacement takes effect next run (job snapshots at start); new prompt = new trend series in all charts.
 
 Deps: MET-3, INS-2 · Phase 3 · Ref: design 06 (Prompts — replace flow), 02 (Prompts), PRD §4
 

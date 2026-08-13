@@ -51,7 +51,7 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 	applyStore := New(db)
 
 	result, err := applyStore.Apply(ctx, ApplyProposalParams{
-		AccountID:    accountID,
+		AccountID:   accountID,
 		BusinessID:  businessID,
 		Name:        "Draft Clinic",
 		Aliases:     []string{"DC Ortho"},
@@ -96,7 +96,7 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 
 	// A second apply on the now-active business is rejected.
 	_, err = applyStore.Apply(ctx, ApplyProposalParams{
-		AccountID:    accountID,
+		AccountID:   accountID,
 		BusinessID:  businessID,
 		Name:        "Draft Clinic",
 		Category:    "orthopaedic clinic",
@@ -113,7 +113,7 @@ func TestApplyProposalStoreActivatesBusiness(t *testing.T) {
 		INSERT INTO businesses (id, account_id, status, name)
 		VALUES ($1, $2, 'draft', 'Manual Clinic')`, manualBusinessID, accountID)
 	manual, err := applyStore.Apply(ctx, ApplyProposalParams{
-		AccountID:    accountID,
+		AccountID:   accountID,
 		BusinessID:  manualBusinessID,
 		Name:        "Manual Clinic",
 		Category:    "physiotherapy",

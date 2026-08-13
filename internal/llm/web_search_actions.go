@@ -19,7 +19,7 @@ type WebSearchAction struct {
 // ParseWebSearchActions walks raw_response's output[] collecting web_search_call
 // actions in order. It never fetches any URL. Used to (1) build Sources from the
 // pages the model opened and (2) decide whether the model actually read the
-// business's own site (an open_page on its domain) so the workflow can trust the
+// business's own site (an open_page on its domain) so the profile job can trust the
 // model's low_confidence judgement even when FetchSite failed.
 func ParseWebSearchActions(rawResponse json.RawMessage) []WebSearchAction {
 	if len(rawResponse) == 0 {
@@ -86,7 +86,7 @@ func SourcesFromWebSearch(rawResponse json.RawMessage) []ProposalSource {
 
 // OpenedSiteDomain reports whether any open_page action opened a page on the
 // given website's own host (bare host, case- and www-insensitive). It is how the
-// workflow tells "the model read the site itself" apart from "the model only
+// profile job tells "the model read the site itself" apart from "the model only
 // searched the name" when FetchSite failed. host is the website URL's host; an
 // empty or unparseable host yields false.
 func OpenedSiteDomain(actions []WebSearchAction, host string) bool {

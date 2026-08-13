@@ -22,21 +22,18 @@ const (
 )
 
 const (
-	defaultEnv               = "dev"
-	defaultHTTPAddr          = ":8080"
-	defaultDatabaseURL       = "postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable"
-	defaultDBMaxOpenConns    = 10
-	defaultTemporalAddress   = "localhost:7233"
-	defaultTemporalNamespace = "default"
-	defaultTemporalTaskQueue = "opensight"
-	defaultResponsesModel    = "chat-latest"
-	defaultAnalysisModel     = "gpt-5.6-luna"
-	defaultOnboardingModel   = "gpt-5.6-terra"
+	defaultEnv             = "dev"
+	defaultHTTPAddr        = ":8080"
+	defaultDatabaseURL     = "postgres://opensight:opensight@localhost:5432/opensight?sslmode=disable"
+	defaultDBMaxOpenConns  = 10
+	defaultResponsesModel  = "chat-latest"
+	defaultAnalysisModel   = "gpt-5.6-luna"
+	defaultOnboardingModel = "gpt-5.6-terra"
 	// Customer questions become the business's long-lived measurement instrument,
 	// so generation favors the same balanced model used for profile research.
-	defaultQuestionsModel    = "gpt-5.6-terra"
-	defaultPromptRunnerMode  = PromptRunnerStub
-	defaultPromptConcurrency = 2
+	defaultQuestionsModel   = "gpt-5.6-terra"
+	defaultPromptRunnerMode = PromptRunnerStub
+	defaultLLMConcurrency   = 2
 )
 
 type Config struct {
@@ -44,16 +41,13 @@ type Config struct {
 	HTTPAddr              string
 	DatabaseURL           string
 	DBMaxOpenConns        int
-	TemporalAddress       string
-	TemporalNamespace     string
-	TemporalTaskQueue     string
 	OpenAIAPIKey          string
 	OpenAIResponsesModel  string
 	OpenAIAnalysisModel   string
 	OpenAIOnboardingModel string
 	OpenAIQuestionsModel  string
 	PromptRunnerMode      PromptRunnerMode
-	PromptConcurrency     int
+	LLMConcurrency        int
 	StripeSecretKey       string
 	StripeWebhookSecret   string
 	// StripePortalConfigurationID pins BillingService.CreatePortalSession to
@@ -76,7 +70,7 @@ type Config struct {
 
 // Load reads runtime settings from the process environment. It first loads a
 // .env file from the working directory if present (dev convenience, e.g. air
-// under `make dev-serve`/`dev-work` — see docs/dev.md), without overriding
+// under `make dev-serve` — see docs/dev.md), without overriding
 // any variable already set in the real environment; a missing .env (the
 // normal case in deployment) is not an error.
 func Load() (Config, error) {
@@ -95,7 +89,7 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 
-	promptConcurrency, err := getenvPositiveInt(getenv, "PROMPT_CONCURRENCY", defaultPromptConcurrency)
+	llmConcurrency, err := getenvPositiveInt(getenv, "LLM_CONCURRENCY", defaultLLMConcurrency)
 	if err != nil {
 		return Config{}, err
 	}
@@ -126,16 +120,13 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		HTTPAddr:                    getenvString(getenv, "HTTP_ADDR", defaultHTTPAddr),
 		DatabaseURL:                 getenvString(getenv, "DATABASE_URL", defaultDatabaseURL),
 		DBMaxOpenConns:              dbMaxOpenConns,
-		TemporalAddress:             getenvString(getenv, "TEMPORAL_ADDRESS", defaultTemporalAddress),
-		TemporalNamespace:           getenvString(getenv, "TEMPORAL_NAMESPACE", defaultTemporalNamespace),
-		TemporalTaskQueue:           getenvString(getenv, "TEMPORAL_TASK_QUEUE", defaultTemporalTaskQueue),
 		OpenAIAPIKey:                getenv("OPENAI_API_KEY"),
 		OpenAIResponsesModel:        getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
 		OpenAIAnalysisModel:         getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
 		OpenAIOnboardingModel:       getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
 		OpenAIQuestionsModel:        getenvString(getenv, "OPENAI_QUESTIONS_MODEL", defaultQuestionsModel),
 		PromptRunnerMode:            mode,
-		PromptConcurrency:           promptConcurrency,
+		LLMConcurrency:              llmConcurrency,
 		StripeSecretKey:             stripeSecretKey,
 		StripeWebhookSecret:         stripeWebhookSecret,
 		StripePortalConfigurationID: stripePortalConfigurationID,

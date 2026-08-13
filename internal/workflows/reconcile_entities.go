@@ -7,8 +7,6 @@ import (
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-
-	"go.temporal.io/sdk/temporal"
 )
 
 // ResultEntities carries one analyzed result's ordered entity list into phase 2,
@@ -35,23 +33,23 @@ type ReconcileEntitiesOutput struct {
 	LLMMatched        int
 }
 
-// ReconcileEntities is phase 2's single serial activity (design 05, "single
-// activity, serial"): it exact-matches every entity, runs one LLM match call for
+// ReconcileEntities is phase 2's single serial operation (design 05, "single
+// operation, serial"): it exact-matches every entity, runs one LLM match call for
 // the run's still-unmatched names, mints discovered competitors for the rest,
 // and commits all mentions plus analysis_completed_at in one transaction.
 //
-// Idempotency requirement: this activity ALWAYS reloads the target business and
+// Idempotency requirement: this operation ALWAYS reloads the target business and
 // the competitor list fresh from the DB at the top of every attempt, and never
-// trusts anything the workflow passed across a retry. That is what makes a
-// Temporal at-least-once retry of the whole activity safe — a retry's exact pass
+// trusts anything the job passed across a retry. That is what makes a
+// River at-least-once retry of the whole operation safe — a retry's exact pass
 // re-matches names against the competitors a previous (success-not-acked)
 // attempt already minted, so the delete-and-rewrite converges instead of
 // re-creating them (CommitReconcile is itself one transaction).
-func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntitiesInput) (ReconcileEntitiesOutput, error) {
+func (a *Operations) ReconcileEntities(ctx context.Context, in ReconcileEntitiesInput) (ReconcileEntitiesOutput, error) {
 	business, err := a.Store.GetBusiness(ctx, in.AccountID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return ReconcileEntitiesOutput{}, temporal.NewNonRetryableApplicationError(
+			return ReconcileEntitiesOutput{}, NewPermanentError(
 				"load business", "BadRun", err)
 		}
 		return ReconcileEntitiesOutput{}, err
@@ -121,12 +119,16 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 	// the LLM matched it to (uuid.Nil / absent == still unmatched).
 	resolvedByKey := map[string]domain.ID{}
 	if len(unmatchedOrder) > 0 && len(matchCandidates) > 0 {
+		if err := a.Limiter.Acquire(ctx); err != nil {
+			return ReconcileEntitiesOutput{}, err
+		}
 		names := make([]string, len(unmatchedOrder))
 		for i, key := range unmatchedOrder {
 			names[i] = unmatchedVerbatim[key]
 		}
 		matchIn := llm.MatchInput{Names: names, Competitors: matchCandidates}
 		res, err := a.Matcher.RunMatch(ctx, matchIn)
+		a.Limiter.Release()
 		if err != nil {
 			return ReconcileEntitiesOutput{}, err
 		}
@@ -204,7 +206,7 @@ func (a *Activities) ReconcileEntities(ctx context.Context, in ReconcileEntities
 		Mentions:         mentions,
 	}); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return ReconcileEntitiesOutput{}, temporal.NewNonRetryableApplicationError(
+			return ReconcileEntitiesOutput{}, NewPermanentError(
 				"commit reconcile", "BadRun", err)
 		}
 		return ReconcileEntitiesOutput{}, err

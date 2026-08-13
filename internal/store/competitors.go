@@ -36,7 +36,7 @@ type CompetitorRecord struct {
 
 type CreateManualCompetitorParams struct {
 	ID         domain.ID
-	AccountID   domain.ID
+	AccountID  domain.ID
 	BusinessID domain.ID
 	Name       string
 	Aliases    []string
@@ -44,19 +44,19 @@ type CreateManualCompetitorParams struct {
 }
 
 type SetCompetitorStatusParams struct {
-	AccountID     domain.ID
+	AccountID    domain.ID
 	CompetitorID domain.ID
 	Status       CompetitorStatus
 }
 
 type SuggestedAliasParams struct {
-	AccountID     domain.ID
+	AccountID    domain.ID
 	CompetitorID domain.ID
 	Alias        string
 }
 
 type UpdateCompetitorAliasesParams struct {
-	AccountID     domain.ID
+	AccountID    domain.ID
 	CompetitorID domain.ID
 	Aliases      []string
 }

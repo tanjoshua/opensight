@@ -66,12 +66,12 @@ func TestGatingRules(t *testing.T) {
 
 	// Run A: completed AND reconciled — the only run in the metrics base.
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-a', now(), now())`, runA, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 301, now(), now())`, runA, businessID)
 	// Run B: completed but analysis_completed_at NULL — must be excluded whole.
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-b', now())`, runB, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 302, now())`, runB, businessID)
 
 	succeeded := func(id, runID, promptID domain.ID, at string) {
 		mustExec(t, db, ctx, `
@@ -326,11 +326,11 @@ func TestCompetitorTrendIncludesZeroMentionRuns(t *testing.T) {
 		INSERT INTO competitors (id, business_id, name, aliases, source, status)
 		VALUES ($1, $2, 'Rival Clinic', ARRAY['rival clinic']::text[], 'manual', 'tracked')`, competitorID, businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 'wf-zero-a', now(), now())`, runA, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-06', 'completed', 303, now(), now())`, runA, businessID)
 	mustExec(t, db, ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at, analysis_completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'wf-zero-b', now(), now())`, runB, businessID)
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 304, now(), now())`, runB, businessID)
 
 	succeeded := func(id, runID domain.ID, at string) {
 		mustExec(t, db, ctx, `

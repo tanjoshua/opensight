@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"opensight/internal/llm"
-
-	"go.temporal.io/sdk/temporal"
 )
 
 // ProposeProfileInput is the proposal request: the user-entered
@@ -24,12 +22,12 @@ type ProposeProfileInput struct {
 }
 
 // ProposeProfileOutput carries the decoded proposal payload (Sources already
-// populated) for GenerateProfileWorkflow to persist. Proposed is false when
+// populated) for GenerateProfileWorker to persist. Proposed is false when
 // validation still failed after llm.MaxProposeProfileAttempts — no
 // profile_proposals row may be written in that case; treat it like a hard
 // generation failure. OpenedOwnSite is true when the model's
 // web-search actions include an open_page on the business website's own domain,
-// i.e. it read the site itself — the workflow uses this to decide whether to
+// i.e. it read the site itself — the job uses this to decide whether to
 // override low_confidence when FetchSite failed.
 type ProposeProfileOutput struct {
 	Payload        llm.ProposalPayload
@@ -44,26 +42,30 @@ type ProposeProfileOutput struct {
 //
 // Empty name is bad input and non-retryable. A runner error the runner marks
 // non-retryable (400-class, content-policy refusal) won't fix on retry, so it
-// becomes non-retryable too; every other error propagates for Temporal's
+// becomes non-retryable too; every other error propagates for River's
 // default retry. A proposal that still fails validation after the retry
-// returns Proposed=false (not an error) so the calling workflow's failure
+// returns Proposed=false (not an error) so the calling job's failure
 // posture decides what to do.
-func (a *Activities) ProposeProfile(ctx context.Context, in ProposeProfileInput) (ProposeProfileOutput, error) {
+func (a *Operations) ProposeProfile(ctx context.Context, in ProposeProfileInput) (ProposeProfileOutput, error) {
 	name := strings.TrimSpace(in.Name)
 	if name == "" {
-		return ProposeProfileOutput{}, temporal.NewNonRetryableApplicationError(
+		return ProposeProfileOutput{}, NewPermanentError(
 			"propose profile", "BadInput", errors.New("business name is required"))
 	}
 
+	if err := a.Limiter.Acquire(ctx); err != nil {
+		return ProposeProfileOutput{}, err
+	}
 	result, err := llm.ProposeWithRetry(ctx, a.Proposer, llm.ProposeProfileInput{
 		Name:     name,
 		Website:  in.Website,
 		SiteText: in.SiteText,
 		Location: in.Location,
 	})
+	a.Limiter.Release()
 	if err != nil {
 		if errors.Is(err, llm.ErrNonRetryable) {
-			return ProposeProfileOutput{}, temporal.NewNonRetryableApplicationError(
+			return ProposeProfileOutput{}, NewPermanentError(
 				"propose profile", "ProposalRefused", err)
 		}
 		return ProposeProfileOutput{}, err

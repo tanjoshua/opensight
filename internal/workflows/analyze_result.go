@@ -10,12 +10,10 @@ import (
 	"opensight/internal/domain"
 	"opensight/internal/llm"
 	"opensight/internal/store"
-
-	"go.temporal.io/sdk/temporal"
 )
 
 // AnalyzeResultInput identifies one succeeded result to analyze. The account is
-// resolved by the parent workflow (AnalyzeRun).
+// resolved by the analysis job.
 type AnalyzeResultInput struct {
 	AccountID domain.ID `json:"TenantID"`
 	ResultID  domain.ID
@@ -37,23 +35,23 @@ type AnalyzeResultOutput struct {
 // (design 05, "Phase 1 — AnalyzeResult"). It writes no mention facts. It always
 // re-extracts (never short-circuits on an existing row) so a re-analysis pass
 // can rewrite onto a bumped extraction_version.
-func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (AnalyzeResultOutput, error) {
+func (a *Operations) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (AnalyzeResultOutput, error) {
 	detail, err := a.Store.GetResultDetail(ctx, in.AccountID, in.ResultID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
+			return AnalyzeResultOutput{}, NewPermanentError(
 				"load result detail", "BadResult", err)
 		}
 		return AnalyzeResultOutput{}, err
 	}
 	if detail.Result.Status != store.ResultStatusSucceeded {
 		// A non-succeeded result never becomes succeeded on retry.
-		return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
+		return AnalyzeResultOutput{}, NewPermanentError(
 			"result is not succeeded", "BadResult",
 			fmt.Errorf("result %s has status %q", in.ResultID, detail.Result.Status))
 	}
 	if detail.Result.ResponseText == nil || strings.TrimSpace(*detail.Result.ResponseText) == "" {
-		return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
+		return AnalyzeResultOutput{}, NewPermanentError(
 			"succeeded result has no response text", "BadResult",
 			fmt.Errorf("result %s has no response_text", in.ResultID))
 	}
@@ -62,7 +60,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	business, err := a.Store.GetBusiness(ctx, in.AccountID, detail.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
+			return AnalyzeResultOutput{}, NewPermanentError(
 				"load business", "BadResult", err)
 		}
 		return AnalyzeResultOutput{}, err
@@ -71,7 +69,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	annotations, err := llm.ParseCitationAnnotations(detail.Result.RawResponse)
 	if err != nil {
 		// A malformed raw_response is a data bug, not a transient failure.
-		return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
+		return AnalyzeResultOutput{}, NewPermanentError(
 			"parse citation annotations", "BadResult", err)
 	}
 
@@ -90,7 +88,11 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 		Citations:        annotations,
 	}
 
+	if err := a.Limiter.Acquire(ctx); err != nil {
+		return AnalyzeResultOutput{}, err
+	}
 	result, err := llm.ExtractWithRetry(ctx, a.Extractor, extIn, responseText, annotations)
+	a.Limiter.Release()
 	if err != nil {
 		return AnalyzeResultOutput{}, err
 	}
@@ -100,7 +102,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 			"validation_errors", result.ValidationErrs,
 		)
 		// Clear any stale result_analyses row from a prior successful analysis
-		// (e.g. a ReanalyzeRun whose new extraction attempt failed): a failed
+		// (e.g. a manual reanalysis whose new extraction attempt failed): a failed
 		// analysis must never leave old sentiment/keywords counting toward
 		// metrics under a result that today has no valid analysis (design 05).
 		if err := a.Store.DeleteResultAnalysis(ctx, in.AccountID, in.ResultID); err != nil {
@@ -116,7 +118,7 @@ func (a *Activities) AnalyzeResult(ctx context.Context, in AnalyzeResultInput) (
 	spans := llm.AttributeCitations(responseText, annotations)
 	citations, err := buildCitationWrites(output.Citations, spans)
 	if err != nil {
-		return AnalyzeResultOutput{}, temporal.NewNonRetryableApplicationError(
+		return AnalyzeResultOutput{}, NewPermanentError(
 			"build citations", "BadResult", err)
 	}
 

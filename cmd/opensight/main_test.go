@@ -14,9 +14,9 @@ func TestRunKnownSubcommands(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	// serve, work, and migrate all short-circuit on a cancelled context before
-	// touching the database or Temporal, so this exercises dispatch only.
-	for _, cmd := range []string{"serve", "work", "migrate"} {
+	// serve and migrate short-circuit on a cancelled context before touching
+	// the database, so this exercises dispatch only.
+	for _, cmd := range []string{"serve", "migrate"} {
 		if err := run(ctx, []string{cmd}); err != nil {
 			t.Errorf("run(%q) returned error: %v", cmd, err)
 		}

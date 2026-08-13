@@ -86,6 +86,11 @@ sql:
             go_type:
               type: "int64"
               pointer: true
+          - db_type: "pg_catalog.int8"
+            nullable: true
+            go_type:
+              type: "int64"
+              pointer: true
           - db_type: "float8"
             go_type: "float64"
           - db_type: "float8"

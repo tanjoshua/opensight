@@ -35,7 +35,7 @@ const (
 	// stays readable and curatable after a subscription lapses.
 	classSubscriber
 	// classActive needs AccessFull: a live subscription. Reserved for the
-	// procedures that reach an LLM or start a Temporal Schedule — the gate
+	// procedures that reach an LLM or start a River Schedule — the gate
 	// protects spend, not data.
 	classActive
 )
@@ -136,14 +136,14 @@ var procedureAccess = map[string]procedurePolicy{
 	opensightv1connect.ImproveServiceSetActionStatusProcedure:            policy(scopeAccount, store.AccountRoleMember, classSubscriber),
 
 	// classActive — needs full. Exactly the procedures that reach an LLM or
-	// start a Temporal Schedule.
+	// start a River Schedule.
 	//
 	// CreateBusiness/RegenerateProposal need full because they start
-	// GenerateProfileWorkflow (LLM spend), not merely because they mutate a
+	// GenerateProfileWorker (LLM spend), not merely because they mutate a
 	// row. ApplyProposal needs full: activates the business, inserts
-	// prompts, creates the Temporal Schedule. GenerateQuestions needs full for
+	// prompts, creates the River Schedule. GenerateQuestions needs full for
 	// the same reason as CreateBusiness/RegenerateProposal: it is an LLM call
-	// (design 03), even though — unlike them — it does not touch a workflow.
+	// (design 03), even though it does not enqueue a background job.
 	opensightv1connect.BusinessServiceCreateBusinessProcedure:     policy(scopeAccount, store.AccountRoleAdmin, classActive),
 	opensightv1connect.BusinessServiceRegenerateProposalProcedure: policy(scopeAccount, store.AccountRoleAdmin, classActive),
 	opensightv1connect.BusinessServiceApplyProposalProcedure:      policy(scopeAccount, store.AccountRoleAdmin, classActive),

@@ -2,7 +2,6 @@
 // subcommand:
 //
 //	opensight serve           # HTTP API server (01-D2)
-//	opensight work            # Temporal worker (01-D2)
 //	opensight migrate         # apply database migrations, then exit
 //	opensight account create     # create an operator-provisioned account
 //	opensight account member add # add a member to an account
@@ -35,21 +34,24 @@ import (
 	"opensight/internal/billing/stripe"
 	"opensight/internal/config"
 	"opensight/internal/domain"
+	"opensight/internal/jobs"
 	"opensight/internal/llm"
 	"opensight/internal/metrics"
 	"opensight/internal/store"
 	"opensight/internal/workflows"
 
 	"github.com/google/uuid"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
+	river "github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
 )
 
 const (
-	usage                 = "usage: opensight <serve|work|migrate|account|business|seed|stripe>"
+	usage                 = "usage: opensight <serve|migrate|run|account|business|seed|stripe>"
 	accountCreateUsage    = "usage: opensight account create --name <account-name>"
 	accountMemberAddUsage = "usage: opensight account member add --account <account-id> --email <email> --role <owner|admin|member|viewer>"
 	businessCreateUsage   = "usage: opensight business create --account <account-id> --file <spec.yaml>"
+	runReanalyzeUsage     = "usage: opensight run reanalyze --account <account-id> --run <run-id>"
 	seedUsage             = seedDevArgsUsage
 )
 
@@ -96,10 +98,10 @@ func run(ctx context.Context, args []string) error {
 	switch cmd := args[0]; cmd {
 	case "serve":
 		return serve(ctx, cfg)
-	case "work":
-		return work(ctx, cfg)
 	case "migrate":
 		return migrate(ctx, cfg)
+	case "run":
+		return runJobCommand(ctx, cfg, args[1:])
 	case "account":
 		return runAccountCommand(ctx, cfg, args[1:])
 	case "business":
@@ -168,6 +170,47 @@ func runSeedCommand(ctx context.Context, cfg config.Config, args []string) error
 	default:
 		return fmt.Errorf("unknown seed subcommand %q; %s", args[0], seedUsage)
 	}
+}
+
+func runJobCommand(ctx context.Context, cfg config.Config, args []string) error {
+	if len(args) == 0 || args[0] != "reanalyze" {
+		return fmt.Errorf("%s", runReanalyzeUsage)
+	}
+	flags := flag.NewFlagSet("run reanalyze", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	accountRaw := flags.String("account", "", "account id")
+	runRaw := flags.String("run", "", "run id")
+	if err := flags.Parse(args[1:]); err != nil || flags.NArg() != 0 {
+		return fmt.Errorf("%s", runReanalyzeUsage)
+	}
+	accountID, err := uuid.Parse(strings.TrimSpace(*accountRaw))
+	if err != nil {
+		return fmt.Errorf("--account must be a UUID: %w", err)
+	}
+	runID, err := uuid.Parse(strings.TrimSpace(*runRaw))
+	if err != nil {
+		return fmt.Errorf("--run must be a UUID: %w", err)
+	}
+	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	repository := store.New(db)
+	spec, err := repository.LoadAnalysisJobSpec(ctx, accountID, runID)
+	if err != nil {
+		return err
+	}
+	client, err := river.NewClient(riverpgxv5.New(db), &river.Config{})
+	if err != nil {
+		return err
+	}
+	inserted, err := client.Insert(ctx, jobs.AnalyzeArgs{AccountID: accountID, BusinessID: spec.BusinessID, RunID: runID}, nil)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(os.Stdout, "job_id=%d\nrun_id=%s\n", inserted.Job.ID, runID)
+	return err
 }
 
 func parseAccountCreateArgs(args []string) (accountCreateOptions, error) {
@@ -288,7 +331,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 	if ctx.Err() != nil {
 		return nil
 	}
-	// Validate before opening the database or dialing Temporal so a bad
+	// Validate before opening the database so a bad
 	// environment fails without touching any other service.
 	if err := validateServeRuntimeConfig(cfg); err != nil {
 		return err
@@ -300,13 +343,27 @@ func serve(ctx context.Context, cfg config.Config) error {
 	}
 	defer db.Close()
 
-	// serve starts GenerateProfileWorkflow on the same task queue the worker
-	// consumes, so it needs a Temporal client too.
-	temporalClient, err := dialTemporal(ctx, cfg)
+	limiter := llm.NewLimiter(cfg.LLMConcurrency)
+	runner, err := llm.NewPromptRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIResponsesModel})
 	if err != nil {
-		return err
+		return fmt.Errorf("build prompt runner: %w", err)
 	}
-	defer temporalClient.Close()
+	extractor, err := llm.NewExtractionRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIAnalysisModel})
+	if err != nil {
+		return fmt.Errorf("build extraction runner: %w", err)
+	}
+	matcher, err := llm.NewMatchRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIAnalysisModel})
+	if err != nil {
+		return fmt.Errorf("build match runner: %w", err)
+	}
+	sourceClassifier, err := llm.NewSourceClassifier(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIAnalysisModel})
+	if err != nil {
+		return fmt.Errorf("build source classifier: %w", err)
+	}
+	proposer, err := llm.NewProposeProfileRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIOnboardingModel})
+	if err != nil {
+		return fmt.Errorf("build propose profile runner: %w", err)
+	}
 
 	// Stripe is the sole runtime billing provider. Local development uses a
 	// Stripe sandbox; the in-memory provider is retained only as a test fake.
@@ -315,9 +372,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	// GenerateQuestions is a synchronous RPC (design 03), not a Temporal
-	// activity, so its runner is built here rather than in work()'s
-	// workflows.Activities.
+	// GenerateQuestions is synchronous but shares the same process limiter as jobs.
 	questions, err := llm.NewQuestionsRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
 		APIKey: cfg.OpenAIAPIKey,
 		Model:  cfg.OpenAIQuestionsModel,
@@ -329,8 +384,27 @@ func serve(ctx context.Context, cfg config.Config) error {
 	// One store over one pool, shared by the API server, the monitoring gate,
 	// and the reconciler — no duplicate connection pooling.
 	dataStore := store.New(db)
-	monitoring := reconcile.NewMonitoring(dataStore, temporalClient)
-	reconciler := reconcile.New(dataStore, billingProvider, monitoring, dataStore, nil)
+	reconciler := reconcile.New(dataStore, billingProvider, nil, dataStore, nil)
+	operations := &workflows.Operations{Store: dataStore, Runner: runner, Extractor: extractor, Matcher: matcher,
+		Proposer: proposer, SourceClassifier: sourceClassifier, Limiter: limiter}
+	workers := river.NewWorkers()
+	riverClient, err := river.NewClient(riverpgxv5.New(db), &river.Config{
+		Workers: workers,
+		Queues: map[string]river.QueueConfig{
+			jobs.QueueScheduler: {MaxWorkers: 1}, jobs.QueueOnboarding: {MaxWorkers: 2},
+			jobs.QueueMonitoring: {MaxWorkers: 2}, jobs.QueueAnalysis: {MaxWorkers: 2}, jobs.QueueAssessment: {MaxWorkers: 1},
+		},
+		PeriodicJobs: []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(jobs.SweepInterval),
+			func() (river.JobArgs, *river.InsertOpts) { return jobs.SweepArgs{}, nil }, &river.PeriodicJobOpts{ID: "scheduler-sweep", RunOnStart: true})},
+	})
+	if err != nil {
+		return fmt.Errorf("build river client: %w", err)
+	}
+	jobs.AddWorkers(workers, dataStore, operations, riverClient, cfg.LLMConcurrency)
+	if err := riverClient.Start(context.Background()); err != nil {
+		return fmt.Errorf("start river: %w", err)
+	}
+	defer func() { _ = riverClient.StopAndCancel(context.Background()) }()
 
 	webhookVerifier := stripe.NewWebhookVerifier(cfg.StripeWebhookSecret)
 
@@ -344,8 +418,8 @@ func serve(ctx context.Context, cfg config.Config) error {
 	apiServer := api.New(api.Deps{
 		Store:                       dataStore,
 		Metrics:                     metrics.New(db),
-		Temporal:                    temporalClient,
-		TemporalTaskQueue:           cfg.TemporalTaskQueue,
+		Jobs:                        riverClient,
+		Limiter:                     limiter,
 		Questions:                   questions,
 		SecureCookies:               cfg.Env != "dev",
 		Billing:                     billingProvider,
@@ -383,135 +457,32 @@ func serve(ctx context.Context, cfg config.Config) error {
 	select {
 	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
+			cancel()
 			return err
+		}
+		cancel()
+
+		drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		err := riverClient.Stop(drainCtx)
+		drainCancel()
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = riverClient.StopAndCancel(context.Background())
+		}
+		if err != nil {
+			return fmt.Errorf("stop river: %w", err)
 		}
 
 		select {
 		case err := <-errCh:
 			return err
-		case <-shutdownCtx.Done():
-			return shutdownCtx.Err()
+		default:
+			return nil
 		}
 	case err := <-errCh:
 		return err
 	}
-}
-
-// work connects to Temporal, registers the workflows and their activities, and
-// runs the worker until shutdown.
-func work(ctx context.Context, cfg config.Config) error {
-	if ctx.Err() != nil {
-		return nil
-	}
-
-	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	runner, err := llm.NewPromptRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
-		APIKey: cfg.OpenAIAPIKey,
-		Model:  cfg.OpenAIResponsesModel,
-	})
-	if err != nil {
-		return fmt.Errorf("build prompt runner: %w", err)
-	}
-
-	extractor, err := llm.NewExtractionRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
-		APIKey: cfg.OpenAIAPIKey,
-		Model:  cfg.OpenAIAnalysisModel,
-	})
-	if err != nil {
-		return fmt.Errorf("build extraction runner: %w", err)
-	}
-
-	matcher, err := llm.NewMatchRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
-		APIKey: cfg.OpenAIAPIKey,
-		Model:  cfg.OpenAIAnalysisModel,
-	})
-	if err != nil {
-		return fmt.Errorf("build match runner: %w", err)
-	}
-
-	sourceClassifier, err := llm.NewSourceClassifier(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
-		APIKey: cfg.OpenAIAPIKey,
-		Model:  cfg.OpenAIAnalysisModel,
-	})
-	if err != nil {
-		return fmt.Errorf("build source classifier: %w", err)
-	}
-
-	proposer, err := llm.NewProposeProfileRunner(string(cfg.PromptRunnerMode), llm.OpenAIConfig{
-		APIKey: cfg.OpenAIAPIKey,
-		Model:  cfg.OpenAIOnboardingModel,
-	})
-	if err != nil {
-		return fmt.Errorf("build propose profile runner: %w", err)
-	}
-
-	temporalClient, err := dialTemporal(ctx, cfg)
-	if err != nil {
-		return err
-	}
-	defer temporalClient.Close()
-
-	slog.Info(
-		"work: connected to temporal",
-		"mode", "work",
-		"temporal_address", cfg.TemporalAddress,
-		"temporal_namespace", cfg.TemporalNamespace,
-		"temporal_task_queue", cfg.TemporalTaskQueue,
-	)
-
-	activities := &workflows.Activities{
-		Store:            store.New(db),
-		Runner:           runner,
-		Extractor:        extractor,
-		Matcher:          matcher,
-		Proposer:         proposer,
-		SourceClassifier: sourceClassifier,
-	}
-
-	w := worker.New(temporalClient, cfg.TemporalTaskQueue, worker.Options{
-		MaxConcurrentActivityExecutionSize: cfg.PromptConcurrency,
-	})
-	w.RegisterWorkflow(workflows.RunWorkflow)
-	w.RegisterWorkflow(workflows.AnalyzeRun)
-	w.RegisterWorkflow(workflows.GenerateProfileWorkflow)
-	w.RegisterWorkflow(workflows.AssessmentWorkflow)
-	w.RegisterActivity(activities.CheckRunAccess)
-	w.RegisterActivity(activities.LoadRunSpec)
-	w.RegisterActivity(activities.ExecutePrompt)
-	w.RegisterActivity(activities.FinalizeRun)
-	w.RegisterActivity(activities.FetchSite)
-	w.RegisterActivity(activities.AnalyzeResult)
-	w.RegisterActivity(activities.LoadAnalyzeRunSpec)
-	w.RegisterActivity(activities.ReconcileEntities)
-	w.RegisterActivity(activities.ProposeProfile)
-	w.RegisterActivity(activities.PersistProposal)
-	w.RegisterActivity(activities.RunSiteAudit)
-	w.RegisterActivity(activities.RunFinders)
-	w.RegisterActivity(activities.PublishImproveRun)
-
-	if err := w.Start(); err != nil {
-		return fmt.Errorf("start worker: %w", err)
-	}
-	defer w.Stop()
-
-	slog.Info(
-		"work: worker started",
-		"mode", "work",
-		"temporal_task_queue", cfg.TemporalTaskQueue,
-		"prompt_concurrency", cfg.PromptConcurrency,
-		"prompt_runner_mode", cfg.PromptRunnerMode,
-	)
-
-	<-ctx.Done()
-	return nil
 }
 
 // validateServeRuntimeConfig is serve-specific: migrations, workers and
@@ -545,25 +516,11 @@ func validateServeRuntimeConfig(cfg config.Config) error {
 	return nil
 }
 
-// dialTemporal connects to the Temporal frontend with a bounded dial timeout.
-// Callers own closing the returned client.
-func dialTemporal(ctx context.Context, cfg config.Config) (client.Client, error) {
-	dialCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	temporalClient, err := client.DialContext(dialCtx, client.Options{
-		HostPort:  cfg.TemporalAddress,
-		Namespace: cfg.TemporalNamespace,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("connect temporal: %w", err)
-	}
-	return temporalClient, nil
-}
-
-// migrate applies embedded goose migrations and exits. It is intentionally only
-// called by the explicit migrate subcommand, never by serve or work startup.
+// migrate applies application migrations first, then River's bundled schema.
 func migrate(ctx context.Context, cfg config.Config) error {
+	if ctx.Err() != nil {
+		return nil
+	}
 	applied, err := store.Migrate(ctx, store.MigrationConfig{
 		DatabaseURL:  cfg.DatabaseURL,
 		MaxOpenConns: cfg.DBMaxOpenConns,
@@ -571,11 +528,25 @@ func migrate(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	db, err := store.Open(ctx, cfg.DatabaseURL, int32(cfg.DBMaxOpenConns))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	riverMigrator, err := rivermigrate.New(riverpgxv5.New(db), nil)
+	if err != nil {
+		return fmt.Errorf("create river migrator: %w", err)
+	}
+	riverResult, err := riverMigrator.Migrate(ctx, rivermigrate.DirectionUp, nil)
+	if err != nil {
+		return fmt.Errorf("apply river migrations: %w", err)
+	}
 
 	slog.Info(
 		"migrate: complete",
 		"mode", "migrate",
 		"migrations_applied", applied,
+		"river_migrations_applied", len(riverResult.Versions),
 		"db_max_open_conns", cfg.DBMaxOpenConns,
 	)
 	return nil

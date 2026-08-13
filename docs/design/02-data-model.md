@@ -30,7 +30,7 @@ erDiagram
     mentions }o--o{ citations : "mention_citations"
 ```
 
-All IDs are UUIDv7 (time-ordered, index-friendly). `account_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through an account-checked business lookup. Callers without ambient account context (Temporal activities, CLI) first resolve the business's account via a single bootstrap lookup (`store.Store.ResolveAccountID`), then use the same account-checked repositories.
+All IDs are UUIDv7 (time-ordered, index-friendly). `account_id` lives on `businesses`; deeper tables scope through their business join — the repository layer always enters through an account-checked business lookup. Callers without ambient account context (River jobs and CLI commands) first resolve the business's account via a single bootstrap lookup (`store.Store.ResolveAccountID`), then use the same account-checked repositories.
 
 All application and metrics statements are named sqlc queries in the unified
 `internal/store/queries/` catalog. Generated row types stay inside the
@@ -126,13 +126,13 @@ monitoring_runs (
   trigger text,                -- 'initial' | 'scheduled' | 'manual'
   scheduled_for date,          -- the week this run represents
   status text,                 -- 'running' | 'completed' | 'partial' | 'failed'
-  workflow_id text,            -- Temporal handle for debugging
+  job_id bigint,          -- River job handle for debugging; no foreign key
   started_at, completed_at,
   analysis_completed_at timestamptz NULL,  -- set when reconcile commits (05);
                                            -- the "analyzed" gate for all metrics
   expected_results int NULL,   -- prompt-snapshot size at run start; the "N" in "k of N"
                                 -- (nullable, no backfill — null means "unknown", not zero)
-  UNIQUE (business_id, platform, scheduled_for)   -- idempotency anchor for the workflow
+  UNIQUE (business_id, platform, scheduled_for)   -- idempotency anchor for the job
 )
 
 prompt_results (
@@ -223,9 +223,3 @@ Every row above carries `prompt_result_id`, satisfying "every metric links to th
 ## Retention
 
 Indefinite. Historical results are the product; at this volume (a few MB/account/year) deletion is a non-feature until legal/privacy requirements say otherwise.
-
-## Open questions (owned by later increments)
-
-- **03**: exact `profile_proposals.payload` shape and the review/apply UX contract.
-- **05**: alias-matching rules (clinics have many name variants); whether sentiment/keyword extraction is one LLM call per result or batched per run.
-- **07**: users/auth columns beyond the minimal sketch.

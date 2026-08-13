@@ -4,7 +4,7 @@ Name + website → generated profile → review (Business, Services, then on-dem
 
 ---
 
-## ONB-1 — FetchSite activity (SSRF-guarded)
+## ONB-1 — FetchSite operation (SSRF-guarded)
 
 As the developer, I want a safe site fetcher, so that onboarding can read a clinic's website without being an SSRF vector.
 
@@ -12,9 +12,9 @@ As the developer, I want a safe site fetcher, so that onboarding can read a clin
 - [x] SSRF guards: http(s) only; DNS resolved with private/link-local/metadata ranges refused; redirects capped and re-validated per hop; response size and time capped. No headless browser.
 - [x] Tests cover: private-IP refusal, redirect-to-private refusal, size cap.
 
-Deps: RUN-3 (worker infra) · Phase 3 · Ref: design 03 (GenerateProfileWorkflow step 1)
+Deps: RUN-3 (worker infra) · Phase 3 · Ref: design 03 (profile-generation job step 1)
 
-## ONB-3 — ProposeProfile activity (research + draft)
+## ONB-3 — ProposeProfile operation (research + draft)
 
 As the developer, I want one call that researches the business on the web and emits a validated structured profile proposal, so that generated profiles are accurate and well-formed before a user sees them.
 
@@ -23,13 +23,13 @@ As the developer, I want one call that researches the business on the web and em
 - [x] Produces the design-03 payload: `low_confidence`, profile (name, aliases, category, services, location with **country required**), and a server-derived read-only `sources` list (the pages the model opened). Customer questions are **not** generated here — see ONB-7 below.
 - [x] Validation failure (empty required profile fields) → one retry with errors appended.
 
-Deps: ONB-1, RUN-1 · Phase 3 · Ref: design 03 (GenerateProfileWorkflow step 2)
+Deps: ONB-1, RUN-1 · Phase 3 · Ref: design 03 (profile-generation job step 2)
 
 ## ONB-7 — GenerateQuestions (on-demand customer questions)
 
 As a clinic user, I want customer questions generated from the services I've actually confirmed, so that they don't go stale the moment I edit the service list and reliably measure which providers an AI recommends.
 
-- [x] `BusinessService.GenerateQuestions` is a synchronous RPC, not a Temporal activity: the review screen calls it when the user leaves the Services step, passing the in-memory reviewed profile; nothing is persisted by the call itself.
+- [x] `BusinessService.GenerateQuestions` is a synchronous RPC, not a background job: the review screen calls it when the user leaves the Services step, passing the in-memory reviewed profile; nothing is persisted by the call itself.
 - [x] Structured-output OpenAI Responses call with **no** `web_search` tool, on `OPENAI_QUESTIONS_MODEL` (default `gpt-5.6-terra`) — it drafts purely from the given category/services/city. This one-time call is quality-sensitive because its output becomes the ongoing measurement instrument.
 - [x] The concise instruction asks for exactly `plan.prompt_limit` varied, natural prompts a prospective customer might ask an AI assistant to surface provider recommendations in the given city, each based on the confirmed category and one or more confirmed services. Business-name/alias leakage is rejected after generation. Validation failure → one retry with errors appended (`llm.GenerateQuestionsWithRetry`).
 - [x] The review screen caches the generated set against a fingerprint of category/city/services so an unrelated edit or a plain Back/Next doesn't re-trigger generation; a changed fingerprint does, with a confirmation first if the user had manually edited the question list. Manual entry always remains available if generation fails.
@@ -37,12 +37,12 @@ As a clinic user, I want customer questions generated from the services I've act
 
 Deps: ONB-3, ONB-5 · Phase 3 · Ref: design 03 (GenerateQuestions, Customer-question generation rules)
 
-## ONB-4 — GenerateProfileWorkflow + proposal API
+## ONB-4 — profile-generation job + proposal API
 
 As a clinic user, I want to submit my name and website and get a proposal, so that setup takes minutes, not a form.
 
-- [x] `POST /api/businesses` inserts business (status `draft`) and starts the workflow; the UI polls proposal status while generation runs.
-- [x] Failure posture: FetchSite fails → proceed on the model's own web research, forcing `low_confidence: true` unless the model opened the site itself; the combined call failing outright (or never validating) fails the workflow and the UI offers manual setup (same review screen, empty).
+- [x] `POST /api/businesses` inserts business (status `draft`) and enqueues the River generation job; the UI polls proposal status while generation runs.
+- [x] Failure posture: FetchSite fails → proceed on the model's own web research, forcing `low_confidence: true` unless the model opened the site itself; the combined call failing outright (or never validating) fails the generation job and the UI offers manual setup (same review screen, empty).
 - [x] Proposal written to `profile_proposals` (status `pending`) — generation **never** writes `businesses` columns.
 - [x] `GET /businesses/:id/proposal` (status + payload), `POST /businesses/:id/proposal/regen` (draft only: discard + regenerate).
 
@@ -63,7 +63,7 @@ Deps: ONB-4, WEB-1 · Phase 3 · Ref: design 03 (Review and apply), PRD §3, §8
 As a clinic user, I want approval to start monitoring immediately, so that I see first results without waiting a week.
 
 - [x] `POST /businesses/:id/apply` in one transaction: update business columns, insert prompts (all `active`), proposal → `applied`, business → `active` — the **only** path that writes profile values to `businesses`.
-- [x] Then: create the weekly Temporal Schedule and trigger the first run now (`trigger=initial`); first-run-midweek + scheduled-run coexist via distinct `scheduled_for` dates.
+- [x] Then: atomically enqueue the first monitoring job during activation (`trigger=initial`); first-run-midweek + scheduled-run coexist via distinct `scheduled_for` dates.
 - [x] No regenerate after activation; post-activation profile changes only via Setup PATCH.
 
-Deps: ONB-5, RUN-5 · Phase 3 · Ref: design 03 (Review and apply), 04 (RunWorkflow idempotency)
+Deps: ONB-5, RUN-5 · Phase 3 · Ref: design 03 (Review and apply), 04 (monitoring job idempotency)

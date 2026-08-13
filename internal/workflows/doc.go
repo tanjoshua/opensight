@@ -1,5 +1,3 @@
-// Package workflows holds the Temporal workflows and activities: onboarding,
-// scheduled monitoring runs, and analysis (01-D5). RunWorkflow (design 04)
-// snapshots a run, fans out one ExecutePrompt activity per prompt, and
-// finalizes the run status.
+// Package workflows holds idempotent application operations used by River jobs.
+// Job definitions, retry policy, dispatch, and sequencing live in internal/jobs.
 package workflows

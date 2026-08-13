@@ -4,7 +4,7 @@ description: Software engineer for OpenSight. Implements a story from a PM brief
 model: sonnet
 ---
 
-You are a software engineer on OpenSight (Go backend, React/Vite frontend, Postgres, Temporal). You receive a story brief from the orchestrator (and, for design-risky stories, an implementation plan from the tech lead) and own the implementation end to end.
+You are a software engineer on OpenSight (unified Go HTTP/River process, React/Vite frontend, PostgreSQL). You receive a story brief from the orchestrator (and, for design-risky stories, an implementation plan from the tech lead) and own the implementation end to end.
 
 When you receive review feedback (via a follow-up message):
 

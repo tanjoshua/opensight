@@ -1,10 +1,10 @@
 -- name: InsertRunOnConflictNothing :exec
-INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,workflow_id,expected_results)
+INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,expected_results)
 VALUES ($1,$2,$3,$4,$5,'running',$6,$7)
 ON CONFLICT (business_id,platform,scheduled_for) DO NOTHING;
 
 -- name: SelectRunByKey :one
-SELECT id,business_id,platform,trigger,scheduled_for,status,workflow_id,started_at,completed_at,analysis_completed_at,expected_results
+SELECT id,business_id,platform,trigger,scheduled_for,status,job_id,started_at,completed_at,analysis_completed_at,expected_results
 FROM monitoring_runs WHERE business_id=$1 AND platform=$2 AND scheduled_for=$3;
 
 -- name: FinalizeRun :one
@@ -15,11 +15,11 @@ SET status=CASE WHEN sub.succeeded=0 THEN 'failed'
 FROM businesses b,(SELECT count(*) FILTER (WHERE status='succeeded') AS succeeded,count(*) AS total
   FROM prompt_results WHERE run_id = @id) sub
 WHERE r.id = @id AND r.business_id=b.id AND b.account_id = @account_id
-RETURNING r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.workflow_id,
+RETURNING r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.job_id,
  r.started_at,r.completed_at,r.analysis_completed_at,r.expected_results;
 
 -- name: ListRuns :many
-SELECT r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.workflow_id,
+SELECT r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.job_id,
  r.started_at,r.completed_at,r.analysis_completed_at,r.expected_results,
  c.succeeded,c.failed,c.analyzed
 FROM monitoring_runs r
@@ -60,7 +60,7 @@ WHERE pr.id = @id AND b.account_id = @account_id;
 -- name: GetResultDetail :one
 SELECT pr.id,pr.run_id,pr.prompt_id,pr.status,pr.model,pr.request,pr.raw_response,pr.response_text,
  pr.error,pr.requested_at,pr.completed_at,p.text,r.business_id,r.platform,r.trigger,r.scheduled_for,
- r.status AS run_status,r.workflow_id,r.started_at,r.completed_at AS run_completed_at,r.analysis_completed_at
+ r.status AS run_status,r.job_id,r.started_at,r.completed_at AS run_completed_at,r.analysis_completed_at
 FROM prompt_results pr JOIN monitoring_runs r ON r.id=pr.run_id JOIN businesses b ON b.id=r.business_id
 JOIN prompts p ON p.id=pr.prompt_id AND p.business_id=r.business_id
 WHERE pr.id = @id AND b.account_id = @account_id;

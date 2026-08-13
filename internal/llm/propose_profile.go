@@ -72,9 +72,9 @@ type ProposedPrompt struct {
 }
 
 // ProposalPayload is the decoded proposal (design 03, "Proposal payload"). It is
-// what the ProposeProfile activity returns and what the workflow marshals
+// what the ProposeProfile operation returns and what the profile job marshals
 // verbatim into profile_proposals.payload. Prompts is always empty out of the
-// workflow: customer questions are generated on demand by GenerateQuestions
+// job: customer questions are generated on demand by GenerateQuestions
 // once the user has reviewed Services, not by ProposeProfile. The field stays
 // on this shared shape because ApplyProposal's payload (the client's final,
 // edited draft) still carries the approved questions through to persistence.

@@ -30,7 +30,7 @@ cleanup() {
   trap - EXIT INT TERM
 
   if [ "${#pids[@]}" -gt 0 ]; then
-    log "stopping API, worker, and frontend processes"
+    log "stopping app and frontend processes"
     kill "${pids[@]}" >/dev/null 2>&1 || true
     wait "${pids[@]}" >/dev/null 2>&1 || true
   fi
@@ -50,17 +50,6 @@ wait_for_postgres() {
 
   docker compose -f "$COMPOSE_FILE" logs --tail=80 postgres >&2 || true
   printf 'Postgres did not become ready within %s seconds.\n' "$POSTGRES_WAIT_ATTEMPTS" >&2
-  return 1
-}
-
-wait_for_temporal_namespace() {
-  log "waiting for Temporal namespace"
-
-  if docker compose -f "$COMPOSE_FILE" run --rm --no-deps temporal-namespace; then
-    return 0
-  fi
-
-  docker compose -f "$COMPOSE_FILE" logs --tail=120 temporal temporal-namespace >&2 || true
   return 1
 }
 
@@ -94,10 +83,6 @@ api_health_url() {
   fi
 
   printf '%s/healthz\n' "$(api_base_url)"
-}
-
-temporal_ui_url() {
-  printf '%s\n' "${TEMPORAL_UI_URL:-http://localhost:8233}"
 }
 
 frontend_enabled() {
@@ -224,12 +209,8 @@ wait_for_process_exit() {
 }
 
 start_processes() {
-  log "starting API with reload"
+  log "starting app with reload"
   go tool air -c .air.serve.toml &
-  pids+=("$!")
-
-  log "starting worker with reload"
-  go tool air -c .air.work.toml &
   pids+=("$!")
 
   if frontend_enabled; then
@@ -251,7 +232,6 @@ print_service_links() {
   printf '\nService links:\n'
   printf '  API:         %s\n' "$(api_base_url)"
   printf '  API health:  %s\n' "$(api_health_url)"
-  printf '  Temporal UI: %s\n' "$(temporal_ui_url)"
 
   if frontend_enabled; then
     printf '  Frontend:    %s\n' "$(frontend_url)"
@@ -283,7 +263,6 @@ wait_for_postgres
 log "running database migrations"
 go run ./cmd/opensight migrate
 
-wait_for_temporal_namespace
 ensure_api_not_already_running
 start_processes
 wait_for_api
@@ -291,5 +270,5 @@ wait_for_frontend
 wait_for_marketing
 print_service_links
 
-log "API is healthy; press Ctrl+C to stop API, worker, frontend, and marketing"
+log "App is healthy; press Ctrl+C to stop app, frontend, and marketing"
 wait_for_process_exit

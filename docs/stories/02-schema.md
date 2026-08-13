@@ -12,7 +12,7 @@ As the developer, I want accounts and global users migrated, so that customer da
 - [x] `starter` plan row (20 prompts, weekly, `{chatgpt}`) seeded **in a migration**.
 - [x] No code path reads a hardcoded "20" or "weekly" — grep-verifiable.
 
-Deps: FND-3 · Phase 1 · Ref: design 02 (Tenancy and subscription) — the `plans` table this story created is superseded by the entitlement catalog in design 08 (BILL-1)
+Deps: FND-3 · Phase 1 · Ref: design 02 (Tenancy and subscription), design 08 (entitlement catalog)
 
 ## SCH-2 — Business, proposal, and prompt tables
 
@@ -27,9 +27,9 @@ Deps: SCH-1 · Phase 1 · Ref: design 02 (Businesses and profile, Prompts)
 
 ## SCH-3 — Runs and results tables
 
-As the developer, I want the append-only `monitoring_runs` and `prompt_results` tables, so that the workflow has its idempotency anchors.
+As the developer, I want the append-only `monitoring_runs` and `prompt_results` tables, so that the job has its idempotency anchors.
 
-- [x] `monitoring_runs` per design 02 incl. `trigger (initial|scheduled|manual)`, `scheduled_for date`, `status`, `workflow_id`, `analysis_completed_at NULL`, and **`UNIQUE (business_id, platform, scheduled_for)`**.
+- [x] `monitoring_runs` per design 02 incl. `trigger (initial|scheduled|manual)`, `scheduled_for date`, `status`, `job_id`, `analysis_completed_at NULL`, and **`UNIQUE (business_id, platform, scheduled_for)`**.
 - [x] `prompt_results` per design 02 incl. `request jsonb`, `raw_response jsonb`, `response_text`, `error`, and **`UNIQUE (run_id, prompt_id)`**.
 - [x] No UPDATE path for `raw_response`/`response_text` in the store layer (append-only).
 

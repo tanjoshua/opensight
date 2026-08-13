@@ -93,15 +93,24 @@ INSERT INTO businesses (
 RETURNING created_at;
 
 -- name: GetBusiness :one
-SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+       generation_id, generation_job_id, generation_status, generation_stage
 FROM businesses WHERE id = @id AND account_id = @account_id;
 
 -- name: ListBusinesses :many
-SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at
+SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+       generation_id, generation_job_id, generation_status, generation_stage
 FROM businesses WHERE account_id = $1 ORDER BY created_at;
 
 -- name: ResolveAccountID :one
 SELECT account_id FROM businesses WHERE id = $1;
+
+-- name: ListMonitoringCandidates :many
+SELECT b.id, b.account_id, b.activated_at, s.plan_code, s.comped,
+       s.stripe_subscription_id, s.stripe_status, s.past_due_since
+FROM businesses b
+JOIN subscriptions s ON s.account_id = b.account_id
+WHERE b.status = 'active' AND b.activated_at IS NOT NULL;
 
 -- name: RenameAccount :exec
 UPDATE accounts SET name = $2 WHERE id = $1;
@@ -115,13 +124,35 @@ SET name = CASE WHEN @name_set::bool THEN @name ELSE name END,
     services = CASE WHEN @services_set::bool THEN @services::jsonb ELSE services END,
     location = CASE WHEN @location_set::bool THEN @location::jsonb ELSE location END
 WHERE id = @business_id AND account_id = @account_id AND status = 'active'
-RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage;
 
 -- name: UpdateDraftBusinessWebsite :one
 UPDATE businesses
 SET website = @website
 WHERE id = @business_id AND account_id = @account_id AND status = 'draft'
-RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage;
+
+-- name: InstallBusinessGeneration :one
+UPDATE businesses
+SET website = @website,
+    generation_id = @generation_id,
+    generation_job_id = @generation_job_id,
+    generation_status = 'generating',
+    generation_stage = 'fetching_site'
+WHERE id = @business_id AND account_id = @account_id AND status = 'draft'
+RETURNING generation_job_id;
+
+-- name: UpdateBusinessGenerationStage :execrows
+UPDATE businesses SET generation_stage = @stage
+WHERE id = @business_id AND generation_id = @generation_id
+  AND status = 'draft' AND generation_status = 'generating';
+
+-- name: FinishBusinessGeneration :execrows
+UPDATE businesses SET generation_status = @status, generation_stage = NULL
+WHERE id = @business_id AND generation_id = @generation_id
+  AND status = 'draft' AND generation_status = 'generating';
 
 -- name: LockDraftBusiness :one
 SELECT status FROM businesses WHERE id = @id AND account_id = @account_id FOR UPDATE;
@@ -129,9 +160,12 @@ SELECT status FROM businesses WHERE id = @id AND account_id = @account_id FOR UP
 -- name: ActivateBusiness :one
 UPDATE businesses
 SET name = $2, aliases = $3, category = $4, services = $5, location = $6,
-    status = 'active', activated_at = $7
+    status = 'active', activated_at = $7,
+    generation_id = NULL, generation_job_id = NULL,
+    generation_status = NULL, generation_stage = NULL
 WHERE id = $1
-RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at;
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage;
 
 -- name: MarkProposalApplied :exec
 UPDATE profile_proposals SET status = 'applied', resolved_at = now()
@@ -199,6 +233,13 @@ WHERE account_id=$1 RETURNING stripe_customer_id;
 -- name: InsertPendingProposal :one
 INSERT INTO profile_proposals (id,business_id,payload,status)
 VALUES ($1,$2,$3,'pending') RETURNING created_at;
+
+-- name: GenerationIsCurrent :one
+SELECT EXISTS(
+  SELECT 1 FROM businesses
+  WHERE id = @business_id AND generation_id = @generation_id
+    AND status = 'draft' AND generation_status = 'generating'
+);
 
 -- name: GetPendingProposal :one
 SELECT id,business_id,payload,status,created_at,resolved_at

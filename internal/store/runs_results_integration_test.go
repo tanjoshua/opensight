@@ -52,8 +52,8 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 		t.Fatalf("insert test prompt: %v", err)
 	}
 	if _, err := db.Exec(ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 'runs-results-workflow', now())`, runID, businessID); err != nil {
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-13', 'completed', 501, now())`, runID, businessID); err != nil {
 		t.Fatalf("insert test run: %v", err)
 	}
 	if _, err := db.Exec(ctx, `
@@ -67,8 +67,8 @@ func TestRunsResultsSchemaEnforcesIdempotencyAndAppendOnlyResults(t *testing.T) 
 
 	duplicateRunID := mustNewID(t)
 	if _, err := db.Exec(ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id)
-		VALUES ($1, $2, 'chatgpt', 'manual', '2026-07-13', 'running', 'runs-results-workflow-duplicate')`, duplicateRunID, businessID); err == nil {
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id)
+		VALUES ($1, $2, 'chatgpt', 'manual', '2026-07-13', 'running', 502)`, duplicateRunID, businessID); err == nil {
 		t.Fatal("duplicate monitoring run insert succeeded; want unique constraint error")
 	}
 
@@ -189,7 +189,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 		Platform:        PlatformChatGPT,
 		Trigger:         RunTriggerScheduled,
 		ScheduledFor:    time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC),
-		WorkflowID:      "run-finalize-partial",
+		JobID:           104,
 		ExpectedResults: 3,
 	})
 	if err != nil {
@@ -297,9 +297,9 @@ func TestListRunsAggregatesResultCounts(t *testing.T) {
 		t.Fatalf("insert test prompts: %v", err)
 	}
 	if _, err := db.Exec(ctx, `
-		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, workflow_id, expected_results, completed_at)
-		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'partial', 'run-with-results', 3, now()),
-		       ($3, $2, 'chatgpt', 'scheduled', '2026-07-13', 'running', 'run-with-no-results', 2, NULL)`, runWithResultsID, businessID, runWithNoResultsID); err != nil {
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, expected_results, completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'partial', 503, 3, now()),
+		       ($3, $2, 'chatgpt', 'scheduled', '2026-07-13', 'running', 504, 2, NULL)`, runWithResultsID, businessID, runWithNoResultsID); err != nil {
 		t.Fatalf("insert test runs: %v", err)
 	}
 	if _, err := db.Exec(ctx, `

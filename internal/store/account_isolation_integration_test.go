@@ -58,7 +58,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 	// --- BusinessStore: create (write) + direct account-scoped lookups. ---
 	created, err := businesses.CreateBusiness(ctx, CreateBusinessParams{
 		ID:          businessA,
-		AccountID:    accountA,
+		AccountID:   accountA,
 		Status:      BusinessStatusActive,
 		Name:        "Acme Clinic",
 		Aliases:     []string{"Acme", "ACME Clinic"},
@@ -148,7 +148,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 
 	// --- PromptStore: deeper-table write + reads. ---
 	prompt, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
-		AccountID:   accountA,
+		AccountID:  accountA,
 		BusinessID: businessA,
 		Text:       "best clinic near me",
 	})
@@ -157,7 +157,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 	}
 
 	if _, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
-		AccountID:   accountB,
+		AccountID:  accountB,
 		BusinessID: businessA,
 		Text:       "cross account prompt",
 	}); !errors.Is(err, ErrNotFound) {
@@ -192,7 +192,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		Platform:        "chatgpt",
 		Trigger:         RunTriggerScheduled,
 		ScheduledFor:    scheduledFor,
-		WorkflowID:      "run-" + businessA.String() + "-chatgpt-2026-07-13",
+		JobID:           101,
 		ExpectedResults: 1,
 	})
 	if err != nil {
@@ -204,7 +204,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		Platform:     "chatgpt",
 		Trigger:      RunTriggerManual,
 		ScheduledFor: scheduledFor,
-		WorkflowID:   "run-duplicate",
+		JobID:        102,
 	})
 	if err != nil {
 		t.Fatalf("UpsertRun(accountA) second: %v", err)
@@ -221,7 +221,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		Platform:     "chatgpt",
 		Trigger:      RunTriggerManual,
 		ScheduledFor: scheduledFor,
-		WorkflowID:   "run-cross-account",
+		JobID:        103,
 	}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("UpsertRun(accountB) err = %v, want ErrNotFound", err)
 	}
@@ -273,7 +273,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 	businessB := mustNewID(t)
 	otherBusiness, err := businesses.CreateBusiness(ctx, CreateBusinessParams{
 		ID:          businessB,
-		AccountID:    accountB,
+		AccountID:   accountB,
 		Status:      BusinessStatusActive,
 		Name:        "Other Clinic",
 		Category:    ptr("clinic"),
@@ -284,7 +284,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		t.Fatalf("create other business: %v", err)
 	}
 	otherPrompt, err := prompts.CreateActivePrompt(ctx, CreateActivePromptParams{
-		AccountID:   accountB,
+		AccountID:  accountB,
 		BusinessID: otherBusiness.ID,
 		Text:       "other clinic prompt",
 	})
@@ -313,7 +313,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetResultDetail(accountA): %v", err)
 	}
-	if detail.Prompt.Text != prompt.Text || detail.Run.WorkflowID != "run-"+businessA.String()+"-chatgpt-2026-07-13" {
+	if detail.Prompt.Text != prompt.Text || detail.Run.JobID != 101 {
 		t.Fatalf("GetResultDetail returned prompt/run %+v/%+v", detail.Prompt, detail.Run)
 	}
 	if _, err := results.GetResultDetail(ctx, accountB, result.ID); !errors.Is(err, ErrNotFound) {
