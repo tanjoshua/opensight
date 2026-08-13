@@ -3,7 +3,7 @@
 // is dropped; per-prompt history already lives on the Prompts page). Each row
 // links to /runs/:id for that run's responses.
 import { timestampDate } from "@bufbuild/protobuf/wkt"
-import { History } from "lucide-react"
+import { History, LoaderCircle } from "lucide-react"
 import { useAccountNavigate } from "@/lib/account-path"
 
 import { useCurrentBusiness, useRuns } from "@/api/hooks"
@@ -84,11 +84,23 @@ export function RunsPage() {
       />
 
       {runs.length === 0 ? (
-        <SectionMessage
-          icon={History}
-          title="No runs yet"
-          description="Runs appear here after your first weekly monitoring run. Check back once it has started."
-        />
+        runsQuery.data.monitoringPending ? (
+          <SectionMessage
+            icon={LoaderCircle}
+            title="Preparing your first run"
+            description="Your monitoring check is queued. This page will update automatically when it starts."
+          />
+        ) : (
+          <SectionMessage
+            icon={History}
+            title="No runs yet"
+            description={
+              nextRunAt
+                ? `Your first scheduled check is ${formatDateOnly(timestampDate(nextRunAt))}.`
+                : "Monitoring starts once your business and plan are active."
+            }
+          />
+        )
       ) : (
         <>
           <div className="flex flex-col gap-3 md:hidden">

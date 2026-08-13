@@ -29,4 +29,4 @@ WHERE state NOT IN ('completed', 'cancelled', 'discarded')
 ORDER BY scheduled_at, id;
 ```
 
-User-visible progress comes only from `monitoring_runs`, `prompt_results`, and `result_analyses`; River internals are never exposed as product state.
+User-visible progress comes from `monitoring_runs`, `prompt_results`, and `result_analyses`. Before the worker creates the first run row, `ListRuns.monitoring_pending` exposes only whether live monitoring work exists so the empty history can say that the first run is being prepared and poll until it appears. River job IDs, retries, errors, and queue states remain operational internals.

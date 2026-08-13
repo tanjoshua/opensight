@@ -182,8 +182,9 @@ export function useAllCompetitors(businessId: string | undefined) {
   })
 }
 
-// A run in progress is the one thing the UI polls for (design 06): refetch
-// every few seconds while one is executing, and stop as soon as none is.
+// Poll while monitoring is queued or executing, and stop when no live work is
+// visible. The pending state bridges the short gap before monitoring_runs is
+// created, so the first run never looks like a static empty history.
 export const RUN_POLL_INTERVAL_MS = 5000
 
 export const isRunning = (run: Run) => run.status === RunStatus.RUNNING
@@ -206,13 +207,14 @@ export function useRuns(businessId: string | undefined) {
     businessId === undefined ? skipToken : { businessId },
     {
       refetchInterval: pollWhileRunning((data: ListRunsResponse) =>
-        data.runs.some(isRunning)
+        data.monitoringPending || data.runs.some(isRunning)
       ),
     }
   )
   return {
     ...query,
-    hasRunningRun: query.data?.runs.some(isRunning) ?? false,
+    hasRunningRun:
+      query.data?.monitoringPending || query.data?.runs.some(isRunning) || false,
   }
 }
 

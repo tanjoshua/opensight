@@ -124,6 +124,9 @@ message ListRunsResponse {
   // next_run_at is the next scheduled run's fire time, best-effort: unset
   // derived from the durable weekly schedule when monitoring is entitled.
   google.protobuf.Timestamp next_run_at = 2;
+  // monitoring_pending is true while a monitoring job is queued or starting,
+  // before its durable monitoring_runs row is visible.
+  bool monitoring_pending = 3;
 }
 
 message ListResultsRequest {

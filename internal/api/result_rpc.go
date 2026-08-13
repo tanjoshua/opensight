@@ -12,6 +12,8 @@ import (
 	"opensight/internal/store"
 
 	connect "connectrpc.com/connect"
+	river "github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -41,6 +43,10 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 	if err != nil {
 		return nil, s.rpcError("list runs", err)
 	}
+	monitoringPending, err := s.monitoringPending(ctx, businessID)
+	if err != nil {
+		return nil, s.rpcError("list runs: pending monitoring", err)
+	}
 
 	points, err := s.metrics.VisibilityTrend(ctx, su.AccountID, businessID)
 	if err != nil {
@@ -51,7 +57,10 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 		visibility[p.RunID] = p.Percent
 	}
 
-	resp := &opensightv1.ListRunsResponse{Runs: make([]*opensightv1.Run, 0, len(runs))}
+	resp := &opensightv1.ListRunsResponse{
+		Runs:              make([]*opensightv1.Run, 0, len(runs)),
+		MonitoringPending: monitoringPending,
+	}
 	for _, run := range runs {
 		row := runListItemToProto(run)
 		if pct, ok := visibility[run.ID]; ok {
@@ -61,6 +70,30 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 	}
 	resp.NextRunAt = s.nextRunAt(ctx, su.AccountID, businessID)
 	return connect.NewResponse(resp), nil
+}
+
+// monitoringPending bridges the brief gap between a live River job and the
+// monitoring_runs row its worker creates. The API exposes only the boolean;
+// queue state, attempts, errors, and identifiers remain operational details.
+func (s *Server) monitoringPending(ctx context.Context, businessID domain.ID) (bool, error) {
+	if s.jobs == nil {
+		return false, nil
+	}
+	listed, err := s.jobs.JobList(ctx, river.NewJobListParams().
+		First(1).
+		Kinds((jobs.MonitorArgs{}).Kind()).
+		States(
+			rivertype.JobStateAvailable,
+			rivertype.JobStatePending,
+			rivertype.JobStateRetryable,
+			rivertype.JobStateRunning,
+			rivertype.JobStateScheduled,
+		).
+		Where("args->>'business_id' = @business_id", river.NamedArgs{"business_id": businessID.String()}))
+	if err != nil {
+		return false, err
+	}
+	return len(listed.Jobs) > 0, nil
 }
 
 // nextRunAt looks up the business's monitoring Schedule for its next fire

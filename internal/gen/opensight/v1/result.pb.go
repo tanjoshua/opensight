@@ -769,9 +769,12 @@ type ListRunsResponse struct {
 	Runs  []*Run                 `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
 	// next_run_at is the next scheduled run's fire time, best-effort: unset
 	// derived from the durable weekly schedule when monitoring is entitled.
-	NextRunAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=next_run_at,json=nextRunAt,proto3" json:"next_run_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	NextRunAt *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=next_run_at,json=nextRunAt,proto3" json:"next_run_at,omitempty"`
+	// monitoring_pending is true while a monitoring job is queued or starting,
+	// before its durable monitoring_runs row is visible.
+	MonitoringPending bool `protobuf:"varint,3,opt,name=monitoring_pending,json=monitoringPending,proto3" json:"monitoring_pending,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ListRunsResponse) Reset() {
@@ -816,6 +819,13 @@ func (x *ListRunsResponse) GetNextRunAt() *timestamppb.Timestamp {
 		return x.NextRunAt
 	}
 	return nil
+}
+
+func (x *ListRunsResponse) GetMonitoringPending() bool {
+	if x != nil {
+		return x.MonitoringPending
+	}
+	return false
 }
 
 type ListResultsRequest struct {
@@ -1154,10 +1164,11 @@ const file_opensight_v1_result_proto_rawDesc = "" +
 	"_mentioned\"2\n" +
 	"\x0fListRunsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"u\n" +
+	"businessId\"\xa4\x01\n" +
 	"\x10ListRunsResponse\x12%\n" +
 	"\x04runs\x18\x01 \x03(\v2\x11.opensight.v1.RunR\x04runs\x12:\n" +
-	"\vnext_run_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tnextRunAt\"\x9b\x02\n" +
+	"\vnext_run_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tnextRunAt\x12-\n" +
+	"\x12monitoring_pending\x18\x03 \x01(\bR\x11monitoringPending\"\x9b\x02\n" +
 	"\x12ListResultsRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
 	"businessId\x12\x15\n" +

@@ -48,6 +48,7 @@ type jobClient interface {
 	Insert(context.Context, river.JobArgs, *river.InsertOpts) (*rivertype.JobInsertResult, error)
 	InsertTx(context.Context, pgx.Tx, river.JobArgs, *river.InsertOpts) (*rivertype.JobInsertResult, error)
 	JobCancel(context.Context, int64) (*rivertype.JobRow, error)
+	JobList(context.Context, *river.JobListParams) (*river.JobListResult, error)
 }
 
 // Server holds the API dependencies and configuration.

@@ -3,6 +3,9 @@ package api
 import (
 	"context"
 	"sync"
+	"testing"
+
+	"opensight/internal/domain"
 
 	"github.com/jackc/pgx/v5"
 	river "github.com/riverqueue/river"
@@ -14,6 +17,7 @@ type fakeJobClient struct {
 	next      int64
 	inserted  []river.JobArgs
 	cancelled []int64
+	listed    []*rivertype.JobRow
 }
 
 func (f *fakeJobClient) add(args river.JobArgs) (*rivertype.JobInsertResult, error) {
@@ -34,4 +38,32 @@ func (f *fakeJobClient) JobCancel(_ context.Context, id int64) (*rivertype.JobRo
 	defer f.mu.Unlock()
 	f.cancelled = append(f.cancelled, id)
 	return &rivertype.JobRow{ID: id}, nil
+}
+func (f *fakeJobClient) JobList(_ context.Context, _ *river.JobListParams) (*river.JobListResult, error) {
+	return &river.JobListResult{Jobs: f.listed}, nil
+}
+
+func TestMonitoringPending(t *testing.T) {
+	businessID, err := domain.NewID()
+	if err != nil {
+		t.Fatalf("new business id: %v", err)
+	}
+
+	server := &Server{jobs: &fakeJobClient{listed: []*rivertype.JobRow{{ID: 41}}}}
+	pending, err := server.monitoringPending(context.Background(), businessID)
+	if err != nil {
+		t.Fatalf("monitoringPending: %v", err)
+	}
+	if !pending {
+		t.Fatal("monitoringPending = false, want true for a live job")
+	}
+
+	server.jobs = &fakeJobClient{}
+	pending, err = server.monitoringPending(context.Background(), businessID)
+	if err != nil {
+		t.Fatalf("monitoringPending without jobs: %v", err)
+	}
+	if pending {
+		t.Fatal("monitoringPending = true, want false without a live job")
+	}
 }
