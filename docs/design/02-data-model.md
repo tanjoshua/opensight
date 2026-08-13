@@ -132,6 +132,8 @@ monitoring_runs (
                                            -- the "analyzed" gate for all metrics
   expected_results int NULL,   -- prompt-snapshot size at run start; the "N" in "k of N"
                                 -- (nullable, no backfill — null means "unknown", not zero)
+  spec jsonb NOT NULL,          -- immutable {location, prompts:[{ID, Text}]} execution snapshot;
+                                -- retries read this instead of mutable business configuration
   UNIQUE (business_id, platform, scheduled_for)   -- idempotency anchor for the job
 )
 

@@ -9,6 +9,8 @@ FRONTEND_WAIT_ATTEMPTS="${FRONTEND_WAIT_ATTEMPTS:-30}"
 FRONTEND_HOST="${FRONTEND_HOST:-127.0.0.1}"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 MARKETING_WAIT_ATTEMPTS="${MARKETING_WAIT_ATTEMPTS:-30}"
+RIVER_UI_WAIT_ATTEMPTS="${RIVER_UI_WAIT_ATTEMPTS:-30}"
+RIVER_UI_URL="${RIVER_UI_URL:-http://127.0.0.1:8082}"
 
 cd "$ROOT_DIR"
 
@@ -50,6 +52,21 @@ wait_for_postgres() {
 
   docker compose -f "$COMPOSE_FILE" logs --tail=80 postgres >&2 || true
   printf 'Postgres did not become ready within %s seconds.\n' "$POSTGRES_WAIT_ATTEMPTS" >&2
+  return 1
+}
+
+wait_for_river_ui() {
+  log "waiting for River UI at $RIVER_UI_URL"
+
+  for _ in $(seq 1 "$RIVER_UI_WAIT_ATTEMPTS"); do
+    if curl -fsS "$RIVER_UI_URL/api/health-checks/complete" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  docker compose -f "$COMPOSE_FILE" logs --tail=80 riverui >&2 || true
+  printf 'River UI did not become ready within %s seconds.\n' "$RIVER_UI_WAIT_ATTEMPTS" >&2
   return 1
 }
 
@@ -241,6 +258,8 @@ print_service_links() {
     printf '  Marketing:   %s\n' "$(marketing_url)"
   fi
 
+  printf '  River UI:    %s\n' "$RIVER_UI_URL"
+
   printf '\n'
 }
 
@@ -256,12 +275,16 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 log "starting local infrastructure"
-docker compose -f "$COMPOSE_FILE" up -d
+docker compose -f "$COMPOSE_FILE" up -d postgres
 
 wait_for_postgres
 
 log "running database migrations"
 go run ./cmd/opensight migrate
+
+log "starting River UI"
+docker compose -f "$COMPOSE_FILE" up -d riverui
+wait_for_river_ui
 
 ensure_api_not_already_running
 start_processes

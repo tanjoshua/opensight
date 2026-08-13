@@ -80,4 +80,4 @@ npm run build
 
 OpenAI mode requires `OPENAI_API_KEY`. `serve` also requires the Stripe, Google OAuth, and `APP_BASE_URL` values documented in `.env.example`. Local development should use `stub` or `replay` unless a real provider smoke test is intentional.
 
-Queue inspection uses structured app logs and the `river_job` query in [Design 04](design/04-monitoring.md). There is no dashboard service.
+`make up` starts the development-only River UI at `http://127.0.0.1:8082` after migrations complete. Use it to inspect, retry, cancel, or delete local jobs. Structured app logs and the `river_job` query in [Design 04](design/04-monitoring.md) remain the production queue-inspection path; River UI is not deployed publicly.

@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync"
 	"testing"
@@ -20,6 +21,24 @@ import (
 type recordingInserter struct {
 	mu   sync.Mutex
 	args []river.JobArgs
+}
+
+type stubGenerationStore struct {
+	update func(context.Context, domain.ID, domain.ID, string) (bool, error)
+	create func(context.Context, domain.ID, domain.ID, domain.ID, json.RawMessage) (store.ProfileProposal, bool, error)
+	finish func(context.Context, domain.ID, domain.ID, string) (bool, error)
+}
+
+func (s stubGenerationStore) UpdateGenerationStage(ctx context.Context, businessID, generationID domain.ID, stage string) (bool, error) {
+	return s.update(ctx, businessID, generationID, stage)
+}
+
+func (s stubGenerationStore) CreatePendingFenced(ctx context.Context, accountID, businessID, generationID domain.ID, payload json.RawMessage) (store.ProfileProposal, bool, error) {
+	return s.create(ctx, accountID, businessID, generationID, payload)
+}
+
+func (s stubGenerationStore) FinishGeneration(ctx context.Context, businessID, generationID domain.ID, status string) (bool, error) {
+	return s.finish(ctx, businessID, generationID, status)
 }
 
 func (r *recordingInserter) Insert(_ context.Context, args river.JobArgs, _ *river.InsertOpts) (*rivertype.JobInsertResult, error) {
@@ -81,10 +100,116 @@ func (s stubOperations) PublishImproveRun(ctx context.Context, in workflows.Publ
 	return s.publish(ctx, in)
 }
 
-func TestMonitorWorkerFinalizesPartialPromptFailureAndEnqueuesAnalysis(t *testing.T) {
+func TestGenerateProfileWorkerRetriesShutdownCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(context.Background())
+	shutdownErr := errors.New("stop initiated")
+	finishCalls := 0
+	worker := &GenerateProfileWorker{
+		Store: stubGenerationStore{
+			update: func(context.Context, domain.ID, domain.ID, string) (bool, error) { return true, nil },
+			finish: func(context.Context, domain.ID, domain.ID, string) (bool, error) {
+				finishCalls++
+				return true, nil
+			},
+		},
+		Ops: stubOperations{
+			fetchSite: func(context.Context, workflows.FetchSiteInput) (workflows.FetchSiteOutput, error) {
+				return workflows.FetchSiteOutput{}, nil
+			},
+			proposeProfile: func(callCtx context.Context, _ workflows.ProposeProfileInput) (workflows.ProposeProfileOutput, error) {
+				cancel(shutdownErr)
+				return workflows.ProposeProfileOutput{}, callCtx.Err()
+			},
+		},
+	}
+
+	err := worker.Work(ctx, generateProfileJob(1, 2))
+	if !errors.Is(err, shutdownErr) {
+		t.Fatalf("Work error = %v, want shutdown cause", err)
+	}
+	if finishCalls != 0 {
+		t.Fatalf("FinishGeneration calls = %d, want 0", finishCalls)
+	}
+}
+
+func TestGenerateProfileWorkerPreservesRemoteCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(context.Background())
+	finishCalls := 0
+	worker := &GenerateProfileWorker{
+		Store: stubGenerationStore{
+			update: func(context.Context, domain.ID, domain.ID, string) (bool, error) { return true, nil },
+			finish: func(context.Context, domain.ID, domain.ID, string) (bool, error) {
+				finishCalls++
+				return true, nil
+			},
+		},
+		Ops: stubOperations{
+			fetchSite: func(context.Context, workflows.FetchSiteInput) (workflows.FetchSiteOutput, error) {
+				return workflows.FetchSiteOutput{}, nil
+			},
+			proposeProfile: func(callCtx context.Context, _ workflows.ProposeProfileInput) (workflows.ProposeProfileOutput, error) {
+				cancel(river.ErrJobCancelledRemotely)
+				return workflows.ProposeProfileOutput{}, callCtx.Err()
+			},
+		},
+	}
+
+	err := worker.Work(ctx, generateProfileJob(1, 2))
+	if !errors.Is(err, river.ErrJobCancelledRemotely) {
+		t.Fatalf("Work error = %v, want remote cancellation", err)
+	}
+	if finishCalls != 0 {
+		t.Fatalf("FinishGeneration calls = %d, want 0", finishCalls)
+	}
+}
+
+func TestGenerateProfileWorkerReturnsTerminalFailureWriteError(t *testing.T) {
+	finishErr := errors.New("update generation status")
+	worker := &GenerateProfileWorker{
+		Store: stubGenerationStore{
+			update: func(context.Context, domain.ID, domain.ID, string) (bool, error) { return true, nil },
+			finish: func(ctx context.Context, _ domain.ID, _ domain.ID, status string) (bool, error) {
+				if ctx.Err() != nil {
+					t.Fatalf("FinishGeneration context is cancelled: %v", ctx.Err())
+				}
+				if status != store.GenerationStatusFailed {
+					t.Fatalf("FinishGeneration status = %q, want failed", status)
+				}
+				return false, finishErr
+			},
+		},
+		Ops: stubOperations{
+			fetchSite: func(context.Context, workflows.FetchSiteInput) (workflows.FetchSiteOutput, error) {
+				return workflows.FetchSiteOutput{}, nil
+			},
+			proposeProfile: func(context.Context, workflows.ProposeProfileInput) (workflows.ProposeProfileOutput, error) {
+				return workflows.ProposeProfileOutput{}, errors.New("provider unavailable")
+			},
+		},
+	}
+
+	err := worker.Work(context.Background(), generateProfileJob(2, 2))
+	if !errors.Is(err, finishErr) {
+		t.Fatalf("Work error = %v, want FinishGeneration error", err)
+	}
+}
+
+func generateProfileJob(attempt, maxAttempts int) *river.Job[GenerateProfileArgs] {
+	return &river.Job[GenerateProfileArgs]{
+		JobRow: &rivertype.JobRow{ID: 90, Attempt: attempt, MaxAttempts: maxAttempts},
+		Args: GenerateProfileArgs{
+			AccountID:    testID(31),
+			BusinessID:   testID(32),
+			GenerationID: testID(33),
+		},
+	}
+}
+
+func TestMonitorWorkerRetriesPromptInfrastructureFailure(t *testing.T) {
 	accountID, businessID, runID := testID(1), testID(2), testID(3)
 	prompts := []workflows.PromptSnapshot{{ID: testID(4)}, {ID: testID(5)}}
 	finalized := false
+	infrastructureErr := errors.New("insert prompt result")
 	ops := stubOperations{
 		check: func(context.Context, workflows.CheckRunAccessInput) (workflows.CheckRunAccessOutput, error) {
 			return workflows.CheckRunAccessOutput{AccountID: accountID, Access: billing.AccessFull.String()}, nil
@@ -94,7 +219,7 @@ func TestMonitorWorkerFinalizesPartialPromptFailureAndEnqueuesAnalysis(t *testin
 		},
 		execute: func(_ context.Context, in workflows.ExecutePromptInput) (workflows.ExecutePromptOutput, error) {
 			if in.Prompt.ID == prompts[1].ID {
-				return workflows.ExecutePromptOutput{}, errors.New("terminal prompt failure")
+				return workflows.ExecutePromptOutput{}, infrastructureErr
 			}
 			return workflows.ExecutePromptOutput{ResultID: testID(6), Status: store.ResultStatusSucceeded}, nil
 		},
@@ -108,8 +233,40 @@ func TestMonitorWorkerFinalizesPartialPromptFailureAndEnqueuesAnalysis(t *testin
 	err := worker.Work(context.Background(), &river.Job[MonitorArgs]{JobRow: &rivertype.JobRow{ID: 91}, Args: MonitorArgs{
 		BusinessID: businessID, Platform: store.PlatformChatGPT, ScheduledFor: time.Now(), Trigger: store.RunTriggerScheduled,
 	}})
+	if !errors.Is(err, infrastructureErr) || finalized {
+		t.Fatalf("Work error/finalized = %v/%t, want retryable error/false", err, finalized)
+	}
+	if len(inserter.args) != 0 {
+		t.Fatalf("inserted jobs = %d, want none before retry succeeds", len(inserter.args))
+	}
+}
+
+func TestMonitorWorkerFinalizesPersistedTerminalPromptFailure(t *testing.T) {
+	accountID, businessID, runID := testID(21), testID(22), testID(23)
+	prompt := workflows.PromptSnapshot{ID: testID(24)}
+	finalized := false
+	ops := stubOperations{
+		check: func(context.Context, workflows.CheckRunAccessInput) (workflows.CheckRunAccessOutput, error) {
+			return workflows.CheckRunAccessOutput{AccountID: accountID, Access: billing.AccessFull.String()}, nil
+		},
+		loadRun: func(context.Context, workflows.LoadRunSpecInput) (workflows.RunSpec, error) {
+			return workflows.RunSpec{AccountID: accountID, BusinessID: businessID, RunID: runID, Prompts: []workflows.PromptSnapshot{prompt}}, nil
+		},
+		execute: func(context.Context, workflows.ExecutePromptInput) (workflows.ExecutePromptOutput, error) {
+			return workflows.ExecutePromptOutput{ResultID: testID(25), Status: store.ResultStatusFailed}, nil
+		},
+		finalize: func(context.Context, workflows.FinalizeRunInput) (store.Run, error) {
+			finalized = true
+			return store.Run{}, nil
+		},
+	}
+	inserter := &recordingInserter{}
+	worker := &MonitorWorker{Ops: ops, Jobs: inserter, Concurrency: 1}
+	err := worker.Work(context.Background(), &river.Job[MonitorArgs]{JobRow: &rivertype.JobRow{ID: 93}, Args: MonitorArgs{
+		BusinessID: businessID, Platform: store.PlatformChatGPT, ScheduledFor: time.Now(), Trigger: store.RunTriggerScheduled,
+	}})
 	if err != nil || !finalized {
-		t.Fatalf("Work error/finalized = %v/%t", err, finalized)
+		t.Fatalf("Work error/finalized = %v/%t, want nil/true", err, finalized)
 	}
 	if len(inserter.args) != 1 {
 		t.Fatalf("inserted jobs = %d, want analysis", len(inserter.args))

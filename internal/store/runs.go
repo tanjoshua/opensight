@@ -1,7 +1,9 @@
 package store
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -58,6 +60,9 @@ type Run struct {
 	// ExpectedResults is the prompt-snapshot size at run start (the "N" in
 	// "k of N"). Nullable: null means "unknown," not zero.
 	ExpectedResults *int
+	// Spec is the immutable prompt and location snapshot captured when the run
+	// was first inserted. Duplicate triggers read back the original value.
+	Spec json.RawMessage
 }
 
 // UpsertRunParams are the inputs for UpsertRun. If ID is uuid.Nil a UUIDv7 is
@@ -70,6 +75,7 @@ type UpsertRunParams struct {
 	ScheduledFor    time.Time
 	JobID           int64
 	ExpectedResults int
+	Spec            json.RawMessage
 }
 
 // UpsertRun idempotently creates (or converges on) the run for
@@ -97,7 +103,7 @@ func (s *Store) UpsertRun(ctx context.Context, accountID domain.ID, params Upser
 		if err := q.InsertRunOnConflictNothing(ctx, storesqlc.InsertRunOnConflictNothingParams{
 			ID: params.ID, BusinessID: params.BusinessID, Platform: params.Platform,
 			Trigger: string(params.Trigger), ScheduledFor: params.ScheduledFor,
-			JobID: params.JobID, ExpectedResults: &expected,
+			JobID: params.JobID, ExpectedResults: &expected, Spec: params.Spec,
 		}); err != nil {
 			return fmt.Errorf("insert monitoring run: %w", err)
 		}
@@ -109,12 +115,45 @@ func (s *Store) UpsertRun(ctx context.Context, accountID domain.ID, params Upser
 		}
 		run = runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
 			row.Status, row.JobID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults)
+		run.Spec = row.Spec
 		return nil
 	})
 	if err != nil {
 		return Run{}, err
 	}
 	return run, nil
+}
+
+// GetRunByKey returns the account-owned run for a scheduled slot. It lets a
+// retried worker restore the persisted spec without consulting mutable
+// business configuration first.
+func (s *Store) GetRunByKey(ctx context.Context, accountID, businessID domain.ID, platform string, scheduledFor time.Time) (Run, error) {
+	row, err := s.q(ctx).GetRunByKey(ctx, storesqlc.GetRunByKeyParams{
+		BusinessID: businessID, Platform: platform, ScheduledFor: scheduledFor, AccountID: accountID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Run{}, ErrNotFound
+		}
+		return Run{}, fmt.Errorf("get monitoring run by key: %w", err)
+	}
+	run := runFromFields(row.ID, row.BusinessID, row.Platform, row.Trigger, row.ScheduledFor,
+		row.Status, row.JobID, row.StartedAt, row.CompletedAt, row.AnalysisCompletedAt, row.ExpectedResults)
+	run.Spec = row.Spec
+	return run, nil
+}
+
+// MonitoringRunExists reports whether the durable run for a schedule slot has
+// already been created. The scheduler uses it to avoid depending on River's
+// finite completed-job retention for slot deduplication.
+func (s *Store) MonitoringRunExists(ctx context.Context, businessID domain.ID, platform string, scheduledFor time.Time) (bool, error) {
+	exists, err := s.q(ctx).MonitoringRunExists(ctx, storesqlc.MonitoringRunExistsParams{
+		BusinessID: businessID, Platform: platform, ScheduledFor: scheduledFor,
+	})
+	if err != nil {
+		return false, fmt.Errorf("check monitoring run: %w", err)
+	}
+	return exists, nil
 }
 
 // FinalizeRun sets the run's terminal status from its succeeded result count
@@ -212,6 +251,10 @@ func normalizeUpsertRunParams(params UpsertRunParams) (UpsertRunParams, error) {
 	}
 	if params.ExpectedResults < 0 {
 		return UpsertRunParams{}, errors.New("run expected_results must not be negative")
+	}
+	trimmedSpec := bytes.TrimSpace(params.Spec)
+	if len(trimmedSpec) == 0 || !json.Valid(trimmedSpec) || trimmedSpec[0] != '{' {
+		return UpsertRunParams{}, errors.New("run spec must be a JSON object")
 	}
 	return params, nil
 }

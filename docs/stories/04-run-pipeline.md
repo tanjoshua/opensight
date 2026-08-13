@@ -33,7 +33,7 @@ Deps: RUN-1, SPK-1 · Phase 1 · Ref: design 07 (Local development)
 As the operator, I want a River monitoring job that upserts the run, snapshots prompts, and finalizes status, so that runs are idempotent and partial failure is a first-class state.
 
 - [x] Job id `run-{business_id}-chatgpt-{scheduled_for}`; duplicate triggers converge (DB upsert via `LoadRunSpec` returns the existing run for that date — no-op).
-- [x] `LoadRunSpec` records `trigger` (`initial|scheduled|manual`), sets status `running`, snapshots active prompts at start (mid-run prompt replacement cannot produce a half-and-half run). Plan entitlements need no separate snapshot: `PromptStore.CreateActivePrompt` enforces `plan.prompt_limit` at write time, so the active-prompt list is already entitlement-bounded by construction.
+- [x] `LoadRunSpec` records `trigger` (`initial|scheduled|manual`), sets status `running`, and persists the active prompt ID/text and location snapshot on the run. Retries read the stored snapshot, so prompt or profile edits cannot change an in-flight run. Plan entitlements need no separate snapshot: `PromptStore.CreateActivePrompt` enforces `plan.prompt_limit` at write time, so the active-prompt list is already entitlement-bounded by construction.
 - [x] `FinalizeRun`: all succeeded → `completed`; some → `partial`; none → `failed`.
 - [x] River workers start inside `serve`.
 - [ ] Worker running in prod compose — blocked on FND-5 (prod `compose.yml` does not exist yet).

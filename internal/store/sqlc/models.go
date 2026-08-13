@@ -141,6 +141,7 @@ type MonitoringRun struct {
 	AnalysisCompletedAt *time.Time
 	ExpectedResults     *int32
 	JobID               int64
+	Spec                json.RawMessage
 }
 
 type ProfileProposal struct {

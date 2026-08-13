@@ -265,7 +265,7 @@ func TestStripeWebhookLapseAndReactivationPreservesData(t *testing.T) {
 	runs := store.New(pool)
 	run, err := runs.UpsertRun(ctx, accountID, store.UpsertRunParams{
 		BusinessID: businessID, Platform: store.PlatformChatGPT, Trigger: store.RunTriggerInitial,
-		ScheduledFor: activatedAt, JobID: 105, ExpectedResults: 1,
+		ScheduledFor: activatedAt, JobID: 105, ExpectedResults: 1, Spec: json.RawMessage(`{}`),
 	})
 	if err != nil {
 		t.Fatalf("seed run: %v", err)

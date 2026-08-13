@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log/slog"
+	"sync"
 	"time"
 
 	"opensight/internal/billing"
@@ -124,9 +125,20 @@ func NextWeeklySlot(id domain.ID, after time.Time) time.Time {
 	return slot
 }
 
+type schedulerStore interface {
+	ListMonitoringCandidates(context.Context) ([]store.MonitoringCandidate, error)
+	MonitoringRunExists(context.Context, domain.ID, string, time.Time) (bool, error)
+}
+
+type generationStore interface {
+	UpdateGenerationStage(context.Context, domain.ID, domain.ID, string) (bool, error)
+	CreatePendingFenced(context.Context, domain.ID, domain.ID, domain.ID, json.RawMessage) (store.ProfileProposal, bool, error)
+	FinishGeneration(context.Context, domain.ID, domain.ID, string) (bool, error)
+}
+
 type SweepWorker struct {
 	river.WorkerDefaults[SweepArgs]
-	Store *store.Store
+	Store schedulerStore
 	Jobs  Inserter
 	Now   func() time.Time
 }
@@ -157,6 +169,13 @@ func (w *SweepWorker) Work(ctx context.Context, _ *river.Job[SweepArgs]) error {
 		}
 		scheduledFor := time.Date(slot.Year(), slot.Month(), slot.Day(), 0, 0, 0, 0, time.UTC)
 		for _, platform := range plan.Platforms {
+			exists, err := w.Store.MonitoringRunExists(ctx, c.BusinessID, platform, scheduledFor)
+			if err != nil {
+				return err
+			}
+			if exists {
+				continue
+			}
 			if _, err = w.Jobs.Insert(ctx, MonitorArgs{BusinessID: c.BusinessID, Platform: platform, ScheduledFor: scheduledFor, Trigger: store.RunTriggerScheduled}, nil); err != nil {
 				return err
 			}
@@ -167,7 +186,7 @@ func (w *SweepWorker) Work(ctx context.Context, _ *river.Job[SweepArgs]) error {
 
 type GenerateProfileWorker struct {
 	river.WorkerDefaults[GenerateProfileArgs]
-	Store *store.Store
+	Store generationStore
 	Ops   Operations
 }
 
@@ -190,8 +209,16 @@ func (w *GenerateProfileWorker) Work(ctx context.Context, job *river.Job[Generat
 	}
 	proposed, err := w.Ops.ProposeProfile(ctx, workflows.ProposeProfileInput{Name: in.Name, Website: in.Website, SiteText: siteText, Location: llm.Location{Country: "SG"}})
 	if err != nil || !proposed.Proposed {
-		if job.Attempt >= job.MaxAttempts || errors.Is(err, context.Canceled) || workflows.IsPermanent(err) {
-			_, _ = w.Store.FinishGeneration(context.WithoutCancel(ctx), in.BusinessID, in.GenerationID, store.GenerationStatusFailed)
+		if cause := context.Cause(ctx); errors.Is(cause, river.ErrJobCancelledRemotely) {
+			return cause
+		}
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return context.Cause(ctx)
+		}
+		if job.Attempt >= job.MaxAttempts || workflows.IsPermanent(err) {
+			if _, finishErr := w.Store.FinishGeneration(context.WithoutCancel(ctx), in.BusinessID, in.GenerationID, store.GenerationStatusFailed); finishErr != nil {
+				return fmt.Errorf("finish failed profile generation: %w", finishErr)
+			}
 			return nil
 		}
 		if err == nil {
@@ -247,13 +274,21 @@ func (w *MonitorWorker) Work(ctx context.Context, job *river.Job[MonitorArgs]) e
 	if err != nil {
 		return jobError(err)
 	}
+	var promptErrs []error
+	var promptErrsMu sync.Mutex
 	_, err = parallelMap(ctx, w.Concurrency, spec.Prompts, func(ctx context.Context, p workflows.PromptSnapshot) (workflows.ExecutePromptOutput, error) {
 		return w.Ops.ExecutePrompt(ctx, workflows.ExecutePromptInput{AccountID: spec.AccountID, RunID: spec.RunID, Prompt: p, Location: spec.Location})
 	}, func(p workflows.PromptSnapshot, err error) {
 		slog.ErrorContext(ctx, "prompt execution failed", "run_id", spec.RunID, "prompt_id", p.ID, "error", err)
+		promptErrsMu.Lock()
+		promptErrs = append(promptErrs, fmt.Errorf("execute prompt %s: %w", p.ID, err))
+		promptErrsMu.Unlock()
 	})
 	if err != nil {
 		return err
+	}
+	if err = errors.Join(promptErrs...); err != nil {
+		return jobError(err)
 	}
 	if _, err = w.Ops.FinalizeRun(ctx, workflows.FinalizeRunInput{AccountID: spec.AccountID, RunID: spec.RunID}); err != nil {
 		return err

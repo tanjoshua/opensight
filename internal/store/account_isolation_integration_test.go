@@ -194,6 +194,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		ScheduledFor:    scheduledFor,
 		JobID:           101,
 		ExpectedResults: 1,
+		Spec:            json.RawMessage(`{"version":"original"}`),
 	})
 	if err != nil {
 		t.Fatalf("UpsertRun(accountA): %v", err)
@@ -205,6 +206,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		Trigger:      RunTriggerManual,
 		ScheduledFor: scheduledFor,
 		JobID:        102,
+		Spec:         json.RawMessage(`{"version":"duplicate"}`),
 	})
 	if err != nil {
 		t.Fatalf("UpsertRun(accountA) second: %v", err)
@@ -215,6 +217,9 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 	if again.Trigger != RunTriggerScheduled {
 		t.Fatalf("second UpsertRun trigger = %q, want the original %q", again.Trigger, RunTriggerScheduled)
 	}
+	if string(again.Spec) != `{"version": "original"}` && string(again.Spec) != `{"version":"original"}` {
+		t.Fatalf("second UpsertRun spec = %s, want the original snapshot", again.Spec)
+	}
 
 	if _, err := runs.UpsertRun(ctx, accountB, UpsertRunParams{
 		BusinessID:   businessA,
@@ -222,6 +227,7 @@ func TestRepositoriesEnforceAccountScoping(t *testing.T) {
 		Trigger:      RunTriggerManual,
 		ScheduledFor: scheduledFor,
 		JobID:        103,
+		Spec:         json.RawMessage(`{}`),
 	}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("UpsertRun(accountB) err = %v, want ErrNotFound", err)
 	}

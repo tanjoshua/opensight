@@ -1,13 +1,34 @@
 package jobs
 
 import (
+	"context"
 	"slices"
 	"testing"
 	"time"
 
+	"opensight/internal/billing"
+	"opensight/internal/domain"
+	"opensight/internal/store"
+
 	"github.com/google/uuid"
+	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
+
+type stubSchedulerStore struct {
+	candidates []store.MonitoringCandidate
+	exists     bool
+	checked    []MonitorArgs
+}
+
+func (s stubSchedulerStore) ListMonitoringCandidates(context.Context) ([]store.MonitoringCandidate, error) {
+	return s.candidates, nil
+}
+
+func (s *stubSchedulerStore) MonitoringRunExists(_ context.Context, businessID domain.ID, platform string, scheduledFor time.Time) (bool, error) {
+	s.checked = append(s.checked, MonitorArgs{BusinessID: businessID, Platform: platform, ScheduledFor: scheduledFor})
+	return s.exists, nil
+}
 
 func TestWeeklySlotsRespectBoundariesAndActivation(t *testing.T) {
 	id := uuid.MustParse("01950000-0000-7000-8000-0000000000d2")
@@ -48,5 +69,33 @@ func TestLatestDueWeeklySlotCatchesUpOnlyLatest(t *testing.T) {
 	}
 	if next := NextWeeklySlot(id, now); !next.After(now) || next.Sub(slot) != 7*24*time.Hour {
 		t.Fatalf("next slot = %v, latest = %v", next, slot)
+	}
+}
+
+func TestSweepSkipsSlotAlreadyRecordedAsRun(t *testing.T) {
+	businessID := uuid.MustParse("01950000-0000-7000-8000-0000000000d2")
+	now := time.Date(2026, 8, 13, 12, 0, 0, 0, time.UTC)
+	activatedAt := now.AddDate(0, -1, 0)
+	candidate := store.MonitoringCandidate{
+		BusinessID: businessID, ActivatedAt: activatedAt, PlanCode: billing.Starter.Code,
+		AccessState: billing.State{Comped: true},
+	}
+	inserter := &recordingInserter{}
+	scheduler := &stubSchedulerStore{candidates: []store.MonitoringCandidate{candidate}, exists: true}
+	worker := &SweepWorker{
+		Store: scheduler,
+		Jobs:  inserter,
+		Now:   func() time.Time { return now },
+	}
+
+	if err := worker.Work(context.Background(), &river.Job[SweepArgs]{}); err != nil {
+		t.Fatalf("Work: %v", err)
+	}
+	if len(inserter.args) != 0 {
+		t.Fatalf("inserted jobs = %d, want none for a durable existing run", len(inserter.args))
+	}
+	if len(scheduler.checked) != 1 || scheduler.checked[0].BusinessID != businessID ||
+		scheduler.checked[0].Platform != store.PlatformChatGPT {
+		t.Fatalf("checked slots = %+v, want this business's ChatGPT slot", scheduler.checked)
 	}
 }
