@@ -1,7 +1,7 @@
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import { ArrowRight, LogOut, Plus } from "lucide-react"
-import { useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, Navigate, useNavigate } from "react-router"
 
 import { errorMessage, isUnauthenticated } from "@/api/errors"
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Logo } from "@/components/logo"
+
+const provisionalCompedWorkspaceName = "New workspace"
 
 export function AccountsPage() {
   const me = useMe()
@@ -125,6 +127,7 @@ export function NewAccountPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
+  const compedCreationStarted = useRef(false)
   const isAdmin = isCompedAccountAdmin(me.data?.user?.email)
   const mutation = useMutation(createAccount, {
     onSuccess: async ({ membership }) => {
@@ -142,6 +145,12 @@ export function NewAccountPage() {
     },
   })
 
+  useEffect(() => {
+    if (!me.data || !isAdmin || compedCreationStarted.current) return
+    compedCreationStarted.current = true
+    mutation.mutate({ name: provisionalCompedWorkspaceName })
+  }, [isAdmin, me.data, mutation])
+
   if (me.isLoading)
     return (
       <AccountShell>
@@ -157,6 +166,35 @@ export function NewAccountPage() {
         </p>
       </AccountShell>
     )
+  if (isAdmin)
+    return (
+      <AccountShell>
+        {mutation.isError ? (
+          <div className="flex flex-col items-start gap-4">
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage(mutation.error, "Couldn't create the workspace.")}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={() =>
+                  mutation.mutate({ name: provisionalCompedWorkspaceName })
+                }
+              >
+                Try again
+              </Button>
+              <Button variant="ghost" render={<Link to="/accounts" />}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Preparing your workspace…
+          </p>
+        )}
+      </AccountShell>
+    )
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -170,9 +208,7 @@ export function NewAccountPage() {
         <CardHeader>
           <CardTitle>Create a workspace</CardTitle>
           <CardDescription>
-            {isAdmin
-              ? "This workspace will have complimentary access. You can add members later."
-              : "Workspaces keep member access, businesses, and billing separate."}
+            Workspaces keep member access, businesses, and billing separate.
           </CardDescription>
         </CardHeader>
         <form onSubmit={submit}>
@@ -209,11 +245,7 @@ export function NewAccountPage() {
               Cancel
             </Button>
             <Button type="submit" disabled={!name.trim() || mutation.isPending}>
-              {mutation.isPending
-                ? "Creating…"
-                : isAdmin
-                  ? "Create comped workspace"
-                  : "Create workspace"}
+              {mutation.isPending ? "Creating…" : "Create workspace"}
             </Button>
           </CardFooter>
         </form>

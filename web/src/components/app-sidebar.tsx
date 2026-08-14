@@ -41,7 +41,6 @@ import {
   SelectItem,
   SelectSeparator,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select"
 
 const businessSections = [
@@ -103,6 +102,10 @@ export function AppSidebar() {
         { value: createWorkspaceValue, label: "Create workspace" },
       ]
     : workspaceItems
+  const showWorkspaceSelector =
+    me !== undefined &&
+    account?.account !== undefined &&
+    (hasMultipleWorkspaces || canCreateCompedWorkspace)
   const visibleWorkspaceSections =
     account?.role === AccountRole.OWNER
       ? [
@@ -130,49 +133,40 @@ export function AppSidebar() {
             OpenSight
           </span>
         </div>
-        <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
-            <Building2 className="size-4" />
+        {showWorkspaceSelector ? (
+          <Select
+            items={workspaceSelectItems}
+            value={slug}
+            onValueChange={switchAccount}
+          >
+            <SelectTrigger
+              className="w-full gap-3 rounded-xl bg-transparent px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent data-[size=default]:h-auto!"
+              aria-label="Switch workspace"
+            >
+              <WorkspaceSummary label={contextLabel} name={contextName} />
+            </SelectTrigger>
+            <SelectContent>
+              {workspaceItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+              {canCreateCompedWorkspace && (
+                <>
+                  <SelectSeparator />
+                  <SelectItem value={createWorkspaceValue}>
+                    <Plus />
+                    Create workspace
+                  </SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+            <WorkspaceSummary label={contextLabel} name={contextName} />
           </div>
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">{contextLabel}</div>
-            <div className="truncate text-sm font-medium">{contextName}</div>
-          </div>
-        </div>
-        {me &&
-          account?.account &&
-          (hasMultipleWorkspaces || canCreateCompedWorkspace) && (
-            <div className="flex flex-col gap-1 px-1">
-              <span className="px-2 text-xs text-muted-foreground">
-                Switch workspace
-              </span>
-              <Select
-                items={workspaceSelectItems}
-                value={slug}
-                onValueChange={switchAccount}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {workspaceItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                  {canCreateCompedWorkspace && (
-                    <>
-                      <SelectSeparator />
-                      <SelectItem value={createWorkspaceValue}>
-                        <Plus />
-                        Create workspace
-                      </SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        )}
       </SidebarHeader>
       <SidebarContent>
         {hasBusinessNavigation && (
@@ -285,5 +279,19 @@ export function AppSidebar() {
         </SidebarFooter>
       )}
     </Sidebar>
+  )
+}
+
+function WorkspaceSummary({ label, name }: { label: string; name: string }) {
+  return (
+    <>
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+        <Building2 className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1 text-left">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="truncate text-sm font-medium">{name}</div>
+      </div>
+    </>
   )
 }
