@@ -39,6 +39,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -64,6 +65,7 @@ const improveSections = [
 ]
 
 const workspaceSections = [{ title: "Members", to: "/team", icon: Users }]
+const createWorkspaceValue = "__create_workspace__"
 
 export function AppSidebar() {
   const { pathname } = useLocation()
@@ -95,6 +97,12 @@ export function AppSidebar() {
       ? [{ value: membership.account.slug, label: membership.account.name }]
       : []
   )
+  const workspaceSelectItems = canCreateCompedWorkspace
+    ? [
+        ...workspaceItems,
+        { value: createWorkspaceValue, label: "Create workspace" },
+      ]
+    : workspaceItems
   const visibleWorkspaceSections =
     account?.role === AccountRole.OWNER
       ? [
@@ -105,6 +113,10 @@ export function AppSidebar() {
 
   function switchAccount(nextSlug: string | null) {
     if (!nextSlug || nextSlug === slug) return
+    if (nextSlug === createWorkspaceValue) {
+      navigate("/accounts/new")
+      return
+    }
     queryClient.clear()
     navigate(accountPath(nextSlug))
   }
@@ -127,29 +139,40 @@ export function AppSidebar() {
             <div className="truncate text-sm font-medium">{contextName}</div>
           </div>
         </div>
-        {me && account?.account && hasMultipleWorkspaces && (
-          <div className="flex flex-col gap-1 px-1">
-            <span className="px-2 text-xs text-muted-foreground">
-              Switch workspace
-            </span>
-            <Select
-              items={workspaceItems}
-              value={slug}
-              onValueChange={switchAccount}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {workspaceItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {me &&
+          account?.account &&
+          (hasMultipleWorkspaces || canCreateCompedWorkspace) && (
+            <div className="flex flex-col gap-1 px-1">
+              <span className="px-2 text-xs text-muted-foreground">
+                Switch workspace
+              </span>
+              <Select
+                items={workspaceSelectItems}
+                value={slug}
+                onValueChange={switchAccount}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {workspaceItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                  {canCreateCompedWorkspace && (
+                    <>
+                      <SelectSeparator />
+                      <SelectItem value={createWorkspaceValue}>
+                        <Plus />
+                        Create workspace
+                      </SelectItem>
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
       </SidebarHeader>
       <SidebarContent>
         {hasBusinessNavigation && (
@@ -237,17 +260,6 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {canCreateCompedWorkspace && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="Create comped workspace"
-                    render={<NavLink to="/accounts/new" />}
-                  >
-                    <Plus />
-                    <span>Create workspace</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
