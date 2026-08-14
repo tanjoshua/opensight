@@ -291,7 +291,7 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 
 	accounts := New(db)
 
-	account, _, err := accounts.CreateAccount(ctx, CreateAccountParams{
+	account, user, err := accounts.CreateAccount(ctx, CreateAccountParams{
 		Email:     "duplicate@example.com",
 		GoogleSub: "google-sub-duplicate-1",
 	})
@@ -299,17 +299,23 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 		t.Fatalf("first CreateAccount: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id IN (SELECT user_id FROM account_memberships WHERE account_id = $1)", account.ID)
 		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", account.ID)
 		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", account.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", user.ID)
 	})
 
-	var accountsBefore int
-	if err := db.QueryRow(ctx, "SELECT count(*) FROM accounts").Scan(&accountsBefore); err != nil {
-		t.Fatalf("count accounts before: %v", err)
+	orphanAccountID, err := domain.NewID()
+	if err != nil {
+		t.Fatalf("new orphan account id: %v", err)
+	}
+	orphanUserID, err := domain.NewID()
+	if err != nil {
+		t.Fatalf("new orphan user id: %v", err)
 	}
 
 	_, _, err = accounts.CreateAccount(ctx, CreateAccountParams{
+		AccountID: orphanAccountID,
+		UserID:    orphanUserID,
 		Email:     "Duplicate@Example.com",
 		GoogleSub: "google-sub-duplicate-2",
 	})
@@ -317,11 +323,21 @@ func TestAccountStoreCreateAccountDuplicateEmailRollsBack(t *testing.T) {
 		t.Fatalf("second CreateAccount error = %v, want ErrEmailTaken", err)
 	}
 
-	var accountsAfter int
-	if err := db.QueryRow(ctx, "SELECT count(*) FROM accounts").Scan(&accountsAfter); err != nil {
-		t.Fatalf("count accounts after: %v", err)
+	var accountExists, subscriptionExists, membershipExists, userExists bool
+	if err := db.QueryRow(ctx, `
+		SELECT
+			EXISTS (SELECT 1 FROM accounts WHERE id = $1),
+			EXISTS (SELECT 1 FROM subscriptions WHERE account_id = $1),
+			EXISTS (SELECT 1 FROM account_memberships WHERE account_id = $1 OR user_id = $2),
+			EXISTS (SELECT 1 FROM users WHERE id = $2)`,
+		orphanAccountID, orphanUserID,
+	).Scan(&accountExists, &subscriptionExists, &membershipExists, &userExists); err != nil {
+		t.Fatalf("check duplicate signup rollback: %v", err)
 	}
-	if accountsAfter != accountsBefore {
-		t.Fatalf("account count changed from %d to %d; duplicate signup left an orphan account", accountsBefore, accountsAfter)
+	if accountExists || subscriptionExists || membershipExists || userExists {
+		t.Fatalf(
+			"duplicate signup left records: account=%t subscription=%t membership=%t user=%t",
+			accountExists, subscriptionExists, membershipExists, userExists,
+		)
 	}
 }
