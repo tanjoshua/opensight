@@ -10,6 +10,8 @@ import {
   Lightbulb,
   ClipboardCheck,
   Plus,
+  Check,
+  ChevronDown,
 } from "lucide-react"
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
@@ -36,12 +38,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectSeparator,
-  SelectTrigger,
-} from "@/components/ui/select"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const businessSections = [
   { title: "Brief", to: "/overview", icon: Newspaper },
@@ -64,7 +66,6 @@ const improveSections = [
 ]
 
 const workspaceSections = [{ title: "Members", to: "/team", icon: Users }]
-const createWorkspaceValue = "__create_workspace__"
 
 export function AppSidebar() {
   const { pathname } = useLocation()
@@ -89,19 +90,11 @@ export function AppSidebar() {
     business !== undefined && account?.access !== Access.NEVER
   const hasMultipleWorkspaces = (me?.memberships.length ?? 0) > 1
   const canCreateCompedWorkspace = isCompedAccountAdmin(me?.user?.email)
-  // Select needs items to resolve the value (a slug) to its label; without
-  // them the trigger falls back to rendering the raw slug.
   const workspaceItems = (me?.memberships ?? []).flatMap((membership) =>
     membership.account
       ? [{ value: membership.account.slug, label: membership.account.name }]
       : []
   )
-  const workspaceSelectItems = canCreateCompedWorkspace
-    ? [
-        ...workspaceItems,
-        { value: createWorkspaceValue, label: "Create workspace" },
-      ]
-    : workspaceItems
   const showWorkspaceSelector =
     me !== undefined &&
     account?.account !== undefined &&
@@ -114,12 +107,8 @@ export function AppSidebar() {
         ]
       : workspaceSections
 
-  function switchAccount(nextSlug: string | null) {
-    if (!nextSlug || nextSlug === slug) return
-    if (nextSlug === createWorkspaceValue) {
-      navigate("/accounts/new")
-      return
-    }
+  function switchAccount(nextSlug: string) {
+    if (nextSlug === slug) return
     queryClient.clear()
     navigate(accountPath(nextSlug))
   }
@@ -134,34 +123,35 @@ export function AppSidebar() {
           </span>
         </div>
         {showWorkspaceSelector ? (
-          <Select
-            items={workspaceSelectItems}
-            value={slug}
-            onValueChange={switchAccount}
-          >
-            <SelectTrigger
-              className="w-full gap-3 rounded-xl bg-transparent px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent data-[size=default]:h-auto!"
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="flex w-full items-center gap-3 rounded-xl bg-transparent px-2 py-2 text-sidebar-foreground transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-3 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent"
               aria-label="Switch workspace"
             >
               <WorkspaceSummary label={contextLabel} name={contextName} />
-            </SelectTrigger>
-            <SelectContent>
+              <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
               {workspaceItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
+                <DropdownMenuItem
+                  key={item.value}
+                  onClick={() => switchAccount(item.value)}
+                >
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                  {item.value === slug && <Check />}
+                </DropdownMenuItem>
               ))}
               {canCreateCompedWorkspace && (
                 <>
-                  <SelectSeparator />
-                  <SelectItem value={createWorkspaceValue}>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/accounts/new")}>
                     <Plus />
                     Create workspace
-                  </SelectItem>
+                  </DropdownMenuItem>
                 </>
               )}
-            </SelectContent>
-          </Select>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <div className="flex items-center gap-3 rounded-xl px-2 py-2">
             <WorkspaceSummary label={contextLabel} name={contextName} />
