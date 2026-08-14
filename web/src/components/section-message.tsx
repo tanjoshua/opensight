@@ -15,16 +15,18 @@ export function SectionMessage({
   title,
   description,
   icon: Icon,
+  iconClassName,
 }: {
   title: string
   description: string
   icon: LucideIcon
+  iconClassName?: string
 }) {
   return (
     <Empty className="border">
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <Icon />
+          <Icon className={iconClassName} />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>

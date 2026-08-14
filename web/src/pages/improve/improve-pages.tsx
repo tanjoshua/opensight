@@ -287,6 +287,7 @@ export function ActionsPage() {
       !query.data.checkedAt ? (
         <SectionMessage
           icon={LoaderCircle}
+          iconClassName="animate-spin"
           title="Finding your next actions"
           description="Your first visibility check, site audit, and evidence review are still running."
         />
