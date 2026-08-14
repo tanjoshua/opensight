@@ -90,6 +90,7 @@ func TestSiteAuditFinderOnlyActsOnFixableFailures(t *testing.T) {
 	audit := []CheckResult{
 		{Key: CheckRobotsOAISearchBot, Outcome: CheckFail, Detail: "blocked"},
 		{Key: CheckRobotsGPTBot, Outcome: CheckFail, Detail: "blocked"},
+		{Key: CheckStructuredOpenHours, Outcome: CheckFail, Detail: "no hours"},
 		{Key: CheckSitemapPublished, Outcome: CheckCouldNotVerify, Detail: "unknown"},
 		{Key: CheckMetaDescription, Outcome: CheckPass, Detail: "present"},
 	}
@@ -145,12 +146,12 @@ func TestStructuredDataFailuresBecomeOneAction(t *testing.T) {
 			t.Errorf("snippet is missing %q:\n%s", fragment, steps)
 		}
 	}
-	// Hours are not in any profile, so the action must ask for them. The address
-	// is, so asking again would be noise.
-	if !strings.Contains(steps, "openingHours") || strings.Contains(steps, "Add address") {
-		t.Errorf("action misreports which fields the profile could not fill:\n%s", steps)
+	// Opening hours stay on the checklist rather than being smuggled into this
+	// broader action. The address is already in the generated block.
+	if strings.Contains(steps, "openingHours") || strings.Contains(steps, "Add address") {
+		t.Errorf("action asks for a checklist-only or already-filled field:\n%s", steps)
 	}
-	if !strings.Contains(findings[0].Detail, "3 dependent checks") {
+	if !strings.Contains(findings[0].Detail, "2 dependent checks") {
 		t.Errorf("detail should account for the folded checks: %q", findings[0].Detail)
 	}
 }

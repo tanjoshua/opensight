@@ -114,7 +114,7 @@ func linkedSnapshot() MonitoringSnapshot {
 }
 
 func TestCitationGapCountsOnlyLinkedAbsentResults(t *testing.T) {
-	classifier := &fixedSourceClassifier{kind: llm.SourceUnknown}
+	classifier := &fixedSourceClassifier{kind: llm.SourceThirdParty}
 	research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{
 		"https://www.rival.example/a": "<h1>Rival Clinic</h1>",
 		"https://www.rival.example/b": "<h1>Rival Clinic services</h1>",
@@ -217,15 +217,17 @@ func TestSiteQuotesMustAppearOnTheSite(t *testing.T) {
 	}
 }
 
-func TestThirdPartyAndUnknownRemainListingActions(t *testing.T) {
-	for _, kind := range []string{llm.SourceThirdParty, llm.SourceUnknown} {
-		t.Run(kind, func(t *testing.T) {
-			classifier := &fixedSourceClassifier{kind: kind}
-			research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{"https://www.rival.example/a": "<h1>Rival Clinic</h1>", "https://www.rival.example/b": "<h1>Rival Clinic</h1>"}}
-			findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: linkedSnapshot(), Classifier: classifier}, research)
-			if err != nil || len(findings) != 1 || findings[0].Key != "citation-gap:www.rival.example" {
-				t.Fatalf("err=%v findings=%+v", err, findings)
-			}
-		})
+func TestOnlyThirdPartySourceBecomesListingAction(t *testing.T) {
+	pages := map[string]string{"https://www.rival.example/a": "<h1>Rival Clinic</h1>", "https://www.rival.example/b": "<h1>Rival Clinic</h1>"}
+	thirdParty := &fixedSourceClassifier{kind: llm.SourceThirdParty}
+	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: linkedSnapshot(), Classifier: thirdParty}, &fixtureResearcher{remaining: ResearchURLBudget, pages: pages})
+	if err != nil || len(findings) != 1 || findings[0].Key != "citation-gap:www.rival.example" {
+		t.Fatalf("third-party source: err=%v findings=%+v", err, findings)
+	}
+
+	unknown := &fixedSourceClassifier{kind: llm.SourceUnknown}
+	findings, err = citationGapFinder{}.Find(context.Background(), FinderInput{Snapshot: linkedSnapshot(), Classifier: unknown}, &fixtureResearcher{remaining: ResearchURLBudget, pages: pages})
+	if err != nil || len(findings) != 0 {
+		t.Fatalf("unknown source: err=%v findings=%+v, want none", err, findings)
 	}
 }

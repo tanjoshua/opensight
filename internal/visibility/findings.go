@@ -189,7 +189,7 @@ func (siteAuditFinder) Find(_ context.Context, in FinderInput, _ BoundedResearch
 func foldedInto(parent string, failed map[string]bool) []Check {
 	out := []Check{}
 	for _, check := range catalog {
-		if check.DependsOn == parent && failed[check.Key] {
+		if check.DependsOn == parent && failed[check.Key] && !check.Informational && len(check.Fix) > 0 {
 			out = append(out, check)
 		}
 	}
@@ -354,7 +354,7 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 		for i, page := range candidate.pages {
 			checked[i] = page.URL
 		}
-		if classification.Kind != llm.SourceCompetitorOwned {
+		if classification.Kind == llm.SourceThirdParty {
 			out = append(out, findingForDomain(candidate.evidence, checked))
 		}
 	}

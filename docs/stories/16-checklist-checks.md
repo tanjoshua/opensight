@@ -24,7 +24,7 @@ Acceptance: separate OAI-SearchBot, ChatGPT-User, and GPTBot verdicts; GPTBot is
 
 As a user, I can see whether crawlers can discover pages and read my business details.
 
-Acceptance: sitemap, robots sitemap declaration, canonical URL, title uniqueness, business name in the homepage title, meta description, structured-data presence and business type, telephone, address, and opening hours; every failed actionable check can produce its own site-audit finding.
+Acceptance: sitemap, robots sitemap declaration, canonical URL, title uniqueness, business name in the homepage title, meta description, structured-data presence and business type, telephone, address, and opening hours; every failed actionable check can produce its own site-audit finding, while opening hours remains checklist-only unless monitored-answer evidence supports a content opportunity.
 
 ## CHK-5 — Checklist presentation
 

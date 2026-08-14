@@ -357,12 +357,8 @@ var catalog = []Check{
 	},
 	{
 		Key: CheckStructuredOpenHours, Group: GroupIdentity, Priority: 2, DependsOn: CheckStructuredData,
-		Title:    "Software can recognise your opening hours",
-		What:     "We check whether your opening hours are labelled in your site's structured data.",
-		FixTitle: "Make your opening hours machine-readable",
-		Fix: []string{
-			"Add opening hours to your structured data. Answers often cite availability as a reason to recommend one business over another.",
-		},
+		Title: "Software can recognise your opening hours",
+		What:  "We check whether your opening hours are labelled in your site's structured data.",
 	},
 }
 

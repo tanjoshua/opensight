@@ -273,7 +273,7 @@ func (s *StubSourceClassifier) ClassifySources(_ context.Context, in SourceClass
 	}
 	out := make([]SourceClassification, len(in.Candidates))
 	for i := range out {
-		out[i] = SourceClassification{CandidateIndex: i, Kind: SourceUnknown, ClaimIndices: []int{}}
+		out[i] = SourceClassification{CandidateIndex: i, Kind: SourceThirdParty, ClaimIndices: []int{}}
 	}
 	return SourceAnalysis{Sources: out, Opportunities: []ContentOpportunity{}}, nil
 }

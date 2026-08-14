@@ -43,9 +43,8 @@ type snippetBody struct {
 // structuredDataFields names the schema.org field each dependent check asks
 // for, so a folded check can say whether the generated block already answers it.
 var structuredDataFields = map[string]string{
-	CheckStructuredType:      "@type",
-	CheckStructuredAddress:   "address",
-	CheckStructuredOpenHours: "openingHours",
+	CheckStructuredType:    "@type",
+	CheckStructuredAddress: "address",
 }
 
 // structuredDataSteps turns the confirmed profile into a block the user can
