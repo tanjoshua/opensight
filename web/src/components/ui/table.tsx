@@ -50,14 +50,44 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   )
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+function TableRow({
+  className,
+  onActivate,
+  activationRole = "link",
+  onClick,
+  onKeyDown,
+  ...props
+}: React.ComponentProps<"tr"> & {
+  onActivate?: () => void
+  activationRole?: "link" | "button"
+}) {
+  const interactive = onActivate !== undefined
   return (
     <tr
       data-slot="table-row"
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        interactive &&
+          "cursor-pointer focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset",
         className
       )}
+      role={interactive ? activationRole : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={(event) => {
+        onClick?.(event)
+        if (!event.defaultPrevented) onActivate?.()
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event)
+        if (
+          !event.defaultPrevented &&
+          event.currentTarget === event.target &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault()
+          onActivate?.()
+        }
+      }}
       {...props}
     />
   )

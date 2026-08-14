@@ -6,7 +6,10 @@ COMPOSE_FILE="${OPENSIGHT_COMPOSE_FILE:-compose.dev.yml}"
 POSTGRES_WAIT_ATTEMPTS="${POSTGRES_WAIT_ATTEMPTS:-60}"
 API_WAIT_ATTEMPTS="${API_WAIT_ATTEMPTS:-30}"
 FRONTEND_WAIT_ATTEMPTS="${FRONTEND_WAIT_ATTEMPTS:-30}"
-FRONTEND_HOST="${FRONTEND_HOST:-127.0.0.1}"
+# Keep the browser origin identical to APP_BASE_URL. OAuth state cookies are
+# host-scoped, so starting on 127.0.0.1 and returning from Google to localhost
+# drops the cookie even though both names resolve to the local machine.
+FRONTEND_HOST="${FRONTEND_HOST:-localhost}"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 MARKETING_WAIT_ATTEMPTS="${MARKETING_WAIT_ATTEMPTS:-30}"
 RIVER_UI_WAIT_ATTEMPTS="${RIVER_UI_WAIT_ATTEMPTS:-30}"
@@ -240,7 +243,7 @@ start_processes() {
   if marketing_enabled; then
     require_command npm
     log "starting marketing dev server"
-    (cd marketing && npm run dev) &
+    (cd marketing && npm run dev -- --host 127.0.0.1) &
     pids+=("$!")
   fi
 }

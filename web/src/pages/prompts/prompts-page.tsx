@@ -142,7 +142,9 @@ export function PromptsPage() {
               prompt={prompt}
               onNavigate={() => navigate(`/prompts/${prompt.id}`)}
               onOpenRun={(runId) =>
-                navigate(`/prompts/${prompt.id}?run=${encodeURIComponent(runId)}`)
+                navigate(
+                  `/prompts/${prompt.id}?run=${encodeURIComponent(runId)}`
+                )
               }
             />
           ))}
@@ -285,7 +287,10 @@ function PromptRow({
   const measured = prompt.latestResultId !== undefined
 
   return (
-    <TableRow className="cursor-pointer" onClick={onNavigate}>
+    <TableRow
+      onActivate={onNavigate}
+      aria-label={`View question: ${prompt.text}`}
+    >
       <TableCell className="max-w-0">
         <span className="line-clamp-2 whitespace-normal">{prompt.text}</span>
       </TableCell>

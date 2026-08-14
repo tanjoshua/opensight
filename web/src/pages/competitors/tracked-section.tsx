@@ -129,13 +129,22 @@ function TrackedComparison({
                 feedback?.competitorId === competitor.id ? feedback : undefined
               return (
                 <Fragment key={competitor.id}>
-                  <TableRow data-state={selected ? "selected" : undefined}>
+                  <TableRow
+                    data-state={selected ? "selected" : undefined}
+                    onActivate={() => onSelect(competitor.id)}
+                    activationRole="button"
+                    aria-label={`View details for ${competitor.name}`}
+                    aria-pressed={selected}
+                  >
                     <TableCell className="max-w-60">
                       <button
                         type="button"
                         className="min-h-10 max-w-full truncate rounded font-medium hover:underline"
                         aria-pressed={selected}
-                        onClick={() => onSelect(competitor.id)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onSelect(competitor.id)
+                        }}
                       >
                         {competitor.name}
                       </button>
@@ -161,7 +170,10 @@ function TrackedComparison({
                         size="sm"
                         variant={selected ? "secondary" : "ghost"}
                         aria-label={`View details for ${competitor.name}`}
-                        onClick={() => onSelect(competitor.id)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onSelect(competitor.id)
+                        }}
                       >
                         {selected ? "Selected" : "View"}
                       </Button>
@@ -291,12 +303,13 @@ function MetricLink({
       disabled={competitor.resultIds.length === 0}
       className="min-h-9 rounded font-medium tabular-nums enabled:hover:underline disabled:text-muted-foreground"
       title="View responses behind this metric"
-      onClick={() =>
+      onClick={(event) => {
+        event.stopPropagation()
         onOpenResult(
           competitor.resultIds,
           `Responses mentioning ${competitor.name}`
         )
-      }
+      }}
     >
       {value}
     </button>

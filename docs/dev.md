@@ -11,6 +11,8 @@ EMAIL=you@gmail.com make seed-dev
 ```
 
 The command is idempotent and deliberately does not create a business or results; complete normal onboarding in the UI.
+Open the frontend at `http://localhost:5173` as printed by `make up`; using
+`127.0.0.1` changes the cookie origin and breaks the OAuth state check.
 
 Lower-level commands:
 

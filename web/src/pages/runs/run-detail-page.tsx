@@ -185,8 +185,8 @@ export function RunDetailPage() {
               Visibility snapshot
             </h2>
             <span className="text-sm text-muted-foreground">
-              Mentioned in {snapshotPoint.mentioned} of{" "}
-              {snapshotPoint.analyzed} analyzed responses
+              Mentioned in {snapshotPoint.mentioned} of {snapshotPoint.analyzed}{" "}
+              analyzed responses
             </span>
           </div>
           <RunSnapshot
@@ -404,7 +404,10 @@ function ResultRow({
   onFilterByPrompt: () => void
 }) {
   return (
-    <TableRow className="cursor-pointer" onClick={onOpen}>
+    <TableRow
+      onActivate={onOpen}
+      aria-label={`Open response for ${result.prompt?.text ?? result.promptId}`}
+    >
       <TableCell className="max-w-0">
         <span className="line-clamp-2 whitespace-normal">
           {result.prompt?.text ?? result.promptId}

@@ -156,7 +156,23 @@ function RunMobileCard({
     run.status !== RunStatus.RUNNING && run.analysisCompletedAt === undefined
 
   return (
-    <Card size="sm" className="min-w-0">
+    <Card
+      size="sm"
+      role="link"
+      tabIndex={0}
+      aria-label={`View monitoring run from ${formatRunDate(run.scheduledFor)}`}
+      className="min-w-0 cursor-pointer transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      onClick={onNavigate}
+      onKeyDown={(event) => {
+        if (
+          event.currentTarget === event.target &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault()
+          onNavigate()
+        }
+      }}
+    >
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           {formatRunDate(run.scheduledFor)}
@@ -190,14 +206,9 @@ function RunMobileCard({
         )}
       </CardContent>
       <CardFooter>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          onClick={onNavigate}
-        >
+        <span className="inline-flex min-h-11 items-center font-medium text-primary">
           View run evidence
-        </Button>
+        </span>
       </CardFooter>
     </Card>
   )
@@ -211,7 +222,10 @@ function RunRow({ run, onNavigate }: { run: Run; onNavigate: () => void }) {
     run.status !== RunStatus.RUNNING && run.analysisCompletedAt === undefined
 
   return (
-    <TableRow>
+    <TableRow
+      onActivate={onNavigate}
+      aria-label={`View monitoring run from ${formatRunDate(run.scheduledFor)}`}
+    >
       <TableCell className="whitespace-nowrap">
         <span className="flex items-center gap-1.5">
           {formatRunDate(run.scheduledFor)}
@@ -239,7 +253,15 @@ function RunRow({ run, onNavigate }: { run: Run; onNavigate: () => void }) {
           : `${formatPercent(run.visibility)}`}
       </TableCell>
       <TableCell className="text-right">
-        <Button type="button" variant="outline" size="sm" onClick={onNavigate}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={(event) => {
+            event.stopPropagation()
+            onNavigate()
+          }}
+        >
           View evidence
         </Button>
       </TableCell>
