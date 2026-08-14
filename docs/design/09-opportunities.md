@@ -81,6 +81,8 @@ The assessment job has a 30-minute timeout and two attempts. Both crawls fetch s
 
 Any failure other than the represented crawl failure fails the River job and leaves the prior published state untouched. There is no partial-generation state or stale-scope matrix.
 
+Improve readiness covers the complete chain that can produce a newer publication: monitoring, response analysis, and assessment. During the first chain the Improve pages poll and show that the audit and evidence review are running. On later chains they keep the previous atomically published audit and findings visible with a refresh indicator until the replacement publishes. A terminal assessment failure ends the pending state and preserves the prior publication.
+
 ## API and frontend
 
 `ImproveService` exposes:
@@ -89,6 +91,8 @@ Any failure other than the represented crawl failure fails the River job and lea
 - `GetAction(action_id)` — one finding translated to the user-facing Action shape;
 - `SetActionStatus(action_id, status, dismissal_reason)` — complete, dismiss, or explicitly reopen;
 - `GetChecklist(business_id)` — ordered groups, all checks, fixed-order outcome counts, check time, pages read, and crawl failure.
+
+`ListActions` and `GetChecklist` also return `improve_pending`, a product-level readiness flag derived from live River work without exposing queue identifiers, attempts, or errors.
 
 Reads require subscriber access and viewer role. Status changes require member role. Every read and write is account scoped.
 

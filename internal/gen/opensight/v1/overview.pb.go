@@ -517,9 +517,12 @@ type GetOverviewResponse struct {
 	// before top_competitors truncates to the top-3 by coverage.
 	DiscoveredTotal int32 `protobuf:"varint,6,opt,name=discovered_total,json=discoveredTotal,proto3" json:"discovered_total,omitempty"`
 	// latest_run is absent before the first run exists.
-	LatestRun     *Run `protobuf:"bytes,7,opt,name=latest_run,json=latestRun,proto3" json:"latest_run,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	LatestRun *Run `protobuf:"bytes,7,opt,name=latest_run,json=latestRun,proto3" json:"latest_run,omitempty"`
+	// visibility_pending is true while monitoring or response analysis can still
+	// publish a newer visibility brief. Improve assessment work is independent.
+	VisibilityPending bool `protobuf:"varint,8,opt,name=visibility_pending,json=visibilityPending,proto3" json:"visibility_pending,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetOverviewResponse) Reset() {
@@ -601,6 +604,13 @@ func (x *GetOverviewResponse) GetLatestRun() *Run {
 	return nil
 }
 
+func (x *GetOverviewResponse) GetVisibilityPending() bool {
+	if x != nil {
+		return x.VisibilityPending
+	}
+	return false
+}
+
 var File_opensight_v1_overview_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_overview_proto_rawDesc = "" +
@@ -650,7 +660,7 @@ const file_opensight_v1_overview_proto_rawDesc = "" +
 	" \x03(\v2\".opensight.v1.CompetitorTrendPointR\x05trend\"5\n" +
 	"\x12GetOverviewRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
-	"businessId\"\xc4\x03\n" +
+	"businessId\"\xf3\x03\n" +
 	"\x13GetOverviewResponse\x12?\n" +
 	"\n" +
 	"visibility\x18\x01 \x01(\v2\x1f.opensight.v1.VisibilitySummaryR\n" +
@@ -661,7 +671,8 @@ const file_opensight_v1_overview_proto_rawDesc = "" +
 	"\x0ftop_competitors\x18\x05 \x03(\v2\x1f.opensight.v1.CompetitorSummaryR\x0etopCompetitors\x12)\n" +
 	"\x10discovered_total\x18\x06 \x01(\x05R\x0fdiscoveredTotal\x120\n" +
 	"\n" +
-	"latest_run\x18\a \x01(\v2\x11.opensight.v1.RunR\tlatestRun2e\n" +
+	"latest_run\x18\a \x01(\v2\x11.opensight.v1.RunR\tlatestRun\x12-\n" +
+	"\x12visibility_pending\x18\b \x01(\bR\x11visibilityPending2e\n" +
 	"\x0fOverviewService\x12R\n" +
 	"\vGetOverview\x12 .opensight.v1.GetOverviewRequest\x1a!.opensight.v1.GetOverviewResponseB\xa3\x01\n" +
 	"\x10com.opensight.v1B\rOverviewProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"

@@ -5,6 +5,7 @@ import (
 
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/jobs"
 
 	connect "connectrpc.com/connect"
 )
@@ -31,6 +32,10 @@ func (s *Server) GetOverview(ctx context.Context, req *connect.Request[opensight
 	if err != nil {
 		return nil, s.rpcError("get overview: list runs", err)
 	}
+	visibilityPending, err := s.jobsPending(ctx, businessID, visibilityJobKinds()...)
+	if err != nil {
+		return nil, s.rpcError("get overview: pending visibility", err)
+	}
 
 	trend, err := s.metrics.VisibilityTrend(ctx, su.AccountID, businessID)
 	if err != nil {
@@ -55,15 +60,20 @@ func (s *Server) GetOverview(ctx context.Context, req *connect.Request[opensight
 
 	topCompetitors, discoveredTotal := topCompetitorsToProto(competitors)
 	resp := &opensightv1.GetOverviewResponse{
-		Visibility:      visibilitySummaryToProto(trend),
-		PromptChanges:   promptChangesToProto(changes),
-		TopKeywords:     keywordStatsToProto(keywords),
-		TopCitedDomains: domainStatsToProto(domains),
-		TopCompetitors:  topCompetitors,
-		DiscoveredTotal: int32(discoveredTotal),
+		Visibility:        visibilitySummaryToProto(trend),
+		PromptChanges:     promptChangesToProto(changes),
+		TopKeywords:       keywordStatsToProto(keywords),
+		TopCitedDomains:   domainStatsToProto(domains),
+		TopCompetitors:    topCompetitors,
+		DiscoveredTotal:   int32(discoveredTotal),
+		VisibilityPending: visibilityPending,
 	}
 	if len(runs) > 0 {
 		resp.LatestRun = runListItemToProto(runs[0])
 	}
 	return connect.NewResponse(resp), nil
+}
+
+func visibilityJobKinds() []string {
+	return []string{(jobs.MonitorArgs{}).Kind(), (jobs.AnalyzeArgs{}).Kind()}
 }

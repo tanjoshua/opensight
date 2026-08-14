@@ -217,6 +217,60 @@ func (q *Queries) GetResultDetail(ctx context.Context, arg GetResultDetailParams
 	return i, err
 }
 
+const getRunByKey = `-- name: GetRunByKey :one
+SELECT r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.job_id,r.started_at,
+ r.completed_at,r.analysis_completed_at,r.expected_results,r.spec
+FROM monitoring_runs r JOIN businesses b ON b.id=r.business_id
+WHERE r.business_id=$1 AND r.platform=$2 AND r.scheduled_for=$3 AND b.account_id=$4
+`
+
+type GetRunByKeyParams struct {
+	BusinessID   uuid.UUID
+	Platform     string
+	ScheduledFor time.Time
+	AccountID    uuid.UUID
+}
+
+type GetRunByKeyRow struct {
+	ID                  uuid.UUID
+	BusinessID          uuid.UUID
+	Platform            string
+	Trigger             string
+	ScheduledFor        time.Time
+	Status              string
+	JobID               int64
+	StartedAt           time.Time
+	CompletedAt         *time.Time
+	AnalysisCompletedAt *time.Time
+	ExpectedResults     *int32
+	Spec                json.RawMessage
+}
+
+func (q *Queries) GetRunByKey(ctx context.Context, arg GetRunByKeyParams) (GetRunByKeyRow, error) {
+	row := q.db.QueryRow(ctx, getRunByKey,
+		arg.BusinessID,
+		arg.Platform,
+		arg.ScheduledFor,
+		arg.AccountID,
+	)
+	var i GetRunByKeyRow
+	err := row.Scan(
+		&i.ID,
+		&i.BusinessID,
+		&i.Platform,
+		&i.Trigger,
+		&i.ScheduledFor,
+		&i.Status,
+		&i.JobID,
+		&i.StartedAt,
+		&i.CompletedAt,
+		&i.AnalysisCompletedAt,
+		&i.ExpectedResults,
+		&i.Spec,
+	)
+	return i, err
+}
+
 const insertResult = `-- name: InsertResult :one
 INSERT INTO prompt_results (id,run_id,prompt_id,status,model,request,raw_response,response_text,error,requested_at,completed_at)
 VALUES (
@@ -266,8 +320,8 @@ func (q *Queries) InsertResult(ctx context.Context, arg InsertResultParams) (Ins
 }
 
 const insertRunOnConflictNothing = `-- name: InsertRunOnConflictNothing :exec
-INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,expected_results)
-VALUES ($1,$2,$3,$4,$5,'running',$6,$7)
+INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,expected_results,spec)
+VALUES ($1,$2,$3,$4,$5,'running',$6,$7,$8)
 ON CONFLICT (business_id,platform,scheduled_for) DO NOTHING
 `
 
@@ -279,6 +333,7 @@ type InsertRunOnConflictNothingParams struct {
 	ScheduledFor    time.Time
 	JobID           int64
 	ExpectedResults *int32
+	Spec            json.RawMessage
 }
 
 func (q *Queries) InsertRunOnConflictNothing(ctx context.Context, arg InsertRunOnConflictNothingParams) error {
@@ -290,6 +345,7 @@ func (q *Queries) InsertRunOnConflictNothing(ctx context.Context, arg InsertRunO
 		arg.ScheduledFor,
 		arg.JobID,
 		arg.ExpectedResults,
+		arg.Spec,
 	)
 	return err
 }
@@ -542,6 +598,26 @@ func (q *Queries) ListRuns(ctx context.Context, businessID uuid.UUID) ([]ListRun
 	return items, nil
 }
 
+const monitoringRunExists = `-- name: MonitoringRunExists :one
+SELECT EXISTS (
+  SELECT 1 FROM monitoring_runs
+  WHERE business_id=$1 AND platform=$2 AND scheduled_for=$3
+)
+`
+
+type MonitoringRunExistsParams struct {
+	BusinessID   uuid.UUID
+	Platform     string
+	ScheduledFor time.Time
+}
+
+func (q *Queries) MonitoringRunExists(ctx context.Context, arg MonitoringRunExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, monitoringRunExists, arg.BusinessID, arg.Platform, arg.ScheduledFor)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const runPromptOwned = `-- name: RunPromptOwned :one
 SELECT 1 FROM monitoring_runs r
 JOIN businesses b ON b.id=r.business_id
@@ -563,7 +639,7 @@ func (q *Queries) RunPromptOwned(ctx context.Context, arg RunPromptOwnedParams) 
 }
 
 const selectRunByKey = `-- name: SelectRunByKey :one
-SELECT id,business_id,platform,trigger,scheduled_for,status,job_id,started_at,completed_at,analysis_completed_at,expected_results
+SELECT id,business_id,platform,trigger,scheduled_for,status,job_id,started_at,completed_at,analysis_completed_at,expected_results,spec
 FROM monitoring_runs WHERE business_id=$1 AND platform=$2 AND scheduled_for=$3
 `
 
@@ -585,6 +661,7 @@ type SelectRunByKeyRow struct {
 	CompletedAt         *time.Time
 	AnalysisCompletedAt *time.Time
 	ExpectedResults     *int32
+	Spec                json.RawMessage
 }
 
 func (q *Queries) SelectRunByKey(ctx context.Context, arg SelectRunByKeyParams) (SelectRunByKeyRow, error) {
@@ -602,6 +679,7 @@ func (q *Queries) SelectRunByKey(ctx context.Context, arg SelectRunByKeyParams) 
 		&i.CompletedAt,
 		&i.AnalysisCompletedAt,
 		&i.ExpectedResults,
+		&i.Spec,
 	)
 	return i, err
 }

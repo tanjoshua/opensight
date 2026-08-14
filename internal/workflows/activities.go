@@ -43,6 +43,13 @@ type RunSpec struct {
 	Prompts    []PromptSnapshot
 }
 
+// persistedRunSpec is the immutable execution input stored with a monitoring
+// run. Identity fields remain ordinary columns and are added after read-back.
+type persistedRunSpec struct {
+	Location llm.Location     `json:"location"`
+	Prompts  []PromptSnapshot `json:"prompts"`
+}
+
 // CheckRunAccessInput identifies the business whose account access gates the run.
 type CheckRunAccessInput struct {
 	BusinessID domain.ID
@@ -120,6 +127,17 @@ func (a *Operations) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 		return RunSpec{}, err
 	}
 
+	// Retries restore their immutable input before consulting the mutable
+	// business profile or active prompt set. The upsert below still handles the
+	// race where two first attempts observe no run concurrently.
+	existing, err := a.Store.GetRunByKey(ctx, accountID, in.BusinessID, in.Platform, in.ScheduledFor)
+	if err == nil {
+		return decodeRunSpec(accountID, in.BusinessID, existing)
+	}
+	if !errors.Is(err, store.ErrNotFound) {
+		return RunSpec{}, err
+	}
+
 	business, err := a.Store.GetBusiness(ctx, accountID, in.BusinessID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -150,6 +168,10 @@ func (a *Operations) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 	for _, p := range prompts {
 		snapshots = append(snapshots, PromptSnapshot{ID: p.ID, Text: p.Text})
 	}
+	snapshotJSON, err := json.Marshal(persistedRunSpec{Location: location, Prompts: snapshots})
+	if err != nil {
+		return RunSpec{}, fmt.Errorf("marshal run spec: %w", err)
+	}
 
 	run, err := a.Store.UpsertRun(ctx, accountID, store.UpsertRunParams{
 		BusinessID:      in.BusinessID,
@@ -158,17 +180,26 @@ func (a *Operations) LoadRunSpec(ctx context.Context, in LoadRunSpecInput) (RunS
 		ScheduledFor:    in.ScheduledFor,
 		JobID:           in.JobID,
 		ExpectedResults: len(prompts),
+		Spec:            snapshotJSON,
 	})
 	if err != nil {
 		return RunSpec{}, fmt.Errorf("upsert run: %w", err)
 	}
 
+	return decodeRunSpec(accountID, in.BusinessID, run)
+}
+
+func decodeRunSpec(accountID, businessID domain.ID, run store.Run) (RunSpec, error) {
+	var persisted persistedRunSpec
+	if err := json.Unmarshal(run.Spec, &persisted); err != nil {
+		return RunSpec{}, fmt.Errorf("decode stored run spec: %w", err)
+	}
 	return RunSpec{
 		AccountID:  accountID,
-		BusinessID: in.BusinessID,
+		BusinessID: businessID,
 		RunID:      run.ID,
-		Location:   location,
-		Prompts:    snapshots,
+		Location:   persisted.Location,
+		Prompts:    persisted.Prompts,
 	}, nil
 }
 

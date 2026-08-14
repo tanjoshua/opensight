@@ -15,5 +15,20 @@ services:
       timeout: 5s
       retries: 12
 
+  riverui:
+    image: ghcr.io/riverqueue/riverui:0.17.0
+    environment:
+      DATABASE_URL: postgres://opensight:opensight@postgres:5432/opensight?sslmode=disable
+    ports:
+      - "127.0.0.1:8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/bin/riverui", "-healthcheck=complete"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
 volumes:
   postgres-data:

@@ -151,6 +151,9 @@ message ListActionsResponse {
   ActionsEmptyReason empty_reason = 4;
   google.protobuf.Timestamp checked_at = 5;
   repeated ActionCategory categories = 6;
+  // improve_pending is true while monitoring, response analysis, or the
+  // Improve assessment can still publish newer actions.
+  bool improve_pending = 7;
 }
 
 message GetActionRequest {
@@ -186,6 +189,8 @@ message GetChecklistResponse {
   // every check reports as could-not-verify rather than as a shortfall.
   string failure = 8;
   bool assessed = 9;
+  // improve_pending has the same meaning as on ListActionsResponse.
+  bool improve_pending = 10;
 }
 
 service ImproveService {

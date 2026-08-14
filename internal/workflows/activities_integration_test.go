@@ -93,6 +93,20 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		if err != nil {
 			t.Fatalf("first LoadRunSpec: %v", err)
 		}
+
+		// A River retry reconstructs its input from the job args. Change both
+		// pieces of mutable business configuration before simulating that retry;
+		// the existing run must still return its original execution snapshot.
+		replacementPromptID := mustID(t)
+		mustExec(t, db, ctx, "UPDATE businesses SET location = '{\"country\":\"US\",\"city\":\"Austin\"}'::jsonb WHERE id = $1", businessID)
+		mustExec(t, db, ctx, "UPDATE prompts SET status = 'retired', retired_at = now() WHERE id = $1", promptID)
+		mustExec(t, db, ctx, "INSERT INTO prompts (id, business_id, text, status, replaces_prompt_id) VALUES ($1, $2, 'replacement prompt', 'active', $3)", replacementPromptID, businessID, promptID)
+		t.Cleanup(func() {
+			_, _ = db.Exec(ctx, "DELETE FROM prompts WHERE id = $1", replacementPromptID)
+			_, _ = db.Exec(ctx, "UPDATE prompts SET status = 'active', retired_at = NULL WHERE id = $1", promptID)
+			_, _ = db.Exec(ctx, "UPDATE businesses SET location = '{\"country\":\"SG\",\"city\":\"Singapore\"}'::jsonb WHERE id = $1", businessID)
+		})
+
 		second, err := acts.LoadRunSpec(ctx, loadInput(date))
 		if err != nil {
 			t.Fatalf("second LoadRunSpec: %v", err)
@@ -105,6 +119,12 @@ func TestActivitiesAgainstPostgres(t *testing.T) {
 		}
 		if first.Location.Country != "SG" {
 			t.Fatalf("location country = %q, want SG", first.Location.Country)
+		}
+		if len(second.Prompts) != 1 || second.Prompts[0] != first.Prompts[0] {
+			t.Fatalf("retried snapshot prompts = %+v, want original %+v", second.Prompts, first.Prompts)
+		}
+		if second.Location != first.Location {
+			t.Fatalf("retried snapshot location = %+v, want original %+v", second.Location, first.Location)
 		}
 
 		var count int

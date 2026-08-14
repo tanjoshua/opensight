@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"testing"
 
@@ -65,5 +66,26 @@ func TestMonitoringPending(t *testing.T) {
 	}
 	if pending {
 		t.Fatal("monitoringPending = true, want false without a live job")
+	}
+
+	server.jobs = nil
+	pending, err = server.monitoringPending(context.Background(), businessID)
+	if err != nil || pending {
+		t.Fatalf("monitoringPending without a job client = %t, %v; want false, nil", pending, err)
+	}
+}
+
+func TestFeaturePendingJobKinds(t *testing.T) {
+	wantVisibility := []string{
+		"opensight_monitor",
+		"opensight_analyze",
+	}
+	if got := visibilityJobKinds(); !slices.Equal(got, wantVisibility) {
+		t.Fatalf("visibility job kinds = %v, want %v", got, wantVisibility)
+	}
+
+	wantImprove := append(slices.Clone(wantVisibility), "opensight_assess")
+	if got := improveJobKinds(); !slices.Equal(got, wantImprove) {
+		t.Fatalf("improve job kinds = %v, want %v", got, wantImprove)
 	}
 }

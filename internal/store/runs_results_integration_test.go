@@ -191,6 +191,7 @@ func TestFinalizeRunPartialWhenBelowExpected(t *testing.T) {
 		ScheduledFor:    time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC),
 		JobID:           104,
 		ExpectedResults: 3,
+		Spec:            json.RawMessage(`{}`),
 	})
 	if err != nil {
 		t.Fatalf("UpsertRun: %v", err)

@@ -10,10 +10,14 @@ import (
 	"opensight/internal/store"
 )
 
-// MaxExecutePromptAttempts is the retry budget for a single prompt execution
-// (design 04: 4 attempts). It is also the terminal-failure boundary the
-// operation enforces itself before the parent River job continues.
-const MaxExecutePromptAttempts = 4
+const (
+	// MaxExecutePromptAttempts is the retry budget for a single prompt execution
+	// (design 04: 4 attempts). It is also the terminal-failure boundary the
+	// operation enforces itself before the parent River job continues.
+	MaxExecutePromptAttempts = 4
+
+	executePromptAttemptTimeout = 120 * time.Second
+)
 
 // ExecutePromptInput is one prompt execution for a run.
 type ExecutePromptInput struct {
@@ -52,25 +56,12 @@ func (a *Operations) ExecutePrompt(ctx context.Context, in ExecutePromptInput) (
 		return ExecutePromptOutput{}, err
 	}
 
-	var result llm.PromptRunResult
-	var runErr error
-	for attempt := 1; attempt <= MaxExecutePromptAttempts; attempt++ {
-		if err := a.Limiter.Acquire(ctx); err != nil {
-			return ExecutePromptOutput{}, err
-		}
-		result, runErr = a.Runner.RunPrompt(ctx, llm.PromptRequest{Prompt: in.Prompt.Text, Location: in.Location})
-		a.Limiter.Release()
-		if runErr == nil || errors.Is(runErr, llm.ErrNonRetryable) || attempt == MaxExecutePromptAttempts {
-			break
-		}
-		timer := time.NewTimer(time.Duration(1<<(attempt-1)) * time.Second)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return ExecutePromptOutput{}, ctx.Err()
-		case <-timer.C:
-		}
-	}
+	result, runErr := a.runPromptAttempts(
+		ctx,
+		llm.PromptRequest{Prompt: in.Prompt.Text, Location: in.Location},
+		executePromptAttemptTimeout,
+		func(attempt int) time.Duration { return time.Duration(1<<(attempt-1)) * time.Second },
+	)
 	if runErr == nil {
 		created, err := a.createResult(ctx, in, store.CreateResultParams{
 			RunID:        in.RunID,
@@ -102,6 +93,42 @@ func (a *Operations) ExecutePrompt(ctx context.Context, in ExecutePromptInput) (
 		return ExecutePromptOutput{}, err
 	}
 	return ExecutePromptOutput{ResultID: created.ID, Status: created.Status}, nil
+}
+
+func (a *Operations) runPromptAttempts(
+	ctx context.Context,
+	req llm.PromptRequest,
+	attemptTimeout time.Duration,
+	retryDelay func(int) time.Duration,
+) (llm.PromptRunResult, error) {
+	var result llm.PromptRunResult
+	var runErr error
+	for attempt := 1; attempt <= MaxExecutePromptAttempts; attempt++ {
+		if err := a.Limiter.Acquire(ctx); err != nil {
+			return llm.PromptRunResult{}, err
+		}
+
+		attemptCtx, cancel := context.WithTimeout(ctx, attemptTimeout)
+		result, runErr = a.Runner.RunPrompt(attemptCtx, req)
+		cancel()
+		a.Limiter.Release()
+
+		if runErr == nil || errors.Is(runErr, llm.ErrNonRetryable) || attempt == MaxExecutePromptAttempts {
+			return result, runErr
+		}
+		if err := ctx.Err(); err != nil {
+			return llm.PromptRunResult{}, err
+		}
+
+		timer := time.NewTimer(retryDelay(attempt))
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return llm.PromptRunResult{}, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return result, runErr
 }
 
 // createResult writes the result, treating an ErrDuplicateResult race (a

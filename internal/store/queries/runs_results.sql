@@ -1,11 +1,23 @@
 -- name: InsertRunOnConflictNothing :exec
-INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,expected_results)
-VALUES ($1,$2,$3,$4,$5,'running',$6,$7)
+INSERT INTO monitoring_runs (id,business_id,platform,trigger,scheduled_for,status,job_id,expected_results,spec)
+VALUES ($1,$2,$3,$4,$5,'running',$6,$7,$8)
 ON CONFLICT (business_id,platform,scheduled_for) DO NOTHING;
 
 -- name: SelectRunByKey :one
-SELECT id,business_id,platform,trigger,scheduled_for,status,job_id,started_at,completed_at,analysis_completed_at,expected_results
+SELECT id,business_id,platform,trigger,scheduled_for,status,job_id,started_at,completed_at,analysis_completed_at,expected_results,spec
 FROM monitoring_runs WHERE business_id=$1 AND platform=$2 AND scheduled_for=$3;
+
+-- name: GetRunByKey :one
+SELECT r.id,r.business_id,r.platform,r.trigger,r.scheduled_for,r.status,r.job_id,r.started_at,
+ r.completed_at,r.analysis_completed_at,r.expected_results,r.spec
+FROM monitoring_runs r JOIN businesses b ON b.id=r.business_id
+WHERE r.business_id=$1 AND r.platform=$2 AND r.scheduled_for=$3 AND b.account_id=$4;
+
+-- name: MonitoringRunExists :one
+SELECT EXISTS (
+  SELECT 1 FROM monitoring_runs
+  WHERE business_id=$1 AND platform=$2 AND scheduled_for=$3
+);
 
 -- name: FinalizeRun :one
 UPDATE monitoring_runs r

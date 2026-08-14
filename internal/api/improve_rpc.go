@@ -9,6 +9,7 @@ import (
 	"opensight/internal/domain"
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/gen/opensight/v1/opensightv1connect"
+	"opensight/internal/jobs"
 	"opensight/internal/store"
 	"opensight/internal/visibility"
 )
@@ -137,8 +138,12 @@ func (s *Server) ListActions(ctx context.Context, req *connect.Request[opensight
 	if err != nil {
 		return nil, s.rpcError("load site audit", err)
 	}
+	pending, err := s.improvePending(ctx, businessID)
+	if err != nil {
+		return nil, s.rpcError("list actions: pending improve", err)
+	}
 
-	resp := &opensightv1.ListActionsResponse{}
+	resp := &opensightv1.ListActionsResponse{ImprovePending: pending}
 	if assessed {
 		resp.CheckedAt = timestamppb.New(audit.CheckedAt)
 	}
@@ -229,6 +234,10 @@ func (s *Server) GetChecklist(ctx context.Context, req *connect.Request[opensigh
 	if err != nil {
 		return nil, s.rpcError("get checklist", err)
 	}
+	pending, err := s.improvePending(ctx, businessID)
+	if err != nil {
+		return nil, s.rpcError("get checklist: pending improve", err)
+	}
 
 	// The checklist renders the catalog and overlays the stored results, so a business
 	// with no audit yet shows the same rows as everyone else — every check
@@ -238,7 +247,7 @@ func (s *Server) GetChecklist(ctx context.Context, req *connect.Request[opensigh
 		outcomes[result.Key] = result
 	}
 
-	resp := &opensightv1.GetChecklistResponse{Assessed: assessed, Failure: audit.Failure, PagesRead: int32(audit.PagesRead)}
+	resp := &opensightv1.GetChecklistResponse{Assessed: assessed, ImprovePending: pending, Failure: audit.Failure, PagesRead: int32(audit.PagesRead)}
 	if assessed {
 		resp.CheckedAt = timestamppb.New(audit.CheckedAt)
 	}
@@ -282,4 +291,14 @@ func (s *Server) GetChecklist(ctx context.Context, req *connect.Request[opensigh
 		}
 	}
 	return connect.NewResponse(resp), nil
+}
+
+func (s *Server) improvePending(ctx context.Context, businessID domain.ID) (bool, error) {
+	return s.jobsPending(ctx, businessID, improveJobKinds()...)
+}
+
+func improveJobKinds() []string {
+	return []string{
+		(jobs.MonitorArgs{}).Kind(), (jobs.AnalyzeArgs{}).Kind(), (jobs.AssessArgs{}).Kind(),
+	}
 }

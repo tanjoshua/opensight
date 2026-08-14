@@ -76,12 +76,19 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 // monitoring_runs row its worker creates. The API exposes only the boolean;
 // queue state, attempts, errors, and identifiers remain operational details.
 func (s *Server) monitoringPending(ctx context.Context, businessID domain.ID) (bool, error) {
+	return s.jobsPending(ctx, businessID, (jobs.MonitorArgs{}).Kind())
+}
+
+// jobsPending exposes product readiness without leaking River's operational
+// state. Chained jobs overlap while the current worker inserts its successor,
+// so querying all relevant kinds gives the UI one continuous pending signal.
+func (s *Server) jobsPending(ctx context.Context, businessID domain.ID, kinds ...string) (bool, error) {
 	if s.jobs == nil {
 		return false, nil
 	}
 	listed, err := s.jobs.JobList(ctx, river.NewJobListParams().
 		First(1).
-		Kinds((jobs.MonitorArgs{}).Kind()).
+		Kinds(kinds...).
 		States(
 			rivertype.JobStateAvailable,
 			rivertype.JobStatePending,
@@ -89,7 +96,9 @@ func (s *Server) monitoringPending(ctx context.Context, businessID domain.ID) (b
 			rivertype.JobStateRunning,
 			rivertype.JobStateScheduled,
 		).
-		Where("args->>'business_id' = @business_id", river.NamedArgs{"business_id": businessID.String()}))
+		// BusinessID is retained for live jobs inserted by versions before the
+		// analysis/assessment args were normalized to snake_case.
+		Where("(args->>'business_id' = @business_id OR args->>'BusinessID' = @business_id)", river.NamedArgs{"business_id": businessID.String()}))
 	if err != nil {
 		return false, err
 	}

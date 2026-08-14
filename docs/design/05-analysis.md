@@ -20,6 +20,8 @@ Analysis is **derived and rebuildable**: extraction upserts by `prompt_result_id
 
 The monitoring job runs `FinalizeRun` **before** inserting the analysis job: `monitoring_runs`' CHECK forbids stamping `analysis_completed_at` unless `completed_at` is already set, and the failure posture is that a run reaches its terminal status independently of analysis — analysis merely decorates it, or fails and leaves it available for re-analysis.
 
+Visibility publication and Improve publication have separate readiness boundaries. Reconcile stamps `analysis_completed_at`, making the visibility brief readable, before the analysis worker enqueues the slower Improve assessment. The frontend therefore stops waiting for visibility after monitoring plus response analysis finish; it does not wait for the site audit and improvement finders.
+
 ## Phase 1 — AnalyzeResult (per response)
 
 One structured-output LLM call per succeeded result. A small/cheap model (mini-class), configured separately from the execution model; `analysis_model` is recorded per row. One call per result rather than batching the run: retry granularity, bounded context, and at ~20 calls/run the cost is pennies.

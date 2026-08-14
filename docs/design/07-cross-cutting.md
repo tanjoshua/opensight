@@ -63,7 +63,7 @@ Kept deliberately minimal for MVP:
 
 - **Errors**: Sentry free tier for Go + React (or self-hosted GlitchTip later if cost/data-locality demands; free tier is within budget policy).
 - **Logs**: structured `slog` JSON to stdout → `docker logs` with rotation. No Loki/ELK; grep is fine at this scale.
-- **Queue debugging**: structured logs plus the `river_job` query in design 04; no dashboard service.
+- **Queue debugging**: local development includes River UI bound to `127.0.0.1:8082`. Production uses structured logs plus the `river_job` query in design 04 and exposes no dashboard service.
 - **Improve health**: `site_audits` records crawl health; failed assessment jobs remain visible in `river_job` and structured logs.
 - **Spend guardrail**: the OpenAI dashboard monthly budget cap on the project-scoped key is the hard backstop — no in-app circuit breaker. The per-account cost query (04) still exists for unit economics, run ad hoc.
 
