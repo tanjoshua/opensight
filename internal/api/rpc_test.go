@@ -34,6 +34,17 @@ func TestRPCPaging(t *testing.T) {
 	}
 }
 
+func TestCanCreateCompedAccount(t *testing.T) {
+	for _, email := range []string{"jtanjoshua@gmail.com", " JTANJOSHUA@GMAIL.COM "} {
+		if !canCreateCompedAccount(email) {
+			t.Errorf("canCreateCompedAccount(%q) = false, want true", email)
+		}
+	}
+	if canCreateCompedAccount("someone@example.com") {
+		t.Fatal("canCreateCompedAccount(non-admin) = true, want false")
+	}
+}
+
 func TestNoRPCIsSideEffectFree(t *testing.T) {
 	checked := 0
 	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {

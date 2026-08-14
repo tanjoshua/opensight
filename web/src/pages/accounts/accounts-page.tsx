@@ -1,6 +1,6 @@
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowRight, LogOut } from "lucide-react"
+import { ArrowRight, LogOut, Plus } from "lucide-react"
 import { useState, type FormEvent } from "react"
 import { Link, Navigate, useNavigate } from "react-router"
 
@@ -9,6 +9,7 @@ import { useMe } from "@/api/hooks"
 import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { createAccount } from "@/gen/opensight/v1/account-AccountService_connectquery"
 import { accountPath } from "@/lib/account-path"
+import { isCompedAccountAdmin } from "@/lib/operator"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -80,6 +81,12 @@ export function AccountsPage() {
           <LogOut />
         </Button>
       </div>
+      {isCompedAccountAdmin(me.data.user?.email) && (
+        <Button className="self-start" render={<Link to="/accounts/new" />}>
+          <Plus />
+          Create comped workspace
+        </Button>
+      )}
       <div className="grid gap-3">
         {me.data.memberships.map(
           (membership) =>
@@ -118,17 +125,38 @@ export function NewAccountPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
+  const isAdmin = isCompedAccountAdmin(me.data?.user?.email)
   const mutation = useMutation(createAccount, {
     onSuccess: async ({ membership }) => {
       await queryClient.invalidateQueries()
       if (membership?.account)
-        navigate(accountPath(membership.account.slug, "/billing"), {
-          replace: true,
-        })
+        navigate(
+          accountPath(
+            membership.account.slug,
+            isAdmin ? "/onboarding" : "/billing"
+          ),
+          {
+            replace: true,
+          }
+        )
     },
   })
 
+  if (me.isLoading)
+    return (
+      <AccountShell>
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </AccountShell>
+    )
   if (isUnauthenticated(me.error)) return <Navigate to="/login" replace />
+  if (!me.data || me.isError)
+    return (
+      <AccountShell>
+        <p role="alert" className="text-sm text-destructive">
+          Your account could not be loaded.
+        </p>
+      </AccountShell>
+    )
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -142,7 +170,9 @@ export function NewAccountPage() {
         <CardHeader>
           <CardTitle>Create a workspace</CardTitle>
           <CardDescription>
-            Workspaces keep member access, businesses, and billing separate.
+            {isAdmin
+              ? "This workspace will have complimentary access. You can add members later."
+              : "Workspaces keep member access, businesses, and billing separate."}
           </CardDescription>
         </CardHeader>
         <form onSubmit={submit}>
@@ -179,7 +209,11 @@ export function NewAccountPage() {
               Cancel
             </Button>
             <Button type="submit" disabled={!name.trim() || mutation.isPending}>
-              {mutation.isPending ? "Creating…" : "Create workspace"}
+              {mutation.isPending
+                ? "Creating…"
+                : isAdmin
+                  ? "Create comped workspace"
+                  : "Create workspace"}
             </Button>
           </CardFooter>
         </form>

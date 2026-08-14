@@ -185,8 +185,14 @@ func (s *Store) CreateAccount(ctx context.Context, params CreateAccountParams) (
 	return account, user, nil
 }
 
-func (s *Store) CreateNamedAccount(ctx context.Context, userID domain.ID, name string) (AccountMembership, error) {
-	account, err := normalizeAccount(uuid.Nil, name)
+type CreateNamedAccountParams struct {
+	UserID domain.ID
+	Name   string
+	Comped bool
+}
+
+func (s *Store) CreateNamedAccount(ctx context.Context, params CreateNamedAccountParams) (AccountMembership, error) {
+	account, err := normalizeAccount(uuid.Nil, params.Name)
 	if err != nil {
 		return AccountMembership{}, err
 	}
@@ -196,14 +202,14 @@ func (s *Store) CreateNamedAccount(ctx context.Context, userID domain.ID, name s
 		if err != nil {
 			return fmt.Errorf("insert account: %w", err)
 		}
-		if err := CreateSubscriptionInTx(ctx, q, account.ID, billing.Starter.Code, false); err != nil {
+		if err := CreateSubscriptionInTx(ctx, q, account.ID, billing.Starter.Code, params.Comped); err != nil {
 			return err
 		}
-		created, err := q.InsertAccountMembership(ctx, storesqlc.InsertAccountMembershipParams{AccountID: account.ID, UserID: userID, Role: string(AccountRoleOwner)})
+		created, err := q.InsertAccountMembership(ctx, storesqlc.InsertAccountMembershipParams{AccountID: account.ID, UserID: params.UserID, Role: string(AccountRoleOwner)})
 		if err != nil {
 			return fmt.Errorf("insert owner membership: %w", err)
 		}
-		member = AccountMembership{AccountID: account.ID, UserID: userID, Role: AccountRoleOwner, CreatedAt: created, Account: account}
+		member = AccountMembership{AccountID: account.ID, UserID: params.UserID, Role: AccountRoleOwner, CreatedAt: created, Account: account}
 		return nil
 	})
 	return member, err

@@ -111,10 +111,11 @@ func TestAccountStoreCreateOperatorAccountAndUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateOperatorAccount: %v", err)
 	}
+	accountIDs := []domain.ID{account.ID}
 	t.Cleanup(func() {
-		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id IN (SELECT user_id FROM account_memberships WHERE account_id = $1)", account.ID)
-		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = $1", account.ID)
-		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", account.ID)
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id IN (SELECT user_id FROM account_memberships WHERE account_id = ANY($1))", accountIDs)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = ANY($1)", accountIDs)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = ANY($1)", accountIDs)
 	})
 
 	if account.Name != "Admin Account" {
@@ -161,6 +162,23 @@ func TestAccountStoreCreateOperatorAccountAndUser(t *testing.T) {
 	}
 	if googleSub != nil {
 		t.Fatalf("google_sub = %v, want NULL until the first Google sign-in", *googleSub)
+	}
+
+	createdInApp, err := admin.CreateNamedAccount(ctx, CreateNamedAccountParams{
+		UserID: member.UserID,
+		Name:   "Comped in app",
+		Comped: true,
+	})
+	if err != nil {
+		t.Fatalf("CreateNamedAccount: %v", err)
+	}
+	accountIDs = append(accountIDs, createdInApp.AccountID)
+	createdSub, err := admin.GetByAccount(ctx, createdInApp.AccountID)
+	if err != nil {
+		t.Fatalf("GetByAccount(created in app): %v", err)
+	}
+	if !createdSub.Comped {
+		t.Fatal("comped = false, want true for an operator-created in-app account")
 	}
 
 	// SubscriptionStore.GetByAccount plus the catalog resolves the entitlements

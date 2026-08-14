@@ -302,7 +302,7 @@ func (s *Server) ensureGoogleUserHasAccount(ctx context.Context, userID domain.I
 		return nil
 	}
 	local, _, _ := strings.Cut(email, "@")
-	_, err = s.store.CreateNamedAccount(ctx, userID, local)
+	_, err = s.store.CreateNamedAccount(ctx, store.CreateNamedAccountParams{UserID: userID, Name: local})
 	return err
 }
 

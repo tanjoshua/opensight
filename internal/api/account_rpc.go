@@ -16,6 +16,12 @@ import (
 
 var _ opensightv1connect.AccountServiceHandler = (*Server)(nil)
 
+const compedAccountAdminEmail = "jtanjoshua@gmail.com"
+
+func canCreateCompedAccount(email string) bool {
+	return strings.EqualFold(strings.TrimSpace(email), compedAccountAdminEmail)
+}
+
 func accountRoleToProto(role store.AccountRole) opensightv1.AccountRole {
 	switch role {
 	case store.AccountRoleOwner:
@@ -87,7 +93,11 @@ func (s *Server) CreateAccount(ctx context.Context, req *connect.Request[opensig
 	if name == "" {
 		return nil, rpcInvalidArgument("name is required")
 	}
-	m, err := s.store.CreateNamedAccount(ctx, su.UserID, name)
+	m, err := s.store.CreateNamedAccount(ctx, store.CreateNamedAccountParams{
+		UserID: su.UserID,
+		Name:   name,
+		Comped: canCreateCompedAccount(su.Email),
+	})
 	if err != nil {
 		return nil, s.rpcError("create account", err)
 	}

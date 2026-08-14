@@ -239,7 +239,7 @@ Account recovery and other sensitive account-management actions belong in a futu
 
 ## Operator-created accounts
 
-`opensight account create` creates comped accounts. Design partners and internal accounts therefore get full access with no Stripe objects, no card, and no ambiguity about whether a real subscription exists. `opensight account member add` grants a role by email without sending an invitation. Changing an existing account's comp status is deferred to a future admin portal.
+`opensight account create` creates comped accounts. The authenticated operator identity `jtanjoshua@gmail.com` can also create a comped workspace from the workspace switcher; the server derives this privilege from the session email, creates the operator as its owner, and never accepts a client-supplied comp flag. Design partners and internal accounts therefore get full access with no Stripe objects, no card, and no ambiguity about whether a real subscription exists. `opensight account member add` grants a role by email without sending an invitation. Changing an existing account's comp status is deferred to a future admin portal.
 
 ## Local development and testing
 

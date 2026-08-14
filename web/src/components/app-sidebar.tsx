@@ -9,6 +9,7 @@ import {
   Users,
   Lightbulb,
   ClipboardCheck,
+  Plus,
 } from "lucide-react"
 import { useMutation } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
@@ -18,6 +19,7 @@ import { useAccountContext, useMe } from "@/api/hooks"
 import { AccountRole } from "@/gen/opensight/v1/account_pb"
 import { Access, BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import { accountPath } from "@/lib/account-path"
+import { isCompedAccountAdmin } from "@/lib/operator"
 import { logout } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
@@ -85,6 +87,7 @@ export function AppSidebar() {
   const hasBusinessNavigation =
     business !== undefined && account?.access !== Access.NEVER
   const hasMultipleWorkspaces = (me?.memberships.length ?? 0) > 1
+  const canCreateCompedWorkspace = isCompedAccountAdmin(me?.user?.email)
   // Select needs items to resolve the value (a slug) to its label; without
   // them the trigger falls back to rendering the raw slug.
   const workspaceItems = (me?.memberships ?? []).flatMap((membership) =>
@@ -234,6 +237,17 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {canCreateCompedWorkspace && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Create comped workspace"
+                    render={<NavLink to="/accounts/new" />}
+                  >
+                    <Plus />
+                    <span>Create workspace</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
