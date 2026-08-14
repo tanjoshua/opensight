@@ -50,6 +50,7 @@ sqlc:
 # fixture and assertion SQL is read at the call site, not routed through a
 # catalog.
 check-sql:
+	@command -v rg >/dev/null || { echo "error: check-sql requires ripgrep (rg)" >&2; exit 1; }
 	@! rg -n 'database/sql' \
 		--glob '*.go' \
 		--glob '!*_test.go' \
