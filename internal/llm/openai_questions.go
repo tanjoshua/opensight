@@ -18,7 +18,7 @@ const openAIQuestionsSchemaName = "customer_questions"
 // question-generation call (design 03, "Prompt generation rules"). Unlike
 // ProposeProfile this call does no research — the profile is already reviewed
 // — so there is no web_search tool and no evidence-gathering guidance here.
-const questionsInstructions = `Generate exactly prompt_count varied, natural prompts that a prospective customer might ask an AI assistant to surface provider recommendations in the given city. Base each prompt on the supplied category and one or more supplied services.`
+const questionsInstructions = `Generate exactly prompt_count varied, natural prompts that prospective customers might ask an AI assistant when looking for providers in the given city. Use the supplied category and services for relevance, while keeping the prompts representative of the broader customer market rather than tailored to any particular business.`
 
 // questionsJSONSchema is the strict-mode structured-output schema. Strict mode
 // does not support array length keywords, so the exact question count is

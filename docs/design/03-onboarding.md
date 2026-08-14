@@ -82,7 +82,7 @@ The call is a single structured-output OpenAI Responses call with **no** `web_se
 
 The `plan.prompt_limit` questions are the product's measurement instrument, so generation is opinionated:
 
-- The concise generation instruction asks for varied, natural prompts a prospective customer might ask an AI assistant to surface provider recommendations in the given city. Every prompt is based on the confirmed category and one or more confirmed services.
+- The concise generation instruction asks for varied, natural prompts prospective customers might ask an AI assistant when looking for providers in the given city. The confirmed category and services establish relevance, while the generated set remains representative of the broader customer market rather than tailored to the monitored business.
 - Questions never contain the business name. They simulate a prospective patient who doesn't know the business exists — that is what "visibility" means. `ValidateQuestions` enforces this after generation. (Users can still add branded questions manually if they insist.)
 - Geography comes from the business's city only — never its neighbourhood, district, street, or landmark (`address`/`area` are not sent for question generation).
 - Count comes from `plan.prompt_limit`, not a hardcoded 20.
