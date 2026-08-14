@@ -32,6 +32,9 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.OpenAIAnalysisModel != defaultAnalysisModel {
 		t.Errorf("OpenAIAnalysisModel = %q, want %q", cfg.OpenAIAnalysisModel, defaultAnalysisModel)
 	}
+	if cfg.OpenAIImproveModel != defaultImproveModel {
+		t.Errorf("OpenAIImproveModel = %q, want %q", cfg.OpenAIImproveModel, defaultImproveModel)
+	}
 	if cfg.OpenAIQuestionsModel != defaultQuestionsModel {
 		t.Errorf("OpenAIQuestionsModel = %q, want %q", cfg.OpenAIQuestionsModel, defaultQuestionsModel)
 	}
@@ -58,6 +61,7 @@ func TestLoadOverrides(t *testing.T) {
 		"OPENAI_API_KEY":         "sk-test",
 		"OPENAI_RESPONSES_MODEL": "gpt-5.6-luna",
 		"OPENAI_ANALYSIS_MODEL":  "gpt-5.6-luna",
+		"OPENAI_IMPROVE_MODEL":   "gpt-5.6-terra-custom",
 		"PROMPT_RUNNER_MODE":     "replay",
 		"LLM_CONCURRENCY":        "4",
 	}
@@ -87,6 +91,9 @@ func TestLoadOverrides(t *testing.T) {
 	}
 	if cfg.OpenAIAnalysisModel != "gpt-5.6-luna" {
 		t.Errorf("OpenAIAnalysisModel = %q", cfg.OpenAIAnalysisModel)
+	}
+	if cfg.OpenAIImproveModel != "gpt-5.6-terra-custom" {
+		t.Errorf("OpenAIImproveModel = %q", cfg.OpenAIImproveModel)
 	}
 	if cfg.PromptRunnerMode != PromptRunnerReplay {
 		t.Errorf("PromptRunnerMode = %q", cfg.PromptRunnerMode)

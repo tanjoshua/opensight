@@ -28,6 +28,7 @@ const (
 	defaultDBMaxOpenConns  = 10
 	defaultResponsesModel  = "chat-latest"
 	defaultAnalysisModel   = "gpt-5.6-luna"
+	defaultImproveModel    = "gpt-5.6-terra"
 	defaultOnboardingModel = "gpt-5.6-terra"
 	// Customer questions become the business's long-lived measurement instrument,
 	// so generation favors the same balanced model used for profile research.
@@ -44,6 +45,7 @@ type Config struct {
 	OpenAIAPIKey          string
 	OpenAIResponsesModel  string
 	OpenAIAnalysisModel   string
+	OpenAIImproveModel    string
 	OpenAIOnboardingModel string
 	OpenAIQuestionsModel  string
 	PromptRunnerMode      PromptRunnerMode
@@ -123,6 +125,7 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		OpenAIAPIKey:                getenv("OPENAI_API_KEY"),
 		OpenAIResponsesModel:        getenvString(getenv, "OPENAI_RESPONSES_MODEL", defaultResponsesModel),
 		OpenAIAnalysisModel:         getenvString(getenv, "OPENAI_ANALYSIS_MODEL", defaultAnalysisModel),
+		OpenAIImproveModel:          getenvString(getenv, "OPENAI_IMPROVE_MODEL", defaultImproveModel),
 		OpenAIOnboardingModel:       getenvString(getenv, "OPENAI_ONBOARDING_MODEL", defaultOnboardingModel),
 		OpenAIQuestionsModel:        getenvString(getenv, "OPENAI_QUESTIONS_MODEL", defaultQuestionsModel),
 		PromptRunnerMode:            mode,

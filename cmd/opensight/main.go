@@ -356,7 +356,7 @@ func serve(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return fmt.Errorf("build match runner: %w", err)
 	}
-	sourceClassifier, err := llm.NewSourceClassifier(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIAnalysisModel})
+	sourceClassifier, err := llm.NewSourceClassifier(string(cfg.PromptRunnerMode), llm.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIImproveModel})
 	if err != nil {
 		return fmt.Errorf("build source classifier: %w", err)
 	}

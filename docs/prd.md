@@ -109,7 +109,7 @@ Users can track, dismiss, or manually add competitors.
 
 ### Improve
 
-Show at most three evidence-backed focus actions followed by additional active recommendations. Findings come from failed actionable site checks and recurring citation sources that name competitors but not the monitored business. Each action shows the concrete issue, steps, checked sources, and supporting responses. Users can complete, dismiss, or reopen it.
+Show one prioritized queue of evidence-backed work. Findings come from failed actionable site checks and recurring citation sources that name competitors but not the monitored business. Competitor-owned sources produce content opportunities: observed answer patterns compared with the bounded pages OpenSight read, never claims that a site difference caused omission or that a change will improve visibility. Each item shows the concrete issue or hypothesis, a proportionate next step, checked sources, and supporting responses. Users can complete, dismiss, or reopen it.
 
 Show a complete, stable visibility checklist of the 17 site checks OpenSight runs on every audit. Every check states the assertion, outcome, and evidence in specifics — for example, the pages carrying a directive, the robots rule that matched, or the structured-data field that is missing. Checks that report a legitimate choice, such as blocking the model-training crawler, are informational and never treated as a shortfall. The checklist reports per-outcome counts with no filter, percentage, score, or grade.
 

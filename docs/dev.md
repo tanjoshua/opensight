@@ -76,7 +76,9 @@ npm run build
 - `APP_DB_MAX_OPEN_CONNS=10`
 - `PROMPT_RUNNER_MODE=stub` (`stub`, `replay`, or `openai`)
 - `LLM_CONCURRENCY=2`, shared by jobs and synchronous question generation
-- model variables in `internal/config`
+- `OPENAI_ANALYSIS_MODEL=gpt-5.6-luna` for repeated extraction and matching
+- `OPENAI_IMPROVE_MODEL=gpt-5.6-terra` for evidence comparison and content-opportunity judgment
+- other model variables in `internal/config`
 
 OpenAI mode requires `OPENAI_API_KEY`. `serve` also requires the Stripe, Google OAuth, and `APP_BASE_URL` values documented in `.env.example`. Local development should use `stub` or `replay` unless a real provider smoke test is intentional.
 

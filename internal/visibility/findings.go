@@ -88,10 +88,10 @@ type FinderInput struct {
 	// Profile is the confirmed business profile. It lets a finding say what to
 	// publish rather than what kind of thing to publish, using data the user has
 	// already reviewed.
-	Profile          SiteProfile
-	SiteContent      string
-	PriorContentGaps []llm.PriorContentGap
-	Classifier       llm.SourceClassifier
+	Profile                   SiteProfile
+	SiteContent               string
+	PriorContentOpportunities []llm.PriorContentOpportunity
+	Classifier                llm.SourceClassifier
 }
 
 // Finder turns evidence into findings. Adding advice is one implementation
@@ -276,7 +276,8 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 						evidence.competitors[trimmed] = true
 						if passage := strings.TrimSpace(citation.Passage); passage != "" {
 							evidence.claims = append(evidence.claims, llm.SourceClaim{
-								Owner: trimmed, Passage: passage, ResultID: result.ResultID, PromptID: result.PromptID,
+								Owner: trimmed, Passage: passage, Question: result.Prompt,
+								ResultID: result.ResultID, PromptID: result.PromptID,
 							})
 						}
 					}
@@ -330,10 +331,10 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 		return nil, errors.New("citation source classifier is required")
 	}
 	classificationInput := llm.SourceClassificationInput{
-		BusinessName:     snapshot.BusinessName,
-		SiteContent:      in.SiteContent,
-		PriorContentGaps: in.PriorContentGaps,
-		Candidates:       make([]llm.SourceCandidate, len(inspected)),
+		BusinessName:              snapshot.BusinessName,
+		SiteContent:               in.SiteContent,
+		PriorContentOpportunities: in.PriorContentOpportunities,
+		Candidates:                make([]llm.SourceCandidate, len(inspected)),
 	}
 	for i, candidate := range inspected {
 		pages := make([]llm.SourcePage, len(candidate.pages))
@@ -357,8 +358,8 @@ func (citationGapFinder) Find(ctx context.Context, in FinderInput, research Boun
 			out = append(out, findingForDomain(candidate.evidence, checked))
 		}
 	}
-	for _, gap := range analysis.Gaps {
-		out = append(out, competitorContentFinding(gap, inspected, classificationInput.Candidates, in.SiteContent))
+	for _, opportunity := range analysis.Opportunities {
+		out = append(out, competitorContentFinding(opportunity, inspected, classificationInput.Candidates, in.SiteContent))
 	}
 	return out, nil
 }
@@ -395,13 +396,13 @@ func findingForDomain(evidence *domainEvidence, checked []string) Finding {
 	}
 }
 
-func competitorContentFinding(gap llm.ContentGap, inspected []inspectedDomain, candidates []llm.SourceCandidate, siteContent string) Finding {
+func competitorContentFinding(opportunity llm.ContentOpportunity, inspected []inspectedDomain, candidates []llm.SourceCandidate, siteContent string) Finding {
 	results := map[string]bool{}
 	prompts := map[string]bool{}
 	sources := map[string]bool{}
 	byDomain := map[string][]string{}
 	order := []string{}
-	for _, ref := range gap.Evidence {
+	for _, ref := range opportunity.Evidence {
 		claim := candidates[ref.CandidateIndex].Claims[ref.ClaimIndex]
 		domain := candidates[ref.CandidateIndex].Domain
 		results[claim.ResultID] = true
@@ -416,14 +417,15 @@ func competitorContentFinding(gap llm.ContentGap, inspected []inspectedDomain, c
 	}
 	domainCount := len(order)
 	return Finding{
-		Key: SourceCompetitorContent + ":" + gap.Key, Source: SourceCompetitorContent,
-		Category: CategoryContent, Title: gap.Title, Body: gap.Reason,
-		Steps:  []string{gap.Recommendation},
-		Detail: fmt.Sprintf("This pattern recurred across %d competitor-owned %s.", domainCount, plural(domainCount, "source", "sources")),
+		Key: SourceCompetitorContent + ":" + opportunity.Key, Source: SourceCompetitorContent,
+		Category: CategoryContent, Title: opportunity.Title,
+		Body:   strings.TrimSpace(opportunity.Observation + " " + opportunity.SiteState),
+		Steps:  []string{opportunity.SuggestedAction},
+		Detail: fmt.Sprintf("Observed across %d competitor-owned %s.", domainCount, plural(domainCount, "source", "sources")),
 		Comparison: Comparison{
-			Coverage: gap.Coverage,
+			Coverage: opportunity.Coverage,
 			Cited:    citedQuotes(order, byDomain),
-			Site:     siteQuotes(gap.SiteEvidence, siteContent),
+			Site:     siteQuotes(opportunity.SiteEvidence, siteContent),
 		},
 		ResultIDs: mapKeys(results), PromptIDs: mapKeys(prompts), Sources: mapKeys(sources),
 		Reach: len(results), Priority: 1,

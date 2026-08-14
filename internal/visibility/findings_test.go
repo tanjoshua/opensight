@@ -9,13 +9,13 @@ import (
 )
 
 type fixedSourceClassifier struct {
-	kind         string
-	owner        string
-	suppressGap  bool
-	coverage     string
-	siteEvidence []string
-	calls        int
-	in           llm.SourceClassificationInput
+	kind                string
+	owner               string
+	suppressOpportunity bool
+	coverage            string
+	siteEvidence        []string
+	calls               int
+	in                  llm.SourceClassificationInput
 }
 
 func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.SourceClassificationInput) (llm.SourceAnalysis, error) {
@@ -34,29 +34,30 @@ func (c *fixedSourceClassifier) ClassifySources(_ context.Context, in llm.Source
 			for j, claim := range candidate.Claims {
 				if claim.Owner == owner {
 					out[i].ClaimIndices = append(out[i].ClaimIndices, j)
-					evidence = append(evidence, llm.SourceClaimReference{CandidateIndex: i, ClaimIndex: j})
+					evidence = append(evidence, llm.SourceClaimReference{CandidateIndex: i, ClaimIndex: j, SupportedPoint: "complex-case capability"})
 				}
 			}
 		}
 	}
-	analysis := llm.SourceAnalysis{Sources: out, Gaps: []llm.ContentGap{}}
-	if c.kind == llm.SourceCompetitorOwned && !c.suppressGap {
+	analysis := llm.SourceAnalysis{Sources: out, Opportunities: []llm.ContentOpportunity{}}
+	if c.kind == llm.SourceCompetitorOwned && !c.suppressOpportunity {
 		coverage := c.coverage
 		if coverage == "" {
 			coverage = "absent"
 		}
-		analysis.Gaps = []llm.ContentGap{{
+		analysis.Opportunities = []llm.ContentOpportunity{{
 			Key: "complex-case-services", Title: "Explain your complex-case services",
-			Reason:         "Your site does not clearly describe these capabilities.",
-			Recommendation: "On your services page, state which complex cases you treat, if offered.",
-			Coverage:       coverage, SiteEvidence: c.siteEvidence, Evidence: evidence,
+			Observation:     "Monitored answers highlighted competitors' complex-case capabilities.",
+			SiteState:       "The pages we read do not clearly describe the same capabilities.",
+			SuggestedAction: "On your services page, state which complex cases you treat, if offered.",
+			Coverage:        coverage, SiteEvidence: c.siteEvidence, Evidence: evidence,
 		}}
 	}
 	return analysis, nil
 }
 
 func TestCoveredCompetitorContentProducesNoAction(t *testing.T) {
-	classifier := &fixedSourceClassifier{kind: llm.SourceCompetitorOwned, owner: "Rival Clinic", suppressGap: true}
+	classifier := &fixedSourceClassifier{kind: llm.SourceCompetitorOwned, owner: "Rival Clinic", suppressOpportunity: true}
 	research := &fixtureResearcher{remaining: ResearchURLBudget, pages: map[string]string{
 		"https://www.rival.example/a": "Rival Clinic", "https://www.rival.example/b": "Rival Clinic",
 	}}
@@ -103,11 +104,11 @@ func TestCompetitorContentGroupsDomainsByActionableTopic(t *testing.T) {
 func linkedSnapshot() MonitoringSnapshot {
 	return MonitoringSnapshot{BusinessName: "Customer Clinic", Runs: []SnapshotRun{
 		{RunID: "run-1", Results: []SnapshotResult{
-			{ResultID: "linked-1", PromptID: "prompt-1", Citations: []SnapshotCitation{{URL: "https://www.rival.example/a", Domain: "www.rival.example", Passage: "Rival Clinic offers microscope-assisted treatment.", Competitors: []string{"Rival Clinic"}}}},
+			{ResultID: "linked-1", PromptID: "prompt-1", Prompt: "Which clinic handles complex cases?", Citations: []SnapshotCitation{{URL: "https://www.rival.example/a", Domain: "www.rival.example", Passage: "Rival Clinic offers microscope-assisted treatment.", Competitors: []string{"Rival Clinic"}}}},
 			{ResultID: "unlinked", PromptID: "prompt-2", Citations: []SnapshotCitation{{URL: "https://www.rival.example/unlinked", Domain: "www.rival.example", Passage: "General advice."}}},
 		}},
 		{RunID: "run-2", Results: []SnapshotResult{
-			{ResultID: "linked-2", PromptID: "prompt-1", Citations: []SnapshotCitation{{URL: "https://www.rival.example/b", Domain: "www.rival.example", Passage: "Rival Clinic handles complex cases.", Competitors: []string{"Rival Clinic"}}}},
+			{ResultID: "linked-2", PromptID: "prompt-1", Prompt: "Which clinic handles complex cases?", Citations: []SnapshotCitation{{URL: "https://www.rival.example/b", Domain: "www.rival.example", Passage: "Rival Clinic handles complex cases.", Competitors: []string{"Rival Clinic"}}}},
 		}},
 	}}
 }
@@ -131,6 +132,9 @@ func TestCitationGapCountsOnlyLinkedAbsentResults(t *testing.T) {
 	if len(classifier.in.Candidates) != 1 || len(classifier.in.Candidates[0].Claims) != 2 {
 		t.Fatalf("classifier input lost linked claims: %+v", classifier.in)
 	}
+	if classifier.in.Candidates[0].Claims[0].Question != "Which clinic handles complex cases?" {
+		t.Fatalf("classifier input lost monitored question: %+v", classifier.in.Candidates[0].Claims[0])
+	}
 	if classifier.calls != 1 {
 		t.Fatalf("classifier calls = %d, want one batch", classifier.calls)
 	}
@@ -144,8 +148,8 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 	}}
 	findings, err := citationGapFinder{}.Find(context.Background(), FinderInput{
 		Snapshot: linkedSnapshot(), SiteContent: "Customer Clinic already describes its team.",
-		PriorContentGaps: []llm.PriorContentGap{{Key: "complex-case-services", Title: "Explain your complex-case services"}},
-		Classifier:       classifier,
+		PriorContentOpportunities: []llm.PriorContentOpportunity{{Key: "complex-case-services", Title: "Explain your complex-case services"}},
+		Classifier:                classifier,
 	}, research)
 	if err != nil {
 		t.Fatal(err)
@@ -156,20 +160,18 @@ func TestCompetitorOwnedSourceBecomesContentAction(t *testing.T) {
 	if classifier.in.SiteContent != "Customer Clinic already describes its team." || classifier.in.BusinessName != "Customer Clinic" {
 		t.Fatalf("customer-site context was not supplied to analysis: %+v", classifier.in)
 	}
-	if len(classifier.in.PriorContentGaps) != 1 || classifier.in.PriorContentGaps[0].Key != "complex-case-services" {
-		t.Fatalf("prior model-defined gap was not supplied for topic reuse: %+v", classifier.in.PriorContentGaps)
+	if len(classifier.in.PriorContentOpportunities) != 1 || classifier.in.PriorContentOpportunities[0].Key != "complex-case-services" {
+		t.Fatalf("prior model-defined opportunity was not supplied for topic reuse: %+v", classifier.in.PriorContentOpportunities)
 	}
 	f := findings[0]
 	if f.Key != "competitor-content:complex-case-services" || f.Category != CategoryContent || strings.Contains(f.Key, "citation-gap") {
 		t.Fatalf("competitor-owned source routed incorrectly: %+v", f)
 	}
-	if strings.Contains(f.Detail, "Rival Clinic offers") || !strings.Contains(f.Detail, "1 competitor-owned source") {
+	if strings.Contains(f.Detail, "Rival Clinic offers") || f.Detail != "Observed across 1 competitor-owned source." {
 		t.Errorf("detail should summarize grouped evidence without dumping claims: %q", f.Detail)
 	}
-	// The body is the model's reason alone. The count it used to be prefixed with
-	// is already carried by Reach and by the cited quotes underneath it.
-	if f.Body != "Your site does not clearly describe these capabilities." {
-		t.Errorf("body = %q, want the model's reason with no restated count", f.Body)
+	if f.Body != "Monitored answers highlighted competitors' complex-case capabilities. The pages we read do not clearly describe the same capabilities." {
+		t.Errorf("body = %q, want observation and bounded site state", f.Body)
 	}
 	if len(f.Steps) != 1 || f.Steps[0] != "On your services page, state which complex cases you treat, if offered." {
 		t.Errorf("steps = %v, want the recommendation alone", f.Steps)

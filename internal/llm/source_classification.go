@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 const MaxSourceClassificationAttempts = 2
@@ -19,9 +20,9 @@ const (
 	SourceUnknown         = "unknown"
 )
 
-var contentGapKeyPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+var contentOpportunityKeyPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
-var reservedContentGapKeys = map[string]bool{
+var reservedContentOpportunityKeys = map[string]bool{
 	"other": true, "content": true, "content-gap": true, "website-content": true, "business-details": true,
 }
 
@@ -33,6 +34,7 @@ type SourcePage struct {
 type SourceClaim struct {
 	Owner    string `json:"owner"`
 	Passage  string `json:"passage"`
+	Question string `json:"question"`
 	ResultID string `json:"result_id"`
 	PromptID string `json:"prompt_id"`
 }
@@ -43,19 +45,19 @@ type SourceCandidate struct {
 	Claims []SourceClaim `json:"claims"`
 }
 
-type PriorContentGap struct {
-	Key            string `json:"topic_key"`
-	Title          string `json:"title"`
-	Recommendation string `json:"recommendation"`
+type PriorContentOpportunity struct {
+	Key             string `json:"topic_key"`
+	Title           string `json:"title"`
+	SuggestedAction string `json:"suggested_action"`
 }
 
 type SourceClassificationInput struct {
-	BusinessName          string
-	SiteContent           string
-	PriorContentGaps      []PriorContentGap
-	Candidates            []SourceCandidate
-	PriorOutputJSON       json.RawMessage
-	RetryValidationErrors []string
+	BusinessName              string
+	SiteContent               string
+	PriorContentOpportunities []PriorContentOpportunity
+	Candidates                []SourceCandidate
+	PriorOutputJSON           json.RawMessage
+	RetryValidationErrors     []string
 }
 
 type SourceClassification struct {
@@ -69,30 +71,29 @@ type SourceClassification struct {
 }
 
 type SourceClaimReference struct {
-	CandidateIndex int `json:"candidate_index"`
-	ClaimIndex     int `json:"claim_index"`
+	CandidateIndex int    `json:"candidate_index"`
+	ClaimIndex     int    `json:"claim_index"`
+	SupportedPoint string `json:"supported_point"`
 }
 
-// ContentGap is one model-grouped publishing job that competitor-owned evidence
-// repeatedly made useful in answers, but the customer's readable site does not
-// cover clearly enough. Key is constrained to a durable semantic slug so the
-// model controls the grouping without making finding identity presentation copy.
-type ContentGap struct {
-	Key            string `json:"topic_key"`
-	Title          string `json:"title"`
-	Reason         string `json:"reason"`
-	Recommendation string `json:"recommendation"`
-	// Coverage and SiteEvidence make the model check the customer's site before
-	// claiming a gap. Neither is validated: SiteEvidence is read by nobody, and
-	// an unexpected Coverage value only costs one sentence of finding detail.
-	Coverage     string                 `json:"coverage"`
-	SiteEvidence []string               `json:"site_evidence"`
-	Evidence     []SourceClaimReference `json:"evidence"`
+// ContentOpportunity is one model-grouped publishing hypothesis supported by
+// monitored-answer evidence and a comparison with the bounded customer-site
+// crawl. The three prose fields keep observation, site state, and proposed work
+// separate so presentation cannot silently turn correlation into causation.
+type ContentOpportunity struct {
+	Key             string                 `json:"topic_key"`
+	Title           string                 `json:"title"`
+	Observation     string                 `json:"observation"`
+	SiteState       string                 `json:"site_state"`
+	SuggestedAction string                 `json:"suggested_action"`
+	Coverage        string                 `json:"coverage"`
+	SiteEvidence    []string               `json:"site_evidence"`
+	Evidence        []SourceClaimReference `json:"evidence"`
 }
 
 type SourceAnalysis struct {
-	Sources []SourceClassification `json:"sources"`
-	Gaps    []ContentGap           `json:"content_gaps"`
+	Sources       []SourceClassification `json:"sources"`
+	Opportunities []ContentOpportunity   `json:"content_opportunities"`
 }
 
 type SourceClassificationRunResult struct {
@@ -101,8 +102,8 @@ type SourceClassificationRunResult struct {
 }
 
 // SourceClassifier makes one validated batched ownership decision for all
-// inspected citation sources and groups customer-site gaps across the sources
-// that are competitor-owned.
+// inspected citation sources and groups evidence-backed content opportunities
+// across the sources that are competitor-owned.
 type SourceClassifier interface {
 	ClassifySources(context.Context, SourceClassificationInput) (SourceAnalysis, error)
 }
@@ -125,7 +126,7 @@ func classifySourcesWithRetry(ctx context.Context, caller sourceClassificationCa
 			validationErrs = validateSourceClassifications(out.Sources, in.Candidates)
 		}
 		if len(validationErrs) == 0 {
-			out.Gaps = usableContentGaps(out.Gaps, out.Sources, in)
+			out.Opportunities = usableContentOpportunities(out.Opportunities, out.Sources, in)
 			return out, nil
 		}
 		in.PriorOutputJSON = result.RawJSON
@@ -137,11 +138,11 @@ func classifySourcesWithRetry(ctx context.Context, caller sourceClassificationCa
 	panic("unreachable")
 }
 
-// usableContentGaps keeps the gaps the product can render and silently drops
-// the rest. A gap the model got wrong costs that one publishing job, never the
-// whole assessment, so nothing here retries or fails.
-func usableContentGaps(gaps []ContentGap, sources []SourceClassification, in SourceClassificationInput) []ContentGap {
-	out := []ContentGap{}
+// usableContentOpportunities keeps the opportunities the product can render and
+// silently drops the rest. One bad opportunity never costs the whole
+// assessment, so nothing here retries or fails.
+func usableContentOpportunities(opportunities []ContentOpportunity, sources []SourceClassification, in SourceClassificationInput) []ContentOpportunity {
+	out := []ContentOpportunity{}
 	// Without readable customer-site content, absence cannot be verified.
 	if strings.TrimSpace(in.SiteContent) == "" {
 		return out
@@ -155,18 +156,31 @@ func usableContentGaps(gaps []ContentGap, sources []SourceClassification, in Sou
 		}
 	}
 	keys := map[string]bool{}
-	for _, gap := range gaps {
-		if !ValidContentGapKey(gap.Key) || keys[gap.Key] {
+	for _, opportunity := range opportunities {
+		if !ValidContentOpportunityKey(opportunity.Key) || keys[opportunity.Key] {
 			continue
 		}
-		if strings.TrimSpace(gap.Title) == "" || strings.TrimSpace(gap.Reason) == "" || strings.TrimSpace(gap.Recommendation) == "" {
+		if strings.TrimSpace(opportunity.Title) == "" || strings.TrimSpace(opportunity.Observation) == "" ||
+			strings.TrimSpace(opportunity.SiteState) == "" || strings.TrimSpace(opportunity.SuggestedAction) == "" {
 			continue
 		}
-		if len(gap.Evidence) == 0 || !usableEvidence(gap.Evidence, competitorOwned, in.Candidates) {
+		switch opportunity.Coverage {
+		case "absent":
+			if len(opportunity.SiteEvidence) != 0 {
+				continue
+			}
+		case "partial":
+			if len(opportunity.SiteEvidence) == 0 || !siteEvidenceAppears(opportunity.SiteEvidence, in.SiteContent) {
+				continue
+			}
+		default:
 			continue
 		}
-		keys[gap.Key] = true
-		out = append(out, gap)
+		if len(opportunity.Evidence) == 0 || !usableEvidence(opportunity.Evidence, competitorOwned, in.Candidates) {
+			continue
+		}
+		keys[opportunity.Key] = true
+		out = append(out, opportunity)
 	}
 	return out
 }
@@ -175,6 +189,9 @@ func usableContentGaps(gaps []ContentGap, sources []SourceClassification, in Sou
 // competitor-owned candidate, which is what findings dereference directly.
 func usableEvidence(refs []SourceClaimReference, competitorOwned map[int]bool, candidates []SourceCandidate) bool {
 	for _, ref := range refs {
+		if strings.TrimSpace(ref.SupportedPoint) == "" {
+			return false
+		}
 		if !competitorOwned[ref.CandidateIndex] {
 			return false
 		}
@@ -185,8 +202,32 @@ func usableEvidence(refs []SourceClaimReference, competitorOwned map[int]bool, c
 	return true
 }
 
-func ValidContentGapKey(key string) bool {
-	return len(key) >= 3 && len(key) <= 64 && contentGapKeyPattern.MatchString(key) && !reservedContentGapKeys[key]
+func siteEvidenceAppears(passages []string, siteContent string) bool {
+	haystack := normalizeEvidence(siteContent)
+	if haystack == "" {
+		return false
+	}
+	for _, passage := range passages {
+		normalized := normalizeEvidence(passage)
+		if normalized == "" || !strings.Contains(haystack, normalized) {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeEvidence(value string) string {
+	var b strings.Builder
+	for _, r := range value {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(unicode.ToLower(r))
+		}
+	}
+	return b.String()
+}
+
+func ValidContentOpportunityKey(key string) bool {
+	return len(key) >= 3 && len(key) <= 64 && contentOpportunityKeyPattern.MatchString(key) && !reservedContentOpportunityKeys[key]
 }
 
 // validateSourceClassifications checks the only classification facts the
@@ -234,7 +275,7 @@ func (s *StubSourceClassifier) ClassifySources(_ context.Context, in SourceClass
 	for i := range out {
 		out[i] = SourceClassification{CandidateIndex: i, Kind: SourceUnknown, ClaimIndices: []int{}}
 	}
-	return SourceAnalysis{Sources: out, Gaps: []ContentGap{}}, nil
+	return SourceAnalysis{Sources: out, Opportunities: []ContentOpportunity{}}, nil
 }
 
 func NewSourceClassifier(mode string, cfg OpenAIConfig) (SourceClassifier, error) {

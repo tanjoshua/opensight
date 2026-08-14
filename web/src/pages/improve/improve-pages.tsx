@@ -259,7 +259,7 @@ export function ActionsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Next actions"
-        description="Prioritized work derived from your latest site audit and monitored answers."
+        description="Prioritized site fixes and evidence-backed opportunities from your latest monitored answers."
       />
       {query.data.checkedAt && (
         <p className="text-sm text-muted-foreground">
@@ -373,11 +373,9 @@ const panelHeading =
 
 const quoteStyle = "border-l-2 pl-3 leading-relaxed"
 
-// EvidenceComparison is the argument for a content action: what answers said
-// about competitors, and what the customer's own site says. Both halves are
-// quotations, because the claim being made — that a recommendation went
-// somewhere else over something they do not say — is one the user must be able
-// to check rather than take on trust.
+// EvidenceComparison shows the observed answer pattern beside the bounded site
+// evidence. It supports a hypothesis worth considering; it does not claim the
+// site difference caused the monitored answers.
 //
 // Two panels only when there are two things to compare. With no site passage to
 // quote there is no second side, and a panel the width of the evidence holding
@@ -398,7 +396,7 @@ function EvidenceComparison({
     <div className={paired ? "grid gap-3 sm:grid-cols-2" : "flex flex-col"}>
       {cited.length > 0 && (
         <section className="rounded-lg border bg-muted/40 p-3">
-          <h3 className={panelHeading}>What ChatGPT said instead</h3>
+          <h3 className={panelHeading}>What monitored answers said</h3>
           <ul className="mt-2 flex flex-col gap-3">
             {cited.map((quote) => (
               <li key={quote.quote}>
@@ -424,8 +422,8 @@ function EvidenceComparison({
           </ul>
           {comparison.coverage === "partial" && (
             <p className="mt-3 text-sm leading-relaxed">
-              Closest wording we found, and it stops short of the detail cited
-              alongside.
+              Closest wording in the pages checked; it stops short of the
+              detail cited alongside.
             </p>
           )}
         </section>
@@ -434,8 +432,8 @@ function EvidenceComparison({
           <span className={panelHeading}>What your site says</span>
           <span className="text-sm font-medium">
             {comparison.coverage === "partial"
-              ? "Covered, but not with the detail cited alongside"
-              : "Nothing on this subject"}
+              ? "Covered in the pages checked, but without the detail cited alongside"
+              : "Not found in the pages checked"}
           </span>
         </p>
       )}
@@ -511,7 +509,8 @@ function ActionCard({
               <>
                 <span aria-hidden>·</span>
                 <span className="font-medium text-foreground">
-                  {action.reach} answer{action.reach === 1 ? "" : "s"} affected
+                  Seen in {action.reach} monitored answer
+                  {action.reach === 1 ? "" : "s"}
                 </span>
               </>
             )}
@@ -531,7 +530,11 @@ function ActionCard({
           )}
           {action.steps.length > 0 && (
             <div>
-              <h3 className="font-medium">Do this</h3>
+              <h3 className="font-medium">
+                {action.category === contentCategory
+                  ? "Suggested next step"
+                  : "Do this"}
+              </h3>
               {action.steps.length === 1 ? (
                 <div className="mt-1 leading-relaxed">
                   <ActionStep step={action.steps[0]} as="p" />

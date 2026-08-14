@@ -18,13 +18,13 @@ Acceptance: one transaction publishes the audit and findings; one audit per moni
 
 As a user, I receive a listing action only for an independently operated source, while a competitor's own source becomes useful evidence for improving my site.
 
-Acceptance: recurrence and reach count only distinct answers where the business is absent and the citation is linked to a competitor; exact stored citation passages, inspected source pages, bounded customer-site text, and prior model-defined gap identities feed one validated batched source-and-gap analysis call per assessment; `third_party` and `unknown` remain listing actions; competitor-owned claims already covered by the customer produce no action, while the model groups missing or partial claims across competitors into targeted `competitor-content:<topic-slug>` Business details actions and generates specific, safe publishing guidance; topic slugs are unique semantic identities rather than a predefined taxonomy and are reused when current evidence supports the same job; validation failure publishes nothing.
+Acceptance: recurrence and reach count only distinct answers where the business is absent and the citation is linked to a competitor; the monitored question, exact stored citation passage, inspected source pages, bounded customer-site text, and prior opportunity identities feed one validated batched source-and-opportunity analysis call per assessment; `third_party` and `unknown` remain listing actions; competitor-owned claims already covered by the customer produce no action, while a dedicated `OPENAI_IMPROVE_MODEL` groups missing or partial claims into targeted `competitor-content:<topic-slug>` Website content opportunities. Each opportunity separates observed answer evidence, bounded site state, and a proportionate suggested action, and never presents correlation as a cause or visibility promise. Topic slugs remain reusable semantic identities; invalid opportunities are dropped independently while load-bearing classification failure publishes nothing.
 
 ## IMP-4 — Next actions
 
 As a user, I can focus on the most relevant work supported by current evidence.
 
-Acceptance: blockers first, then affected-question reach, priority, and stable key; three focus actions followed by all additional active findings; concrete explanation, steps, checked sources, and response evidence; complete, dismiss, and reopen controls; no-findings copy makes no health claim.
+Acceptance: blockers first, then category, observed-answer reach, priority, and stable key in one queue; concrete explanation, steps, checked sources, and response evidence; competitor-derived cards say “Seen in” and “Suggested next step,” while deterministic checks keep direct task language; complete, dismiss, and reopen controls; no-findings copy makes no health claim.
 
 ## IMP-5 — Simple lifecycle and verification
 
