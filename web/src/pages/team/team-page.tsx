@@ -157,6 +157,10 @@ function MemberRow({
       <TableCell>
         {editable ? (
           <Select
+            items={roles.map(({ value, label }) => ({
+              value: String(value),
+              label,
+            }))}
             value={String(member.role)}
             onValueChange={(role) =>
               update.mutate({
@@ -256,6 +260,10 @@ function AddMemberDialog({
             <Field>
               <FieldLabel>Role</FieldLabel>
               <Select
+                items={roles.map(({ value, label }) => ({
+                  value: String(value),
+                  label,
+                }))}
                 value={String(role)}
                 onValueChange={(value) => setRole(Number(value) as AccountRole)}
               >
