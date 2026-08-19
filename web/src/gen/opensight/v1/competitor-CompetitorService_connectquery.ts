@@ -28,3 +28,8 @@ export const reviewSuggestedAlias = CompetitorService.method.reviewSuggestedAlia
  * @generated from rpc opensight.v1.CompetitorService.UpdateCompetitorAliases
  */
 export const updateCompetitorAliases = CompetitorService.method.updateCompetitorAliases;
+
+/**
+ * @generated from rpc opensight.v1.CompetitorService.ClaimCompetitorAsSelf
+ */
+export const claimCompetitorAsSelf = CompetitorService.method.claimCompetitorAsSelf;

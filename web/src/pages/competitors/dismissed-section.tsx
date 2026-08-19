@@ -4,7 +4,12 @@ import { useState } from "react"
 import { CompetitorStatus } from "@/gen/opensight/v1/common_pb"
 import type { CompetitorSelf } from "@/gen/opensight/v1/competitor_pb"
 import { Button } from "@/components/ui/button"
-import { ActionNote, CoverageRow, SuggestedAliasReview } from "./section-parts"
+import {
+  ActionNote,
+  ClaimSelfButton,
+  CoverageRow,
+  SuggestedAliasReview,
+} from "./section-parts"
 import {
   feedbackFor,
   useScrollIntoView,
@@ -20,6 +25,7 @@ export function DismissedSection({
   onUndoStatus,
   pendingCompetitorID,
   onReviewAlias,
+  onClaimSelf,
   pendingAlias,
   statusFeedback,
   aliasFeedback,
@@ -92,17 +98,23 @@ export function DismissedSection({
                 />
               }
               actions={
-                <Button
-                  size="sm"
-                  className="min-h-10 sm:min-h-0"
-                  aria-label={`Restore ${competitor.name} to tracked`}
-                  disabled={pendingCompetitorID === competitor.id}
-                  onClick={() =>
-                    onStatusChange(competitor, CompetitorStatus.TRACKED)
-                  }
-                >
-                  Restore
-                </Button>
+                <>
+                  <ClaimSelfButton
+                    competitor={competitor}
+                    onClaimSelf={onClaimSelf}
+                  />
+                  <Button
+                    size="sm"
+                    className="min-h-10 sm:min-h-0"
+                    aria-label={`Restore ${competitor.name} to tracked`}
+                    disabled={pendingCompetitorID === competitor.id}
+                    onClick={() =>
+                      onStatusChange(competitor, CompetitorStatus.TRACKED)
+                    }
+                  >
+                    Restore
+                  </Button>
+                </>
               }
             />
           ))}

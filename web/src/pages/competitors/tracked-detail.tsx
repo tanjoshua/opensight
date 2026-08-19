@@ -16,8 +16,18 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ActionNote, SuggestedAliasReview, VsSelf } from "./section-parts"
-import { averageRank, type ActionFeedback, type AliasReview } from "./shared"
+import {
+  ActionNote,
+  ClaimSelfButton,
+  SuggestedAliasReview,
+  VsSelf,
+} from "./section-parts"
+import {
+  averageRank,
+  type ActionFeedback,
+  type AliasReview,
+  type ClaimSelf,
+} from "./shared"
 import { TrendChart } from "./trend-chart"
 
 export function TrackedDetail({
@@ -26,6 +36,7 @@ export function TrackedDetail({
   onSelectRun,
   onDismiss,
   statusPending,
+  onClaimSelf,
   onReviewAlias,
   pendingAlias,
   aliasFeedback,
@@ -35,6 +46,7 @@ export function TrackedDetail({
   onSelectRun: (runID: string) => void
   onDismiss: () => void
   statusPending: boolean
+  onClaimSelf: ClaimSelf
   onReviewAlias: AliasReview
   pendingAlias?: string
   aliasFeedback?: ActionFeedback
@@ -109,7 +121,8 @@ export function TrackedDetail({
           onOpenResult={onOpenResult}
         />
       </CardContent>
-      <CardFooter className="justify-end">
+      <CardFooter className="justify-end gap-2">
+        <ClaimSelfButton competitor={competitor} onClaimSelf={onClaimSelf} />
         <Button
           size="sm"
           variant="outline"

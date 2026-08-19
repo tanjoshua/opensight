@@ -22,7 +22,7 @@ func TestOpenAIMatchBuildsStructuredRequest(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"status": "completed",
 			"model": "gpt-mini-2026",
-			"output": [{"type":"message","content":[{"type":"output_text","text":"{\"matches\":[{\"index\":0,\"competitor_id\":null}]}"}]}]
+			"output": [{"type":"message","content":[{"type":"output_text","text":"{\"matches\":[{\"index\":0,\"match_id\":null}]}"}]}]
 		}`))
 	}))
 	defer server.Close()

@@ -83,6 +83,60 @@ func (q *Queries) CreateManualCompetitor(ctx context.Context, arg CreateManualCo
 	return i, err
 }
 
+const deleteCompetitor = `-- name: DeleteCompetitor :exec
+DELETE FROM competitors WHERE id = $1
+`
+
+func (q *Queries) DeleteCompetitor(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteCompetitor, id)
+	return err
+}
+
+const loadCompetitorForClaim = `-- name: LoadCompetitorForClaim :one
+SELECT co.id,co.business_id,co.name,co.aliases,b.aliases::text[] AS business_aliases
+FROM competitors co JOIN businesses b ON b.id = co.business_id
+WHERE co.id = $1 AND b.account_id = $2
+FOR UPDATE OF co, b
+`
+
+type LoadCompetitorForClaimParams struct {
+	ID        uuid.UUID
+	AccountID uuid.UUID
+}
+
+type LoadCompetitorForClaimRow struct {
+	ID              uuid.UUID
+	BusinessID      uuid.UUID
+	Name            string
+	Aliases         []string
+	BusinessAliases []string
+}
+
+// Locks the business too, not just the competitor: the claim reads b.aliases,
+// merges in Go, and writes the whole array back, so two concurrent claims on
+// different competitors of one business would otherwise lose the first merge.
+func (q *Queries) LoadCompetitorForClaim(ctx context.Context, arg LoadCompetitorForClaimParams) (LoadCompetitorForClaimRow, error) {
+	row := q.db.QueryRow(ctx, loadCompetitorForClaim, arg.ID, arg.AccountID)
+	var i LoadCompetitorForClaimRow
+	err := row.Scan(
+		&i.ID,
+		&i.BusinessID,
+		&i.Name,
+		&i.Aliases,
+		&i.BusinessAliases,
+	)
+	return i, err
+}
+
+const reassignCompetitorMentionsToSelf = `-- name: ReassignCompetitorMentionsToSelf :exec
+UPDATE mentions SET subject='self',competitor_id=NULL WHERE competitor_id = $1
+`
+
+func (q *Queries) ReassignCompetitorMentionsToSelf(ctx context.Context, competitorID *uuid.UUID) error {
+	_, err := q.db.Exec(ctx, reassignCompetitorMentionsToSelf, competitorID)
+	return err
+}
+
 const rejectSuggestedAlias = `-- name: RejectSuggestedAlias :one
 UPDATE competitors co SET suggested_aliases=array_remove(co.suggested_aliases,$1)
 FROM businesses b
@@ -111,6 +165,20 @@ func (q *Queries) RejectSuggestedAlias(ctx context.Context, arg RejectSuggestedA
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const setBusinessAliases = `-- name: SetBusinessAliases :exec
+UPDATE businesses SET aliases = $1::text[] WHERE id = $2
+`
+
+type SetBusinessAliasesParams struct {
+	Aliases    []string
+	BusinessID uuid.UUID
+}
+
+func (q *Queries) SetBusinessAliases(ctx context.Context, arg SetBusinessAliasesParams) error {
+	_, err := q.db.Exec(ctx, setBusinessAliases, arg.Aliases, arg.BusinessID)
+	return err
 }
 
 const setCompetitorStatus = `-- name: SetCompetitorStatus :one

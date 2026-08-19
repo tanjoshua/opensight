@@ -1072,6 +1072,99 @@ func (x *UpdateCompetitorAliasesResponse) GetCompetitor() *CompetitorRecord {
 	return nil
 }
 
+// ClaimCompetitorAsSelfRequest reassigns a competitor the matcher got wrong:
+// the row is the user's own business, not a rival. The server folds its name
+// and aliases into the business's aliases, relabels its mentions as self, and
+// deletes the row — so past runs read correctly and future ones exact-match.
+type ClaimCompetitorAsSelfRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CompetitorId  string                 `protobuf:"bytes,1,opt,name=competitor_id,json=competitorId,proto3" json:"competitor_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimCompetitorAsSelfRequest) Reset() {
+	*x = ClaimCompetitorAsSelfRequest{}
+	mi := &file_opensight_v1_competitor_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimCompetitorAsSelfRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimCompetitorAsSelfRequest) ProtoMessage() {}
+
+func (x *ClaimCompetitorAsSelfRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_competitor_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimCompetitorAsSelfRequest.ProtoReflect.Descriptor instead.
+func (*ClaimCompetitorAsSelfRequest) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_competitor_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ClaimCompetitorAsSelfRequest) GetCompetitorId() string {
+	if x != nil {
+		return x.CompetitorId
+	}
+	return ""
+}
+
+type ClaimCompetitorAsSelfResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// aliases is the business's alias list after the merge.
+	Aliases       []string `protobuf:"bytes,1,rep,name=aliases,proto3" json:"aliases,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimCompetitorAsSelfResponse) Reset() {
+	*x = ClaimCompetitorAsSelfResponse{}
+	mi := &file_opensight_v1_competitor_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimCompetitorAsSelfResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimCompetitorAsSelfResponse) ProtoMessage() {}
+
+func (x *ClaimCompetitorAsSelfResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_competitor_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimCompetitorAsSelfResponse.ProtoReflect.Descriptor instead.
+func (*ClaimCompetitorAsSelfResponse) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_competitor_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ClaimCompetitorAsSelfResponse) GetAliases() []string {
+	if x != nil {
+		return x.Aliases
+	}
+	return nil
+}
+
 var File_opensight_v1_competitor_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_competitor_proto_rawDesc = "" +
@@ -1166,17 +1259,22 @@ const file_opensight_v1_competitor_proto_rawDesc = "" +
 	"\x1fUpdateCompetitorAliasesResponse\x12>\n" +
 	"\n" +
 	"competitor\x18\x01 \x01(\v2\x1e.opensight.v1.CompetitorRecordR\n" +
-	"competitor*f\n" +
+	"competitor\"C\n" +
+	"\x1cClaimCompetitorAsSelfRequest\x12#\n" +
+	"\rcompetitor_id\x18\x01 \x01(\tR\fcompetitorId\"9\n" +
+	"\x1dClaimCompetitorAsSelfResponse\x12\x18\n" +
+	"\aaliases\x18\x01 \x03(\tR\aaliases*f\n" +
 	"\rAliasDecision\x12\x1e\n" +
 	"\x1aALIAS_DECISION_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ALIAS_DECISION_APPROVE\x10\x01\x12\x19\n" +
-	"\x15ALIAS_DECISION_REJECT\x10\x022\xa0\x04\n" +
+	"\x15ALIAS_DECISION_REJECT\x10\x022\x92\x05\n" +
 	"\x11CompetitorService\x12^\n" +
 	"\x0fListCompetitors\x12$.opensight.v1.ListCompetitorsRequest\x1a%.opensight.v1.ListCompetitorsResponse\x12X\n" +
 	"\rAddCompetitor\x12\".opensight.v1.AddCompetitorRequest\x1a#.opensight.v1.AddCompetitorResponse\x12j\n" +
 	"\x13SetCompetitorStatus\x12(.opensight.v1.SetCompetitorStatusRequest\x1a).opensight.v1.SetCompetitorStatusResponse\x12m\n" +
 	"\x14ReviewSuggestedAlias\x12).opensight.v1.ReviewSuggestedAliasRequest\x1a*.opensight.v1.ReviewSuggestedAliasResponse\x12v\n" +
-	"\x17UpdateCompetitorAliases\x12,.opensight.v1.UpdateCompetitorAliasesRequest\x1a-.opensight.v1.UpdateCompetitorAliasesResponseB\xa5\x01\n" +
+	"\x17UpdateCompetitorAliases\x12,.opensight.v1.UpdateCompetitorAliasesRequest\x1a-.opensight.v1.UpdateCompetitorAliasesResponse\x12p\n" +
+	"\x15ClaimCompetitorAsSelf\x12*.opensight.v1.ClaimCompetitorAsSelfRequest\x1a+.opensight.v1.ClaimCompetitorAsSelfResponseB\xa5\x01\n" +
 	"\x10com.opensight.v1B\x0fCompetitorProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
 
 var (
@@ -1192,7 +1290,7 @@ func file_opensight_v1_competitor_proto_rawDescGZIP() []byte {
 }
 
 var file_opensight_v1_competitor_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_opensight_v1_competitor_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_opensight_v1_competitor_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_opensight_v1_competitor_proto_goTypes = []any{
 	(AliasDecision)(0),                      // 0: opensight.v1.AliasDecision
 	(*CompetitorSelf)(nil),                  // 1: opensight.v1.CompetitorSelf
@@ -1210,40 +1308,44 @@ var file_opensight_v1_competitor_proto_goTypes = []any{
 	(*ReviewSuggestedAliasResponse)(nil),    // 13: opensight.v1.ReviewSuggestedAliasResponse
 	(*UpdateCompetitorAliasesRequest)(nil),  // 14: opensight.v1.UpdateCompetitorAliasesRequest
 	(*UpdateCompetitorAliasesResponse)(nil), // 15: opensight.v1.UpdateCompetitorAliasesResponse
-	(CompetitorStatus)(0),                   // 16: opensight.v1.CompetitorStatus
-	(CompetitorSource)(0),                   // 17: opensight.v1.CompetitorSource
-	(*Paging)(nil),                          // 18: opensight.v1.Paging
-	(*StringList)(nil),                      // 19: opensight.v1.StringList
+	(*ClaimCompetitorAsSelfRequest)(nil),    // 16: opensight.v1.ClaimCompetitorAsSelfRequest
+	(*ClaimCompetitorAsSelfResponse)(nil),   // 17: opensight.v1.ClaimCompetitorAsSelfResponse
+	(CompetitorStatus)(0),                   // 18: opensight.v1.CompetitorStatus
+	(CompetitorSource)(0),                   // 19: opensight.v1.CompetitorSource
+	(*Paging)(nil),                          // 20: opensight.v1.Paging
+	(*StringList)(nil),                      // 21: opensight.v1.StringList
 }
 var file_opensight_v1_competitor_proto_depIdxs = []int32{
-	16, // 0: opensight.v1.Competitor.status:type_name -> opensight.v1.CompetitorStatus
+	18, // 0: opensight.v1.Competitor.status:type_name -> opensight.v1.CompetitorStatus
 	2,  // 1: opensight.v1.Competitor.per_prompt:type_name -> opensight.v1.CompetitorPromptAppearance
 	3,  // 2: opensight.v1.Competitor.trend:type_name -> opensight.v1.CompetitorTrendPoint
-	17, // 3: opensight.v1.CompetitorRecord.source:type_name -> opensight.v1.CompetitorSource
-	16, // 4: opensight.v1.CompetitorRecord.status:type_name -> opensight.v1.CompetitorStatus
-	16, // 5: opensight.v1.ListCompetitorsRequest.status:type_name -> opensight.v1.CompetitorStatus
+	19, // 3: opensight.v1.CompetitorRecord.source:type_name -> opensight.v1.CompetitorSource
+	18, // 4: opensight.v1.CompetitorRecord.status:type_name -> opensight.v1.CompetitorStatus
+	18, // 5: opensight.v1.ListCompetitorsRequest.status:type_name -> opensight.v1.CompetitorStatus
 	1,  // 6: opensight.v1.ListCompetitorsResponse.self:type_name -> opensight.v1.CompetitorSelf
 	4,  // 7: opensight.v1.ListCompetitorsResponse.competitors:type_name -> opensight.v1.Competitor
-	18, // 8: opensight.v1.ListCompetitorsResponse.paging:type_name -> opensight.v1.Paging
+	20, // 8: opensight.v1.ListCompetitorsResponse.paging:type_name -> opensight.v1.Paging
 	5,  // 9: opensight.v1.AddCompetitorResponse.competitor:type_name -> opensight.v1.CompetitorRecord
-	16, // 10: opensight.v1.SetCompetitorStatusRequest.status:type_name -> opensight.v1.CompetitorStatus
+	18, // 10: opensight.v1.SetCompetitorStatusRequest.status:type_name -> opensight.v1.CompetitorStatus
 	5,  // 11: opensight.v1.SetCompetitorStatusResponse.competitor:type_name -> opensight.v1.CompetitorRecord
 	0,  // 12: opensight.v1.ReviewSuggestedAliasRequest.decision:type_name -> opensight.v1.AliasDecision
 	5,  // 13: opensight.v1.ReviewSuggestedAliasResponse.competitor:type_name -> opensight.v1.CompetitorRecord
-	19, // 14: opensight.v1.UpdateCompetitorAliasesRequest.aliases:type_name -> opensight.v1.StringList
+	21, // 14: opensight.v1.UpdateCompetitorAliasesRequest.aliases:type_name -> opensight.v1.StringList
 	5,  // 15: opensight.v1.UpdateCompetitorAliasesResponse.competitor:type_name -> opensight.v1.CompetitorRecord
 	6,  // 16: opensight.v1.CompetitorService.ListCompetitors:input_type -> opensight.v1.ListCompetitorsRequest
 	8,  // 17: opensight.v1.CompetitorService.AddCompetitor:input_type -> opensight.v1.AddCompetitorRequest
 	10, // 18: opensight.v1.CompetitorService.SetCompetitorStatus:input_type -> opensight.v1.SetCompetitorStatusRequest
 	12, // 19: opensight.v1.CompetitorService.ReviewSuggestedAlias:input_type -> opensight.v1.ReviewSuggestedAliasRequest
 	14, // 20: opensight.v1.CompetitorService.UpdateCompetitorAliases:input_type -> opensight.v1.UpdateCompetitorAliasesRequest
-	7,  // 21: opensight.v1.CompetitorService.ListCompetitors:output_type -> opensight.v1.ListCompetitorsResponse
-	9,  // 22: opensight.v1.CompetitorService.AddCompetitor:output_type -> opensight.v1.AddCompetitorResponse
-	11, // 23: opensight.v1.CompetitorService.SetCompetitorStatus:output_type -> opensight.v1.SetCompetitorStatusResponse
-	13, // 24: opensight.v1.CompetitorService.ReviewSuggestedAlias:output_type -> opensight.v1.ReviewSuggestedAliasResponse
-	15, // 25: opensight.v1.CompetitorService.UpdateCompetitorAliases:output_type -> opensight.v1.UpdateCompetitorAliasesResponse
-	21, // [21:26] is the sub-list for method output_type
-	16, // [16:21] is the sub-list for method input_type
+	16, // 21: opensight.v1.CompetitorService.ClaimCompetitorAsSelf:input_type -> opensight.v1.ClaimCompetitorAsSelfRequest
+	7,  // 22: opensight.v1.CompetitorService.ListCompetitors:output_type -> opensight.v1.ListCompetitorsResponse
+	9,  // 23: opensight.v1.CompetitorService.AddCompetitor:output_type -> opensight.v1.AddCompetitorResponse
+	11, // 24: opensight.v1.CompetitorService.SetCompetitorStatus:output_type -> opensight.v1.SetCompetitorStatusResponse
+	13, // 25: opensight.v1.CompetitorService.ReviewSuggestedAlias:output_type -> opensight.v1.ReviewSuggestedAliasResponse
+	15, // 26: opensight.v1.CompetitorService.UpdateCompetitorAliases:output_type -> opensight.v1.UpdateCompetitorAliasesResponse
+	17, // 27: opensight.v1.CompetitorService.ClaimCompetitorAsSelf:output_type -> opensight.v1.ClaimCompetitorAsSelfResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
 	16, // [16:16] is the sub-list for extension extendee
 	0,  // [0:16] is the sub-list for field type_name
@@ -1262,7 +1364,7 @@ func file_opensight_v1_competitor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_competitor_proto_rawDesc), len(file_opensight_v1_competitor_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

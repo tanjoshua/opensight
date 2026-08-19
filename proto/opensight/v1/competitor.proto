@@ -132,10 +132,24 @@ message UpdateCompetitorAliasesResponse {
   CompetitorRecord competitor = 1;
 }
 
+// ClaimCompetitorAsSelfRequest reassigns a competitor the matcher got wrong:
+// the row is the user's own business, not a rival. The server folds its name
+// and aliases into the business's aliases, relabels its mentions as self, and
+// deletes the row — so past runs read correctly and future ones exact-match.
+message ClaimCompetitorAsSelfRequest {
+  string competitor_id = 1;
+}
+
+message ClaimCompetitorAsSelfResponse {
+  // aliases is the business's alias list after the merge.
+  repeated string aliases = 1;
+}
+
 service CompetitorService {
   rpc ListCompetitors(ListCompetitorsRequest) returns (ListCompetitorsResponse);
   rpc AddCompetitor(AddCompetitorRequest) returns (AddCompetitorResponse);
   rpc SetCompetitorStatus(SetCompetitorStatusRequest) returns (SetCompetitorStatusResponse);
   rpc ReviewSuggestedAlias(ReviewSuggestedAliasRequest) returns (ReviewSuggestedAliasResponse);
   rpc UpdateCompetitorAliases(UpdateCompetitorAliasesRequest) returns (UpdateCompetitorAliasesResponse);
+  rpc ClaimCompetitorAsSelf(ClaimCompetitorAsSelfRequest) returns (ClaimCompetitorAsSelfResponse);
 }

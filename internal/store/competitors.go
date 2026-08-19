@@ -131,6 +131,53 @@ func (s *Store) UpdateAliases(ctx context.Context, params UpdateCompetitorAliase
 	return competitorFromSQLC(row), nil
 }
 
+// ClaimAsSelf folds a competitor into the target business: its name and aliases
+// become business aliases (so the exact pass self-matches them from the next run
+// on), its mentions are relabelled 'self', and the row is deleted. It returns
+// the business's alias list after the merge.
+//
+// The delete must come last — mentions.competitor_id is ON DELETE CASCADE, so
+// deleting first would take the mentions with it instead of reassigning them.
+func (s *Store) ClaimAsSelf(ctx context.Context, accountID, competitorID domain.ID) ([]string, error) {
+	if err := validateUUIDv7("account id", accountID); err != nil {
+		return nil, err
+	}
+	if err := validateUUIDv7("competitor id", competitorID); err != nil {
+		return nil, err
+	}
+
+	var aliases []string
+	err := s.withTx(ctx, func(q *storesqlc.Queries) error {
+		row, err := q.LoadCompetitorForClaim(ctx, storesqlc.LoadCompetitorForClaimParams{
+			ID: competitorID, AccountID: accountID,
+		})
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return fmt.Errorf("load competitor for claim: %w", err)
+		}
+
+		aliases = normalizeAliases(append(append(row.BusinessAliases, row.Name), row.Aliases...))
+		if err := q.SetBusinessAliases(ctx, storesqlc.SetBusinessAliasesParams{
+			BusinessID: row.BusinessID, Aliases: aliases,
+		}); err != nil {
+			return fmt.Errorf("set business aliases: %w", err)
+		}
+		if err := q.ReassignCompetitorMentionsToSelf(ctx, &competitorID); err != nil {
+			return fmt.Errorf("reassign competitor mentions: %w", err)
+		}
+		if err := q.DeleteCompetitor(ctx, competitorID); err != nil {
+			return fmt.Errorf("delete competitor: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return aliases, nil
+}
+
 func (s *Store) updateSuggestedAlias(ctx context.Context, params SuggestedAliasParams, approve bool) (CompetitorRecord, error) {
 	params, err := normalizeSuggestedAliasParams(params)
 	if err != nil {

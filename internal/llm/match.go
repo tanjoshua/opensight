@@ -8,9 +8,10 @@ import (
 	"opensight/internal/domain"
 )
 
-// MatchCandidate is one existing competitor the LLM match pass judges an
-// unmatched name against (design 05 step 3). Name + aliases + website are the
-// only evidence the model is allowed to use; ID is echoed back on a match.
+// MatchCandidate is one candidate the LLM match pass judges an unmatched name
+// against (design 05 step 3) — either the target business or an existing
+// competitor. Name + aliases + website are the only evidence the model is
+// allowed to use; ID is echoed back on a match.
 type MatchCandidate struct {
 	ID      domain.ID
 	Name    string
@@ -20,8 +21,14 @@ type MatchCandidate struct {
 
 // MatchInput is one whole-run LLM match call: the run's still-unmatched verbatim
 // names (deduped by normalized key upstream) against the full candidate list.
+//
+// Target is the run's own business, and is a candidate in its own right: the
+// exact pass only self-matches on the business name and its approved aliases, so
+// without it every unrecognised variant of the user's own name would fall
+// through to "new discovered competitor".
 type MatchInput struct {
 	Names       []string
+	Target      MatchCandidate
 	Competitors []MatchCandidate
 }
 
@@ -65,7 +72,7 @@ func NewStubMatchRunner() (*StubMatchRunner, error) {
 func (r *StubMatchRunner) RunMatch(_ context.Context, in MatchInput) (MatchRunResult, error) {
 	matches := make([]matchEntry, len(in.Names))
 	for i := range in.Names {
-		matches[i] = matchEntry{Index: i, CompetitorID: nil}
+		matches[i] = matchEntry{Index: i, MatchID: nil}
 	}
 	raw, err := json.Marshal(matchOutput{Matches: matches})
 	if err != nil {
@@ -75,23 +82,23 @@ func (r *StubMatchRunner) RunMatch(_ context.Context, in MatchInput) (MatchRunRe
 }
 
 // matchOutput is the decoded match schema: one entry per index into MatchInput's
-// Names, competitor_id null for no match.
+// Names, match_id null for no match.
 type matchOutput struct {
 	Matches []matchEntry `json:"matches"`
 }
 
 type matchEntry struct {
-	Index        int     `json:"index"`
-	CompetitorID *string `json:"competitor_id"`
+	Index   int     `json:"index"`
+	MatchID *string `json:"match_id"`
 }
 
-// DecodeMatchOutput turns a raw match verdict into one resolved competitor id per
-// in.Names index, uuid.Nil meaning "no match". It is deliberately forgiving:
-// any malformed, duplicate, out-of-range, or unknown-id entry clamps that index
-// to uuid.Nil and adds a warning rather than erroring — a garbled verdict just
-// degrades to "unmatched -> new discovered", which is the conservative default
-// (design 05: "when in doubt, it's new"). Indices not mentioned by the model
-// also stay uuid.Nil.
+// DecodeMatchOutput turns a raw match verdict into one resolved id per in.Names
+// index — a competitor id, the target business id, or uuid.Nil meaning "no
+// match". It is deliberately forgiving: any malformed, duplicate,
+// out-of-range, or unknown-id entry clamps that index to uuid.Nil and adds a
+// warning rather than erroring — a garbled verdict just degrades to "unmatched
+// -> new discovered", which is the conservative default (design 05: "when in
+// doubt, it's new"). Indices not mentioned by the model also stay uuid.Nil.
 func DecodeMatchOutput(raw json.RawMessage, in MatchInput) ([]domain.ID, []string, error) {
 	matches := make([]domain.ID, len(in.Names))
 
@@ -102,7 +109,10 @@ func DecodeMatchOutput(raw json.RawMessage, in MatchInput) ([]domain.ID, []strin
 		return matches, []string{fmt.Sprintf("match output is not valid JSON: %v", err)}, nil
 	}
 
-	valid := make(map[string]domain.ID, len(in.Competitors))
+	valid := make(map[string]domain.ID, len(in.Competitors)+1)
+	if in.Target.ID != (domain.ID{}) {
+		valid[in.Target.ID.String()] = in.Target.ID
+	}
 	for _, c := range in.Competitors {
 		valid[c.ID.String()] = c.ID
 	}
@@ -119,12 +129,12 @@ func DecodeMatchOutput(raw json.RawMessage, in MatchInput) ([]domain.ID, []strin
 			continue
 		}
 		seen[e.Index] = true
-		if e.CompetitorID == nil {
+		if e.MatchID == nil {
 			continue // explicit no-match
 		}
-		id, ok := valid[*e.CompetitorID]
+		id, ok := valid[*e.MatchID]
 		if !ok {
-			warnings = append(warnings, fmt.Sprintf("match entry index %d names competitor id %q not in the candidate list; treating as unmatched", e.Index, *e.CompetitorID))
+			warnings = append(warnings, fmt.Sprintf("match entry index %d names id %q not in the candidate list; treating as unmatched", e.Index, *e.MatchID))
 			continue
 		}
 		matches[e.Index] = id

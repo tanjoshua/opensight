@@ -27,3 +27,21 @@ RETURNING co.id,co.business_id,co.name,co.website,co.aliases,co.suggested_aliase
 UPDATE competitors co SET aliases = @aliases FROM businesses b
 WHERE co.id = @id AND co.business_id=b.id AND b.account_id = @account_id
 RETURNING co.id,co.business_id,co.name,co.website,co.aliases,co.suggested_aliases,co.source,co.status,co.created_at;
+
+-- name: LoadCompetitorForClaim :one
+SELECT co.id,co.business_id,co.name,co.aliases,b.aliases::text[] AS business_aliases
+FROM competitors co JOIN businesses b ON b.id = co.business_id
+WHERE co.id = @id AND b.account_id = @account_id
+-- Locks the business too, not just the competitor: the claim reads b.aliases,
+-- merges in Go, and writes the whole array back, so two concurrent claims on
+-- different competitors of one business would otherwise lose the first merge.
+FOR UPDATE OF co, b;
+
+-- name: ReassignCompetitorMentionsToSelf :exec
+UPDATE mentions SET subject='self',competitor_id=NULL WHERE competitor_id = @competitor_id;
+
+-- name: DeleteCompetitor :exec
+DELETE FROM competitors WHERE id = @id;
+
+-- name: SetBusinessAliases :exec
+UPDATE businesses SET aliases = @aliases::text[] WHERE id = @business_id;

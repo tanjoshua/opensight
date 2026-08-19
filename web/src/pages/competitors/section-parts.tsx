@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import type {
   ActionFeedback,
   AliasReview,
+  ClaimSelf,
   MutableCompetitorStatus,
 } from "./shared"
 
@@ -136,6 +137,29 @@ export function CoverageRow({
       )}
       {aliasReview}
     </div>
+  )
+}
+
+export function ClaimSelfButton({
+  competitor,
+  onClaimSelf,
+  disabled,
+}: {
+  competitor: Competitor
+  onClaimSelf: ClaimSelf
+  disabled?: boolean
+}) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      className="min-h-10 sm:min-h-0"
+      aria-label={`${competitor.name} is my business, not a competitor`}
+      disabled={disabled}
+      onClick={() => onClaimSelf(competitor)}
+    >
+      This is my business
+    </Button>
   )
 }
 

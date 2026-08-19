@@ -238,3 +238,24 @@ func (s *Server) UpdateCompetitorAliases(ctx context.Context, req *connect.Reque
 
 	return connect.NewResponse(&opensightv1.UpdateCompetitorAliasesResponse{Competitor: competitorRecordToProto(record)}), nil
 }
+
+// ClaimCompetitorAsSelf corrects a mis-matched competitor that is really the
+// user's own business: the store folds it into the business's aliases,
+// relabels its mentions, and deletes the row.
+func (s *Server) ClaimCompetitorAsSelf(ctx context.Context, req *connect.Request[opensightv1.ClaimCompetitorAsSelfRequest]) (*connect.Response[opensightv1.ClaimCompetitorAsSelfResponse], error) {
+	su, cerr := s.rpcSessionUser(ctx, "claim competitor as self")
+	if cerr != nil {
+		return nil, cerr
+	}
+	competitorID, cerr := rpcID("competitor_id", req.Msg.CompetitorId)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	aliases, err := s.store.ClaimAsSelf(ctx, su.AccountID, competitorID)
+	if err != nil {
+		return nil, s.rpcError("claim competitor as self", err)
+	}
+
+	return connect.NewResponse(&opensightv1.ClaimCompetitorAsSelfResponse{Aliases: aliases}), nil
+}

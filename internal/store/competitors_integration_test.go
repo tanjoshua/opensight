@@ -174,3 +174,99 @@ func TestCompetitorStoreAccountScopingAndHistoryPreservation(t *testing.T) {
 		t.Fatalf("mentions after dismiss/re-track = %d, want 1", mentions)
 	}
 }
+
+// ClaimAsSelf is the user's correction for a competitor row that is really their
+// own business: the mentions must survive as 'self' rather than cascade away
+// with the deleted competitor, and the name must become a business alias so the
+// exact pass matches it from the next run on.
+func TestClaimCompetitorAsSelf(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	accountID := mustNewID(t)
+	otherAccountID := mustNewID(t)
+	businessID := mustNewID(t)
+	promptID := mustNewID(t)
+	runID := mustNewID(t)
+	resultID := mustNewID(t)
+	mentionID := mustNewID(t)
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM businesses WHERE id = $1", businessID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id IN ($1, $2)", accountID, otherAccountID)
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id IN ($1, $2)", accountID, otherAccountID)
+	})
+
+	insertAccount(t, db, ctx, accountID, "Owner")
+	insertAccount(t, db, ctx, otherAccountID, "Other")
+	mustExec(t, db, ctx, `
+		INSERT INTO businesses (id, account_id, status, name, aliases, category, location, activated_at)
+		VALUES ($1, $2, 'active', 'Bright Smile Dental', ARRAY['Bright Smile']::text[], 'clinic', '{"country":"SG"}', now())`,
+		businessID, accountID)
+
+	competitors := New(db)
+	mismatched, err := competitors.CreateManual(ctx, CreateManualCompetitorParams{
+		AccountID: accountID, BusinessID: businessID,
+		Name: "Bright Smile Dental Clinic", Aliases: []string{"BSD Clinic"},
+	})
+	if err != nil {
+		t.Fatalf("create competitor: %v", err)
+	}
+
+	mustExec(t, db, ctx, `
+		INSERT INTO prompts (id, business_id, text, status)
+		VALUES ($1, $2, 'best clinic', 'active')`, promptID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at, analysis_completed_at)
+		VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-07-20', 'completed', 404, now(), now())`, runID, businessID)
+	mustExec(t, db, ctx, `
+		INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text, requested_at, completed_at)
+		VALUES ($1, $2, $3, 'succeeded', 'gpt-5-mini', '{}', '{}', 'text', now(), now())`, resultID, runID, promptID)
+	mustExec(t, db, ctx, `
+		INSERT INTO mentions (id, prompt_result_id, subject, competitor_id, matched_by, mention_order, excerpt)
+		VALUES ($1, $2, 'competitor', $3, 'exact', 0, 'Bright Smile Dental Clinic')`, mentionID, resultID, mismatched.ID)
+
+	if _, err := competitors.ClaimAsSelf(ctx, otherAccountID, mismatched.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-account claim error = %v, want ErrNotFound", err)
+	}
+
+	aliases, err := competitors.ClaimAsSelf(ctx, accountID, mismatched.ID)
+	if err != nil {
+		t.Fatalf("claim as self: %v", err)
+	}
+	want := []string{"Bright Smile", "Bright Smile Dental Clinic", "BSD Clinic"}
+	if len(aliases) != len(want) {
+		t.Fatalf("aliases = %#v, want %#v", aliases, want)
+	}
+	for i, alias := range want {
+		if aliases[i] != alias {
+			t.Fatalf("aliases = %#v, want %#v", aliases, want)
+		}
+	}
+
+	var subject string
+	var competitorID *string
+	if err := db.QueryRow(ctx, "SELECT subject, competitor_id::text FROM mentions WHERE id = $1", mentionID).
+		Scan(&subject, &competitorID); err != nil {
+		t.Fatalf("reload mention (must survive the claim, not cascade away): %v", err)
+	}
+	if subject != "self" || competitorID != nil {
+		t.Fatalf("mention after claim: subject=%q competitor_id=%v, want self/nil", subject, competitorID)
+	}
+
+	var remaining int
+	if err := db.QueryRow(ctx, "SELECT count(*) FROM competitors WHERE id = $1", mismatched.ID).Scan(&remaining); err != nil {
+		t.Fatalf("count competitors: %v", err)
+	}
+	if remaining != 0 {
+		t.Fatalf("competitor rows after claim = %d, want 0", remaining)
+	}
+}

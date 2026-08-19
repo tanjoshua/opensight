@@ -29,18 +29,22 @@ import {
 import { CompetitorStatus } from "@/gen/opensight/v1/common_pb"
 import {
   addCompetitor,
+  claimCompetitorAsSelf,
   reviewSuggestedAlias,
   setCompetitorStatus,
 } from "@/gen/opensight/v1/competitor-CompetitorService_connectquery"
 import { formatPercent } from "@/lib/format"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AddCompetitorDialog } from "./add-competitor-dialog"
+import { ClaimSelfDialog } from "./claim-self-dialog"
 import { DiscoveredSection } from "./discovered-section"
 import { DismissedSection } from "./dismissed-section"
 import type {
   ActionFeedback,
   AliasReview,
+  ClaimSelf,
   MutableCompetitorStatus,
   StatusChange,
 } from "./shared"
@@ -62,10 +66,15 @@ export function CompetitorsPage() {
   const reviewAliasMutation = useMutation(reviewSuggestedAlias, {
     onSettled: invalidateCompetitorViews,
   })
+  const claimSelfMutation = useMutation(claimCompetitorAsSelf, {
+    onSuccess: invalidateCompetitorViews,
+  })
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSelection>()
   const [addOpen, setAddOpen] = useState(false)
+  const [claiming, setClaiming] = useState<Competitor>()
   const [statusFeedback, setStatusFeedback] = useState<ActionFeedback>()
   const [aliasFeedback, setAliasFeedback] = useState<ActionFeedback>()
+  const [claimedName, setClaimedName] = useState<string>()
   const openResult = (ids: string[], context?: string) =>
     setSelectedEvidence(
       evidenceSelection(
@@ -185,6 +194,23 @@ export function CompetitorsPage() {
     setAddOpen(open)
     if (!open) addCompetitorMutation.reset()
   }
+  const startClaimSelf: ClaimSelf = (competitor) => {
+    claimSelfMutation.reset()
+    setClaiming(competitor)
+  }
+  const confirmClaimSelf = () => {
+    if (!claiming) return
+    const name = claiming.name
+    claimSelfMutation.mutate(
+      { competitorId: claiming.id },
+      {
+        onSuccess: () => {
+          setClaiming(undefined)
+          setClaimedName(name)
+        },
+      }
+    )
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-8">
@@ -200,6 +226,14 @@ export function CompetitorsPage() {
           }
         />
         <SelfBaseline self={self} onOpenResult={openResult} />
+        {claimedName && (
+          <Alert className="rounded-lg py-2">
+            <AlertDescription>
+              “{claimedName}” is now an alias of {business.name}. Its mentions
+              count towards your own coverage.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <AddCompetitorDialog
@@ -215,6 +249,24 @@ export function CompetitorsPage() {
         }
       />
 
+      <ClaimSelfDialog
+        competitor={claiming}
+        businessName={business.name}
+        onOpenChange={(open) => {
+          if (!open) setClaiming(undefined)
+        }}
+        submitting={claimSelfMutation.isPending}
+        errorMessage={
+          claimSelfMutation.isError
+            ? errorMessage(
+                claimSelfMutation.error,
+                "Could not merge this competitor into your business. Try again."
+              )
+            : undefined
+        }
+        onConfirm={confirmClaimSelf}
+      />
+
       <DiscoveredSection
         competitors={discovered}
         self={self}
@@ -224,6 +276,7 @@ export function CompetitorsPage() {
         onUndoStatus={undoStatus}
         pendingCompetitorID={pendingCompetitorID}
         onReviewAlias={changeAlias}
+        onClaimSelf={startClaimSelf}
         pendingAlias={pendingAlias}
         statusFeedback={statusFeedback}
         aliasFeedback={aliasFeedback}
@@ -237,6 +290,7 @@ export function CompetitorsPage() {
         onUndoStatus={undoStatus}
         pendingCompetitorID={pendingCompetitorID}
         onReviewAlias={changeAlias}
+        onClaimSelf={startClaimSelf}
         pendingAlias={pendingAlias}
         statusFeedback={statusFeedback}
         aliasFeedback={aliasFeedback}
@@ -250,6 +304,7 @@ export function CompetitorsPage() {
         onUndoStatus={undoStatus}
         pendingCompetitorID={pendingCompetitorID}
         onReviewAlias={changeAlias}
+        onClaimSelf={startClaimSelf}
         pendingAlias={pendingAlias}
         statusFeedback={statusFeedback}
         aliasFeedback={aliasFeedback}

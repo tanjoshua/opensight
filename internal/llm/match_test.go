@@ -27,7 +27,7 @@ func matchInputWith(t *testing.T, names ...string) (MatchInput, domain.ID) {
 
 func TestDecodeMatchOutputHappyPath(t *testing.T) {
 	in, cid := matchInputWith(t, "Atlas Dental Clinic", "Unknown Co")
-	raw := json.RawMessage(`{"matches":[{"index":0,"competitor_id":"` + cid.String() + `"},{"index":1,"competitor_id":null}]}`)
+	raw := json.RawMessage(`{"matches":[{"index":0,"match_id":"` + cid.String() + `"},{"index":1,"match_id":null}]}`)
 
 	ids, warnings, err := DecodeMatchOutput(raw, in)
 	if err != nil {
@@ -46,7 +46,7 @@ func TestDecodeMatchOutputHappyPath(t *testing.T) {
 
 func TestDecodeMatchOutputOutOfRangeIndex(t *testing.T) {
 	in, cid := matchInputWith(t, "Only One")
-	raw := json.RawMessage(`{"matches":[{"index":5,"competitor_id":"` + cid.String() + `"}]}`)
+	raw := json.RawMessage(`{"matches":[{"index":5,"match_id":"` + cid.String() + `"}]}`)
 
 	ids, warnings, err := DecodeMatchOutput(raw, in)
 	if err != nil {
@@ -63,7 +63,7 @@ func TestDecodeMatchOutputOutOfRangeIndex(t *testing.T) {
 func TestDecodeMatchOutputDuplicateIndex(t *testing.T) {
 	in, cid := matchInputWith(t, "Atlas Dental Clinic")
 	// First entry matches; the duplicate (null) must be ignored, not overwrite it.
-	raw := json.RawMessage(`{"matches":[{"index":0,"competitor_id":"` + cid.String() + `"},{"index":0,"competitor_id":null}]}`)
+	raw := json.RawMessage(`{"matches":[{"index":0,"match_id":"` + cid.String() + `"},{"index":0,"match_id":null}]}`)
 
 	ids, warnings, err := DecodeMatchOutput(raw, in)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestDecodeMatchOutputDuplicateIndex(t *testing.T) {
 func TestDecodeMatchOutputUnknownID(t *testing.T) {
 	in, _ := matchInputWith(t, "Atlas Dental Clinic")
 	other := mustID(t)
-	raw := json.RawMessage(`{"matches":[{"index":0,"competitor_id":"` + other.String() + `"}]}`)
+	raw := json.RawMessage(`{"matches":[{"index":0,"match_id":"` + other.String() + `"}]}`)
 
 	ids, warnings, err := DecodeMatchOutput(raw, in)
 	if err != nil {
@@ -94,9 +94,26 @@ func TestDecodeMatchOutputUnknownID(t *testing.T) {
 	}
 }
 
+func TestDecodeMatchOutputTargetBusiness(t *testing.T) {
+	in, _ := matchInputWith(t, "Bright Smile Dental Clinic")
+	in.Target = MatchCandidate{ID: mustID(t), Name: "Bright Smile Dental"}
+	raw := json.RawMessage(`{"matches":[{"index":0,"match_id":"` + in.Target.ID.String() + `"}]}`)
+
+	ids, warnings, err := DecodeMatchOutput(raw, in)
+	if err != nil {
+		t.Fatalf("DecodeMatchOutput: %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v, want none", warnings)
+	}
+	if ids[0] != in.Target.ID {
+		t.Errorf("ids[0] = %v, want the target business id %v", ids[0], in.Target.ID)
+	}
+}
+
 func TestDecodeMatchOutputAllNull(t *testing.T) {
 	in, _ := matchInputWith(t, "A", "B")
-	raw := json.RawMessage(`{"matches":[{"index":0,"competitor_id":null},{"index":1,"competitor_id":null}]}`)
+	raw := json.RawMessage(`{"matches":[{"index":0,"match_id":null},{"index":1,"match_id":null}]}`)
 
 	ids, warnings, err := DecodeMatchOutput(raw, in)
 	if err != nil {

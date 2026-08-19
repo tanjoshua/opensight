@@ -113,12 +113,13 @@ func (a *Operations) ReconcileEntities(ctx context.Context, in ReconcileEntities
 		}
 	}
 
-	// LLM pass: one call for the deduped unmatched names, only when there is
-	// something to match AND at least one existing competitor to match against.
-	// resolvedByKey maps a normalized unmatched key to an existing competitor id
-	// the LLM matched it to (uuid.Nil / absent == still unmatched).
+	// LLM pass: one call for the deduped unmatched names. resolvedByKey maps a
+	// normalized unmatched key to the id the LLM matched it to — an existing
+	// competitor, or in.BusinessID for the target business itself (uuid.Nil /
+	// absent == still unmatched). The target is always a candidate, so the call
+	// is worth making even with no competitors yet.
 	resolvedByKey := map[string]domain.ID{}
-	if len(unmatchedOrder) > 0 && len(matchCandidates) > 0 {
+	if len(unmatchedOrder) > 0 {
 		if err := a.Limiter.Acquire(ctx); err != nil {
 			return ReconcileEntitiesOutput{}, err
 		}
@@ -126,7 +127,18 @@ func (a *Operations) ReconcileEntities(ctx context.Context, in ReconcileEntities
 		for i, key := range unmatchedOrder {
 			names[i] = unmatchedVerbatim[key]
 		}
-		matchIn := llm.MatchInput{Names: names, Competitors: matchCandidates}
+		businessWebsite := ""
+		if business.Website != nil {
+			businessWebsite = *business.Website
+		}
+		matchIn := llm.MatchInput{
+			Names: names,
+			Target: llm.MatchCandidate{
+				ID: in.BusinessID, Name: business.Name,
+				Aliases: business.Aliases, Website: businessWebsite,
+			},
+			Competitors: matchCandidates,
+		}
 		res, err := a.Matcher.RunMatch(ctx, matchIn)
 		a.Limiter.Release()
 		if err != nil {
@@ -151,10 +163,16 @@ func (a *Operations) ReconcileEntities(ctx context.Context, in ReconcileEntities
 	discovered := []store.DiscoveredCompetitor{}
 	suggested := []store.SuggestedAliasWrite{}
 	for _, key := range unmatchedOrder {
-		if cid, ok := resolvedByKey[key]; ok {
+		if id, ok := resolvedByKey[key]; ok {
+			if id == in.BusinessID {
+				// Resolved to the target business — a self mention, not a
+				// competitor. The variant is re-judged each run until the user
+				// makes it an approved business alias.
+				continue
+			}
 			// LLM-resolved: record the verbatim variant as a suggested alias.
 			suggested = append(suggested, store.SuggestedAliasWrite{
-				CompetitorID: cid, Variant: unmatchedVerbatim[key],
+				CompetitorID: id, Variant: unmatchedVerbatim[key],
 			})
 			continue
 		}
@@ -185,8 +203,11 @@ func (a *Operations) ReconcileEntities(ctx context.Context, in ReconcileEntities
 			case llm.SubjectUnmatched:
 				key := llm.NormalizeEntityName(m.Entity.VerbatimName)
 				mw.Subject = "competitor"
-				if cid, ok := resolvedByKey[key]; ok {
-					mw.CompetitorID = cid
+				if id, ok := resolvedByKey[key]; ok && id == in.BusinessID {
+					mw.Subject = "self"
+					mw.MatchedBy = "llm"
+				} else if ok {
+					mw.CompetitorID = id
 					mw.MatchedBy = "llm"
 				} else {
 					// Resolves to a competitor this same commit mints; its own
@@ -215,6 +236,6 @@ func (a *Operations) ReconcileEntities(ctx context.Context, in ReconcileEntities
 	return ReconcileEntitiesOutput{
 		MentionsWritten:   len(mentions),
 		DiscoveredCreated: len(discovered),
-		LLMMatched:        len(suggested),
+		LLMMatched:        len(resolvedByKey),
 	}, nil
 }

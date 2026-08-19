@@ -28,6 +28,11 @@ export type AliasReview = (
   decision: typeof AliasDecision.APPROVE | typeof AliasDecision.REJECT
 ) => void
 
+// Opens the confirm step for "this row is actually my business" — the matcher
+// only self-matches on the business name and its approved aliases, so a variant
+// of the user's own name can land here as a competitor.
+export type ClaimSelf = (competitor: Competitor) => void
+
 // The props every competitor section (discovered, tracked, dismissed) takes:
 // its slice of the list plus the shared mutation handlers and their feedback.
 export interface CompetitorSectionProps {
@@ -41,6 +46,7 @@ export interface CompetitorSectionProps {
   ) => void
   pendingCompetitorID?: string
   onReviewAlias: AliasReview
+  onClaimSelf: ClaimSelf
   pendingAlias?: string
   statusFeedback?: ActionFeedback
   aliasFeedback?: ActionFeedback

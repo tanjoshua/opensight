@@ -14,10 +14,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// fakeMatcher resolves a verbatim name to a competitor by NAME using whatever
+// fakeMatcher resolves a verbatim name to a candidate by NAME using whatever
 // candidate list ReconcileEntities loads fresh from the DB, so the test does not
-// need to know the competitor id ahead of time. Names absent from the map return
-// null (no match).
+// need to know the ids ahead of time. The target business is a candidate like
+// any competitor. Names absent from the map return null (no match).
 type fakeMatcher struct {
 	matchNameToCompetitor map[string]string
 	calls                 int
@@ -25,13 +25,13 @@ type fakeMatcher struct {
 
 func (f *fakeMatcher) RunMatch(_ context.Context, in llm.MatchInput) (llm.MatchRunResult, error) {
 	f.calls++
-	idByName := map[string]string{}
+	idByName := map[string]string{in.Target.Name: in.Target.ID.String()}
 	for _, c := range in.Competitors {
 		idByName[c.Name] = c.ID.String()
 	}
 	type entry struct {
-		Index        int     `json:"index"`
-		CompetitorID *string `json:"competitor_id"`
+		Index   int     `json:"index"`
+		MatchID *string `json:"match_id"`
 	}
 	entries := make([]entry, len(in.Names))
 	for i, n := range in.Names {
@@ -39,7 +39,7 @@ func (f *fakeMatcher) RunMatch(_ context.Context, in llm.MatchInput) (llm.MatchR
 		if target, ok := f.matchNameToCompetitor[n]; ok {
 			if idStr, ok := idByName[target]; ok {
 				id := idStr
-				e.CompetitorID = &id
+				e.MatchID = &id
 			}
 		}
 		entries[i] = e
@@ -110,7 +110,10 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		VALUES ($1, $2, 'Bravo Clinic', ARRAY['bravo clinic']::text[], 'manual', 'tracked')`, bravoID, businessID)
 
 	analysisStore := store.New(db)
-	matcher := &fakeMatcher{matchNameToCompetitor: map[string]string{"Bravo Klinik": "Bravo Clinic"}}
+	matcher := &fakeMatcher{matchNameToCompetitor: map[string]string{
+		"Bravo Klinik":        "Bravo Clinic",
+		"Atlas Dental Clinic": "Atlas Dental", // the target business, not a competitor
+	}}
 	acts := &Operations{Store: analysisStore, Matcher: matcher}
 
 	in := ReconcileEntitiesInput{
@@ -127,6 +130,10 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 				{Entity: llm.ExtractedEntity{VerbatimName: "Bravo Clinic", Excerpt: "Bravo Clinic is nearby."}, CiteOrders: []int{1}},
 				{Entity: llm.ExtractedEntity{VerbatimName: "Bravo Klinik", Excerpt: "Bravo Klinik also listed."}, CiteOrders: []int{}},
 				{Entity: llm.ExtractedEntity{VerbatimName: "Charlie Medical", Excerpt: "Charlie Medical rounds it out."}, CiteOrders: []int{1}},
+				// A variant of the target business's own name: the exact pass
+				// misses it (not an approved alias), so only the LLM pass can
+				// keep it from being minted as a competitor.
+				{Entity: llm.ExtractedEntity{VerbatimName: "Atlas Dental Clinic", Excerpt: "Atlas Dental Clinic opens late."}, CiteOrders: []int{}},
 			},
 		}},
 	}
@@ -135,8 +142,8 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReconcileEntities: %v", err)
 	}
-	if out.MentionsWritten != 4 || out.DiscoveredCreated != 1 || out.LLMMatched != 1 {
-		t.Fatalf("output = %+v, want {4, 1, 1}", out)
+	if out.MentionsWritten != 5 || out.DiscoveredCreated != 1 || out.LLMMatched != 2 {
+		t.Fatalf("output = %+v, want {5, 1, 2}", out)
 	}
 
 	// matched_by is correct per subject/pass.
@@ -144,6 +151,10 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	assertMention(t, db, ctx, resultID, "competitor", 1, "exact", "Bravo Clinic")    // exact
 	assertMention(t, db, ctx, resultID, "competitor", 2, "llm", "Bravo Klinik")      // llm
 	assertMention(t, db, ctx, resultID, "competitor", 3, "exact", "Charlie Medical") // discovered, own alias exact
+	assertMention(t, db, ctx, resultID, "self", 4, "llm", "Atlas Dental Clinic")     // target, via the LLM pass
+	if got := countRows(t, db, ctx, "SELECT count(*) FROM competitors WHERE business_id = $1 AND name = 'Atlas Dental Clinic'", businessID); got != 0 {
+		t.Errorf("competitor rows for the target's own name variant = %d, want 0", got)
+	}
 
 	// Links are many-to-many: Atlas has two sources, the directory supports two
 	// competitors, and the unlinked variant stays unattributed.
@@ -155,6 +166,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 		{"Bravo Clinic", 1},
 		{"Bravo Klinik", 0},
 		{"Charlie Medical", 1},
+		{"Atlas Dental Clinic", 0},
 	} {
 		var got int
 		if err := db.QueryRow(ctx, `SELECT count(*) FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id
@@ -225,7 +237,7 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	// Idempotency: a full re-run reloads competitors fresh, so Charlie now exact-
 	// matches its own minted alias (no second discovered row), Bravo Klinik is
 	// re-judged and its suggested alias append is a no-op, and mentions are
-	// delete-and-rewritten (still 4).
+	// delete-and-rewritten (still 5).
 	out2, err := acts.ReconcileEntities(ctx, in)
 	if err != nil {
 		t.Fatalf("second ReconcileEntities: %v", err)
@@ -236,8 +248,8 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	if got := countRows(t, db, ctx, "SELECT count(*) FROM competitors WHERE business_id = $1 AND name = 'Charlie Medical'", businessID); got != 1 {
 		t.Errorf("Charlie competitor rows after rerun = %d, want 1 (no duplicate)", got)
 	}
-	if got := countRows(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 4 {
-		t.Errorf("mentions after rerun = %d, want 4 (delete-and-rewrite)", got)
+	if got := countRows(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id = $1", resultID); got != 5 {
+		t.Errorf("mentions after rerun = %d, want 5 (delete-and-rewrite)", got)
 	}
 	bravoSuggested = textArray(t, db, ctx, "SELECT to_jsonb(suggested_aliases) FROM competitors WHERE id = $1", bravoID)
 	if n := countOccurrences(bravoSuggested, "Bravo Klinik"); n != 1 {
@@ -256,8 +268,8 @@ func TestReconcileEntitiesAgainstPostgres(t *testing.T) {
 	if err == nil {
 		t.Fatal("CommitReconcile with a missing citation order succeeded")
 	}
-	if got := countRows(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id=$1", resultID); got != 4 {
-		t.Errorf("mentions after rolled-back reconcile = %d, want 4", got)
+	if got := countRows(t, db, ctx, "SELECT count(*) FROM mentions WHERE prompt_result_id=$1", resultID); got != 5 {
+		t.Errorf("mentions after rolled-back reconcile = %d, want 5", got)
 	}
 	if got := countRows(t, db, ctx, `SELECT count(*) FROM mention_citations mc JOIN mentions m ON m.id=mc.mention_id WHERE m.prompt_result_id=$1`, resultID); got != 4 {
 		t.Errorf("links after rolled-back reconcile = %d, want 4", got)

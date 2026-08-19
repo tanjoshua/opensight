@@ -48,6 +48,9 @@ const (
 	// CompetitorServiceUpdateCompetitorAliasesProcedure is the fully-qualified name of the
 	// CompetitorService's UpdateCompetitorAliases RPC.
 	CompetitorServiceUpdateCompetitorAliasesProcedure = "/opensight.v1.CompetitorService/UpdateCompetitorAliases"
+	// CompetitorServiceClaimCompetitorAsSelfProcedure is the fully-qualified name of the
+	// CompetitorService's ClaimCompetitorAsSelf RPC.
+	CompetitorServiceClaimCompetitorAsSelfProcedure = "/opensight.v1.CompetitorService/ClaimCompetitorAsSelf"
 )
 
 // CompetitorServiceClient is a client for the opensight.v1.CompetitorService service.
@@ -57,6 +60,7 @@ type CompetitorServiceClient interface {
 	SetCompetitorStatus(context.Context, *connect.Request[v1.SetCompetitorStatusRequest]) (*connect.Response[v1.SetCompetitorStatusResponse], error)
 	ReviewSuggestedAlias(context.Context, *connect.Request[v1.ReviewSuggestedAliasRequest]) (*connect.Response[v1.ReviewSuggestedAliasResponse], error)
 	UpdateCompetitorAliases(context.Context, *connect.Request[v1.UpdateCompetitorAliasesRequest]) (*connect.Response[v1.UpdateCompetitorAliasesResponse], error)
+	ClaimCompetitorAsSelf(context.Context, *connect.Request[v1.ClaimCompetitorAsSelfRequest]) (*connect.Response[v1.ClaimCompetitorAsSelfResponse], error)
 }
 
 // NewCompetitorServiceClient constructs a client for the opensight.v1.CompetitorService service. By
@@ -100,6 +104,12 @@ func NewCompetitorServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(competitorServiceMethods.ByName("UpdateCompetitorAliases")),
 			connect.WithClientOptions(opts...),
 		),
+		claimCompetitorAsSelf: connect.NewClient[v1.ClaimCompetitorAsSelfRequest, v1.ClaimCompetitorAsSelfResponse](
+			httpClient,
+			baseURL+CompetitorServiceClaimCompetitorAsSelfProcedure,
+			connect.WithSchema(competitorServiceMethods.ByName("ClaimCompetitorAsSelf")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -110,6 +120,7 @@ type competitorServiceClient struct {
 	setCompetitorStatus     *connect.Client[v1.SetCompetitorStatusRequest, v1.SetCompetitorStatusResponse]
 	reviewSuggestedAlias    *connect.Client[v1.ReviewSuggestedAliasRequest, v1.ReviewSuggestedAliasResponse]
 	updateCompetitorAliases *connect.Client[v1.UpdateCompetitorAliasesRequest, v1.UpdateCompetitorAliasesResponse]
+	claimCompetitorAsSelf   *connect.Client[v1.ClaimCompetitorAsSelfRequest, v1.ClaimCompetitorAsSelfResponse]
 }
 
 // ListCompetitors calls opensight.v1.CompetitorService.ListCompetitors.
@@ -137,6 +148,11 @@ func (c *competitorServiceClient) UpdateCompetitorAliases(ctx context.Context, r
 	return c.updateCompetitorAliases.CallUnary(ctx, req)
 }
 
+// ClaimCompetitorAsSelf calls opensight.v1.CompetitorService.ClaimCompetitorAsSelf.
+func (c *competitorServiceClient) ClaimCompetitorAsSelf(ctx context.Context, req *connect.Request[v1.ClaimCompetitorAsSelfRequest]) (*connect.Response[v1.ClaimCompetitorAsSelfResponse], error) {
+	return c.claimCompetitorAsSelf.CallUnary(ctx, req)
+}
+
 // CompetitorServiceHandler is an implementation of the opensight.v1.CompetitorService service.
 type CompetitorServiceHandler interface {
 	ListCompetitors(context.Context, *connect.Request[v1.ListCompetitorsRequest]) (*connect.Response[v1.ListCompetitorsResponse], error)
@@ -144,6 +160,7 @@ type CompetitorServiceHandler interface {
 	SetCompetitorStatus(context.Context, *connect.Request[v1.SetCompetitorStatusRequest]) (*connect.Response[v1.SetCompetitorStatusResponse], error)
 	ReviewSuggestedAlias(context.Context, *connect.Request[v1.ReviewSuggestedAliasRequest]) (*connect.Response[v1.ReviewSuggestedAliasResponse], error)
 	UpdateCompetitorAliases(context.Context, *connect.Request[v1.UpdateCompetitorAliasesRequest]) (*connect.Response[v1.UpdateCompetitorAliasesResponse], error)
+	ClaimCompetitorAsSelf(context.Context, *connect.Request[v1.ClaimCompetitorAsSelfRequest]) (*connect.Response[v1.ClaimCompetitorAsSelfResponse], error)
 }
 
 // NewCompetitorServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -183,6 +200,12 @@ func NewCompetitorServiceHandler(svc CompetitorServiceHandler, opts ...connect.H
 		connect.WithSchema(competitorServiceMethods.ByName("UpdateCompetitorAliases")),
 		connect.WithHandlerOptions(opts...),
 	)
+	competitorServiceClaimCompetitorAsSelfHandler := connect.NewUnaryHandler(
+		CompetitorServiceClaimCompetitorAsSelfProcedure,
+		svc.ClaimCompetitorAsSelf,
+		connect.WithSchema(competitorServiceMethods.ByName("ClaimCompetitorAsSelf")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/opensight.v1.CompetitorService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CompetitorServiceListCompetitorsProcedure:
@@ -195,6 +218,8 @@ func NewCompetitorServiceHandler(svc CompetitorServiceHandler, opts ...connect.H
 			competitorServiceReviewSuggestedAliasHandler.ServeHTTP(w, r)
 		case CompetitorServiceUpdateCompetitorAliasesProcedure:
 			competitorServiceUpdateCompetitorAliasesHandler.ServeHTTP(w, r)
+		case CompetitorServiceClaimCompetitorAsSelfProcedure:
+			competitorServiceClaimCompetitorAsSelfHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -222,4 +247,8 @@ func (UnimplementedCompetitorServiceHandler) ReviewSuggestedAlias(context.Contex
 
 func (UnimplementedCompetitorServiceHandler) UpdateCompetitorAliases(context.Context, *connect.Request[v1.UpdateCompetitorAliasesRequest]) (*connect.Response[v1.UpdateCompetitorAliasesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.CompetitorService.UpdateCompetitorAliases is not implemented"))
+}
+
+func (UnimplementedCompetitorServiceHandler) ClaimCompetitorAsSelf(context.Context, *connect.Request[v1.ClaimCompetitorAsSelfRequest]) (*connect.Response[v1.ClaimCompetitorAsSelfResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.CompetitorService.ClaimCompetitorAsSelf is not implemented"))
 }

@@ -125,6 +125,7 @@ var procedureAccess = map[string]procedurePolicy{
 	opensightv1connect.CompetitorServiceSetCompetitorStatusProcedure:     policy(scopeAccount, store.AccountRoleMember, classSubscriber),
 	opensightv1connect.CompetitorServiceReviewSuggestedAliasProcedure:    policy(scopeAccount, store.AccountRoleMember, classSubscriber),
 	opensightv1connect.CompetitorServiceUpdateCompetitorAliasesProcedure: policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.CompetitorServiceClaimCompetitorAsSelfProcedure:   policy(scopeAccount, store.AccountRoleMember, classSubscriber),
 	opensightv1connect.OverviewServiceGetOverviewProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.CitationServiceListCitationSourcesProcedure:       policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.ResultServiceListRunsProcedure:                    policy(scopeAccount, store.AccountRoleViewer, classSubscriber),

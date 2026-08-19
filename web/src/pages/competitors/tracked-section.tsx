@@ -33,6 +33,7 @@ export function TrackedSection({
   onUndoStatus,
   pendingCompetitorID,
   onReviewAlias,
+  onClaimSelf,
   pendingAlias,
   statusFeedback,
   aliasFeedback,
@@ -73,6 +74,7 @@ export function TrackedSection({
                 onStatusChange(selected, CompetitorStatus.DISMISSED)
               }
               statusPending={pendingCompetitorID === selected.id}
+              onClaimSelf={onClaimSelf}
               onReviewAlias={onReviewAlias}
               pendingAlias={pendingAlias}
               aliasFeedback={
