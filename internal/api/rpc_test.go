@@ -35,7 +35,7 @@ func TestRPCPaging(t *testing.T) {
 }
 
 func TestCanCreateCompedAccount(t *testing.T) {
-	for _, email := range []string{"jtanjoshua@gmail.com", " JTANJOSHUA@GMAIL.COM "} {
+	for _, email := range []string{"jtanjoshua@gmail.com", " JTANJOSHUA@GMAIL.COM ", "liyicheng513@gmail.com"} {
 		if !canCreateCompedAccount(email) {
 			t.Errorf("canCreateCompedAccount(%q) = false, want true", email)
 		}

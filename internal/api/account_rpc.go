@@ -16,10 +16,13 @@ import (
 
 var _ opensightv1connect.AccountServiceHandler = (*Server)(nil)
 
-const compedAccountAdminEmail = "jtanjoshua@gmail.com"
+var compedAccountAdminEmails = map[string]bool{
+	"jtanjoshua@gmail.com":   true,
+	"liyicheng513@gmail.com": true,
+}
 
 func canCreateCompedAccount(email string) bool {
-	return strings.EqualFold(strings.TrimSpace(email), compedAccountAdminEmail)
+	return compedAccountAdminEmails[strings.ToLower(strings.TrimSpace(email))]
 }
 
 func accountRoleToProto(role store.AccountRole) opensightv1.AccountRole {
