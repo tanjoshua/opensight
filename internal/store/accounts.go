@@ -272,6 +272,30 @@ func (s *Store) ListAccountMemberships(ctx context.Context, userID domain.ID) ([
 	return out, nil
 }
 
+// ListAllAccounts returns every account on the platform as a membership
+// list, carrying the user's real role where they have one and
+// AccountRoleOwner elsewhere. Only the platform owner is routed here
+// (api.isPlatformOwner); ListAccountMemberships is the list for everyone
+// else.
+func (s *Store) ListAllAccounts(ctx context.Context, userID domain.ID) ([]AccountMembership, error) {
+	rows, err := s.q(ctx).ListAllAccounts(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list all accounts: %w", err)
+	}
+	out := make([]AccountMembership, 0, len(rows))
+	for _, r := range rows {
+		m := AccountMembership{AccountID: r.AccountID, UserID: userID, Role: AccountRoleOwner, Account: Account{ID: r.AccountID, Name: r.Name, Slug: r.Slug}}
+		if r.Role != nil {
+			m.Role = AccountRole(*r.Role)
+		}
+		if r.CreatedAt != nil {
+			m.CreatedAt = *r.CreatedAt
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
 func (s *Store) GetAccount(ctx context.Context, accountID domain.ID) (Account, error) {
 	r, err := s.q(ctx).GetAccountByID(ctx, accountID)
 	if errors.Is(err, pgx.ErrNoRows) {

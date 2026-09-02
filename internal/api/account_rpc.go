@@ -25,6 +25,17 @@ func canCreateCompedAccount(email string) bool {
 	return compedAccountAdminEmails[strings.ToLower(strings.TrimSpace(email))]
 }
 
+// platformOwnerEmail is the one identity that operates OpenSight itself. It
+// sees every workspace on the platform in its workspace list and may open
+// any of them as owner, so it is deliberately narrower than
+// compedAccountAdminEmails: creating a comped tenant touches only new rows,
+// while this reads every tenant's data.
+const platformOwnerEmail = "jtanjoshua@gmail.com"
+
+func isPlatformOwner(email string) bool {
+	return strings.EqualFold(strings.TrimSpace(email), platformOwnerEmail)
+}
+
 func accountRoleToProto(role store.AccountRole) opensightv1.AccountRole {
 	switch role {
 	case store.AccountRoleOwner:

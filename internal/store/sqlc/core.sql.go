@@ -226,7 +226,7 @@ SELECT a.id AS account_id, a.name, a.slug, am.role,
        sub.plan_code, sub.comped, sub.stripe_subscription_id,
        sub.stripe_status, sub.past_due_since
 FROM accounts a
-JOIN account_memberships am ON am.account_id = a.id AND am.user_id = $1
+LEFT JOIN account_memberships am ON am.account_id = a.id AND am.user_id = $1
 LEFT JOIN subscriptions sub ON sub.account_id = a.id
 WHERE a.slug = $2
 `
@@ -240,7 +240,7 @@ type GetAccountContextBySlugRow struct {
 	AccountID            uuid.UUID
 	Name                 string
 	Slug                 string
-	Role                 string
+	Role                 *string
 	PlanCode             *string
 	Comped               pgtype.Bool
 	StripeSubscriptionID *string
@@ -248,6 +248,9 @@ type GetAccountContextBySlugRow struct {
 	PastDueSince         *time.Time
 }
 
+// Membership is a LEFT JOIN so the row still comes back for a non-member,
+// with a NULL role. Only the platform owner is admitted on such a row
+// (store.ResolveAccountSession); everyone else is rejected as not found.
 func (q *Queries) GetAccountContextBySlug(ctx context.Context, arg GetAccountContextBySlugParams) (GetAccountContextBySlugRow, error) {
 	row := q.db.QueryRow(ctx, getAccountContextBySlug, arg.UserID, arg.Slug)
 	var i GetAccountContextBySlugRow
@@ -782,6 +785,49 @@ func (q *Queries) ListActivePrompts(ctx context.Context, businessID uuid.UUID) (
 			&i.Text,
 			&i.Status,
 			&i.ReplacesPromptID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllAccounts = `-- name: ListAllAccounts :many
+SELECT a.id AS account_id, a.name, a.slug, am.role, am.created_at
+FROM accounts a
+LEFT JOIN account_memberships am ON am.account_id = a.id AND am.user_id = $1
+ORDER BY a.name, a.id
+`
+
+type ListAllAccountsRow struct {
+	AccountID uuid.UUID
+	Name      string
+	Slug      string
+	Role      *string
+	CreatedAt *time.Time
+}
+
+// Every account on the platform, carrying @user_id's own role where they are
+// a member. Platform-owner only (see api.isPlatformOwner).
+func (q *Queries) ListAllAccounts(ctx context.Context, userID uuid.UUID) ([]ListAllAccountsRow, error) {
+	rows, err := q.db.Query(ctx, listAllAccounts, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllAccountsRow
+	for rows.Next() {
+		var i ListAllAccountsRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.Name,
+			&i.Slug,
+			&i.Role,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

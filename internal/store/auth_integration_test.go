@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"opensight/internal/billing"
+	"opensight/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -200,7 +201,7 @@ func TestGetSessionBillingJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetSession: %v", err)
 		}
-		su, err := auth.ResolveAccountSession(ctx, identitySession, accountSlug("Billing Join Account", accountID))
+		su, err := auth.ResolveAccountSession(ctx, identitySession, accountSlug("Billing Join Account", accountID), false)
 		if err != nil {
 			t.Fatalf("ResolveAccountSession: %v", err)
 		}
@@ -226,7 +227,7 @@ func TestGetSessionBillingJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetSession after upsert: %v", err)
 		}
-		su2, err := auth.ResolveAccountSession(ctx, identitySession, accountSlug("Billing Join Account", accountID))
+		su2, err := auth.ResolveAccountSession(ctx, identitySession, accountSlug("Billing Join Account", accountID), false)
 		if err != nil {
 			t.Fatalf("ResolveAccountSession after upsert: %v", err)
 		}
@@ -272,7 +273,7 @@ func TestGetSessionBillingJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetSession identity: %v", err)
 		}
-		_, err = auth.ResolveAccountSession(ctx, identitySession, "test-"+accountID.String())
+		_, err = auth.ResolveAccountSession(ctx, identitySession, "test-"+accountID.String(), false)
 		if err == nil {
 			t.Fatal("GetSession with no subscriptions row: want an error, got nil")
 		}
@@ -347,4 +348,97 @@ func TestAuthStoreLinksGoogleSubByEmail(t *testing.T) {
 	if afterLink.GoogleSub == nil || *afterLink.GoogleSub != sub {
 		t.Fatalf("google_sub after linking = %v, want %q", afterLink.GoogleSub, sub)
 	}
+}
+
+// TestPlatformOwnerSeesEveryAccount covers the anyAccount branch that lets
+// the platform owner (api.isPlatformOwner) list and open workspaces they are
+// not a member of. The membership rule itself is the security boundary, so
+// both sides of the flag are asserted.
+func TestPlatformOwnerSeesEveryAccount(t *testing.T) {
+	dbURL := os.Getenv("OPENSIGHT_STORE_TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("set OPENSIGHT_STORE_TEST_DATABASE_URL to run store integration tests")
+	}
+
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	store := New(db)
+	ownID, otherID := mustNewID(t), mustNewID(t)
+	userID := mustNewID(t)
+	const email = "platform-owner@example.com"
+	t.Cleanup(func() {
+		_, _ = db.Exec(ctx, "DELETE FROM sessions WHERE user_id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM account_memberships WHERE user_id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
+		_, _ = db.Exec(ctx, "DELETE FROM subscriptions WHERE account_id = ANY($1)", []domain.ID{ownID, otherID})
+		_, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = ANY($1)", []domain.ID{ownID, otherID})
+	})
+
+	insertAccount(t, db, ctx, ownID, "Owner Member Account")
+	insertAccount(t, db, ctx, otherID, "Someone Elses Account")
+	mustExec(t, db, ctx, "INSERT INTO users (id, email) VALUES ($1, $2)", userID, email)
+	mustExec(t, db, ctx, "INSERT INTO account_memberships (account_id, user_id, role) VALUES ($1, $2, 'admin')", ownID, userID)
+
+	hash := tokenHashFor("platform-owner-live")
+	if err := store.CreateSession(ctx, CreateSessionParams{TokenHash: hash, UserID: userID, ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	session, err := store.GetSession(ctx, hash)
+	if err != nil {
+		t.Fatalf("GetSession: %v", err)
+	}
+	otherSlug := accountSlug("Someone Elses Account", otherID)
+
+	t.Run("ListAllAccounts carries real roles and owner for non-members", func(t *testing.T) {
+		all, err := store.ListAllAccounts(ctx, userID)
+		if err != nil {
+			t.Fatalf("ListAllAccounts: %v", err)
+		}
+		roles := map[domain.ID]AccountRole{}
+		for _, m := range all {
+			roles[m.AccountID] = m.Role
+		}
+		if roles[ownID] != AccountRoleAdmin {
+			t.Errorf("role on own account = %q, want %q", roles[ownID], AccountRoleAdmin)
+		}
+		if roles[otherID] != AccountRoleOwner {
+			t.Errorf("role on non-member account = %q, want %q", roles[otherID], AccountRoleOwner)
+		}
+
+		mine, err := store.ListAccountMemberships(ctx, userID)
+		if err != nil {
+			t.Fatalf("ListAccountMemberships: %v", err)
+		}
+		if len(mine) != 1 || mine[0].AccountID != ownID {
+			t.Fatalf("ListAccountMemberships returned %d rows, want only the membership", len(mine))
+		}
+	})
+
+	t.Run("a non-member account opens only with anyAccount", func(t *testing.T) {
+		if _, err := store.ResolveAccountSession(ctx, session, otherSlug, false); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("ResolveAccountSession(anyAccount=false) err = %v, want ErrNotFound", err)
+		}
+		su, err := store.ResolveAccountSession(ctx, session, otherSlug, true)
+		if err != nil {
+			t.Fatalf("ResolveAccountSession(anyAccount=true): %v", err)
+		}
+		if su.AccountID != otherID || su.Role != AccountRoleOwner {
+			t.Fatalf("resolved account/role = %v/%q, want %v/%q", su.AccountID, su.Role, otherID, AccountRoleOwner)
+		}
+	})
+
+	t.Run("anyAccount does not inflate a real membership role", func(t *testing.T) {
+		su, err := store.ResolveAccountSession(ctx, session, accountSlug("Owner Member Account", ownID), true)
+		if err != nil {
+			t.Fatalf("ResolveAccountSession: %v", err)
+		}
+		if su.Role != AccountRoleAdmin {
+			t.Fatalf("Role = %q, want %q", su.Role, AccountRoleAdmin)
+		}
+	})
 }

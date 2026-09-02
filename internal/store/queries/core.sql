@@ -51,13 +51,24 @@ FROM account_memberships am JOIN accounts a ON a.id = am.account_id
 WHERE am.user_id = $1 ORDER BY a.name, a.id;
 
 -- name: GetAccountContextBySlug :one
+-- Membership is a LEFT JOIN so the row still comes back for a non-member,
+-- with a NULL role. Only the platform owner is admitted on such a row
+-- (store.ResolveAccountSession); everyone else is rejected as not found.
 SELECT a.id AS account_id, a.name, a.slug, am.role,
        sub.plan_code, sub.comped, sub.stripe_subscription_id,
        sub.stripe_status, sub.past_due_since
 FROM accounts a
-JOIN account_memberships am ON am.account_id = a.id AND am.user_id = @user_id
+LEFT JOIN account_memberships am ON am.account_id = a.id AND am.user_id = @user_id
 LEFT JOIN subscriptions sub ON sub.account_id = a.id
 WHERE a.slug = @slug;
+
+-- name: ListAllAccounts :many
+-- Every account on the platform, carrying @user_id's own role where they are
+-- a member. Platform-owner only (see api.isPlatformOwner).
+SELECT a.id AS account_id, a.name, a.slug, am.role, am.created_at
+FROM accounts a
+LEFT JOIN account_memberships am ON am.account_id = a.id AND am.user_id = @user_id
+ORDER BY a.name, a.id;
 
 -- name: GetAccountMembership :one
 SELECT account_id, user_id, role, created_at FROM account_memberships

@@ -27,8 +27,10 @@ func (s *Server) Logout(ctx context.Context, req *connect.Request[opensightv1.Lo
 	return res, nil
 }
 
-// GetMe returns the global identity and every account membership. Account
-// billing/business context is loaded separately after the user selects one.
+// GetMe returns the global identity and every account membership — or, for
+// the platform owner, every account on the platform (isPlatformOwner).
+// Account billing/business context is loaded separately after the user
+// selects one.
 func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.GetMeRequest]) (*connect.Response[opensightv1.GetMeResponse], error) {
 	su, ok := sessionUserFromContext(ctx)
 	if !ok {
@@ -36,7 +38,11 @@ func (s *Server) GetMe(ctx context.Context, req *connect.Request[opensightv1.Get
 		// reaching here means the wiring is broken, not a normal auth failure.
 		return nil, s.rpcError("rpc: get me: missing session context", errors.New("missing session context"))
 	}
-	memberships, err := s.store.ListAccountMemberships(ctx, su.UserID)
+	list := s.store.ListAccountMemberships
+	if isPlatformOwner(su.Email) {
+		list = s.store.ListAllAccounts
+	}
+	memberships, err := list(ctx, su.UserID)
 	if err != nil {
 		return nil, s.rpcError("me: list account memberships", err)
 	}

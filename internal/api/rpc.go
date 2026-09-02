@@ -185,7 +185,7 @@ func (s *Server) accessInterceptor() connect.UnaryInterceptorFunc {
 			if slug == "" {
 				return nil, connect.NewError(connect.CodeNotFound, errors.New("account not found"))
 			}
-			su, err = s.store.ResolveAccountSession(ctx, su, slug)
+			su, err = s.store.ResolveAccountSession(ctx, su, slug, isPlatformOwner(su.Email))
 			if err != nil {
 				return nil, s.rpcError("rpc: resolve account", err)
 			}

@@ -146,9 +146,17 @@ func (s *Store) GetSession(ctx context.Context, tokenHash []byte) (SessionUser, 
 	}, nil
 }
 
-// ResolveAccountSession verifies that the global session user belongs to the
+// ResolveAccountSession verifies that the global session user may open the
 // selected account and attaches its current billing state for authorization.
-func (s *Store) ResolveAccountSession(ctx context.Context, su SessionUser, slug string) (SessionUser, error) {
+//
+// Membership is the rule: a non-member gets ErrNotFound, indistinguishable
+// from a slug that does not exist. anyAccount lifts that for the platform
+// owner alone (api.isPlatformOwner) — the caller has already decided, and
+// the query itself is unprivileged, so the flag is the whole boundary. A
+// non-member owner acts as AccountRoleOwner; where they do hold a
+// membership, their real role stands. Billing is always the account's own,
+// so a lapsed workspace stays gated exactly as it is for its members.
+func (s *Store) ResolveAccountSession(ctx context.Context, su SessionUser, slug string, anyAccount bool) (SessionUser, error) {
 	row, err := s.q(ctx).GetAccountContextBySlug(ctx, storesqlc.GetAccountContextBySlugParams{UserID: su.UserID, Slug: slug})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -156,11 +164,17 @@ func (s *Store) ResolveAccountSession(ctx context.Context, su SessionUser, slug 
 		}
 		return SessionUser{}, fmt.Errorf("resolve account session: %w", err)
 	}
+	role := AccountRoleOwner
+	if row.Role != nil {
+		role = AccountRole(*row.Role)
+	} else if !anyAccount {
+		return SessionUser{}, ErrNotFound
+	}
 	if row.PlanCode == nil {
 		return SessionUser{}, fmt.Errorf("resolve account session: account %s has no subscription", row.AccountID)
 	}
 	su.AccountID = row.AccountID
-	su.AccountName, su.AccountSlug, su.Role = row.Name, row.Slug, AccountRole(row.Role)
+	su.AccountName, su.AccountSlug, su.Role = row.Name, row.Slug, role
 	su.PlanCode = *row.PlanCode
 	su.Billing = billingStateFromRow(row.Comped.Valid && row.Comped.Bool, row.StripeSubscriptionID, row.StripeStatus, row.PastDueSince)
 	return su, nil
