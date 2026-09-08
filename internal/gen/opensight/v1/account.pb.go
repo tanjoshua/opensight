@@ -861,6 +861,98 @@ func (*RemoveMemberResponse) Descriptor() ([]byte, []int) {
 	return file_opensight_v1_account_proto_rawDescGZIP(), []int{14}
 }
 
+type DeleteAccountRequest struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	AccountSlug string                 `protobuf:"bytes,1,opt,name=account_slug,json=accountSlug,proto3" json:"account_slug,omitempty"`
+	// confirm_name must match the account's display name (trimmed,
+	// case-insensitive). Deletion is irreversible and cascades to every
+	// business, run, and result, so the caller retypes the name rather than
+	// sending a bare boolean.
+	ConfirmName   string `protobuf:"bytes,2,opt,name=confirm_name,json=confirmName,proto3" json:"confirm_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteAccountRequest) Reset() {
+	*x = DeleteAccountRequest{}
+	mi := &file_opensight_v1_account_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAccountRequest) ProtoMessage() {}
+
+func (x *DeleteAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_account_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAccountRequest.ProtoReflect.Descriptor instead.
+func (*DeleteAccountRequest) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_account_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DeleteAccountRequest) GetAccountSlug() string {
+	if x != nil {
+		return x.AccountSlug
+	}
+	return ""
+}
+
+func (x *DeleteAccountRequest) GetConfirmName() string {
+	if x != nil {
+		return x.ConfirmName
+	}
+	return ""
+}
+
+type DeleteAccountResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteAccountResponse) Reset() {
+	*x = DeleteAccountResponse{}
+	mi := &file_opensight_v1_account_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAccountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAccountResponse) ProtoMessage() {}
+
+func (x *DeleteAccountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_account_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAccountResponse.ProtoReflect.Descriptor instead.
+func (*DeleteAccountResponse) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_account_proto_rawDescGZIP(), []int{16}
+}
+
 var File_opensight_v1_account_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_account_proto_rawDesc = "" +
@@ -915,20 +1007,25 @@ const file_opensight_v1_account_proto_rawDesc = "" +
 	"\x13RemoveMemberRequest\x12!\n" +
 	"\faccount_slug\x18\x01 \x01(\tR\vaccountSlug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x16\n" +
-	"\x14RemoveMemberResponse*\x8d\x01\n" +
+	"\x14RemoveMemberResponse\"\\\n" +
+	"\x14DeleteAccountRequest\x12!\n" +
+	"\faccount_slug\x18\x01 \x01(\tR\vaccountSlug\x12!\n" +
+	"\fconfirm_name\x18\x02 \x01(\tR\vconfirmName\"\x17\n" +
+	"\x15DeleteAccountResponse*\x8d\x01\n" +
 	"\vAccountRole\x12\x1c\n" +
 	"\x18ACCOUNT_ROLE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12ACCOUNT_ROLE_OWNER\x10\x01\x12\x16\n" +
 	"\x12ACCOUNT_ROLE_ADMIN\x10\x02\x12\x17\n" +
 	"\x13ACCOUNT_ROLE_MEMBER\x10\x03\x12\x17\n" +
-	"\x13ACCOUNT_ROLE_VIEWER\x10\x042\xac\x04\n" +
+	"\x13ACCOUNT_ROLE_VIEWER\x10\x042\x86\x05\n" +
 	"\x0eAccountService\x12d\n" +
 	"\x11GetAccountContext\x12&.opensight.v1.GetAccountContextRequest\x1a'.opensight.v1.GetAccountContextResponse\x12X\n" +
 	"\rCreateAccount\x12\".opensight.v1.CreateAccountRequest\x1a#.opensight.v1.CreateAccountResponse\x12R\n" +
 	"\vListMembers\x12 .opensight.v1.ListMembersRequest\x1a!.opensight.v1.ListMembersResponse\x12L\n" +
 	"\tAddMember\x12\x1e.opensight.v1.AddMemberRequest\x1a\x1f.opensight.v1.AddMemberResponse\x12a\n" +
 	"\x10UpdateMemberRole\x12%.opensight.v1.UpdateMemberRoleRequest\x1a&.opensight.v1.UpdateMemberRoleResponse\x12U\n" +
-	"\fRemoveMember\x12!.opensight.v1.RemoveMemberRequest\x1a\".opensight.v1.RemoveMemberResponseB\xa2\x01\n" +
+	"\fRemoveMember\x12!.opensight.v1.RemoveMemberRequest\x1a\".opensight.v1.RemoveMemberResponse\x12X\n" +
+	"\rDeleteAccount\x12\".opensight.v1.DeleteAccountRequest\x1a#.opensight.v1.DeleteAccountResponseB\xa2\x01\n" +
 	"\x10com.opensight.v1B\fAccountProtoP\x01Z/opensight/internal/gen/opensight/v1;opensightv1\xa2\x02\x03OXX\xaa\x02\fOpensight.V1\xca\x02\fOpensight\\V1\xe2\x02\x18Opensight\\V1\\GPBMetadata\xea\x02\rOpensight::V1b\x06proto3"
 
 var (
@@ -944,7 +1041,7 @@ func file_opensight_v1_account_proto_rawDescGZIP() []byte {
 }
 
 var file_opensight_v1_account_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_opensight_v1_account_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_opensight_v1_account_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_opensight_v1_account_proto_goTypes = []any{
 	(AccountRole)(0),                  // 0: opensight.v1.AccountRole
 	(*Account)(nil),                   // 1: opensight.v1.Account
@@ -962,21 +1059,23 @@ var file_opensight_v1_account_proto_goTypes = []any{
 	(*UpdateMemberRoleResponse)(nil),  // 13: opensight.v1.UpdateMemberRoleResponse
 	(*RemoveMemberRequest)(nil),       // 14: opensight.v1.RemoveMemberRequest
 	(*RemoveMemberResponse)(nil),      // 15: opensight.v1.RemoveMemberResponse
-	(*timestamppb.Timestamp)(nil),     // 16: google.protobuf.Timestamp
-	(*BusinessSummary)(nil),           // 17: opensight.v1.BusinessSummary
-	(Access)(0),                       // 18: opensight.v1.Access
-	(*Plan)(nil),                      // 19: opensight.v1.Plan
+	(*DeleteAccountRequest)(nil),      // 16: opensight.v1.DeleteAccountRequest
+	(*DeleteAccountResponse)(nil),     // 17: opensight.v1.DeleteAccountResponse
+	(*timestamppb.Timestamp)(nil),     // 18: google.protobuf.Timestamp
+	(*BusinessSummary)(nil),           // 19: opensight.v1.BusinessSummary
+	(Access)(0),                       // 20: opensight.v1.Access
+	(*Plan)(nil),                      // 21: opensight.v1.Plan
 }
 var file_opensight_v1_account_proto_depIdxs = []int32{
 	1,  // 0: opensight.v1.AccountMembershipSummary.account:type_name -> opensight.v1.Account
 	0,  // 1: opensight.v1.AccountMembershipSummary.role:type_name -> opensight.v1.AccountRole
 	0,  // 2: opensight.v1.AccountMember.role:type_name -> opensight.v1.AccountRole
-	16, // 3: opensight.v1.AccountMember.created_at:type_name -> google.protobuf.Timestamp
+	18, // 3: opensight.v1.AccountMember.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 4: opensight.v1.GetAccountContextResponse.account:type_name -> opensight.v1.Account
 	0,  // 5: opensight.v1.GetAccountContextResponse.role:type_name -> opensight.v1.AccountRole
-	17, // 6: opensight.v1.GetAccountContextResponse.businesses:type_name -> opensight.v1.BusinessSummary
-	18, // 7: opensight.v1.GetAccountContextResponse.access:type_name -> opensight.v1.Access
-	19, // 8: opensight.v1.GetAccountContextResponse.plan:type_name -> opensight.v1.Plan
+	19, // 6: opensight.v1.GetAccountContextResponse.businesses:type_name -> opensight.v1.BusinessSummary
+	20, // 7: opensight.v1.GetAccountContextResponse.access:type_name -> opensight.v1.Access
+	21, // 8: opensight.v1.GetAccountContextResponse.plan:type_name -> opensight.v1.Plan
 	2,  // 9: opensight.v1.CreateAccountResponse.membership:type_name -> opensight.v1.AccountMembershipSummary
 	3,  // 10: opensight.v1.ListMembersResponse.members:type_name -> opensight.v1.AccountMember
 	0,  // 11: opensight.v1.AddMemberRequest.role:type_name -> opensight.v1.AccountRole
@@ -989,14 +1088,16 @@ var file_opensight_v1_account_proto_depIdxs = []int32{
 	10, // 18: opensight.v1.AccountService.AddMember:input_type -> opensight.v1.AddMemberRequest
 	12, // 19: opensight.v1.AccountService.UpdateMemberRole:input_type -> opensight.v1.UpdateMemberRoleRequest
 	14, // 20: opensight.v1.AccountService.RemoveMember:input_type -> opensight.v1.RemoveMemberRequest
-	5,  // 21: opensight.v1.AccountService.GetAccountContext:output_type -> opensight.v1.GetAccountContextResponse
-	7,  // 22: opensight.v1.AccountService.CreateAccount:output_type -> opensight.v1.CreateAccountResponse
-	9,  // 23: opensight.v1.AccountService.ListMembers:output_type -> opensight.v1.ListMembersResponse
-	11, // 24: opensight.v1.AccountService.AddMember:output_type -> opensight.v1.AddMemberResponse
-	13, // 25: opensight.v1.AccountService.UpdateMemberRole:output_type -> opensight.v1.UpdateMemberRoleResponse
-	15, // 26: opensight.v1.AccountService.RemoveMember:output_type -> opensight.v1.RemoveMemberResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
+	16, // 21: opensight.v1.AccountService.DeleteAccount:input_type -> opensight.v1.DeleteAccountRequest
+	5,  // 22: opensight.v1.AccountService.GetAccountContext:output_type -> opensight.v1.GetAccountContextResponse
+	7,  // 23: opensight.v1.AccountService.CreateAccount:output_type -> opensight.v1.CreateAccountResponse
+	9,  // 24: opensight.v1.AccountService.ListMembers:output_type -> opensight.v1.ListMembersResponse
+	11, // 25: opensight.v1.AccountService.AddMember:output_type -> opensight.v1.AddMemberResponse
+	13, // 26: opensight.v1.AccountService.UpdateMemberRole:output_type -> opensight.v1.UpdateMemberRoleResponse
+	15, // 27: opensight.v1.AccountService.RemoveMember:output_type -> opensight.v1.RemoveMemberResponse
+	17, // 28: opensight.v1.AccountService.DeleteAccount:output_type -> opensight.v1.DeleteAccountResponse
+	22, // [22:29] is the sub-list for method output_type
+	15, // [15:22] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
 	15, // [15:15] is the sub-list for extension extendee
 	0,  // [0:15] is the sub-list for field type_name
@@ -1014,7 +1115,7 @@ func file_opensight_v1_account_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_account_proto_rawDesc), len(file_opensight_v1_account_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

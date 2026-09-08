@@ -352,3 +352,88 @@ func TestGenerateQuestionsAgainstPostgres(t *testing.T) {
 		t.Fatalf("post-activation GenerateQuestions code = %v, want FailedPrecondition", connect.CodeOf(err))
 	}
 }
+
+// TestDeleteAccountAgainstPostgres covers workspace deletion end to end: the
+// live-subscription guard, the retyped-name guard, and the cascade itself —
+// the account row plus every table that hangs off it. The cascade is the
+// whole point of migration 00024, and only a real database can show it.
+func TestDeleteAccountAgainstPostgres(t *testing.T) {
+	db, ctx := openAPITestDB(t)
+	accountID := mustDomainID(t)
+	t.Cleanup(func() { _, _ = db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", accountID) })
+	if _, err := db.Exec(ctx, "INSERT INTO accounts (id, name, slug) VALUES ($1, $2, $3)", accountID, "Doomed Workspace", "test-"+accountID.String()); err != nil {
+		t.Fatalf("insert account: %v", err)
+	}
+	if _, err := db.Exec(ctx,
+		"INSERT INTO subscriptions (account_id, plan_code, comped, stripe_subscription_id, stripe_status) VALUES ($1, $2, false, 'sub_live', 'active')",
+		accountID, billing.Starter.Code); err != nil {
+		t.Fatalf("insert subscription: %v", err)
+	}
+	// A workspace with monitoring history, not a bare draft: the cascade has
+	// to clear prompts and the results that cite them, which is where the
+	// first cut of this feature failed in production (migration 00025).
+	businessID, promptID, oldPromptID := mustDomainID(t), mustDomainID(t), mustDomainID(t)
+	runID, resultID := mustDomainID(t), mustDomainID(t)
+	for _, stmt := range []struct {
+		sql  string
+		args []any
+	}{
+		{"INSERT INTO businesses (id, account_id, status, name, category, location, activated_at) VALUES ($1, $2, 'active', 'Atlas Dental', 'dental clinic', '{\"country\":\"SG\"}'::jsonb, now())", []any{businessID, accountID}},
+		{"INSERT INTO prompts (id, business_id, text, status, retired_at) VALUES ($1, $2, 'superseded question', 'retired', now())", []any{oldPromptID, businessID}},
+		{"INSERT INTO prompts (id, business_id, text, status, replaces_prompt_id) VALUES ($1, $2, 'best dentist in singapore?', 'active', $3)", []any{promptID, businessID, oldPromptID}},
+		{"INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at) VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-09-01', 'completed', 1, now())", []any{runID, businessID}},
+		{"INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text) VALUES ($1, $2, $3, 'succeeded', 'gpt-x', '{}', '{}', 'an answer')", []any{resultID, runID, promptID}},
+	} {
+		if _, err := db.Exec(ctx, stmt.sql, stmt.args...); err != nil {
+			t.Fatalf("seed workspace (%s): %v", stmt.sql, err)
+		}
+	}
+
+	repository := store.New(db)
+	srv := New(Deps{Store: repository})
+	session := withSessionUser(ctx, store.SessionUser{
+		UserID: mustDomainID(t), AccountID: accountID, Email: "admin@example.com",
+		AccountName: "Doomed Workspace", Role: store.AccountRoleAdmin,
+		ExpiresAt: time.Now().Add(time.Hour), PlanCode: billing.Starter.Code,
+	})
+	deleteReq := func(name string) *connect.Request[opensightv1.DeleteAccountRequest] {
+		return connect.NewRequest(&opensightv1.DeleteAccountRequest{ConfirmName: name})
+	}
+
+	// A live Stripe subscription blocks deletion regardless of confirmation:
+	// deleting the row would not stop Stripe billing the customer.
+	if _, err := srv.DeleteAccount(session, deleteReq("Doomed Workspace")); connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("DeleteAccount with a live subscription code = %v, want FailedPrecondition", connect.CodeOf(err))
+	}
+	if _, err := db.Exec(ctx, "UPDATE subscriptions SET stripe_status = 'canceled' WHERE account_id = $1", accountID); err != nil {
+		t.Fatalf("cancel subscription: %v", err)
+	}
+
+	if _, err := srv.DeleteAccount(session, deleteReq("not the name")); connect.CodeOf(err) != connect.CodeInvalidArgument {
+		t.Fatalf("DeleteAccount with a mismatched name code = %v, want InvalidArgument", connect.CodeOf(err))
+	}
+
+	// Case and surrounding whitespace are forgiven; the name is not.
+	if _, err := srv.DeleteAccount(session, deleteReq("  doomed workspace ")); err != nil {
+		t.Fatalf("DeleteAccount: %v", err)
+	}
+	for _, q := range []string{
+		"SELECT count(*) FROM accounts WHERE id = $1",
+		"SELECT count(*) FROM subscriptions WHERE account_id = $1",
+		"SELECT count(*) FROM businesses WHERE account_id = $1",
+		"SELECT count(*) FROM prompts WHERE business_id = (SELECT id FROM businesses WHERE account_id = $1)",
+		"SELECT count(*) FROM monitoring_runs WHERE business_id = (SELECT id FROM businesses WHERE account_id = $1)",
+		"SELECT count(*) FROM prompt_results WHERE run_id IN (SELECT r.id FROM monitoring_runs r JOIN businesses b ON b.id = r.business_id WHERE b.account_id = $1)",
+	} {
+		var n int
+		if err := db.QueryRow(ctx, q, accountID).Scan(&n); err != nil {
+			t.Fatalf("count after delete (%s): %v", q, err)
+		}
+		if n != 0 {
+			t.Fatalf("rows remaining after delete (%s) = %d, want 0", q, n)
+		}
+	}
+	if _, err := srv.DeleteAccount(session, deleteReq("Doomed Workspace")); connect.CodeOf(err) != connect.CodeNotFound {
+		t.Fatalf("DeleteAccount on a deleted workspace code = %v, want NotFound", connect.CodeOf(err))
+	}
+}

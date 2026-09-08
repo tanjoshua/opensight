@@ -58,7 +58,7 @@ account_memberships (
 -- auth mechanics (Google sign-in/sessions) owned by design 07
 
 subscriptions (
-  account_id             uuid PK FK,   -- one permanent billing record per account
+  account_id             uuid PK FK REFERENCES accounts(id) ON DELETE CASCADE,  -- one per account
   plan_code              text,         -- 'starter' — resolves against the code catalog (08)
   stripe_customer_id     text UNIQUE NULL,
   stripe_subscription_id text UNIQUE NULL,
@@ -75,11 +75,14 @@ subscriptions (
 
 A user is one global identity and may have memberships in multiple accounts with a different role in each. Membership grants access to every business in the account; business-specific ACLs are deferred. Accounts may have multiple owners, but the application locks the account row and rejects any owner removal or demotion that would leave no owner.
 
+**No FK in the schema restricts a delete**, so deleting an account (07 "Auth and accounts") is one `DELETE` that takes memberships, the subscription, businesses, and the whole run/result/analysis tree with it. That has to hold all the way down, not just at the `accounts` edge: PostgreSQL does not order cascade paths, so a single restricting FK deeper in the tree (`prompt_results.prompt_id` was one) aborts the whole delete. The lone non-cascade rule is `prompts.replaces_prompt_id`, which is `SET NULL` — a lineage pointer is severed, never propagated forward onto a prompt that is still active. There is no soft delete and nothing restores a deleted account.
+
 ### Businesses and profile
 
 ```sql
 businesses (
-  id UUID PK, account_id FK, status text,   -- 'draft' | 'active'
+  id UUID PK, account_id FK REFERENCES accounts(id) ON DELETE CASCADE,
+  status text,        -- 'draft' | 'active'
   name text, website text,
   aliases text[],     -- organization trading names ONLY; never a person's name unless
                       -- it is genuinely part of the trading identity

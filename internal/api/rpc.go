@@ -102,8 +102,11 @@ var procedureAccess = map[string]procedurePolicy{
 	opensightv1connect.AccountServiceAddMemberProcedure:         policy(scopeAccount, store.AccountRoleAdmin, classAccount),
 	opensightv1connect.AccountServiceUpdateMemberRoleProcedure:  policy(scopeAccount, store.AccountRoleAdmin, classAccount),
 	opensightv1connect.AccountServiceRemoveMemberProcedure:      policy(scopeAccount, store.AccountRoleAdmin, classAccount),
-	opensightv1connect.BillingServiceGetBillingProcedure:        policy(scopeAccount, store.AccountRoleOwner, classAccount),
-	opensightv1connect.BillingServiceStartCheckoutProcedure:     policy(scopeAccount, store.AccountRoleOwner, classAccount),
+	// DeleteAccount is account, not subscriber: a never-paid or lapsed
+	// workspace is exactly the one someone wants to delete.
+	opensightv1connect.AccountServiceDeleteAccountProcedure: policy(scopeAccount, store.AccountRoleAdmin, classAccount),
+	opensightv1connect.BillingServiceGetBillingProcedure:    policy(scopeAccount, store.AccountRoleOwner, classAccount),
+	opensightv1connect.BillingServiceStartCheckoutProcedure: policy(scopeAccount, store.AccountRoleOwner, classAccount),
 	// CreatePortalSession is account, not subscriber/active: a lapsed
 	// customer must still reach invoices and reactivate, and a never-paid
 	// account is refused by the handler's no-Customer check rather than by

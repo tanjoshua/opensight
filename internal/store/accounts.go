@@ -368,6 +368,22 @@ func (s *Store) UpdateAccountMemberRole(ctx context.Context, accountID, userID d
 	})
 }
 
+// DeleteAccount removes the account and, through the FK cascade every
+// account-scoped table carries (migration 00024), its memberships,
+// subscription, businesses, and the whole run/result/analysis tree beneath
+// them. Irreversible: there is no soft-delete column and nothing restores a
+// deleted workspace.
+func (s *Store) DeleteAccount(ctx context.Context, accountID domain.ID) error {
+	n, err := s.q(ctx).DeleteAccount(ctx, accountID)
+	if err != nil {
+		return fmt.Errorf("delete account: %w", err)
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *Store) RemoveAccountMember(ctx context.Context, accountID, userID domain.ID) error {
 	return s.withTx(ctx, func(q *storesqlc.Queries) error {
 		if _, err := q.LockAccount(ctx, accountID); err != nil {

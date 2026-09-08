@@ -91,6 +91,17 @@ message RemoveMemberRequest {
 
 message RemoveMemberResponse {}
 
+message DeleteAccountRequest {
+  string account_slug = 1;
+  // confirm_name must match the account's display name (trimmed,
+  // case-insensitive). Deletion is irreversible and cascades to every
+  // business, run, and result, so the caller retypes the name rather than
+  // sending a bare boolean.
+  string confirm_name = 2;
+}
+
+message DeleteAccountResponse {}
+
 service AccountService {
   rpc GetAccountContext(GetAccountContextRequest) returns (GetAccountContextResponse);
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
@@ -98,4 +109,5 @@ service AccountService {
   rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
   rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
 }

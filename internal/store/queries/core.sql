@@ -88,6 +88,9 @@ UPDATE account_memberships SET role = $3 WHERE account_id = $1 AND user_id = $2;
 -- name: DeleteAccountMembership :execrows
 DELETE FROM account_memberships WHERE account_id = $1 AND user_id = $2;
 
+-- name: DeleteAccount :execrows
+DELETE FROM accounts WHERE id = $1;
+
 -- name: LockAccount :one
 SELECT id FROM accounts WHERE id = $1 FOR UPDATE;
 

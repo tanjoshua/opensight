@@ -68,7 +68,9 @@ export function AccountsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-semibold">
-            Choose a workspace
+            {me.data.memberships.length === 0
+              ? "Workspaces"
+              : "Choose a workspace"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             A workspace keeps its businesses, members, and billing together.
@@ -88,6 +90,23 @@ export function AccountsPage() {
           <Plus />
           Create comped workspace
         </Button>
+      )}
+      {me.data.memberships.length === 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>You're not in any workspace</CardTitle>
+            <CardDescription>
+              Deleting your last workspace leaves nothing to open. Create a new
+              one to start monitoring again.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button render={<Link to="/accounts/new" />}>
+              <Plus />
+              Create a workspace
+            </Button>
+          </CardFooter>
+        </Card>
       )}
       <div className="grid gap-3">
         {me.data.memberships.map(

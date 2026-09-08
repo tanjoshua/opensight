@@ -29,6 +29,9 @@ ListMembers(account_slug)                   → active and pending members
 AddMember(account_slug, email, role)         → immediate membership; no email or acceptance step
 UpdateMemberRole(account_slug, user_id, role)
 RemoveMember(account_slug, user_id)
+DeleteAccount(account_slug, confirm_name)   → deletes the workspace and everything under it; admin+;
+                                              confirm_name must retype the account name; refused while
+                                              a Stripe subscription the portal still owns is live (08)
 
 # BusinessService (onboarding + Setup)
 CreateBusiness(name, website)               → draft business summary; starts onboarding

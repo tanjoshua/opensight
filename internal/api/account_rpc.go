@@ -193,6 +193,39 @@ func (s *Server) UpdateMemberRole(ctx context.Context, req *connect.Request[open
 	return nil, s.rpcError("update member role", store.ErrNotFound)
 }
 
+// DeleteAccount removes the workspace and everything under it. Two guards
+// stand in front of the cascade, both client-fault preconditions rather than
+// UI-only affordances:
+//
+//  1. confirm_name must retype the workspace's display name, so an
+//     accidental or replayed request cannot destroy an account.
+//  2. A Stripe subscription the Customer Portal still owns
+//     (billing.DeriveAction == ActionPortal) blocks deletion unless it is
+//     already set to cancel at period end. Deleting the row here would not
+//     stop Stripe billing the customer, and cancellation lives in the portal
+//     (design 08) — this API does not grow a second way to cancel.
+func (s *Server) DeleteAccount(ctx context.Context, req *connect.Request[opensightv1.DeleteAccountRequest]) (*connect.Response[opensightv1.DeleteAccountResponse], error) {
+	su, cerr := s.rpcSessionUser(ctx, "delete account")
+	if cerr != nil {
+		return nil, cerr
+	}
+	confirm := strings.TrimSpace(req.Msg.GetConfirmName())
+	if !strings.EqualFold(confirm, strings.TrimSpace(su.AccountName)) {
+		return nil, rpcInvalidArgument("type the workspace name exactly to confirm deletion")
+	}
+	sub, err := s.store.GetByAccount(ctx, su.AccountID)
+	if err != nil {
+		return nil, s.rpcError("delete account: subscription", err)
+	}
+	if !sub.CancelAtPeriodEnd && billing.DeriveAction(sub.AccessState()) == billing.ActionPortal {
+		return nil, rpcFailedPrecondition("cancel this workspace's subscription in billing before deleting it")
+	}
+	if err := s.store.DeleteAccount(ctx, su.AccountID); err != nil {
+		return nil, s.rpcError("delete account", err)
+	}
+	return connect.NewResponse(&opensightv1.DeleteAccountResponse{}), nil
+}
+
 func (s *Server) RemoveMember(ctx context.Context, req *connect.Request[opensightv1.RemoveMemberRequest]) (*connect.Response[opensightv1.RemoveMemberResponse], error) {
 	su, cerr := s.rpcSessionUser(ctx, "remove member")
 	if cerr != nil {
