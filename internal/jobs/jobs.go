@@ -278,6 +278,10 @@ func (w *MonitorWorker) Work(ctx context.Context, job *river.Job[MonitorArgs]) e
 	if gate.Access != billing.AccessFull.String() {
 		return nil
 	}
+	if gate.MonitoringPaused {
+		slog.InfoContext(ctx, "monitoring paused, skipping run", "business_id", job.Args.BusinessID, "scheduled_for", job.Args.ScheduledFor)
+		return nil
+	}
 	spec, err := w.Ops.LoadRunSpec(ctx, workflows.LoadRunSpecInput{BusinessID: job.Args.BusinessID, Platform: job.Args.Platform, ScheduledFor: job.Args.ScheduledFor, Trigger: job.Args.Trigger, JobID: job.ID})
 	if err != nil {
 		return jobError(err)

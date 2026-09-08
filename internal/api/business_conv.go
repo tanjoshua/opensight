@@ -6,6 +6,8 @@ import (
 	opensightv1 "opensight/internal/gen/opensight/v1"
 	"opensight/internal/llm"
 	"opensight/internal/store"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // businessToProfile decodes a store.Business's raw services/location JSONB
@@ -155,6 +157,9 @@ func businessProfileToProto(b store.Business) (*opensightv1.BusinessProfile, err
 		Category: b.Category,
 		Services: profile.Services,
 		Location: locationToProto(profile.Location),
+	}
+	if b.MonitoringPausedAt != nil {
+		resp.MonitoringPausedAt = timestamppb.New(*b.MonitoringPausedAt)
 	}
 	return resp, nil
 }

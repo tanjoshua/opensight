@@ -31,7 +31,7 @@ SET name = $2, aliases = $3, category = $4, services = $5, location = $6,
     generation_status = NULL, generation_stage = NULL
 WHERE id = $1
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-          generation_id, generation_job_id, generation_status, generation_stage
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 `
 
 type ActivateBusinessParams struct {
@@ -71,6 +71,7 @@ func (q *Queries) ActivateBusiness(ctx context.Context, arg ActivateBusinessPara
 		&i.GenerationJobID,
 		&i.GenerationStatus,
 		&i.GenerationStage,
+		&i.MonitoringPausedAt,
 	)
 	return i, err
 }
@@ -292,7 +293,7 @@ func (q *Queries) GetAccountMembership(ctx context.Context, arg GetAccountMember
 
 const getBusiness = `-- name: GetBusiness :one
 SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-       generation_id, generation_job_id, generation_status, generation_stage
+       generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 FROM businesses WHERE id = $1 AND account_id = $2
 `
 
@@ -320,6 +321,7 @@ func (q *Queries) GetBusiness(ctx context.Context, arg GetBusinessParams) (Busin
 		&i.GenerationJobID,
 		&i.GenerationStatus,
 		&i.GenerationStage,
+		&i.MonitoringPausedAt,
 	)
 	return i, err
 }
@@ -842,7 +844,7 @@ func (q *Queries) ListAllAccounts(ctx context.Context, userID uuid.UUID) ([]List
 
 const listBusinesses = `-- name: ListBusinesses :many
 SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-       generation_id, generation_job_id, generation_status, generation_stage
+       generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 FROM businesses WHERE account_id = $1 ORDER BY created_at
 `
 
@@ -871,6 +873,7 @@ func (q *Queries) ListBusinesses(ctx context.Context, accountID uuid.UUID) ([]Bu
 			&i.GenerationJobID,
 			&i.GenerationStatus,
 			&i.GenerationStage,
+			&i.MonitoringPausedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -888,6 +891,7 @@ SELECT b.id, b.account_id, b.activated_at, s.plan_code, s.comped,
 FROM businesses b
 JOIN subscriptions s ON s.account_id = b.account_id
 WHERE b.status = 'active' AND b.activated_at IS NOT NULL
+  AND b.monitoring_paused_at IS NULL
 `
 
 type ListMonitoringCandidatesRow struct {
@@ -1064,6 +1068,49 @@ func (q *Queries) RetirePrompt(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const setBusinessMonitoringPaused = `-- name: SetBusinessMonitoringPaused :one
+UPDATE businesses
+SET monitoring_paused_at = CASE
+      WHEN $1::bool THEN COALESCE(monitoring_paused_at, now())
+      ELSE NULL
+    END
+WHERE id = $2 AND account_id = $3 AND status = 'active'
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
+`
+
+type SetBusinessMonitoringPausedParams struct {
+	Paused     bool
+	BusinessID uuid.UUID
+	AccountID  uuid.UUID
+}
+
+// Idempotent in both directions: re-pausing keeps the original paused_at so
+// the UI's "paused since" does not drift, and resuming clears it outright.
+func (q *Queries) SetBusinessMonitoringPaused(ctx context.Context, arg SetBusinessMonitoringPausedParams) (Business, error) {
+	row := q.db.QueryRow(ctx, setBusinessMonitoringPaused, arg.Paused, arg.BusinessID, arg.AccountID)
+	var i Business
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Status,
+		&i.Name,
+		&i.Website,
+		&i.Aliases,
+		&i.Category,
+		&i.Services,
+		&i.Location,
+		&i.CreatedAt,
+		&i.ActivatedAt,
+		&i.GenerationID,
+		&i.GenerationJobID,
+		&i.GenerationStatus,
+		&i.GenerationStage,
+		&i.MonitoringPausedAt,
+	)
+	return i, err
+}
+
 const setStripeCustomerID = `-- name: SetStripeCustomerID :one
 UPDATE subscriptions
 SET stripe_customer_id=COALESCE(stripe_customer_id,$2),
@@ -1125,7 +1172,7 @@ SET name = CASE WHEN $1::bool THEN $2 ELSE name END,
     location = CASE WHEN $11::bool THEN $12::jsonb ELSE location END
 WHERE id = $13 AND account_id = $14 AND status = 'active'
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-          generation_id, generation_job_id, generation_status, generation_stage
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 `
 
 type UpdateActiveBusinessProfileParams struct {
@@ -1179,6 +1226,7 @@ func (q *Queries) UpdateActiveBusinessProfile(ctx context.Context, arg UpdateAct
 		&i.GenerationJobID,
 		&i.GenerationStatus,
 		&i.GenerationStage,
+		&i.MonitoringPausedAt,
 	)
 	return i, err
 }
@@ -1208,7 +1256,7 @@ UPDATE businesses
 SET website = $1
 WHERE id = $2 AND account_id = $3 AND status = 'draft'
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-          generation_id, generation_job_id, generation_status, generation_stage
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 `
 
 type UpdateDraftBusinessWebsiteParams struct {
@@ -1236,6 +1284,7 @@ func (q *Queries) UpdateDraftBusinessWebsite(ctx context.Context, arg UpdateDraf
 		&i.GenerationJobID,
 		&i.GenerationStatus,
 		&i.GenerationStage,
+		&i.MonitoringPausedAt,
 	)
 	return i, err
 }

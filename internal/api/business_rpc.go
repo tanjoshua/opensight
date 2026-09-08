@@ -188,6 +188,33 @@ func (s *Server) UpdateBusiness(ctx context.Context, req *connect.Request[opensi
 	return connect.NewResponse(&opensightv1.UpdateBusinessResponse{Business: resp}), nil
 }
 
+// SetMonitoringPaused pauses or resumes the business's scheduled monitoring.
+// Pausing stops future runs and nothing else: prompts, past runs, and every
+// derived metric stay exactly as they are, so resuming continues the same
+// series. The store restricts this to active businesses — a draft has no
+// schedule to stop.
+func (s *Server) SetMonitoringPaused(ctx context.Context, req *connect.Request[opensightv1.SetMonitoringPausedRequest]) (*connect.Response[opensightv1.SetMonitoringPausedResponse], error) {
+	su, cerr := s.rpcSessionUser(ctx, "set monitoring paused")
+	if cerr != nil {
+		return nil, cerr
+	}
+	businessID, cerr := rpcID("business_id", req.Msg.BusinessId)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	updated, err := s.store.SetMonitoringPaused(ctx, su.AccountID, businessID, req.Msg.Paused)
+	if err != nil {
+		return nil, s.rpcError("set monitoring paused", err)
+	}
+
+	resp, err := businessProfileToProto(updated)
+	if err != nil {
+		return nil, s.rpcInternal("set monitoring paused: decode updated profile", err)
+	}
+	return connect.NewResponse(&opensightv1.SetMonitoringPausedResponse{Business: resp}), nil
+}
+
 // GetProposal reports generation status and, when ready, the pending
 // proposal payload (design 03).
 func (s *Server) GetProposal(ctx context.Context, req *connect.Request[opensightv1.GetProposalRequest]) (*connect.Response[opensightv1.GetProposalResponse], error) {

@@ -42,6 +42,9 @@ const (
 	// BusinessServiceUpdateBusinessProcedure is the fully-qualified name of the BusinessService's
 	// UpdateBusiness RPC.
 	BusinessServiceUpdateBusinessProcedure = "/opensight.v1.BusinessService/UpdateBusiness"
+	// BusinessServiceSetMonitoringPausedProcedure is the fully-qualified name of the BusinessService's
+	// SetMonitoringPaused RPC.
+	BusinessServiceSetMonitoringPausedProcedure = "/opensight.v1.BusinessService/SetMonitoringPaused"
 	// BusinessServiceGetProposalProcedure is the fully-qualified name of the BusinessService's
 	// GetProposal RPC.
 	BusinessServiceGetProposalProcedure = "/opensight.v1.BusinessService/GetProposal"
@@ -61,6 +64,7 @@ type BusinessServiceClient interface {
 	CreateBusiness(context.Context, *connect.Request[v1.CreateBusinessRequest]) (*connect.Response[v1.CreateBusinessResponse], error)
 	GetBusiness(context.Context, *connect.Request[v1.GetBusinessRequest]) (*connect.Response[v1.GetBusinessResponse], error)
 	UpdateBusiness(context.Context, *connect.Request[v1.UpdateBusinessRequest]) (*connect.Response[v1.UpdateBusinessResponse], error)
+	SetMonitoringPaused(context.Context, *connect.Request[v1.SetMonitoringPausedRequest]) (*connect.Response[v1.SetMonitoringPausedResponse], error)
 	GetProposal(context.Context, *connect.Request[v1.GetProposalRequest]) (*connect.Response[v1.GetProposalResponse], error)
 	RegenerateProposal(context.Context, *connect.Request[v1.RegenerateProposalRequest]) (*connect.Response[v1.RegenerateProposalResponse], error)
 	ApplyProposal(context.Context, *connect.Request[v1.ApplyProposalRequest]) (*connect.Response[v1.ApplyProposalResponse], error)
@@ -96,6 +100,12 @@ func NewBusinessServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(businessServiceMethods.ByName("UpdateBusiness")),
 			connect.WithClientOptions(opts...),
 		),
+		setMonitoringPaused: connect.NewClient[v1.SetMonitoringPausedRequest, v1.SetMonitoringPausedResponse](
+			httpClient,
+			baseURL+BusinessServiceSetMonitoringPausedProcedure,
+			connect.WithSchema(businessServiceMethods.ByName("SetMonitoringPaused")),
+			connect.WithClientOptions(opts...),
+		),
 		getProposal: connect.NewClient[v1.GetProposalRequest, v1.GetProposalResponse](
 			httpClient,
 			baseURL+BusinessServiceGetProposalProcedure,
@@ -125,13 +135,14 @@ func NewBusinessServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // businessServiceClient implements BusinessServiceClient.
 type businessServiceClient struct {
-	createBusiness     *connect.Client[v1.CreateBusinessRequest, v1.CreateBusinessResponse]
-	getBusiness        *connect.Client[v1.GetBusinessRequest, v1.GetBusinessResponse]
-	updateBusiness     *connect.Client[v1.UpdateBusinessRequest, v1.UpdateBusinessResponse]
-	getProposal        *connect.Client[v1.GetProposalRequest, v1.GetProposalResponse]
-	regenerateProposal *connect.Client[v1.RegenerateProposalRequest, v1.RegenerateProposalResponse]
-	applyProposal      *connect.Client[v1.ApplyProposalRequest, v1.ApplyProposalResponse]
-	generateQuestions  *connect.Client[v1.GenerateQuestionsRequest, v1.GenerateQuestionsResponse]
+	createBusiness      *connect.Client[v1.CreateBusinessRequest, v1.CreateBusinessResponse]
+	getBusiness         *connect.Client[v1.GetBusinessRequest, v1.GetBusinessResponse]
+	updateBusiness      *connect.Client[v1.UpdateBusinessRequest, v1.UpdateBusinessResponse]
+	setMonitoringPaused *connect.Client[v1.SetMonitoringPausedRequest, v1.SetMonitoringPausedResponse]
+	getProposal         *connect.Client[v1.GetProposalRequest, v1.GetProposalResponse]
+	regenerateProposal  *connect.Client[v1.RegenerateProposalRequest, v1.RegenerateProposalResponse]
+	applyProposal       *connect.Client[v1.ApplyProposalRequest, v1.ApplyProposalResponse]
+	generateQuestions   *connect.Client[v1.GenerateQuestionsRequest, v1.GenerateQuestionsResponse]
 }
 
 // CreateBusiness calls opensight.v1.BusinessService.CreateBusiness.
@@ -147,6 +158,11 @@ func (c *businessServiceClient) GetBusiness(ctx context.Context, req *connect.Re
 // UpdateBusiness calls opensight.v1.BusinessService.UpdateBusiness.
 func (c *businessServiceClient) UpdateBusiness(ctx context.Context, req *connect.Request[v1.UpdateBusinessRequest]) (*connect.Response[v1.UpdateBusinessResponse], error) {
 	return c.updateBusiness.CallUnary(ctx, req)
+}
+
+// SetMonitoringPaused calls opensight.v1.BusinessService.SetMonitoringPaused.
+func (c *businessServiceClient) SetMonitoringPaused(ctx context.Context, req *connect.Request[v1.SetMonitoringPausedRequest]) (*connect.Response[v1.SetMonitoringPausedResponse], error) {
+	return c.setMonitoringPaused.CallUnary(ctx, req)
 }
 
 // GetProposal calls opensight.v1.BusinessService.GetProposal.
@@ -174,6 +190,7 @@ type BusinessServiceHandler interface {
 	CreateBusiness(context.Context, *connect.Request[v1.CreateBusinessRequest]) (*connect.Response[v1.CreateBusinessResponse], error)
 	GetBusiness(context.Context, *connect.Request[v1.GetBusinessRequest]) (*connect.Response[v1.GetBusinessResponse], error)
 	UpdateBusiness(context.Context, *connect.Request[v1.UpdateBusinessRequest]) (*connect.Response[v1.UpdateBusinessResponse], error)
+	SetMonitoringPaused(context.Context, *connect.Request[v1.SetMonitoringPausedRequest]) (*connect.Response[v1.SetMonitoringPausedResponse], error)
 	GetProposal(context.Context, *connect.Request[v1.GetProposalRequest]) (*connect.Response[v1.GetProposalResponse], error)
 	RegenerateProposal(context.Context, *connect.Request[v1.RegenerateProposalRequest]) (*connect.Response[v1.RegenerateProposalResponse], error)
 	ApplyProposal(context.Context, *connect.Request[v1.ApplyProposalRequest]) (*connect.Response[v1.ApplyProposalResponse], error)
@@ -203,6 +220,12 @@ func NewBusinessServiceHandler(svc BusinessServiceHandler, opts ...connect.Handl
 		BusinessServiceUpdateBusinessProcedure,
 		svc.UpdateBusiness,
 		connect.WithSchema(businessServiceMethods.ByName("UpdateBusiness")),
+		connect.WithHandlerOptions(opts...),
+	)
+	businessServiceSetMonitoringPausedHandler := connect.NewUnaryHandler(
+		BusinessServiceSetMonitoringPausedProcedure,
+		svc.SetMonitoringPaused,
+		connect.WithSchema(businessServiceMethods.ByName("SetMonitoringPaused")),
 		connect.WithHandlerOptions(opts...),
 	)
 	businessServiceGetProposalHandler := connect.NewUnaryHandler(
@@ -237,6 +260,8 @@ func NewBusinessServiceHandler(svc BusinessServiceHandler, opts ...connect.Handl
 			businessServiceGetBusinessHandler.ServeHTTP(w, r)
 		case BusinessServiceUpdateBusinessProcedure:
 			businessServiceUpdateBusinessHandler.ServeHTTP(w, r)
+		case BusinessServiceSetMonitoringPausedProcedure:
+			businessServiceSetMonitoringPausedHandler.ServeHTTP(w, r)
 		case BusinessServiceGetProposalProcedure:
 			businessServiceGetProposalHandler.ServeHTTP(w, r)
 		case BusinessServiceRegenerateProposalProcedure:
@@ -264,6 +289,10 @@ func (UnimplementedBusinessServiceHandler) GetBusiness(context.Context, *connect
 
 func (UnimplementedBusinessServiceHandler) UpdateBusiness(context.Context, *connect.Request[v1.UpdateBusinessRequest]) (*connect.Response[v1.UpdateBusinessResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BusinessService.UpdateBusiness is not implemented"))
+}
+
+func (UnimplementedBusinessServiceHandler) SetMonitoringPaused(context.Context, *connect.Request[v1.SetMonitoringPausedRequest]) (*connect.Response[v1.SetMonitoringPausedResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.BusinessService.SetMonitoringPaused is not implemented"))
 }
 
 func (UnimplementedBusinessServiceHandler) GetProposal(context.Context, *connect.Request[v1.GetProposalRequest]) (*connect.Response[v1.GetProposalResponse], error) {

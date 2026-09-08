@@ -46,21 +46,22 @@ type AnalyzedResult struct {
 }
 
 type Business struct {
-	ID               uuid.UUID
-	AccountID        uuid.UUID
-	Status           string
-	Name             string
-	Website          *string
-	Aliases          []string
-	Category         *string
-	Services         json.RawMessage
-	Location         *json.RawMessage
-	CreatedAt        time.Time
-	ActivatedAt      *time.Time
-	GenerationID     *uuid.UUID
-	GenerationJobID  *int64
-	GenerationStatus *string
-	GenerationStage  *string
+	ID                 uuid.UUID
+	AccountID          uuid.UUID
+	Status             string
+	Name               string
+	Website            *string
+	Aliases            []string
+	Category           *string
+	Services           json.RawMessage
+	Location           *json.RawMessage
+	CreatedAt          time.Time
+	ActivatedAt        *time.Time
+	GenerationID       *uuid.UUID
+	GenerationJobID    *int64
+	GenerationStatus   *string
+	GenerationStage    *string
+	MonitoringPausedAt *time.Time
 }
 
 type Citation struct {

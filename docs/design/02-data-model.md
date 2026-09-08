@@ -87,6 +87,7 @@ businesses (
   services jsonb,
   location jsonb,     -- { address, area, city, country } — country is required;
                       -- monitoring derives web_search user_location from this (04)
+  monitoring_paused_at timestamptz,  -- NULL = monitoring runs; set = an admin paused it (04)
   created_at, activated_at
 )
 
@@ -99,6 +100,8 @@ profile_proposals (
 ```
 
 The PRD's "confirmed profile values are not overwritten automatically" is enforced structurally: **generation only ever writes `profile_proposals`**; values reach `businesses` through the user-driven onboarding apply step or an explicit post-activation Setup edit. Setup updates only profile columns and never changes lifecycle, plan, prompts, runs, or derived history. There is no code path where the pipeline writes business columns directly. (Onboarding flow details: design 03.)
+
+`monitoring_paused_at` is a scheduling gate and nothing more: pausing writes no other row, so prompts, runs, results, and every derived metric are untouched and resuming continues the same series. It is deliberately a nullable timestamp rather than a boolean — "paused since" is what the UI needs to show, and the column carries it without a second field.
 
 MVP has one business per account. The account remains distinct because it owns billing and memberships; a business is the monitored real-world organization.
 

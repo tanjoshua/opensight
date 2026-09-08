@@ -43,6 +43,10 @@ type Business struct {
 	GenerationJobID  *int64
 	GenerationStatus *string
 	GenerationStage  *string
+	// MonitoringPausedAt is nil while monitoring runs, and records when an
+	// admin paused it otherwise. It gates scheduling only — prompts, runs, and
+	// derived history are untouched by a pause.
+	MonitoringPausedAt *time.Time
 }
 
 // CreateBusinessParams are the inputs for creating a business. AccountID is
@@ -213,6 +217,23 @@ func (s *Store) UpdateDraftWebsite(ctx context.Context, accountID, businessID do
 	return businessFromSQLC(row), nil
 }
 
+// SetMonitoringPaused pauses or resumes scheduled monitoring for an active
+// business owned by accountID. Pausing is idempotent (the original paused_at
+// is kept), and only activated businesses can be paused — a draft has no
+// schedule to stop, so it returns ErrNotFound like a cross-account business.
+func (s *Store) SetMonitoringPaused(ctx context.Context, accountID, businessID domain.ID, paused bool) (Business, error) {
+	row, err := s.q(ctx).SetBusinessMonitoringPaused(ctx, storesqlc.SetBusinessMonitoringPausedParams{
+		Paused: paused, BusinessID: businessID, AccountID: accountID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Business{}, ErrNotFound
+		}
+		return Business{}, fmt.Errorf("set business monitoring paused: %w", err)
+	}
+	return businessFromSQLC(row), nil
+}
+
 // ListBusinesses returns the account's businesses, oldest first (GET /me / SPA
 // bootstrap). Scoped by the account_id column.
 func (s *Store) ListBusinesses(ctx context.Context, accountID domain.ID) ([]Business, error) {
@@ -257,6 +278,7 @@ func businessFromSQLC(row storesqlc.Business) Business {
 		Location: location, CreatedAt: row.CreatedAt, ActivatedAt: row.ActivatedAt,
 		GenerationID: row.GenerationID, GenerationJobID: row.GenerationJobID,
 		GenerationStatus: row.GenerationStatus, GenerationStage: row.GenerationStage,
+		MonitoringPausedAt: row.MonitoringPausedAt,
 	}
 }
 

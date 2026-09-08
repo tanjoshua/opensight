@@ -4,6 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { BusinessStatus, BusinessSummary, GenerationStage, ProposalStatus, StringList } from "./common_pb";
 import { file_opensight_v1_common } from "./common_pb";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file opensight/v1/business.proto.
  */
 export const file_opensight_v1_business: GenFile = /*@__PURE__*/
-  fileDesc("ChtvcGVuc2lnaHQvdjEvYnVzaW5lc3MucHJvdG8SDG9wZW5zaWdodC52MSJICghMb2NhdGlvbhIPCgdhZGRyZXNzGAEgASgJEgwKBGFyZWEYAiABKAkSDAoEY2l0eRgDIAEoCRIPCgdjb3VudHJ5GAQgASgJIvgBCg9CdXNpbmVzc1Byb2ZpbGUSCgoCaWQYASABKAkSLAoGc3RhdHVzGAIgASgOMhwub3BlbnNpZ2h0LnYxLkJ1c2luZXNzU3RhdHVzEgwKBG5hbWUYAyABKAkSFAoHd2Vic2l0ZRgEIAEoCUgAiAEBEg8KB2FsaWFzZXMYBSADKAkSFQoIY2F0ZWdvcnkYBiABKAlIAYgBARIQCghzZXJ2aWNlcxgHIAMoCRIoCghsb2NhdGlvbhgIIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbkIKCghfd2Vic2l0ZUILCglfY2F0ZWdvcnlKBAgJEApSBHBsYW4ifgoPUHJvcG9zZWRQcm9maWxlEgwKBG5hbWUYASABKAkSDwoHYWxpYXNlcxgCIAMoCRIQCghjYXRlZ29yeRgDIAEoCRIQCghzZXJ2aWNlcxgEIAMoCRIoCghsb2NhdGlvbhgFIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbiIeCg5Qcm9wb3NlZFByb21wdBIMCgR0ZXh0GAEgASgJIjwKDlByb3Bvc2FsU291cmNlEgsKA3VybBgBIAEoCRINCgV0aXRsZRgCIAEoCRIOCgZkb21haW4YAyABKAkitwEKD1Byb3Bvc2FsUGF5bG9hZBIWCg5sb3dfY29uZmlkZW5jZRgBIAEoCBIuCgdwcm9maWxlGAIgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2VkUHJvZmlsZRItCgdwcm9tcHRzGAMgAygLMhwub3BlbnNpZ2h0LnYxLlByb3Bvc2VkUHJvbXB0Ei0KB3NvdXJjZXMYBCADKAsyHC5vcGVuc2lnaHQudjEuUHJvcG9zYWxTb3VyY2UimwEKDVByb3Bvc2FsU3RhdGUSLAoGc3RhdHVzGAEgASgOMhwub3BlbnNpZ2h0LnYxLlByb3Bvc2FsU3RhdHVzEiwKBXN0YWdlGAIgASgOMh0ub3BlbnNpZ2h0LnYxLkdlbmVyYXRpb25TdGFnZRIuCgdwYXlsb2FkGAMgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2FsUGF5bG9hZCI2ChVDcmVhdGVCdXNpbmVzc1JlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgd3ZWJzaXRlGAIgASgJIkkKFkNyZWF0ZUJ1c2luZXNzUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NTdW1tYXJ5IikKEkdldEJ1c2luZXNzUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCSJGChNHZXRCdXNpbmVzc1Jlc3BvbnNlEi8KCGJ1c2luZXNzGAEgASgLMh0ub3BlbnNpZ2h0LnYxLkJ1c2luZXNzUHJvZmlsZSKPAgoVVXBkYXRlQnVzaW5lc3NSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJEhEKBG5hbWUYAiABKAlIAIgBARIUCgd3ZWJzaXRlGAMgASgJSAGIAQESKQoHYWxpYXNlcxgEIAEoCzIYLm9wZW5zaWdodC52MS5TdHJpbmdMaXN0EhUKCGNhdGVnb3J5GAUgASgJSAKIAQESKgoIc2VydmljZXMYBiABKAsyGC5vcGVuc2lnaHQudjEuU3RyaW5nTGlzdBIoCghsb2NhdGlvbhgHIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbkIHCgVfbmFtZUIKCghfd2Vic2l0ZUILCglfY2F0ZWdvcnkiSQoWVXBkYXRlQnVzaW5lc3NSZXNwb25zZRIvCghidXNpbmVzcxgBIAEoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1Byb2ZpbGUiKQoSR2V0UHJvcG9zYWxSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJIkEKE0dldFByb3Bvc2FsUmVzcG9uc2USKgoFc3RhdGUYASABKAsyGy5vcGVuc2lnaHQudjEuUHJvcG9zYWxTdGF0ZSJSChlSZWdlbmVyYXRlUHJvcG9zYWxSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJEhQKB3dlYnNpdGUYAiABKAlIAIgBAUIKCghfd2Vic2l0ZSJIChpSZWdlbmVyYXRlUHJvcG9zYWxSZXNwb25zZRIqCgVzdGF0ZRgBIAEoCzIbLm9wZW5zaWdodC52MS5Qcm9wb3NhbFN0YXRlIlsKFEFwcGx5UHJvcG9zYWxSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJEi4KB3BheWxvYWQYAiABKAsyHS5vcGVuc2lnaHQudjEuUHJvcG9zYWxQYXlsb2FkIkgKFUFwcGx5UHJvcG9zYWxSZXNwb25zZRIvCghidXNpbmVzcxgBIAEoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1N1bW1hcnkiXwoYR2VuZXJhdGVRdWVzdGlvbnNSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJEi4KB3Byb2ZpbGUYAiABKAsyHS5vcGVuc2lnaHQudjEuUHJvcG9zZWRQcm9maWxlIkoKGUdlbmVyYXRlUXVlc3Rpb25zUmVzcG9uc2USLQoHcHJvbXB0cxgBIAMoCzIcLm9wZW5zaWdodC52MS5Qcm9wb3NlZFByb21wdDKcBQoPQnVzaW5lc3NTZXJ2aWNlElsKDkNyZWF0ZUJ1c2luZXNzEiMub3BlbnNpZ2h0LnYxLkNyZWF0ZUJ1c2luZXNzUmVxdWVzdBokLm9wZW5zaWdodC52MS5DcmVhdGVCdXNpbmVzc1Jlc3BvbnNlElIKC0dldEJ1c2luZXNzEiAub3BlbnNpZ2h0LnYxLkdldEJ1c2luZXNzUmVxdWVzdBohLm9wZW5zaWdodC52MS5HZXRCdXNpbmVzc1Jlc3BvbnNlElsKDlVwZGF0ZUJ1c2luZXNzEiMub3BlbnNpZ2h0LnYxLlVwZGF0ZUJ1c2luZXNzUmVxdWVzdBokLm9wZW5zaWdodC52MS5VcGRhdGVCdXNpbmVzc1Jlc3BvbnNlElIKC0dldFByb3Bvc2FsEiAub3BlbnNpZ2h0LnYxLkdldFByb3Bvc2FsUmVxdWVzdBohLm9wZW5zaWdodC52MS5HZXRQcm9wb3NhbFJlc3BvbnNlEmcKElJlZ2VuZXJhdGVQcm9wb3NhbBInLm9wZW5zaWdodC52MS5SZWdlbmVyYXRlUHJvcG9zYWxSZXF1ZXN0Gigub3BlbnNpZ2h0LnYxLlJlZ2VuZXJhdGVQcm9wb3NhbFJlc3BvbnNlElgKDUFwcGx5UHJvcG9zYWwSIi5vcGVuc2lnaHQudjEuQXBwbHlQcm9wb3NhbFJlcXVlc3QaIy5vcGVuc2lnaHQudjEuQXBwbHlQcm9wb3NhbFJlc3BvbnNlEmQKEUdlbmVyYXRlUXVlc3Rpb25zEiYub3BlbnNpZ2h0LnYxLkdlbmVyYXRlUXVlc3Rpb25zUmVxdWVzdBonLm9wZW5zaWdodC52MS5HZW5lcmF0ZVF1ZXN0aW9uc1Jlc3BvbnNlQqMBChBjb20ub3BlbnNpZ2h0LnYxQg1CdXNpbmVzc1Byb3RvUAFaL29wZW5zaWdodC9pbnRlcm5hbC9nZW4vb3BlbnNpZ2h0L3YxO29wZW5zaWdodHYxogIDT1hYqgIMT3BlbnNpZ2h0LlYxygIMT3BlbnNpZ2h0XFYx4gIYT3BlbnNpZ2h0XFYxXEdQQk1ldGFkYXRh6gINT3BlbnNpZ2h0OjpWMWIGcHJvdG8z", [file_opensight_v1_common]);
+  fileDesc("ChtvcGVuc2lnaHQvdjEvYnVzaW5lc3MucHJvdG8SDG9wZW5zaWdodC52MSJICghMb2NhdGlvbhIPCgdhZGRyZXNzGAEgASgJEgwKBGFyZWEYAiABKAkSDAoEY2l0eRgDIAEoCRIPCgdjb3VudHJ5GAQgASgJItACCg9CdXNpbmVzc1Byb2ZpbGUSCgoCaWQYASABKAkSLAoGc3RhdHVzGAIgASgOMhwub3BlbnNpZ2h0LnYxLkJ1c2luZXNzU3RhdHVzEgwKBG5hbWUYAyABKAkSFAoHd2Vic2l0ZRgEIAEoCUgAiAEBEg8KB2FsaWFzZXMYBSADKAkSFQoIY2F0ZWdvcnkYBiABKAlIAYgBARIQCghzZXJ2aWNlcxgHIAMoCRIoCghsb2NhdGlvbhgIIAEoCzIWLm9wZW5zaWdodC52MS5Mb2NhdGlvbhI9ChRtb25pdG9yaW5nX3BhdXNlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAogBAUIKCghfd2Vic2l0ZUILCglfY2F0ZWdvcnlCFwoVX21vbml0b3JpbmdfcGF1c2VkX2F0SgQICRAKUgRwbGFuIn4KD1Byb3Bvc2VkUHJvZmlsZRIMCgRuYW1lGAEgASgJEg8KB2FsaWFzZXMYAiADKAkSEAoIY2F0ZWdvcnkYAyABKAkSEAoIc2VydmljZXMYBCADKAkSKAoIbG9jYXRpb24YBSABKAsyFi5vcGVuc2lnaHQudjEuTG9jYXRpb24iHgoOUHJvcG9zZWRQcm9tcHQSDAoEdGV4dBgBIAEoCSI8Cg5Qcm9wb3NhbFNvdXJjZRILCgN1cmwYASABKAkSDQoFdGl0bGUYAiABKAkSDgoGZG9tYWluGAMgASgJIrcBCg9Qcm9wb3NhbFBheWxvYWQSFgoObG93X2NvbmZpZGVuY2UYASABKAgSLgoHcHJvZmlsZRgCIAEoCzIdLm9wZW5zaWdodC52MS5Qcm9wb3NlZFByb2ZpbGUSLQoHcHJvbXB0cxgDIAMoCzIcLm9wZW5zaWdodC52MS5Qcm9wb3NlZFByb21wdBItCgdzb3VyY2VzGAQgAygLMhwub3BlbnNpZ2h0LnYxLlByb3Bvc2FsU291cmNlIpsBCg1Qcm9wb3NhbFN0YXRlEiwKBnN0YXR1cxgBIAEoDjIcLm9wZW5zaWdodC52MS5Qcm9wb3NhbFN0YXR1cxIsCgVzdGFnZRgCIAEoDjIdLm9wZW5zaWdodC52MS5HZW5lcmF0aW9uU3RhZ2USLgoHcGF5bG9hZBgDIAEoCzIdLm9wZW5zaWdodC52MS5Qcm9wb3NhbFBheWxvYWQiNgoVQ3JlYXRlQnVzaW5lc3NSZXF1ZXN0EgwKBG5hbWUYASABKAkSDwoHd2Vic2l0ZRgCIAEoCSJJChZDcmVhdGVCdXNpbmVzc1Jlc3BvbnNlEi8KCGJ1c2luZXNzGAEgASgLMh0ub3BlbnNpZ2h0LnYxLkJ1c2luZXNzU3VtbWFyeSIpChJHZXRCdXNpbmVzc1JlcXVlc3QSEwoLYnVzaW5lc3NfaWQYASABKAkiRgoTR2V0QnVzaW5lc3NSZXNwb25zZRIvCghidXNpbmVzcxgBIAEoCzIdLm9wZW5zaWdodC52MS5CdXNpbmVzc1Byb2ZpbGUijwIKFVVwZGF0ZUJ1c2luZXNzUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCRIRCgRuYW1lGAIgASgJSACIAQESFAoHd2Vic2l0ZRgDIAEoCUgBiAEBEikKB2FsaWFzZXMYBCABKAsyGC5vcGVuc2lnaHQudjEuU3RyaW5nTGlzdBIVCghjYXRlZ29yeRgFIAEoCUgCiAEBEioKCHNlcnZpY2VzGAYgASgLMhgub3BlbnNpZ2h0LnYxLlN0cmluZ0xpc3QSKAoIbG9jYXRpb24YByABKAsyFi5vcGVuc2lnaHQudjEuTG9jYXRpb25CBwoFX25hbWVCCgoIX3dlYnNpdGVCCwoJX2NhdGVnb3J5IkkKFlVwZGF0ZUJ1c2luZXNzUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NQcm9maWxlIkEKGlNldE1vbml0b3JpbmdQYXVzZWRSZXF1ZXN0EhMKC2J1c2luZXNzX2lkGAEgASgJEg4KBnBhdXNlZBgCIAEoCCJOChtTZXRNb25pdG9yaW5nUGF1c2VkUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NQcm9maWxlIikKEkdldFByb3Bvc2FsUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCSJBChNHZXRQcm9wb3NhbFJlc3BvbnNlEioKBXN0YXRlGAEgASgLMhsub3BlbnNpZ2h0LnYxLlByb3Bvc2FsU3RhdGUiUgoZUmVnZW5lcmF0ZVByb3Bvc2FsUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCRIUCgd3ZWJzaXRlGAIgASgJSACIAQFCCgoIX3dlYnNpdGUiSAoaUmVnZW5lcmF0ZVByb3Bvc2FsUmVzcG9uc2USKgoFc3RhdGUYASABKAsyGy5vcGVuc2lnaHQudjEuUHJvcG9zYWxTdGF0ZSJbChRBcHBseVByb3Bvc2FsUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCRIuCgdwYXlsb2FkGAIgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2FsUGF5bG9hZCJIChVBcHBseVByb3Bvc2FsUmVzcG9uc2USLwoIYnVzaW5lc3MYASABKAsyHS5vcGVuc2lnaHQudjEuQnVzaW5lc3NTdW1tYXJ5Il8KGEdlbmVyYXRlUXVlc3Rpb25zUmVxdWVzdBITCgtidXNpbmVzc19pZBgBIAEoCRIuCgdwcm9maWxlGAIgASgLMh0ub3BlbnNpZ2h0LnYxLlByb3Bvc2VkUHJvZmlsZSJKChlHZW5lcmF0ZVF1ZXN0aW9uc1Jlc3BvbnNlEi0KB3Byb21wdHMYASADKAsyHC5vcGVuc2lnaHQudjEuUHJvcG9zZWRQcm9tcHQyiAYKD0J1c2luZXNzU2VydmljZRJbCg5DcmVhdGVCdXNpbmVzcxIjLm9wZW5zaWdodC52MS5DcmVhdGVCdXNpbmVzc1JlcXVlc3QaJC5vcGVuc2lnaHQudjEuQ3JlYXRlQnVzaW5lc3NSZXNwb25zZRJSCgtHZXRCdXNpbmVzcxIgLm9wZW5zaWdodC52MS5HZXRCdXNpbmVzc1JlcXVlc3QaIS5vcGVuc2lnaHQudjEuR2V0QnVzaW5lc3NSZXNwb25zZRJbCg5VcGRhdGVCdXNpbmVzcxIjLm9wZW5zaWdodC52MS5VcGRhdGVCdXNpbmVzc1JlcXVlc3QaJC5vcGVuc2lnaHQudjEuVXBkYXRlQnVzaW5lc3NSZXNwb25zZRJqChNTZXRNb25pdG9yaW5nUGF1c2VkEigub3BlbnNpZ2h0LnYxLlNldE1vbml0b3JpbmdQYXVzZWRSZXF1ZXN0Gikub3BlbnNpZ2h0LnYxLlNldE1vbml0b3JpbmdQYXVzZWRSZXNwb25zZRJSCgtHZXRQcm9wb3NhbBIgLm9wZW5zaWdodC52MS5HZXRQcm9wb3NhbFJlcXVlc3QaIS5vcGVuc2lnaHQudjEuR2V0UHJvcG9zYWxSZXNwb25zZRJnChJSZWdlbmVyYXRlUHJvcG9zYWwSJy5vcGVuc2lnaHQudjEuUmVnZW5lcmF0ZVByb3Bvc2FsUmVxdWVzdBooLm9wZW5zaWdodC52MS5SZWdlbmVyYXRlUHJvcG9zYWxSZXNwb25zZRJYCg1BcHBseVByb3Bvc2FsEiIub3BlbnNpZ2h0LnYxLkFwcGx5UHJvcG9zYWxSZXF1ZXN0GiMub3BlbnNpZ2h0LnYxLkFwcGx5UHJvcG9zYWxSZXNwb25zZRJkChFHZW5lcmF0ZVF1ZXN0aW9ucxImLm9wZW5zaWdodC52MS5HZW5lcmF0ZVF1ZXN0aW9uc1JlcXVlc3QaJy5vcGVuc2lnaHQudjEuR2VuZXJhdGVRdWVzdGlvbnNSZXNwb25zZUKjAQoQY29tLm9wZW5zaWdodC52MUINQnVzaW5lc3NQcm90b1ABWi9vcGVuc2lnaHQvaW50ZXJuYWwvZ2VuL29wZW5zaWdodC92MTtvcGVuc2lnaHR2MaICA09YWKoCDE9wZW5zaWdodC5WMcoCDE9wZW5zaWdodFxWMeICGE9wZW5zaWdodFxWMVxHUEJNZXRhZGF0YeoCDU9wZW5zaWdodDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_opensight_v1_common]);
 
 /**
  * Location mirrors llm.ProposedLocation (internal/llm/propose_profile.go).
@@ -98,6 +100,15 @@ export type BusinessProfile = Message<"opensight.v1.BusinessProfile"> & {
    * @generated from field: opensight.v1.Location location = 8;
    */
   location?: Location | undefined;
+
+  /**
+   * monitoring_paused_at is unset while scheduled monitoring runs, and carries
+   * the pause time otherwise. A pause stops future runs only; prompts and
+   * history are untouched.
+   *
+   * @generated from field: optional google.protobuf.Timestamp monitoring_paused_at = 10;
+   */
+  monitoringPausedAt?: Timestamp | undefined;
 };
 
 /**
@@ -406,6 +417,49 @@ export const UpdateBusinessResponseSchema: GenMessage<UpdateBusinessResponse> = 
   messageDesc(file_opensight_v1_business, 12);
 
 /**
+ * SetMonitoringPausedRequest pauses or resumes the business's scheduled
+ * monitoring. It is idempotent: setting the state it already has succeeds and
+ * keeps the original pause time.
+ *
+ * @generated from message opensight.v1.SetMonitoringPausedRequest
+ */
+export type SetMonitoringPausedRequest = Message<"opensight.v1.SetMonitoringPausedRequest"> & {
+  /**
+   * @generated from field: string business_id = 1;
+   */
+  businessId: string;
+
+  /**
+   * @generated from field: bool paused = 2;
+   */
+  paused: boolean;
+};
+
+/**
+ * Describes the message opensight.v1.SetMonitoringPausedRequest.
+ * Use `create(SetMonitoringPausedRequestSchema)` to create a new message.
+ */
+export const SetMonitoringPausedRequestSchema: GenMessage<SetMonitoringPausedRequest> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_business, 13);
+
+/**
+ * @generated from message opensight.v1.SetMonitoringPausedResponse
+ */
+export type SetMonitoringPausedResponse = Message<"opensight.v1.SetMonitoringPausedResponse"> & {
+  /**
+   * @generated from field: opensight.v1.BusinessProfile business = 1;
+   */
+  business?: BusinessProfile | undefined;
+};
+
+/**
+ * Describes the message opensight.v1.SetMonitoringPausedResponse.
+ * Use `create(SetMonitoringPausedResponseSchema)` to create a new message.
+ */
+export const SetMonitoringPausedResponseSchema: GenMessage<SetMonitoringPausedResponse> = /*@__PURE__*/
+  messageDesc(file_opensight_v1_business, 14);
+
+/**
  * @generated from message opensight.v1.GetProposalRequest
  */
 export type GetProposalRequest = Message<"opensight.v1.GetProposalRequest"> & {
@@ -420,7 +474,7 @@ export type GetProposalRequest = Message<"opensight.v1.GetProposalRequest"> & {
  * Use `create(GetProposalRequestSchema)` to create a new message.
  */
 export const GetProposalRequestSchema: GenMessage<GetProposalRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 13);
+  messageDesc(file_opensight_v1_business, 15);
 
 /**
  * @generated from message opensight.v1.GetProposalResponse
@@ -437,7 +491,7 @@ export type GetProposalResponse = Message<"opensight.v1.GetProposalResponse"> & 
  * Use `create(GetProposalResponseSchema)` to create a new message.
  */
 export const GetProposalResponseSchema: GenMessage<GetProposalResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 14);
+  messageDesc(file_opensight_v1_business, 16);
 
 /**
  * RegenerateProposalRequest starts an OpenAI-spending River job. Its dedup key
@@ -468,7 +522,7 @@ export type RegenerateProposalRequest = Message<"opensight.v1.RegenerateProposal
  * Use `create(RegenerateProposalRequestSchema)` to create a new message.
  */
 export const RegenerateProposalRequestSchema: GenMessage<RegenerateProposalRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 15);
+  messageDesc(file_opensight_v1_business, 17);
 
 /**
  * @generated from message opensight.v1.RegenerateProposalResponse
@@ -485,7 +539,7 @@ export type RegenerateProposalResponse = Message<"opensight.v1.RegenerateProposa
  * Use `create(RegenerateProposalResponseSchema)` to create a new message.
  */
 export const RegenerateProposalResponseSchema: GenMessage<RegenerateProposalResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 16);
+  messageDesc(file_opensight_v1_business, 18);
 
 /**
  * ApplyProposalRequest carries the final user-edited payload verbatim. There
@@ -511,7 +565,7 @@ export type ApplyProposalRequest = Message<"opensight.v1.ApplyProposalRequest"> 
  * Use `create(ApplyProposalRequestSchema)` to create a new message.
  */
 export const ApplyProposalRequestSchema: GenMessage<ApplyProposalRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 17);
+  messageDesc(file_opensight_v1_business, 19);
 
 /**
  * @generated from message opensight.v1.ApplyProposalResponse
@@ -528,7 +582,7 @@ export type ApplyProposalResponse = Message<"opensight.v1.ApplyProposalResponse"
  * Use `create(ApplyProposalResponseSchema)` to create a new message.
  */
 export const ApplyProposalResponseSchema: GenMessage<ApplyProposalResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 18);
+  messageDesc(file_opensight_v1_business, 20);
 
 /**
  * GenerateQuestionsRequest generates customer questions on demand once the
@@ -557,7 +611,7 @@ export type GenerateQuestionsRequest = Message<"opensight.v1.GenerateQuestionsRe
  * Use `create(GenerateQuestionsRequestSchema)` to create a new message.
  */
 export const GenerateQuestionsRequestSchema: GenMessage<GenerateQuestionsRequest> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 19);
+  messageDesc(file_opensight_v1_business, 21);
 
 /**
  * @generated from message opensight.v1.GenerateQuestionsResponse
@@ -574,7 +628,7 @@ export type GenerateQuestionsResponse = Message<"opensight.v1.GenerateQuestionsR
  * Use `create(GenerateQuestionsResponseSchema)` to create a new message.
  */
 export const GenerateQuestionsResponseSchema: GenMessage<GenerateQuestionsResponse> = /*@__PURE__*/
-  messageDesc(file_opensight_v1_business, 20);
+  messageDesc(file_opensight_v1_business, 22);
 
 /**
  * @generated from service opensight.v1.BusinessService
@@ -603,6 +657,14 @@ export const BusinessService: GenService<{
     methodKind: "unary";
     input: typeof UpdateBusinessRequestSchema;
     output: typeof UpdateBusinessResponseSchema;
+  },
+  /**
+   * @generated from rpc opensight.v1.BusinessService.SetMonitoringPaused
+   */
+  setMonitoringPaused: {
+    methodKind: "unary";
+    input: typeof SetMonitoringPausedRequestSchema;
+    output: typeof SetMonitoringPausedResponseSchema;
   },
   /**
    * @generated from rpc opensight.v1.BusinessService.GetProposal

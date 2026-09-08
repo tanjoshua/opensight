@@ -3,7 +3,7 @@
 // is dropped; per-prompt history already lives on the Prompts page). Each row
 // links to /runs/:id for that run's responses.
 import { timestampDate } from "@bufbuild/protobuf/wkt"
-import { History, LoaderCircle } from "lucide-react"
+import { History, LoaderCircle, PauseCircle } from "lucide-react"
 import { useAccountNavigate } from "@/lib/account-path"
 
 import { useCurrentBusiness, useRuns } from "@/api/hooks"
@@ -68,6 +68,7 @@ export function RunsPage() {
 
   const runs = runsQuery.data.runs
   const nextRunAt = runsQuery.data.nextRunAt
+  const monitoringPaused = runsQuery.data.monitoringPaused
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,7 +76,12 @@ export function RunsPage() {
         title="Monitoring history"
         description="Inspect each monitoring run and the responses behind your metrics."
         actions={
-          nextRunAt ? (
+          monitoringPaused ? (
+            <Badge variant="outline" className="gap-1">
+              <PauseCircle className="size-3.5" />
+              Monitoring paused
+            </Badge>
+          ) : nextRunAt ? (
             <span className="text-sm text-muted-foreground">
               Next run: {formatDateOnly(timestampDate(nextRunAt))}
             </span>
@@ -92,12 +98,14 @@ export function RunsPage() {
           />
         ) : (
           <SectionMessage
-            icon={History}
-            title="No runs yet"
+            icon={monitoringPaused ? PauseCircle : History}
+            title={monitoringPaused ? "Monitoring is paused" : "No runs yet"}
             description={
-              nextRunAt
-                ? `Your first scheduled check is ${formatDateOnly(timestampDate(nextRunAt))}.`
-                : "Monitoring starts once your business and plan are active."
+              monitoringPaused
+                ? "No scheduled runs will start until an admin resumes monitoring in Settings."
+                : nextRunAt
+                  ? `Your first scheduled check is ${formatDateOnly(timestampDate(nextRunAt))}.`
+                  : "Monitoring starts once your business and plan are active."
             }
           />
         )

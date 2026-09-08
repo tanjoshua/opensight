@@ -276,6 +276,31 @@ func TestMonitorWorkerFinalizesPersistedTerminalPromptFailure(t *testing.T) {
 	}
 }
 
+// A paused business can still have a monitoring job in flight — enqueued
+// before the pause, or retrying after it. The gate must stop that job before
+// LoadRunSpec writes a run row or any prompt spends.
+func TestMonitorWorkerSkipsPausedMonitoring(t *testing.T) {
+	accountID, businessID := testID(31), testID(32)
+	loaded := false
+	ops := stubOperations{
+		check: func(context.Context, workflows.CheckRunAccessInput) (workflows.CheckRunAccessOutput, error) {
+			return workflows.CheckRunAccessOutput{AccountID: accountID, Access: billing.AccessFull.String(), MonitoringPaused: true}, nil
+		},
+		loadRun: func(context.Context, workflows.LoadRunSpecInput) (workflows.RunSpec, error) {
+			loaded = true
+			return workflows.RunSpec{}, nil
+		},
+	}
+	inserter := &recordingInserter{}
+	worker := &MonitorWorker{Ops: ops, Jobs: inserter, Concurrency: 2}
+	err := worker.Work(context.Background(), &river.Job[MonitorArgs]{JobRow: &rivertype.JobRow{ID: 93}, Args: MonitorArgs{
+		BusinessID: businessID, Platform: store.PlatformChatGPT, ScheduledFor: time.Now(), Trigger: store.RunTriggerScheduled,
+	}})
+	if err != nil || loaded || len(inserter.args) != 0 {
+		t.Fatalf("Work error/loaded/inserted = %v/%t/%d, want nil/false/0", err, loaded, len(inserter.args))
+	}
+}
+
 func TestAnalyzeWorkerSkipsFailedExtractionAndEnqueuesAssessment(t *testing.T) {
 	accountID, businessID, runID := testID(11), testID(12), testID(13)
 	good, bad := testID(14), testID(15)

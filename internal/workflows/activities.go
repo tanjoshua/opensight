@@ -60,10 +60,13 @@ type CheckRunAccessInput struct {
 // lookup. Access is the string form (billing.Access.String()) rather than the
 // int, so the value is legible in River job records —
 // AccessNever is the zero value of the int, which would otherwise read as
-// "unset" rather than "never paid".
+// "unset" rather than "never paid". MonitoringPaused is the admin's own
+// pause switch, reported alongside access because both answer the same
+// question: may this run proceed?
 type CheckRunAccessOutput struct {
-	AccountID domain.ID `json:"TenantID"`
-	Access    string
+	AccountID        domain.ID `json:"TenantID"`
+	Access           string
+	MonitoringPaused bool
 }
 
 // CheckRunAccess is design 08's gate 3, the authoritative spend backstop:
@@ -73,6 +76,11 @@ type CheckRunAccessOutput struct {
 // pause) both depend on a webhook that can be delayed or dropped; this one
 // recomputes access fresh against the current time on every run start, so a
 // missed webhook can never turn into spend.
+//
+// It reads the admin pause switch from the same fresh state. The scheduler
+// sweep already skips paused businesses, so this only catches the narrow
+// window where a job was enqueued (or is retrying) from before the pause —
+// which is exactly when an admin most expects "pause" to mean "stop now".
 func (a *Operations) CheckRunAccess(ctx context.Context, in CheckRunAccessInput) (CheckRunAccessOutput, error) {
 	accountID, err := a.Store.ResolveAccountID(ctx, in.BusinessID)
 	if err != nil {
@@ -83,6 +91,14 @@ func (a *Operations) CheckRunAccess(ctx context.Context, in CheckRunAccessInput)
 		return CheckRunAccessOutput{}, err
 	}
 
+	business, err := a.Store.GetBusiness(ctx, accountID, in.BusinessID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return CheckRunAccessOutput{}, NewPermanentError(
+				"load business", "BadBusinessData", err)
+		}
+		return CheckRunAccessOutput{}, err
+	}
 	sub, err := a.Store.GetByAccount(ctx, accountID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -97,7 +113,8 @@ func (a *Operations) CheckRunAccess(ctx context.Context, in CheckRunAccessInput)
 	}
 
 	access := billing.DeriveAccess(sub.AccessState(), time.Now().UTC())
-	return CheckRunAccessOutput{AccountID: accountID, Access: access.String()}, nil
+	return CheckRunAccessOutput{AccountID: accountID, Access: access.String(),
+		MonitoringPaused: business.MonitoringPausedAt != nil}, nil
 }
 
 // LoadRunSpecInput identifies the run to load or create.

@@ -20,6 +20,11 @@ export const getBusiness = BusinessService.method.getBusiness;
 export const updateBusiness = BusinessService.method.updateBusiness;
 
 /**
+ * @generated from rpc opensight.v1.BusinessService.SetMonitoringPaused
+ */
+export const setMonitoringPaused = BusinessService.method.setMonitoringPaused;
+
+/**
  * @generated from rpc opensight.v1.BusinessService.GetProposal
  */
 export const getProposal = BusinessService.method.getProposal;

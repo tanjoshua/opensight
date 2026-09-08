@@ -4,7 +4,7 @@ Depends on: [01 Architecture](01-architecture.md), [02 Data Model](02-data-model
 
 ## Weekly scheduling
 
-River inserts one scheduler-sweep job every 15 minutes and once on app startup. The sweep loads active businesses, resolves plan entitlements and current billing access, and ignores anything without full access.
+River inserts one scheduler-sweep job every 15 minutes and once on app startup. The sweep loads active businesses, resolves plan entitlements and current billing access, and ignores anything without full access. Businesses whose `businesses.monitoring_paused_at` is set are excluded by the candidate query itself, so an admin pause costs no job insert at all.
 
 Starter businesses run weekly at 02:00 UTC on a stable weekday derived from the business UUID. For each eligible business the sweep calculates the latest due slot. If the app was down, only that latest slot is inserted; historical slots are never backfilled. A slot before `activated_at` is not due. `next_run_at` uses the same deterministic calculation from PostgreSQL state.
 
@@ -12,7 +12,7 @@ Monitoring args are unique by business, platform, and scheduled slot. Before ins
 
 ## Monitoring job
 
-The job recomputes billing access before any spend or run write. It snapshots active prompts and location into the running `monitoring_runs` row alongside the River `job_id`, and runs prompts concurrently under the process-wide LLM limiter. An upsert conflict reads the stored snapshot instead of current business configuration, so every retry of a scheduled slot executes the same prompt IDs, prompt text, and location.
+The job recomputes billing access — and re-reads the admin pause switch — before any spend or run write. The sweep already skips paused businesses, so this second read only covers the narrow window where a job was enqueued before the pause or is retrying after it; it is what makes "pause" mean "stop now" rather than "stop next week". A paused business's job completes as a no-op: no run row, no prompt, no analysis. It snapshots active prompts and location into the running `monitoring_runs` row alongside the River `job_id`, and runs prompts concurrently under the process-wide LLM limiter. An upsert conflict reads the stored snapshot instead of current business configuration, so every retry of a scheduled slot executes the same prompt IDs, prompt text, and location.
 
 Each prompt makes up to four context-aware attempts. Provider refusals and non-retryable request errors are recorded immediately; exhausted transient failures are also recorded as failed results. Successful siblings are never discarded. Errors outside that deliberately persisted provider outcome — including result reads/writes, limiter acquisition, and cancellation — fail the monitoring job so River retries it. Final status is recomputed from the stored prompt snapshot (`completed`, `partial`, or `failed`) only after every prompt has a durable result, then an analysis job is inserted.
 

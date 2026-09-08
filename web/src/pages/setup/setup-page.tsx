@@ -4,26 +4,32 @@ import {
   useMutation,
   useQuery,
 } from "@connectrpc/connect-query"
+import { timestampDate } from "@bufbuild/protobuf/wkt"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState, type FormEvent } from "react"
 import { Link, Navigate } from "react-router"
 
 import { errorMessage } from "@/api/errors"
 import {
+  useAccountContext,
   useAllCompetitors,
   useCurrentBusiness,
   useInvalidateCompetitorViews,
   usePlan,
 } from "@/api/hooks"
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
+import { AccountRole } from "@/gen/opensight/v1/account_pb"
 import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
 import type { BusinessProfile } from "@/gen/opensight/v1/business_pb"
 import {
   getBusiness,
+  setMonitoringPaused,
   updateBusiness,
 } from "@/gen/opensight/v1/business-BusinessService_connectquery"
 import type { Competitor } from "@/gen/opensight/v1/competitor_pb"
 import { updateCompetitorAliases } from "@/gen/opensight/v1/competitor-CompetitorService_connectquery"
+import { listRuns } from "@/gen/opensight/v1/result-ResultService_connectquery"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/page-header"
 import {
@@ -46,6 +52,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAccountPath } from "@/lib/account-path"
+import { formatDateOnly } from "@/lib/format"
 
 export function SetupPage() {
   const current = useCurrentBusiness()
@@ -98,7 +105,9 @@ export function SetupPage() {
             Add or replace the questions measured in future runs.
           </CardDescription>
           <CardAction>
-            <Button render={<Link to={path("/prompts")} />}>Manage prompts</Button>
+            <Button render={<Link to={path("/prompts")} />}>
+              Manage prompts
+            </Button>
           </CardAction>
         </CardHeader>
       </Card>
@@ -122,8 +131,82 @@ export function SetupPage() {
           )}
         </CardContent>
       </Card>
+      <MonitoringCard business={business.data.business} />
       <PlanCard />
     </div>
+  )
+}
+
+// MonitoringCard is the admin pause switch. A pause stops future scheduled
+// runs only — prompts, past runs and every derived metric stay put, so the
+// copy promises exactly that and the action needs no destructive confirmation.
+function MonitoringCard({ business }: { business: BusinessProfile }) {
+  const account = useAccountContext()
+  const queryClient = useQueryClient()
+  const pausedAt = business.monitoringPausedAt
+  const paused = pausedAt !== undefined
+  const canManage =
+    account.data?.role === AccountRole.OWNER ||
+    account.data?.role === AccountRole.ADMIN
+  const mutation = useMutation(setMonitoringPaused, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: getBusiness,
+          input: { businessId: business.id },
+          cardinality: "finite",
+        }),
+      })
+      // The Runs page derives "next run" and its paused notice from ListRuns.
+      void queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: listRuns,
+          input: { businessId: business.id },
+          cardinality: "finite",
+        }),
+      })
+    },
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          Monitoring
+          <Badge variant={paused ? "outline" : "secondary"}>
+            {paused ? "Paused" : "Active"}
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          {paused
+            ? `Scheduled runs have been paused since ${formatDateOnly(timestampDate(pausedAt))}. Your prompts and past results are unchanged — resuming picks up at the next weekly slot.`
+            : "Pausing stops future scheduled runs. Your prompts and past results stay exactly as they are, and you can resume at any time."}
+        </CardDescription>
+        {canManage && (
+          <CardAction>
+            <Button
+              variant={paused ? "default" : "outline"}
+              disabled={mutation.isPending}
+              onClick={() =>
+                mutation.mutate({ businessId: business.id, paused: !paused })
+              }
+            >
+              {paused ? "Resume monitoring" : "Pause monitoring"}
+            </Button>
+          </CardAction>
+        )}
+      </CardHeader>
+      {mutation.isError && (
+        <CardContent>
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage(
+              mutation.error,
+              "Monitoring could not be updated. Try again."
+            )}
+          </p>
+        </CardContent>
+      )}
+    </Card>
   )
 }
 

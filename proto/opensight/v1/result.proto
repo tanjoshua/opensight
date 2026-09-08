@@ -127,6 +127,10 @@ message ListRunsResponse {
   // monitoring_pending is true while a monitoring job is queued or starting,
   // before its durable monitoring_runs row is visible.
   bool monitoring_pending = 3;
+  // monitoring_paused distinguishes an admin pause from the other reasons
+  // next_run_at can be unset (draft business, no billing access), so the
+  // empty state can say which one applies.
+  bool monitoring_paused = 4;
 }
 
 message ListResultsRequest {

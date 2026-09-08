@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package opensight.v1;
 
+import "google/protobuf/timestamp.proto";
 import "opensight/v1/common.proto";
 
 // Location mirrors llm.ProposedLocation (internal/llm/propose_profile.go).
@@ -28,6 +29,10 @@ message BusinessProfile {
   Location location = 8;
   reserved 9;
   reserved "plan";
+  // monitoring_paused_at is unset while scheduled monitoring runs, and carries
+  // the pause time otherwise. A pause stops future runs only; prompts and
+  // history are untouched.
+  optional google.protobuf.Timestamp monitoring_paused_at = 10;
 }
 
 // ProposedProfile mirrors llm.ProposedProfile.
@@ -105,6 +110,18 @@ message UpdateBusinessResponse {
   BusinessProfile business = 1;
 }
 
+// SetMonitoringPausedRequest pauses or resumes the business's scheduled
+// monitoring. It is idempotent: setting the state it already has succeeds and
+// keeps the original pause time.
+message SetMonitoringPausedRequest {
+  string business_id = 1;
+  bool paused = 2;
+}
+
+message SetMonitoringPausedResponse {
+  BusinessProfile business = 1;
+}
+
 message GetProposalRequest {
   string business_id = 1;
 }
@@ -160,6 +177,7 @@ service BusinessService {
   rpc CreateBusiness(CreateBusinessRequest) returns (CreateBusinessResponse);
   rpc GetBusiness(GetBusinessRequest) returns (GetBusinessResponse);
   rpc UpdateBusiness(UpdateBusinessRequest) returns (UpdateBusinessResponse);
+  rpc SetMonitoringPaused(SetMonitoringPausedRequest) returns (SetMonitoringPausedResponse);
   rpc GetProposal(GetProposalRequest) returns (GetProposalResponse);
   rpc RegenerateProposal(RegenerateProposalRequest) returns (RegenerateProposalResponse);
   rpc ApplyProposal(ApplyProposalRequest) returns (ApplyProposalResponse);

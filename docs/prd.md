@@ -60,6 +60,8 @@ Each week, the system runs the 20 prompts and stores:
 
 Sentiment, keywords, and competitor insights are derived from the stored responses.
 
+An account admin can pause monitoring, which stops future weekly runs until they resume it. Prompts and collected history are kept, so resuming continues the existing trend rather than starting over. Weeks spent paused are simply not collected — monitoring is a time series and a missed week cannot be backfilled.
+
 ## 6. Features
 
 ### Visibility
@@ -148,7 +150,7 @@ Next actions: prioritized findings from failed site checks and monitored-answer 
 
 ### Settings
 
-Business profile, prompts, and competitor configuration.
+Business profile, prompts, competitor configuration, and the monitoring pause switch.
 
 ## 8. Success Criteria
 

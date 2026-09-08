@@ -105,12 +105,12 @@ RETURNING created_at;
 
 -- name: GetBusiness :one
 SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-       generation_id, generation_job_id, generation_status, generation_stage
+       generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 FROM businesses WHERE id = @id AND account_id = @account_id;
 
 -- name: ListBusinesses :many
 SELECT id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-       generation_id, generation_job_id, generation_status, generation_stage
+       generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at
 FROM businesses WHERE account_id = $1 ORDER BY created_at;
 
 -- name: ResolveAccountID :one
@@ -121,7 +121,20 @@ SELECT b.id, b.account_id, b.activated_at, s.plan_code, s.comped,
        s.stripe_subscription_id, s.stripe_status, s.past_due_since
 FROM businesses b
 JOIN subscriptions s ON s.account_id = b.account_id
-WHERE b.status = 'active' AND b.activated_at IS NOT NULL;
+WHERE b.status = 'active' AND b.activated_at IS NOT NULL
+  AND b.monitoring_paused_at IS NULL;
+
+-- name: SetBusinessMonitoringPaused :one
+-- Idempotent in both directions: re-pausing keeps the original paused_at so
+-- the UI's "paused since" does not drift, and resuming clears it outright.
+UPDATE businesses
+SET monitoring_paused_at = CASE
+      WHEN @paused::bool THEN COALESCE(monitoring_paused_at, now())
+      ELSE NULL
+    END
+WHERE id = @business_id AND account_id = @account_id AND status = 'active'
+RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at;
 
 -- name: RenameAccount :exec
 UPDATE accounts SET name = $2 WHERE id = $1;
@@ -136,14 +149,14 @@ SET name = CASE WHEN @name_set::bool THEN @name ELSE name END,
     location = CASE WHEN @location_set::bool THEN @location::jsonb ELSE location END
 WHERE id = @business_id AND account_id = @account_id AND status = 'active'
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-          generation_id, generation_job_id, generation_status, generation_stage;
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at;
 
 -- name: UpdateDraftBusinessWebsite :one
 UPDATE businesses
 SET website = @website
 WHERE id = @business_id AND account_id = @account_id AND status = 'draft'
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-          generation_id, generation_job_id, generation_status, generation_stage;
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at;
 
 -- name: InstallBusinessGeneration :one
 UPDATE businesses
@@ -176,7 +189,7 @@ SET name = $2, aliases = $3, category = $4, services = $5, location = $6,
     generation_status = NULL, generation_stage = NULL
 WHERE id = $1
 RETURNING id, account_id, status, name, website, aliases, category, services, location, created_at, activated_at,
-          generation_id, generation_job_id, generation_status, generation_stage;
+          generation_id, generation_job_id, generation_status, generation_stage, monitoring_paused_at;
 
 -- name: MarkProposalApplied :exec
 UPDATE profile_proposals SET status = 'applied', resolved_at = now()

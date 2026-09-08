@@ -113,9 +113,14 @@ var procedureAccess = map[string]procedurePolicy{
 	// classSubscriber — needs full or lapsed. Reads, plus every edit that
 	// costs nothing: no run fires while lapsed, so these are row changes
 	// with no downstream spend.
-	opensightv1connect.BusinessServiceGetBusinessProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
-	opensightv1connect.BusinessServiceGetProposalProcedure:               policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
-	opensightv1connect.BusinessServiceUpdateBusinessProcedure:            policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	opensightv1connect.BusinessServiceGetBusinessProcedure:    policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.BusinessServiceGetProposalProcedure:    policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
+	opensightv1connect.BusinessServiceUpdateBusinessProcedure: policy(scopeAccount, store.AccountRoleMember, classSubscriber),
+	// SetMonitoringPaused is admin, not member: it decides whether the account
+	// is measured at all. It is classSubscriber, not classActive — it starts no
+	// run and spends nothing, and a lapsed account must still be able to pause
+	// so monitoring does not resume the moment billing recovers.
+	opensightv1connect.BusinessServiceSetMonitoringPausedProcedure:       policy(scopeAccount, store.AccountRoleAdmin, classSubscriber),
 	opensightv1connect.PromptServiceListPromptsProcedure:                 policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.PromptServiceGetPromptProcedure:                   policy(scopeAccount, store.AccountRoleViewer, classSubscriber),
 	opensightv1connect.PromptServiceAddPromptProcedure:                   policy(scopeAccount, store.AccountRoleMember, classSubscriber),

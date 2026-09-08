@@ -9,6 +9,7 @@ package opensightv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -96,17 +97,21 @@ func (x *Location) GetCountry() string {
 // per-business facts.
 // Field 9 is reserved rather than reused to preserve wire compatibility.
 type BusinessProfile struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Status        BusinessStatus         `protobuf:"varint,2,opt,name=status,proto3,enum=opensight.v1.BusinessStatus" json:"status,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Website       *string                `protobuf:"bytes,4,opt,name=website,proto3,oneof" json:"website,omitempty"`
-	Aliases       []string               `protobuf:"bytes,5,rep,name=aliases,proto3" json:"aliases,omitempty"`
-	Category      *string                `protobuf:"bytes,6,opt,name=category,proto3,oneof" json:"category,omitempty"`
-	Services      []string               `protobuf:"bytes,7,rep,name=services,proto3" json:"services,omitempty"`
-	Location      *Location              `protobuf:"bytes,8,opt,name=location,proto3" json:"location,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Id       string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status   BusinessStatus         `protobuf:"varint,2,opt,name=status,proto3,enum=opensight.v1.BusinessStatus" json:"status,omitempty"`
+	Name     string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Website  *string                `protobuf:"bytes,4,opt,name=website,proto3,oneof" json:"website,omitempty"`
+	Aliases  []string               `protobuf:"bytes,5,rep,name=aliases,proto3" json:"aliases,omitempty"`
+	Category *string                `protobuf:"bytes,6,opt,name=category,proto3,oneof" json:"category,omitempty"`
+	Services []string               `protobuf:"bytes,7,rep,name=services,proto3" json:"services,omitempty"`
+	Location *Location              `protobuf:"bytes,8,opt,name=location,proto3" json:"location,omitempty"`
+	// monitoring_paused_at is unset while scheduled monitoring runs, and carries
+	// the pause time otherwise. A pause stops future runs only; prompts and
+	// history are untouched.
+	MonitoringPausedAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=monitoring_paused_at,json=monitoringPausedAt,proto3,oneof" json:"monitoring_paused_at,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *BusinessProfile) Reset() {
@@ -191,6 +196,13 @@ func (x *BusinessProfile) GetServices() []string {
 func (x *BusinessProfile) GetLocation() *Location {
 	if x != nil {
 		return x.Location
+	}
+	return nil
+}
+
+func (x *BusinessProfile) GetMonitoringPausedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.MonitoringPausedAt
 	}
 	return nil
 }
@@ -836,6 +848,105 @@ func (x *UpdateBusinessResponse) GetBusiness() *BusinessProfile {
 	return nil
 }
 
+// SetMonitoringPausedRequest pauses or resumes the business's scheduled
+// monitoring. It is idempotent: setting the state it already has succeeds and
+// keeps the original pause time.
+type SetMonitoringPausedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BusinessId    string                 `protobuf:"bytes,1,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty"`
+	Paused        bool                   `protobuf:"varint,2,opt,name=paused,proto3" json:"paused,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetMonitoringPausedRequest) Reset() {
+	*x = SetMonitoringPausedRequest{}
+	mi := &file_opensight_v1_business_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetMonitoringPausedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetMonitoringPausedRequest) ProtoMessage() {}
+
+func (x *SetMonitoringPausedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_business_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetMonitoringPausedRequest.ProtoReflect.Descriptor instead.
+func (*SetMonitoringPausedRequest) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *SetMonitoringPausedRequest) GetBusinessId() string {
+	if x != nil {
+		return x.BusinessId
+	}
+	return ""
+}
+
+func (x *SetMonitoringPausedRequest) GetPaused() bool {
+	if x != nil {
+		return x.Paused
+	}
+	return false
+}
+
+type SetMonitoringPausedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Business      *BusinessProfile       `protobuf:"bytes,1,opt,name=business,proto3" json:"business,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetMonitoringPausedResponse) Reset() {
+	*x = SetMonitoringPausedResponse{}
+	mi := &file_opensight_v1_business_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetMonitoringPausedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetMonitoringPausedResponse) ProtoMessage() {}
+
+func (x *SetMonitoringPausedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_opensight_v1_business_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetMonitoringPausedResponse.ProtoReflect.Descriptor instead.
+func (*SetMonitoringPausedResponse) Descriptor() ([]byte, []int) {
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *SetMonitoringPausedResponse) GetBusiness() *BusinessProfile {
+	if x != nil {
+		return x.Business
+	}
+	return nil
+}
+
 type GetProposalRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BusinessId    string                 `protobuf:"bytes,1,opt,name=business_id,json=businessId,proto3" json:"business_id,omitempty"`
@@ -845,7 +956,7 @@ type GetProposalRequest struct {
 
 func (x *GetProposalRequest) Reset() {
 	*x = GetProposalRequest{}
-	mi := &file_opensight_v1_business_proto_msgTypes[13]
+	mi := &file_opensight_v1_business_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -857,7 +968,7 @@ func (x *GetProposalRequest) String() string {
 func (*GetProposalRequest) ProtoMessage() {}
 
 func (x *GetProposalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[13]
+	mi := &file_opensight_v1_business_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -870,7 +981,7 @@ func (x *GetProposalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProposalRequest.ProtoReflect.Descriptor instead.
 func (*GetProposalRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{13}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetProposalRequest) GetBusinessId() string {
@@ -889,7 +1000,7 @@ type GetProposalResponse struct {
 
 func (x *GetProposalResponse) Reset() {
 	*x = GetProposalResponse{}
-	mi := &file_opensight_v1_business_proto_msgTypes[14]
+	mi := &file_opensight_v1_business_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -901,7 +1012,7 @@ func (x *GetProposalResponse) String() string {
 func (*GetProposalResponse) ProtoMessage() {}
 
 func (x *GetProposalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[14]
+	mi := &file_opensight_v1_business_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -914,7 +1025,7 @@ func (x *GetProposalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProposalResponse.ProtoReflect.Descriptor instead.
 func (*GetProposalResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{14}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetProposalResponse) GetState() *ProposalState {
@@ -941,7 +1052,7 @@ type RegenerateProposalRequest struct {
 
 func (x *RegenerateProposalRequest) Reset() {
 	*x = RegenerateProposalRequest{}
-	mi := &file_opensight_v1_business_proto_msgTypes[15]
+	mi := &file_opensight_v1_business_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -953,7 +1064,7 @@ func (x *RegenerateProposalRequest) String() string {
 func (*RegenerateProposalRequest) ProtoMessage() {}
 
 func (x *RegenerateProposalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[15]
+	mi := &file_opensight_v1_business_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -966,7 +1077,7 @@ func (x *RegenerateProposalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegenerateProposalRequest.ProtoReflect.Descriptor instead.
 func (*RegenerateProposalRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{15}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RegenerateProposalRequest) GetBusinessId() string {
@@ -992,7 +1103,7 @@ type RegenerateProposalResponse struct {
 
 func (x *RegenerateProposalResponse) Reset() {
 	*x = RegenerateProposalResponse{}
-	mi := &file_opensight_v1_business_proto_msgTypes[16]
+	mi := &file_opensight_v1_business_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1004,7 +1115,7 @@ func (x *RegenerateProposalResponse) String() string {
 func (*RegenerateProposalResponse) ProtoMessage() {}
 
 func (x *RegenerateProposalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[16]
+	mi := &file_opensight_v1_business_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1017,7 +1128,7 @@ func (x *RegenerateProposalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegenerateProposalResponse.ProtoReflect.Descriptor instead.
 func (*RegenerateProposalResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{16}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RegenerateProposalResponse) GetState() *ProposalState {
@@ -1040,7 +1151,7 @@ type ApplyProposalRequest struct {
 
 func (x *ApplyProposalRequest) Reset() {
 	*x = ApplyProposalRequest{}
-	mi := &file_opensight_v1_business_proto_msgTypes[17]
+	mi := &file_opensight_v1_business_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1052,7 +1163,7 @@ func (x *ApplyProposalRequest) String() string {
 func (*ApplyProposalRequest) ProtoMessage() {}
 
 func (x *ApplyProposalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[17]
+	mi := &file_opensight_v1_business_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1065,7 +1176,7 @@ func (x *ApplyProposalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyProposalRequest.ProtoReflect.Descriptor instead.
 func (*ApplyProposalRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{17}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ApplyProposalRequest) GetBusinessId() string {
@@ -1091,7 +1202,7 @@ type ApplyProposalResponse struct {
 
 func (x *ApplyProposalResponse) Reset() {
 	*x = ApplyProposalResponse{}
-	mi := &file_opensight_v1_business_proto_msgTypes[18]
+	mi := &file_opensight_v1_business_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1103,7 +1214,7 @@ func (x *ApplyProposalResponse) String() string {
 func (*ApplyProposalResponse) ProtoMessage() {}
 
 func (x *ApplyProposalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[18]
+	mi := &file_opensight_v1_business_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1116,7 +1227,7 @@ func (x *ApplyProposalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyProposalResponse.ProtoReflect.Descriptor instead.
 func (*ApplyProposalResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{18}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ApplyProposalResponse) GetBusiness() *BusinessSummary {
@@ -1142,7 +1253,7 @@ type GenerateQuestionsRequest struct {
 
 func (x *GenerateQuestionsRequest) Reset() {
 	*x = GenerateQuestionsRequest{}
-	mi := &file_opensight_v1_business_proto_msgTypes[19]
+	mi := &file_opensight_v1_business_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1154,7 +1265,7 @@ func (x *GenerateQuestionsRequest) String() string {
 func (*GenerateQuestionsRequest) ProtoMessage() {}
 
 func (x *GenerateQuestionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[19]
+	mi := &file_opensight_v1_business_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1167,7 +1278,7 @@ func (x *GenerateQuestionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateQuestionsRequest.ProtoReflect.Descriptor instead.
 func (*GenerateQuestionsRequest) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{19}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GenerateQuestionsRequest) GetBusinessId() string {
@@ -1193,7 +1304,7 @@ type GenerateQuestionsResponse struct {
 
 func (x *GenerateQuestionsResponse) Reset() {
 	*x = GenerateQuestionsResponse{}
-	mi := &file_opensight_v1_business_proto_msgTypes[20]
+	mi := &file_opensight_v1_business_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1205,7 +1316,7 @@ func (x *GenerateQuestionsResponse) String() string {
 func (*GenerateQuestionsResponse) ProtoMessage() {}
 
 func (x *GenerateQuestionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_opensight_v1_business_proto_msgTypes[20]
+	mi := &file_opensight_v1_business_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1218,7 +1329,7 @@ func (x *GenerateQuestionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateQuestionsResponse.ProtoReflect.Descriptor instead.
 func (*GenerateQuestionsResponse) Descriptor() ([]byte, []int) {
-	return file_opensight_v1_business_proto_rawDescGZIP(), []int{20}
+	return file_opensight_v1_business_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GenerateQuestionsResponse) GetPrompts() []*ProposedPrompt {
@@ -1232,12 +1343,12 @@ var File_opensight_v1_business_proto protoreflect.FileDescriptor
 
 const file_opensight_v1_business_proto_rawDesc = "" +
 	"\n" +
-	"\x1bopensight/v1/business.proto\x12\fopensight.v1\x1a\x19opensight/v1/common.proto\"f\n" +
+	"\x1bopensight/v1/business.proto\x12\fopensight.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19opensight/v1/common.proto\"f\n" +
 	"\bLocation\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x12\n" +
 	"\x04area\x18\x02 \x01(\tR\x04area\x12\x12\n" +
 	"\x04city\x18\x03 \x01(\tR\x04city\x12\x18\n" +
-	"\acountry\x18\x04 \x01(\tR\acountry\"\xba\x02\n" +
+	"\acountry\x18\x04 \x01(\tR\acountry\"\xa6\x03\n" +
 	"\x0fBusinessProfile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x124\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1c.opensight.v1.BusinessStatusR\x06status\x12\x12\n" +
@@ -1246,10 +1357,13 @@ const file_opensight_v1_business_proto_rawDesc = "" +
 	"\aaliases\x18\x05 \x03(\tR\aaliases\x12\x1f\n" +
 	"\bcategory\x18\x06 \x01(\tH\x01R\bcategory\x88\x01\x01\x12\x1a\n" +
 	"\bservices\x18\a \x03(\tR\bservices\x122\n" +
-	"\blocation\x18\b \x01(\v2\x16.opensight.v1.LocationR\blocationB\n" +
+	"\blocation\x18\b \x01(\v2\x16.opensight.v1.LocationR\blocation\x12Q\n" +
+	"\x14monitoring_paused_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampH\x02R\x12monitoringPausedAt\x88\x01\x01B\n" +
 	"\n" +
 	"\b_websiteB\v\n" +
-	"\t_categoryJ\x04\b\t\x10\n" +
+	"\t_categoryB\x17\n" +
+	"\x15_monitoring_paused_atJ\x04\b\t\x10\n" +
 	"R\x04plan\"\xab\x01\n" +
 	"\x0fProposedProfile\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
@@ -1296,6 +1410,12 @@ const file_opensight_v1_business_proto_rawDesc = "" +
 	"\b_websiteB\v\n" +
 	"\t_category\"S\n" +
 	"\x16UpdateBusinessResponse\x129\n" +
+	"\bbusiness\x18\x01 \x01(\v2\x1d.opensight.v1.BusinessProfileR\bbusiness\"U\n" +
+	"\x1aSetMonitoringPausedRequest\x12\x1f\n" +
+	"\vbusiness_id\x18\x01 \x01(\tR\n" +
+	"businessId\x12\x16\n" +
+	"\x06paused\x18\x02 \x01(\bR\x06paused\"X\n" +
+	"\x1bSetMonitoringPausedResponse\x129\n" +
 	"\bbusiness\x18\x01 \x01(\v2\x1d.opensight.v1.BusinessProfileR\bbusiness\"5\n" +
 	"\x12GetProposalRequest\x12\x1f\n" +
 	"\vbusiness_id\x18\x01 \x01(\tR\n" +
@@ -1321,11 +1441,12 @@ const file_opensight_v1_business_proto_rawDesc = "" +
 	"businessId\x127\n" +
 	"\aprofile\x18\x02 \x01(\v2\x1d.opensight.v1.ProposedProfileR\aprofile\"S\n" +
 	"\x19GenerateQuestionsResponse\x126\n" +
-	"\aprompts\x18\x01 \x03(\v2\x1c.opensight.v1.ProposedPromptR\aprompts2\x9c\x05\n" +
+	"\aprompts\x18\x01 \x03(\v2\x1c.opensight.v1.ProposedPromptR\aprompts2\x88\x06\n" +
 	"\x0fBusinessService\x12[\n" +
 	"\x0eCreateBusiness\x12#.opensight.v1.CreateBusinessRequest\x1a$.opensight.v1.CreateBusinessResponse\x12R\n" +
 	"\vGetBusiness\x12 .opensight.v1.GetBusinessRequest\x1a!.opensight.v1.GetBusinessResponse\x12[\n" +
-	"\x0eUpdateBusiness\x12#.opensight.v1.UpdateBusinessRequest\x1a$.opensight.v1.UpdateBusinessResponse\x12R\n" +
+	"\x0eUpdateBusiness\x12#.opensight.v1.UpdateBusinessRequest\x1a$.opensight.v1.UpdateBusinessResponse\x12j\n" +
+	"\x13SetMonitoringPaused\x12(.opensight.v1.SetMonitoringPausedRequest\x1a).opensight.v1.SetMonitoringPausedResponse\x12R\n" +
 	"\vGetProposal\x12 .opensight.v1.GetProposalRequest\x1a!.opensight.v1.GetProposalResponse\x12g\n" +
 	"\x12RegenerateProposal\x12'.opensight.v1.RegenerateProposalRequest\x1a(.opensight.v1.RegenerateProposalResponse\x12X\n" +
 	"\rApplyProposal\x12\".opensight.v1.ApplyProposalRequest\x1a#.opensight.v1.ApplyProposalResponse\x12d\n" +
@@ -1344,76 +1465,83 @@ func file_opensight_v1_business_proto_rawDescGZIP() []byte {
 	return file_opensight_v1_business_proto_rawDescData
 }
 
-var file_opensight_v1_business_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_opensight_v1_business_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_opensight_v1_business_proto_goTypes = []any{
-	(*Location)(nil),                   // 0: opensight.v1.Location
-	(*BusinessProfile)(nil),            // 1: opensight.v1.BusinessProfile
-	(*ProposedProfile)(nil),            // 2: opensight.v1.ProposedProfile
-	(*ProposedPrompt)(nil),             // 3: opensight.v1.ProposedPrompt
-	(*ProposalSource)(nil),             // 4: opensight.v1.ProposalSource
-	(*ProposalPayload)(nil),            // 5: opensight.v1.ProposalPayload
-	(*ProposalState)(nil),              // 6: opensight.v1.ProposalState
-	(*CreateBusinessRequest)(nil),      // 7: opensight.v1.CreateBusinessRequest
-	(*CreateBusinessResponse)(nil),     // 8: opensight.v1.CreateBusinessResponse
-	(*GetBusinessRequest)(nil),         // 9: opensight.v1.GetBusinessRequest
-	(*GetBusinessResponse)(nil),        // 10: opensight.v1.GetBusinessResponse
-	(*UpdateBusinessRequest)(nil),      // 11: opensight.v1.UpdateBusinessRequest
-	(*UpdateBusinessResponse)(nil),     // 12: opensight.v1.UpdateBusinessResponse
-	(*GetProposalRequest)(nil),         // 13: opensight.v1.GetProposalRequest
-	(*GetProposalResponse)(nil),        // 14: opensight.v1.GetProposalResponse
-	(*RegenerateProposalRequest)(nil),  // 15: opensight.v1.RegenerateProposalRequest
-	(*RegenerateProposalResponse)(nil), // 16: opensight.v1.RegenerateProposalResponse
-	(*ApplyProposalRequest)(nil),       // 17: opensight.v1.ApplyProposalRequest
-	(*ApplyProposalResponse)(nil),      // 18: opensight.v1.ApplyProposalResponse
-	(*GenerateQuestionsRequest)(nil),   // 19: opensight.v1.GenerateQuestionsRequest
-	(*GenerateQuestionsResponse)(nil),  // 20: opensight.v1.GenerateQuestionsResponse
-	(BusinessStatus)(0),                // 21: opensight.v1.BusinessStatus
-	(ProposalStatus)(0),                // 22: opensight.v1.ProposalStatus
-	(GenerationStage)(0),               // 23: opensight.v1.GenerationStage
-	(*BusinessSummary)(nil),            // 24: opensight.v1.BusinessSummary
-	(*StringList)(nil),                 // 25: opensight.v1.StringList
+	(*Location)(nil),                    // 0: opensight.v1.Location
+	(*BusinessProfile)(nil),             // 1: opensight.v1.BusinessProfile
+	(*ProposedProfile)(nil),             // 2: opensight.v1.ProposedProfile
+	(*ProposedPrompt)(nil),              // 3: opensight.v1.ProposedPrompt
+	(*ProposalSource)(nil),              // 4: opensight.v1.ProposalSource
+	(*ProposalPayload)(nil),             // 5: opensight.v1.ProposalPayload
+	(*ProposalState)(nil),               // 6: opensight.v1.ProposalState
+	(*CreateBusinessRequest)(nil),       // 7: opensight.v1.CreateBusinessRequest
+	(*CreateBusinessResponse)(nil),      // 8: opensight.v1.CreateBusinessResponse
+	(*GetBusinessRequest)(nil),          // 9: opensight.v1.GetBusinessRequest
+	(*GetBusinessResponse)(nil),         // 10: opensight.v1.GetBusinessResponse
+	(*UpdateBusinessRequest)(nil),       // 11: opensight.v1.UpdateBusinessRequest
+	(*UpdateBusinessResponse)(nil),      // 12: opensight.v1.UpdateBusinessResponse
+	(*SetMonitoringPausedRequest)(nil),  // 13: opensight.v1.SetMonitoringPausedRequest
+	(*SetMonitoringPausedResponse)(nil), // 14: opensight.v1.SetMonitoringPausedResponse
+	(*GetProposalRequest)(nil),          // 15: opensight.v1.GetProposalRequest
+	(*GetProposalResponse)(nil),         // 16: opensight.v1.GetProposalResponse
+	(*RegenerateProposalRequest)(nil),   // 17: opensight.v1.RegenerateProposalRequest
+	(*RegenerateProposalResponse)(nil),  // 18: opensight.v1.RegenerateProposalResponse
+	(*ApplyProposalRequest)(nil),        // 19: opensight.v1.ApplyProposalRequest
+	(*ApplyProposalResponse)(nil),       // 20: opensight.v1.ApplyProposalResponse
+	(*GenerateQuestionsRequest)(nil),    // 21: opensight.v1.GenerateQuestionsRequest
+	(*GenerateQuestionsResponse)(nil),   // 22: opensight.v1.GenerateQuestionsResponse
+	(BusinessStatus)(0),                 // 23: opensight.v1.BusinessStatus
+	(*timestamppb.Timestamp)(nil),       // 24: google.protobuf.Timestamp
+	(ProposalStatus)(0),                 // 25: opensight.v1.ProposalStatus
+	(GenerationStage)(0),                // 26: opensight.v1.GenerationStage
+	(*BusinessSummary)(nil),             // 27: opensight.v1.BusinessSummary
+	(*StringList)(nil),                  // 28: opensight.v1.StringList
 }
 var file_opensight_v1_business_proto_depIdxs = []int32{
-	21, // 0: opensight.v1.BusinessProfile.status:type_name -> opensight.v1.BusinessStatus
+	23, // 0: opensight.v1.BusinessProfile.status:type_name -> opensight.v1.BusinessStatus
 	0,  // 1: opensight.v1.BusinessProfile.location:type_name -> opensight.v1.Location
-	0,  // 2: opensight.v1.ProposedProfile.location:type_name -> opensight.v1.Location
-	2,  // 3: opensight.v1.ProposalPayload.profile:type_name -> opensight.v1.ProposedProfile
-	3,  // 4: opensight.v1.ProposalPayload.prompts:type_name -> opensight.v1.ProposedPrompt
-	4,  // 5: opensight.v1.ProposalPayload.sources:type_name -> opensight.v1.ProposalSource
-	22, // 6: opensight.v1.ProposalState.status:type_name -> opensight.v1.ProposalStatus
-	23, // 7: opensight.v1.ProposalState.stage:type_name -> opensight.v1.GenerationStage
-	5,  // 8: opensight.v1.ProposalState.payload:type_name -> opensight.v1.ProposalPayload
-	24, // 9: opensight.v1.CreateBusinessResponse.business:type_name -> opensight.v1.BusinessSummary
-	1,  // 10: opensight.v1.GetBusinessResponse.business:type_name -> opensight.v1.BusinessProfile
-	25, // 11: opensight.v1.UpdateBusinessRequest.aliases:type_name -> opensight.v1.StringList
-	25, // 12: opensight.v1.UpdateBusinessRequest.services:type_name -> opensight.v1.StringList
-	0,  // 13: opensight.v1.UpdateBusinessRequest.location:type_name -> opensight.v1.Location
-	1,  // 14: opensight.v1.UpdateBusinessResponse.business:type_name -> opensight.v1.BusinessProfile
-	6,  // 15: opensight.v1.GetProposalResponse.state:type_name -> opensight.v1.ProposalState
-	6,  // 16: opensight.v1.RegenerateProposalResponse.state:type_name -> opensight.v1.ProposalState
-	5,  // 17: opensight.v1.ApplyProposalRequest.payload:type_name -> opensight.v1.ProposalPayload
-	24, // 18: opensight.v1.ApplyProposalResponse.business:type_name -> opensight.v1.BusinessSummary
-	2,  // 19: opensight.v1.GenerateQuestionsRequest.profile:type_name -> opensight.v1.ProposedProfile
-	3,  // 20: opensight.v1.GenerateQuestionsResponse.prompts:type_name -> opensight.v1.ProposedPrompt
-	7,  // 21: opensight.v1.BusinessService.CreateBusiness:input_type -> opensight.v1.CreateBusinessRequest
-	9,  // 22: opensight.v1.BusinessService.GetBusiness:input_type -> opensight.v1.GetBusinessRequest
-	11, // 23: opensight.v1.BusinessService.UpdateBusiness:input_type -> opensight.v1.UpdateBusinessRequest
-	13, // 24: opensight.v1.BusinessService.GetProposal:input_type -> opensight.v1.GetProposalRequest
-	15, // 25: opensight.v1.BusinessService.RegenerateProposal:input_type -> opensight.v1.RegenerateProposalRequest
-	17, // 26: opensight.v1.BusinessService.ApplyProposal:input_type -> opensight.v1.ApplyProposalRequest
-	19, // 27: opensight.v1.BusinessService.GenerateQuestions:input_type -> opensight.v1.GenerateQuestionsRequest
-	8,  // 28: opensight.v1.BusinessService.CreateBusiness:output_type -> opensight.v1.CreateBusinessResponse
-	10, // 29: opensight.v1.BusinessService.GetBusiness:output_type -> opensight.v1.GetBusinessResponse
-	12, // 30: opensight.v1.BusinessService.UpdateBusiness:output_type -> opensight.v1.UpdateBusinessResponse
-	14, // 31: opensight.v1.BusinessService.GetProposal:output_type -> opensight.v1.GetProposalResponse
-	16, // 32: opensight.v1.BusinessService.RegenerateProposal:output_type -> opensight.v1.RegenerateProposalResponse
-	18, // 33: opensight.v1.BusinessService.ApplyProposal:output_type -> opensight.v1.ApplyProposalResponse
-	20, // 34: opensight.v1.BusinessService.GenerateQuestions:output_type -> opensight.v1.GenerateQuestionsResponse
-	28, // [28:35] is the sub-list for method output_type
-	21, // [21:28] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	24, // 2: opensight.v1.BusinessProfile.monitoring_paused_at:type_name -> google.protobuf.Timestamp
+	0,  // 3: opensight.v1.ProposedProfile.location:type_name -> opensight.v1.Location
+	2,  // 4: opensight.v1.ProposalPayload.profile:type_name -> opensight.v1.ProposedProfile
+	3,  // 5: opensight.v1.ProposalPayload.prompts:type_name -> opensight.v1.ProposedPrompt
+	4,  // 6: opensight.v1.ProposalPayload.sources:type_name -> opensight.v1.ProposalSource
+	25, // 7: opensight.v1.ProposalState.status:type_name -> opensight.v1.ProposalStatus
+	26, // 8: opensight.v1.ProposalState.stage:type_name -> opensight.v1.GenerationStage
+	5,  // 9: opensight.v1.ProposalState.payload:type_name -> opensight.v1.ProposalPayload
+	27, // 10: opensight.v1.CreateBusinessResponse.business:type_name -> opensight.v1.BusinessSummary
+	1,  // 11: opensight.v1.GetBusinessResponse.business:type_name -> opensight.v1.BusinessProfile
+	28, // 12: opensight.v1.UpdateBusinessRequest.aliases:type_name -> opensight.v1.StringList
+	28, // 13: opensight.v1.UpdateBusinessRequest.services:type_name -> opensight.v1.StringList
+	0,  // 14: opensight.v1.UpdateBusinessRequest.location:type_name -> opensight.v1.Location
+	1,  // 15: opensight.v1.UpdateBusinessResponse.business:type_name -> opensight.v1.BusinessProfile
+	1,  // 16: opensight.v1.SetMonitoringPausedResponse.business:type_name -> opensight.v1.BusinessProfile
+	6,  // 17: opensight.v1.GetProposalResponse.state:type_name -> opensight.v1.ProposalState
+	6,  // 18: opensight.v1.RegenerateProposalResponse.state:type_name -> opensight.v1.ProposalState
+	5,  // 19: opensight.v1.ApplyProposalRequest.payload:type_name -> opensight.v1.ProposalPayload
+	27, // 20: opensight.v1.ApplyProposalResponse.business:type_name -> opensight.v1.BusinessSummary
+	2,  // 21: opensight.v1.GenerateQuestionsRequest.profile:type_name -> opensight.v1.ProposedProfile
+	3,  // 22: opensight.v1.GenerateQuestionsResponse.prompts:type_name -> opensight.v1.ProposedPrompt
+	7,  // 23: opensight.v1.BusinessService.CreateBusiness:input_type -> opensight.v1.CreateBusinessRequest
+	9,  // 24: opensight.v1.BusinessService.GetBusiness:input_type -> opensight.v1.GetBusinessRequest
+	11, // 25: opensight.v1.BusinessService.UpdateBusiness:input_type -> opensight.v1.UpdateBusinessRequest
+	13, // 26: opensight.v1.BusinessService.SetMonitoringPaused:input_type -> opensight.v1.SetMonitoringPausedRequest
+	15, // 27: opensight.v1.BusinessService.GetProposal:input_type -> opensight.v1.GetProposalRequest
+	17, // 28: opensight.v1.BusinessService.RegenerateProposal:input_type -> opensight.v1.RegenerateProposalRequest
+	19, // 29: opensight.v1.BusinessService.ApplyProposal:input_type -> opensight.v1.ApplyProposalRequest
+	21, // 30: opensight.v1.BusinessService.GenerateQuestions:input_type -> opensight.v1.GenerateQuestionsRequest
+	8,  // 31: opensight.v1.BusinessService.CreateBusiness:output_type -> opensight.v1.CreateBusinessResponse
+	10, // 32: opensight.v1.BusinessService.GetBusiness:output_type -> opensight.v1.GetBusinessResponse
+	12, // 33: opensight.v1.BusinessService.UpdateBusiness:output_type -> opensight.v1.UpdateBusinessResponse
+	14, // 34: opensight.v1.BusinessService.SetMonitoringPaused:output_type -> opensight.v1.SetMonitoringPausedResponse
+	16, // 35: opensight.v1.BusinessService.GetProposal:output_type -> opensight.v1.GetProposalResponse
+	18, // 36: opensight.v1.BusinessService.RegenerateProposal:output_type -> opensight.v1.RegenerateProposalResponse
+	20, // 37: opensight.v1.BusinessService.ApplyProposal:output_type -> opensight.v1.ApplyProposalResponse
+	22, // 38: opensight.v1.BusinessService.GenerateQuestions:output_type -> opensight.v1.GenerateQuestionsResponse
+	31, // [31:39] is the sub-list for method output_type
+	23, // [23:31] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_opensight_v1_business_proto_init() }
@@ -1424,14 +1552,14 @@ func file_opensight_v1_business_proto_init() {
 	file_opensight_v1_common_proto_init()
 	file_opensight_v1_business_proto_msgTypes[1].OneofWrappers = []any{}
 	file_opensight_v1_business_proto_msgTypes[11].OneofWrappers = []any{}
-	file_opensight_v1_business_proto_msgTypes[15].OneofWrappers = []any{}
+	file_opensight_v1_business_proto_msgTypes[17].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensight_v1_business_proto_rawDesc), len(file_opensight_v1_business_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -68,7 +68,7 @@ func (s *Server) ListRuns(ctx context.Context, req *connect.Request[opensightv1.
 		}
 		resp.Runs = append(resp.Runs, row)
 	}
-	resp.NextRunAt = s.nextRunAt(ctx, su.AccountID, businessID)
+	resp.NextRunAt, resp.MonitoringPaused = s.nextRunAt(ctx, su.AccountID, businessID)
 	return connect.NewResponse(resp), nil
 }
 
@@ -112,17 +112,24 @@ func (s *Server) jobsPending(ctx context.Context, businessID domain.ID, kinds ..
 // run" hint, not a correctness-critical field. Given a short deadline so a
 // slow or unreachable River cannot stall the poll, and logged at Warn
 // (not s.rpcError, which implies a failed request) on error.
-func (s *Server) nextRunAt(ctx context.Context, accountID, businessID domain.ID) *timestamppb.Timestamp {
+//
+// The second return distinguishes the one reason for a missing next run the
+// user chose themselves — an admin pause — from the rest (draft business, no
+// billing access), so the UI can say which applies.
+func (s *Server) nextRunAt(ctx context.Context, accountID, businessID domain.ID) (*timestamppb.Timestamp, bool) {
 	business, err := s.store.GetBusiness(ctx, accountID, businessID)
 	if err != nil || business.Status != store.BusinessStatusActive {
-		return nil
+		return nil, false
+	}
+	if business.MonitoringPausedAt != nil {
+		return nil, true
 	}
 	sub, err := s.store.GetByAccount(ctx, accountID)
 	if err != nil || !billing.DeriveAccess(sub.AccessState(), time.Now().UTC()).Active() {
-		return nil
+		return nil, false
 	}
 	next := jobs.NextWeeklySlot(businessID, time.Now().UTC())
-	return timestamppb.New(next)
+	return timestamppb.New(next), false
 }
 
 // resultFilterFromProto parses ListResultsRequest into a store.ResultFilter
