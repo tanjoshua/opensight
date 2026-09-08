@@ -369,11 +369,24 @@ func TestDeleteAccountAgainstPostgres(t *testing.T) {
 		accountID, billing.Starter.Code); err != nil {
 		t.Fatalf("insert subscription: %v", err)
 	}
-	businessID := mustDomainID(t)
-	if _, err := db.Exec(ctx,
-		"INSERT INTO businesses (id, account_id, status, name) VALUES ($1, $2, 'draft', 'Atlas Dental')",
-		businessID, accountID); err != nil {
-		t.Fatalf("insert business: %v", err)
+	// A workspace with monitoring history, not a bare draft: the cascade has
+	// to clear prompts and the results that cite them, which is where the
+	// first cut of this feature failed in production (migration 00025).
+	businessID, promptID, oldPromptID := mustDomainID(t), mustDomainID(t), mustDomainID(t)
+	runID, resultID := mustDomainID(t), mustDomainID(t)
+	for _, stmt := range []struct {
+		sql  string
+		args []any
+	}{
+		{"INSERT INTO businesses (id, account_id, status, name, category, location, activated_at) VALUES ($1, $2, 'active', 'Atlas Dental', 'dental clinic', '{\"country\":\"SG\"}'::jsonb, now())", []any{businessID, accountID}},
+		{"INSERT INTO prompts (id, business_id, text, status, retired_at) VALUES ($1, $2, 'superseded question', 'retired', now())", []any{oldPromptID, businessID}},
+		{"INSERT INTO prompts (id, business_id, text, status, replaces_prompt_id) VALUES ($1, $2, 'best dentist in singapore?', 'active', $3)", []any{promptID, businessID, oldPromptID}},
+		{"INSERT INTO monitoring_runs (id, business_id, platform, trigger, scheduled_for, status, job_id, completed_at) VALUES ($1, $2, 'chatgpt', 'scheduled', '2026-09-01', 'completed', 1, now())", []any{runID, businessID}},
+		{"INSERT INTO prompt_results (id, run_id, prompt_id, status, model, request, raw_response, response_text) VALUES ($1, $2, $3, 'succeeded', 'gpt-x', '{}', '{}', 'an answer')", []any{resultID, runID, promptID}},
+	} {
+		if _, err := db.Exec(ctx, stmt.sql, stmt.args...); err != nil {
+			t.Fatalf("seed workspace (%s): %v", stmt.sql, err)
+		}
 	}
 
 	repository := store.New(db)
@@ -408,6 +421,9 @@ func TestDeleteAccountAgainstPostgres(t *testing.T) {
 		"SELECT count(*) FROM accounts WHERE id = $1",
 		"SELECT count(*) FROM subscriptions WHERE account_id = $1",
 		"SELECT count(*) FROM businesses WHERE account_id = $1",
+		"SELECT count(*) FROM prompts WHERE business_id = (SELECT id FROM businesses WHERE account_id = $1)",
+		"SELECT count(*) FROM monitoring_runs WHERE business_id = (SELECT id FROM businesses WHERE account_id = $1)",
+		"SELECT count(*) FROM prompt_results WHERE run_id IN (SELECT r.id FROM monitoring_runs r JOIN businesses b ON b.id = r.business_id WHERE b.account_id = $1)",
 	} {
 		var n int
 		if err := db.QueryRow(ctx, q, accountID).Scan(&n); err != nil {

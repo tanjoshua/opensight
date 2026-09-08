@@ -75,7 +75,7 @@ subscriptions (
 
 A user is one global identity and may have memberships in multiple accounts with a different role in each. Membership grants access to every business in the account; business-specific ACLs are deferred. Accounts may have multiple owners, but the application locks the account row and rejects any owner removal or demotion that would leave no owner.
 
-**Every FK into `accounts` cascades**, so deleting an account (07 "Auth and accounts") is one `DELETE` that takes memberships, the subscription, businesses, and the whole run/result/analysis tree with it. There is no soft delete and nothing restores a deleted account.
+**No FK in the schema restricts a delete**, so deleting an account (07 "Auth and accounts") is one `DELETE` that takes memberships, the subscription, businesses, and the whole run/result/analysis tree with it. That has to hold all the way down, not just at the `accounts` edge: PostgreSQL does not order cascade paths, so a single restricting FK deeper in the tree (`prompt_results.prompt_id` was one) aborts the whole delete. The lone non-cascade rule is `prompts.replaces_prompt_id`, which is `SET NULL` — a lineage pointer is severed, never propagated forward onto a prompt that is still active. There is no soft delete and nothing restores a deleted account.
 
 ### Businesses and profile
 

@@ -39,6 +39,7 @@ func TestEmbeddedMigrationsIncludeExpectedFiles(t *testing.T) {
 		"migrations/00022_replace_temporal_with_river.sql",
 		"migrations/00023_add_run_spec.sql",
 		"migrations/00024_cascade_account_deletion.sql",
+		"migrations/00025_cascade_prompt_lineage.sql",
 	}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("embedded migrations = %v, want %v", names, want)
