@@ -7,16 +7,10 @@ import {
 import { timestampDate } from "@bufbuild/protobuf/wkt"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState, type FormEvent } from "react"
-import { Link, Navigate } from "react-router"
+import { Navigate } from "react-router"
 
 import { errorMessage } from "@/api/errors"
-import {
-  useAccountContext,
-  useAllCompetitors,
-  useCurrentBusiness,
-  useInvalidateCompetitorViews,
-  usePlan,
-} from "@/api/hooks"
+import { useAccountContext, useCurrentBusiness, usePlan } from "@/api/hooks"
 import { getMe } from "@/gen/opensight/v1/auth-AuthService_connectquery"
 import { AccountRole } from "@/gen/opensight/v1/account_pb"
 import { BusinessStatus } from "@/gen/opensight/v1/common_pb"
@@ -26,8 +20,6 @@ import {
   setMonitoringPaused,
   updateBusiness,
 } from "@/gen/opensight/v1/business-BusinessService_connectquery"
-import type { Competitor } from "@/gen/opensight/v1/competitor_pb"
-import { updateCompetitorAliases } from "@/gen/opensight/v1/competitor-CompetitorService_connectquery"
 import { listRuns } from "@/gen/opensight/v1/result-ResultService_connectquery"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -62,17 +54,11 @@ export function SetupPage() {
     getBusiness,
     summary === undefined ? skipToken : { businessId: summary.id }
   )
-  const competitors = useAllCompetitors(summary?.id)
 
-  if (current.isLoading || business.isLoading || competitors.isLoading) {
+  if (current.isLoading || business.isLoading) {
     return <SetupSkeleton />
   }
-  if (
-    current.isError ||
-    business.isError ||
-    competitors.isError ||
-    !current.isReady
-  ) {
+  if (current.isError || business.isError || !current.isReady) {
     return (
       <p role="alert">Setup could not be loaded. Try reloading the page.</p>
     )
@@ -86,7 +72,7 @@ export function SetupPage() {
   ) {
     return <Navigate to={path("/onboarding")} replace />
   }
-  if (!business.data?.business || !competitors.data) return <SetupSkeleton />
+  if (!business.data?.business) return <SetupSkeleton />
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,39 +84,6 @@ export function SetupPage() {
         key={business.data.business.id}
         business={business.data.business}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>Prompts</CardTitle>
-          <CardDescription>
-            Add or replace the questions measured in future runs.
-          </CardDescription>
-          <CardAction>
-            <Button render={<Link to={path("/prompts")} />}>
-              Manage prompts
-            </Button>
-          </CardAction>
-        </CardHeader>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Competitor aliases</CardTitle>
-          <CardDescription>
-            Approved names used for exact matching. Suggested aliases remain in
-            Competitors until reviewed.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {competitors.data.competitors.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No competitors to configure yet.
-            </p>
-          ) : (
-            competitors.data.competitors.map((competitor) => (
-              <CompetitorAliases key={competitor.id} competitor={competitor} />
-            ))
-          )}
-        </CardContent>
-      </Card>
       <MonitoringCard business={business.data.business} />
       <PlanCard />
     </div>
@@ -454,99 +407,6 @@ function TextField({
       />
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
-  )
-}
-
-function CompetitorAliases({ competitor }: { competitor: Competitor }) {
-  const invalidateCompetitorViews = useInvalidateCompetitorViews()
-  const mutation = useMutation(updateCompetitorAliases, {
-    onSuccess: invalidateCompetitorViews,
-  })
-  const [items, setItems] = useState(() => competitor.aliases.map(listItem))
-  const [saved, setSaved] = useState(false)
-  const aliases = items.map((item) => item.value)
-  const dirty = JSON.stringify(aliases) !== JSON.stringify(competitor.aliases)
-  const error = mutation.isError
-    ? errorMessage(mutation.error, "Aliases could not be saved.")
-    : undefined
-  return (
-    <FieldSet>
-      <FieldLegend variant="label">
-        {competitor.name} approved aliases
-      </FieldLegend>
-      {items.map((item, index) => (
-        <div key={item.key} className="flex gap-2">
-          <Input
-            aria-label={`${competitor.name} approved alias ${index + 1}`}
-            value={item.value}
-            onChange={(event) => {
-              setSaved(false)
-              setItems((current) =>
-                current.map((value) =>
-                  value.key === item.key
-                    ? { ...value, value: event.currentTarget.value }
-                    : value
-                )
-              )
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            aria-label={`Remove approved alias ${index + 1} for ${competitor.name}`}
-            onClick={() => {
-              setSaved(false)
-              setItems((current) =>
-                current.filter((value) => value.key !== item.key)
-              )
-            }}
-          >
-            Remove
-          </Button>
-        </div>
-      ))}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setSaved(false)
-            setItems((current) => [...current, listItem("")])
-          }}
-        >
-          Add alias
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          aria-label={`Save approved aliases for ${competitor.name}`}
-          disabled={!dirty || mutation.isPending}
-          onClick={() =>
-            mutation.mutate(
-              { competitorId: competitor.id, aliases: { values: aliases } },
-              {
-                onSuccess: (updated) => {
-                  if (updated.competitor) {
-                    setItems(updated.competitor.aliases.map(listItem))
-                  }
-                  setSaved(true)
-                },
-              }
-            )
-          }
-        >
-          Save
-        </Button>
-      </div>
-      {error && <FieldError>{error}</FieldError>}
-      <p
-        role="status"
-        aria-live="polite"
-        className="text-sm text-muted-foreground"
-      >
-        {mutation.isPending ? "Saving aliases…" : saved ? "Aliases saved." : ""}
-      </p>
-    </FieldSet>
   )
 }
 

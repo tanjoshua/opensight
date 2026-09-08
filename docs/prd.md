@@ -138,7 +138,7 @@ The 20 tracked prompts and their latest results.
 
 ### Competitors
 
-Discovered and tracked competitors with simple visibility comparisons.
+Discovered and tracked competitors with simple visibility comparisons, and the names each one is matched by.
 
 ### Monitoring history
 
@@ -150,7 +150,7 @@ Next actions: prioritized findings from failed site checks and monitored-answer 
 
 ### Settings
 
-Business profile, prompts, competitor configuration, and the monitoring pause switch.
+Business profile, the monitoring pause switch, and the plan in effect.
 
 ## 8. Success Criteria
 

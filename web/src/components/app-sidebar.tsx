@@ -52,9 +52,9 @@ const businessSections = [
   { title: "Monitoring history", to: "/runs", icon: FileSearch },
 ]
 
-const businessSettings = [
-  { title: "Business profile", to: "/setup", icon: Settings },
-]
+// "Settings", not "Business profile": the page also carries the monitoring
+// pause switch and plan, so the narrower label sent people looking elsewhere.
+const businessSettings = [{ title: "Settings", to: "/setup", icon: Settings }]
 
 const improveSections = [
   { title: "Next actions", to: "/improve/actions", icon: Lightbulb },

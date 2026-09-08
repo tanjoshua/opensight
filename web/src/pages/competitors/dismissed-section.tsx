@@ -4,6 +4,7 @@ import { useState } from "react"
 import { CompetitorStatus } from "@/gen/opensight/v1/common_pb"
 import type { CompetitorSelf } from "@/gen/opensight/v1/competitor_pb"
 import { Button } from "@/components/ui/button"
+import { ApprovedAliases } from "./approved-aliases"
 import {
   ActionNote,
   ClaimSelfButton,
@@ -91,11 +92,14 @@ export function DismissedSection({
               )}
               onUndoStatus={(status) => onUndoStatus(competitor, status)}
               aliasReview={
-                <SuggestedAliasReview
-                  competitor={competitor}
-                  onReview={onReviewAlias}
-                  pendingAlias={pendingAlias}
-                />
+                <>
+                  <ApprovedAliases competitor={competitor} />
+                  <SuggestedAliasReview
+                    competitor={competitor}
+                    onReview={onReviewAlias}
+                    pendingAlias={pendingAlias}
+                  />
+                </>
               }
               actions={
                 <>

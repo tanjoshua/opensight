@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { ApprovedAliases } from "./approved-aliases"
 import {
   ActionNote,
   ClaimSelfButton,
@@ -101,7 +102,7 @@ export function TrackedDetail({
             <TrendChart trend={competitor.trend} onSelectRun={onSelectRun} />
           </div>
           <div className="flex min-w-0 flex-col gap-5">
-            <Aliases competitor={competitor} />
+            <ApprovedAliases competitor={competitor} />
             <SuggestedAliasReview
               competitor={competitor}
               onReview={onReviewAlias}
@@ -160,29 +161,6 @@ function DetailStat({
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-2xl font-semibold tabular-nums">{value}</span>
     </button>
-  )
-}
-
-function Aliases({ competitor }: { competitor: Competitor }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <h3 className="text-sm font-medium">Approved aliases</h3>
-      {competitor.aliases.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No aliases added.</p>
-      ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {competitor.aliases.map((alias) => (
-            <Badge
-              key={alias}
-              variant="outline"
-              className="max-w-full truncate"
-            >
-              {alias}
-            </Badge>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 
