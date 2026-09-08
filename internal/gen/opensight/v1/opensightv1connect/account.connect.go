@@ -51,6 +51,9 @@ const (
 	// AccountServiceRemoveMemberProcedure is the fully-qualified name of the AccountService's
 	// RemoveMember RPC.
 	AccountServiceRemoveMemberProcedure = "/opensight.v1.AccountService/RemoveMember"
+	// AccountServiceDeleteAccountProcedure is the fully-qualified name of the AccountService's
+	// DeleteAccount RPC.
+	AccountServiceDeleteAccountProcedure = "/opensight.v1.AccountService/DeleteAccount"
 )
 
 // AccountServiceClient is a client for the opensight.v1.AccountService service.
@@ -61,6 +64,7 @@ type AccountServiceClient interface {
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
 	UpdateMemberRole(context.Context, *connect.Request[v1.UpdateMemberRoleRequest]) (*connect.Response[v1.UpdateMemberRoleResponse], error)
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
+	DeleteAccount(context.Context, *connect.Request[v1.DeleteAccountRequest]) (*connect.Response[v1.DeleteAccountResponse], error)
 }
 
 // NewAccountServiceClient constructs a client for the opensight.v1.AccountService service. By
@@ -110,6 +114,12 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("RemoveMember")),
 			connect.WithClientOptions(opts...),
 		),
+		deleteAccount: connect.NewClient[v1.DeleteAccountRequest, v1.DeleteAccountResponse](
+			httpClient,
+			baseURL+AccountServiceDeleteAccountProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("DeleteAccount")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -121,6 +131,7 @@ type accountServiceClient struct {
 	addMember         *connect.Client[v1.AddMemberRequest, v1.AddMemberResponse]
 	updateMemberRole  *connect.Client[v1.UpdateMemberRoleRequest, v1.UpdateMemberRoleResponse]
 	removeMember      *connect.Client[v1.RemoveMemberRequest, v1.RemoveMemberResponse]
+	deleteAccount     *connect.Client[v1.DeleteAccountRequest, v1.DeleteAccountResponse]
 }
 
 // GetAccountContext calls opensight.v1.AccountService.GetAccountContext.
@@ -153,6 +164,11 @@ func (c *accountServiceClient) RemoveMember(ctx context.Context, req *connect.Re
 	return c.removeMember.CallUnary(ctx, req)
 }
 
+// DeleteAccount calls opensight.v1.AccountService.DeleteAccount.
+func (c *accountServiceClient) DeleteAccount(ctx context.Context, req *connect.Request[v1.DeleteAccountRequest]) (*connect.Response[v1.DeleteAccountResponse], error) {
+	return c.deleteAccount.CallUnary(ctx, req)
+}
+
 // AccountServiceHandler is an implementation of the opensight.v1.AccountService service.
 type AccountServiceHandler interface {
 	GetAccountContext(context.Context, *connect.Request[v1.GetAccountContextRequest]) (*connect.Response[v1.GetAccountContextResponse], error)
@@ -161,6 +177,7 @@ type AccountServiceHandler interface {
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
 	UpdateMemberRole(context.Context, *connect.Request[v1.UpdateMemberRoleRequest]) (*connect.Response[v1.UpdateMemberRoleResponse], error)
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
+	DeleteAccount(context.Context, *connect.Request[v1.DeleteAccountRequest]) (*connect.Response[v1.DeleteAccountResponse], error)
 }
 
 // NewAccountServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -206,6 +223,12 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("RemoveMember")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceDeleteAccountHandler := connect.NewUnaryHandler(
+		AccountServiceDeleteAccountProcedure,
+		svc.DeleteAccount,
+		connect.WithSchema(accountServiceMethods.ByName("DeleteAccount")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/opensight.v1.AccountService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AccountServiceGetAccountContextProcedure:
@@ -220,6 +243,8 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceUpdateMemberRoleHandler.ServeHTTP(w, r)
 		case AccountServiceRemoveMemberProcedure:
 			accountServiceRemoveMemberHandler.ServeHTTP(w, r)
+		case AccountServiceDeleteAccountProcedure:
+			accountServiceDeleteAccountHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -251,4 +276,8 @@ func (UnimplementedAccountServiceHandler) UpdateMemberRole(context.Context, *con
 
 func (UnimplementedAccountServiceHandler) RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.AccountService.RemoveMember is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) DeleteAccount(context.Context, *connect.Request[v1.DeleteAccountRequest]) (*connect.Response[v1.DeleteAccountResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("opensight.v1.AccountService.DeleteAccount is not implemented"))
 }

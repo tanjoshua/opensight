@@ -33,3 +33,8 @@ export const updateMemberRole = AccountService.method.updateMemberRole;
  * @generated from rpc opensight.v1.AccountService.RemoveMember
  */
 export const removeMember = AccountService.method.removeMember;
+
+/**
+ * @generated from rpc opensight.v1.AccountService.DeleteAccount
+ */
+export const deleteAccount = AccountService.method.deleteAccount;

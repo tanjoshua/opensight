@@ -113,6 +113,18 @@ func (q *Queries) CountActivePrompts(ctx context.Context, businessID uuid.UUID) 
 	return count, err
 }
 
+const deleteAccount = `-- name: DeleteAccount :execrows
+DELETE FROM accounts WHERE id = $1
+`
+
+func (q *Queries) DeleteAccount(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteAccount, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteAccountMembership = `-- name: DeleteAccountMembership :execrows
 DELETE FROM account_memberships WHERE account_id = $1 AND user_id = $2
 `

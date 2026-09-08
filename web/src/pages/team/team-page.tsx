@@ -2,12 +2,13 @@ import { useMutation, useQuery } from "@connectrpc/connect-query"
 import { useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2 } from "lucide-react"
 import { useState, type FormEvent } from "react"
-import { useParams } from "react-router"
+import { useNavigate, useParams } from "react-router"
 
 import { errorMessage } from "@/api/errors"
 import { useAccountContext, useMe } from "@/api/hooks"
 import {
   addMember,
+  deleteAccount,
   listMembers,
   removeMember,
   updateMemberRole,
@@ -15,6 +16,13 @@ import {
 import { AccountRole, type AccountMember } from "@/gen/opensight/v1/account_pb"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -116,7 +124,116 @@ export function TeamPage() {
           </Table>
         </div>
       )}
+      {canManage && account.data?.account && (
+        <DeleteWorkspaceCard
+          accountSlug={accountSlug}
+          accountName={account.data.account.name}
+        />
+      )}
     </div>
+  )
+}
+
+// DeleteWorkspaceCard is the only destructive account-wide action in the SPA,
+// so it stays behind a dialog that makes the caller retype the workspace name
+// — the same confirmation the server requires, not a UI-only courtesy.
+function DeleteWorkspaceCard({
+  accountSlug,
+  accountName,
+}: {
+  accountSlug: string
+  accountName: string
+}) {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [confirmName, setConfirmName] = useState("")
+  const mutation = useMutation(deleteAccount, {
+    onSuccess: () => {
+      // The workspace this SPA is scoped to no longer exists; clearing beats
+      // invalidating, which would immediately refetch it and 404.
+      queryClient.clear()
+      navigate("/accounts", { replace: true })
+    },
+  })
+  const confirmed =
+    confirmName.trim().toLowerCase() === accountName.trim().toLowerCase()
+
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader>
+        <CardTitle>Delete this workspace</CardTitle>
+        <CardDescription>
+          Permanently removes {accountName}, its businesses, members, and every
+          monitoring run and result. This cannot be undone.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Dialog
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next)
+            if (!next) setConfirmName("")
+          }}
+        >
+          <DialogTrigger render={<Button variant="destructive" />}>
+            <Trash2 data-icon="inline-start" /> Delete workspace
+          </DialogTrigger>
+          <DialogContent>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                mutation.mutate({
+                  accountSlug,
+                  confirmName: confirmName.trim(),
+                })
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete {accountName}?</DialogTitle>
+                <DialogDescription>
+                  Everything in this workspace is deleted immediately and cannot
+                  be restored. If it has a paid subscription, cancel it in
+                  Billing first.
+                </DialogDescription>
+              </DialogHeader>
+              <FieldGroup className="py-5">
+                <Field>
+                  <FieldLabel htmlFor="confirm-workspace-name">
+                    Type <span className="font-medium">{accountName}</span> to
+                    confirm
+                  </FieldLabel>
+                  <Input
+                    id="confirm-workspace-name"
+                    value={confirmName}
+                    onChange={(event) => setConfirmName(event.target.value)}
+                    autoComplete="off"
+                    autoFocus
+                  />
+                  {mutation.isError && (
+                    <FieldError>
+                      {errorMessage(
+                        mutation.error,
+                        "Couldn't delete this workspace."
+                      )}
+                    </FieldError>
+                  )}
+                </Field>
+              </FieldGroup>
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={!confirmed || mutation.isPending}
+                >
+                  {mutation.isPending ? "Deleting…" : "Delete workspace"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   )
 }
 
