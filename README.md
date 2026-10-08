@@ -1,5 +1,9 @@
 # OpenSight
 
+**🌐 [opensight.app](https://opensight.app)**
+
+Automated generative engine optimization (GEO) platform that monitors how local businesses appear in ChatGPT answers and turns that evidence into prioritized steps to improve their visibility.
+
 Go application with an embedded React/Vite UI, backed by Postgres and River. The static marketing site lives in `marketing/` and is deployed separately.
 
 ## Local setup
